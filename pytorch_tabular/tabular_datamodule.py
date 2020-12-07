@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 from omegaconf import DictConfig
-from category_encoders import OrdinalEncoder
+from .category_encoders import OrdinalEncoder
 
 
 class TabularDatamodule(pl.LightningDataModule):
@@ -45,17 +45,8 @@ class TabularDatamodule(pl.LightningDataModule):
         self.update_config()
 
     def update_config(self):
-        # self.config.categorical_dim = (
-        #     len(self.categorical_cols) if self.config.categorical_cols is not None else 0
-        # )
-        # self.config.output_dim = len(self.config.target)
-        # self.config.continuous_dim = (
-        #     len(self.config.continuous_cols)
-        #     if len(self.config.continuous_cols) > 0
-        #     else (len(self.train.columns) - self._output_dim - self._categorical_dim)
-        # )
         self.config.categorical_cardinality = [
-            int(self.train[col].nunique()) + 1 for col in self.config.categorical_cols
+            int(self.train[col].fillna("NA").nunique()) + 1 for col in self.config.categorical_cols
         ]
         if self.config.embedding_dims is None:
             self.config.embedding_dims = [
@@ -77,19 +68,22 @@ class TabularDatamodule(pl.LightningDataModule):
                 )
                 self.train = self.categorical_encoder.fit_transform(self.train)
                 # casting missing to 0
-                for _map in self.categorical_encoder.category_mapping:
-                    _map["mapping"][np.nan] = 0
+                # for _map in self.categorical_encoder.category_mapping:
+                #     _map["mapping"][np.nan] = 0
                 self.validation = self.categorical_encoder.transform(self.validation)
                 # Replacing new with 0
-                self.validation.loc[:, self.config.categorical_cols].replace(
-                    -1, 0, inplace=True
-                )
+                # self.validation.loc[:, self.config.categorical_cols].replace(
+                #     -1, 0, inplace=True
+                # )
+                # self.validation.loc[:, self.config.categorical_cols] = self.validation.loc[:, self.config.categorical_cols].replace(
+                #     -1, 0
+                # )
                 if self.test is not None:
                     self.test = self.categorical_encoder.transform(self.test)
                     # Replacing new with 0
-                    self.test.loc[:, self.config.categorical_cols].replace(
-                        -1, 0, inplace=True
-                    )
+                    # self.test.loc[:, self.config.categorical_cols] = self.test.loc[:, self.config.categorical_cols].replace(
+                    #     -1, 0
+                    # )
             # TODO Add date encoding for date_cols and add to categorical columns
 
     def train_dataloader(self) -> DataLoader:

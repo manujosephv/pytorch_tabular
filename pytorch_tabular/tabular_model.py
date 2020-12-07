@@ -106,7 +106,7 @@ class TabularModel(pl.LightningModule):
         self.metrics = []
         task_module = getattr(pl.metrics, self.hparams.task)
         for metric in self.hparams.metrics:
-            self.metrics.append(getattr(task_module, metric)())
+            self.metrics.append(getattr(task_module, metric)().to("cpu" if self.hparams.gpus==0 else 'cuda'))
 
     def calculate_loss(self, y, y_hat, tag):
         if self.hparams.output_dim > 1:

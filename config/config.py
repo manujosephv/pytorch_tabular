@@ -1,7 +1,8 @@
 from dataclasses import MISSING, dataclass, field
-from typing import Dict, List, Optional
-
+from typing import Dict, List, Optional, Union
+import os
 from omegaconf import OmegaConf
+from omegaconf.dictconfig import DictConfig
 
 
 def _read_yaml(filename):
@@ -245,7 +246,7 @@ class TrainerConfig:
     """
 
     batch_size: int = field(
-        default=62, metadata={"help": "Number of samples in each batch of training"}
+        default=64, metadata={"help": "Number of samples in each batch of training"}
     )
     fast_dev_run: bool = field(
         default=False, metadata={"help": "Quick Debug Run of Val"}
@@ -405,35 +406,6 @@ class ExperimentConfig:
         metadata={"help": "step count between logging of gradients and parameters."},
     )
 
-    _exp_version_manager: str = field(
-        default="config/exp_version_manager.yml",
-        metadata={
-            "help": "The location of the yaml file which manages versions of experiments"
-        },
-    )
-    exp_version_manager: dict = field(init=False)
-
-    def __post_init__(self):
-        self.exp_version_manager = _read_yaml(self._exp_version_manager)
-
-    def generate_yaml_config(self, filename: str = "config/experiment_config.yml"):
-        import yaml
-
-        config_dict = vars(self)
-        with open(filename, "w") as file:
-            yaml.safe_dump(config_dict, file)
-
-    def update_versions(self, name, version):
-        self.exp_version_manager[name] = version
-        import yaml
-
-        with open(self._exp_version_manager, "w") as file:
-            yaml.safe_dump(self.exp_version_manager, file)
-
-    @staticmethod
-    def read_from_yaml(filename: str = "config/experiment_config.yml"):
-        return ExperimentConfig(**_read_yaml(filename))
-
 
 @dataclass
 class OptimizerConfig:
@@ -483,6 +455,24 @@ class OptimizerConfig:
             config["lr_scheduler_params"] = {}
         return OptimizerConfig(**config)
 
+class ExperimentRunManager:
+    def __init__(self, exp_version_manager="config/exp_version_manager.yml") -> None:
+        super().__init__()
+        self._exp_version_manager = exp_version_manager
+        if os.path.exists(exp_version_manager):
+            self.exp_version_manager = OmegaConf.load(exp_version_manager)
+        else:
+            self.exp_version_manager = OmegaConf.create({})    
+    
+    def update_versions(self, name):
+        if name in self.exp_version_manager.keys():
+            uid = self.exp_version_manager[name] + 1
+        else:
+            uid = 1
+        self.exp_version_manager[name] = uid
+        with open(self._exp_version_manager, "w") as file:
+            OmegaConf.save(config=self.exp_version_manager, f=file)
+        return uid
 
 # conf = OmegaConf.structured(ModelConfig(task='regression', loss="custom"))
 # print(OmegaConf.to_yaml(conf))
@@ -497,7 +487,8 @@ class OptimizerConfig:
 #             help_str += f'Choices are: {" ".join([str(ch) for ch in atr.metadata["choices"]])}'
 #         doc_str+=f'\n\t\t{key} ({type}): {help_str}'
 
-print(doc_str)
+# print(doc_str)
+
 # config = Config()
 # config.parse_args(["--overfit-batches","10"])
 # config.generate_yaml_config()
