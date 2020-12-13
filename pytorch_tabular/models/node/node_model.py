@@ -108,7 +108,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
             )
 
     def calculate_loss(self, y, y_hat, tag):
-        if (self.hparams.task =="regression") and (self.hparams.output_dim > 1):
+        if self.hparams.output_dim > 1:
             losses = []
             for i in range(self.hparams.output_dim):
                 _loss = self.loss(y_hat[:, i], y[:, i])
@@ -123,7 +123,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
                 )
             computed_loss = torch.stack(losses, dim=0).sum()
         else:
-            computed_loss = self.loss(y_hat, y.squeeze())
+            computed_loss = self.loss(y_hat, y)
         self.log(
             f"{tag}_loss",
             computed_loss,
@@ -137,7 +137,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
         for metric, metric_str in zip(self.metrics, self.hparams.metrics):
-            if (self.hparams.task =="regression") and (self.hparams.output_dim > 1):
+            if self.hparams.output_dim > 1:
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     _metric = metric(y_hat[:, i], y[:, i])
@@ -152,7 +152,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
-                avg_metric = metric(y_hat, y.squeeze())
+                avg_metric = metric(y_hat, y)
             metrics.append(avg_metric)
             self.log(
                 f"{tag}_{metric_str}",

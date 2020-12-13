@@ -14,6 +14,7 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 import pytorch_tabular.models as models
 from pytorch_tabular.models.category_embedding import CategoryEmbeddingModel
 import pytorch_lightning as pl
+import numpy as np
 
 
 class TabularModel:
@@ -50,7 +51,9 @@ class TabularModel:
                 OmegaConf.to_container(optimizer_config),
             )
             self._setup_experiment_tracking()
-        self.model_callable = getattr(getattr(models, model_config._module_src),model_config._model_name)
+        self.model_callable = getattr(
+            getattr(models, model_config._module_src), model_config._model_name
+        )
 
     def _get_run_name_uid(self):
         name = self.config.run_name if self.config.run_name else f"{self.config.task}"
@@ -144,11 +147,18 @@ class TabularModel:
         predictions = []
         for sample in inference_dataloader:
             for k, v in sample.items():
-                sample[k] = v.to("cpu" if self.config.gpu==0 else 'cuda')
+                sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
             y_hat = self.model(sample)
-            predictions.append(y_hat)
-        predictions = torch.cat(predictions, dim=0).detach().cpu().numpy()
+            predictions.append(y_hat.detach().cpu())
+        predictions = torch.cat(predictions, dim=0).numpy()
         pred_df = test.copy()
-        for i, target_col in enumerate(self.config.target):
-            pred_df[f"{target_col}_prediction"] = predictions[:, i]
+        if self.config.task == "regression":
+            for i, target_col in enumerate(self.config.target):
+                pred_df[f"{target_col}_prediction"] = predictions[:, i]
+        elif self.config.task == "classification":
+            for i, class_ in enumerate(self.datamodule.label_encoder.classes_):
+                pred_df[f"{class_}_probability"] = predictions[:, i]
+            pred_df[f"prediction"] = self.datamodule.label_encoder.inverse_transform(
+                np.argmax(predictions, axis=1)
+            )
         return pred_df

@@ -2,6 +2,7 @@ from dataclasses import MISSING, dataclass, field
 from typing import List, Optional, Tuple
 import os
 from omegaconf import OmegaConf
+
 # from omegaconf.dictconfig import DictConfig
 
 
@@ -59,7 +60,10 @@ class DataConfig:
         },
     )
     date_cols: List = field(
-        default_factory=lambda: [], metadata={"help": "(Column names, Freq) tuples of the date fields. For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}"}
+        default_factory=lambda: [],
+        metadata={
+            "help": "(Column names, Freq) tuples of the date fields. For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}"
+        },
     )
 
     encode_date_cols: bool = field(
@@ -75,16 +79,29 @@ class DataConfig:
     target_transform: Optional[str] = field(
         default=None,
         metadata={
-            "help":"Whether or not to transform the target before modelling. By default it is turned off",
-            "choices": [None,"yeo-johnson", "box-cox", "log1p"]
-        }
+            "help": "Whether or not to transform the target before modelling. By default it is turned off",
+            "choices": [None, "yeo-johnson", "box-cox", "log1p"],
+        },
     )
     continuous_feature_transform: Optional[str] = field(
         default=None,
         metadata={
-            "help":"Whether or not to transform the features before modelling. By default it is turned off.",
-            "choices": [None,"yeo-johnson", "box-cox", "quantile"]
+            "help": "Whether or not to transform the features before modelling. By default it is turned off.",
+            "choices": [None, "yeo-johnson", "box-cox", "quantile"],
+        },
+    )
+    normalize_continuous_features: bool = field(
+        default=True,
+        metadata={
+            "help": "Flag to normalize the input features(continuous)"
         }
+
+    )
+    quantile_noise: int = field(
+        default=0,
+        metadata={
+            "help": "If specified fits QuantileTransformer on data with added gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable. Please not that this transformation does NOT apply gaussian noise to the resulting data, the noise is only applied for QuantileTransformer"
+        },
     )
     num_workers: Optional[int] = field(
         default=0,
@@ -95,7 +112,7 @@ class DataConfig:
 
     categorical_dim: int = field(init=False)
     continuous_dim: int = field(init=False)
-    output_dim: int = field(init=False)
+    # output_dim: int = field(init=False)
 
     def __post_init__(self):
         assert (
@@ -108,7 +125,7 @@ class DataConfig:
         self.continuous_dim = (
             len(self.continuous_cols) if self.continuous_cols is not None else 0
         )
-        self.output_dim = len(self.target)
+        # self.output_dim = len(self.target)
 
 
 @dataclass

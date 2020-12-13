@@ -8,7 +8,7 @@ from .category_encoders import OrdinalEncoder
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
 import re
-from sklearn.preprocessing import PowerTransformer, QuantileTransformer
+from sklearn.preprocessing import PowerTransformer, QuantileTransformer, StandardScaler, LabelEncoder
 
 
 class TabularDatamodule(pl.LightningDataModule):
@@ -63,9 +63,18 @@ class TabularDatamodule(pl.LightningDataModule):
         self.target = config.target
         self.batch_size = config.batch_size
         self.config = config
-        self.update_config()
+        # self.update_config()
 
     def update_config(self):
+        if self.config.task == "regression":
+            self.config.output_dim = len(self.config.target)
+        elif self.config.task == "classification":
+            if len(self.config.target) > 1:
+                raise NotImplementedError(
+                    "Multi-Target Classification is not implemented."
+                )
+            self.config.output_dim = len(self.train[self.config.target[0]].unique())
+
         self.config.categorical_cardinality = [
             int(self.train[col].fillna("NA").nunique()) + 1
             for col in self.config.categorical_cols
@@ -92,12 +101,25 @@ class TabularDatamodule(pl.LightningDataModule):
                 data = self.categorical_encoder.fit_transform(data)
             else:
                 data = self.categorical_encoder.transform(data)
+        # Normalizing Continuous Columns
+        if self.config.normalize_continuous_features:
+            if stage == "fit":
+                self.scaler = StandardScaler()
+                data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
+                    data.loc[:, self.config.continuous_cols]
+                )
+            else:
+                data.loc[:, self.config.continuous_cols] = self.scaler.transform(
+                    data.loc[:, self.config.continuous_cols]
+                )
+        # Transforming Continuous Columns
         if self.config.continuous_feature_transform is not None:
             if stage == "fit":
                 transform = self.CONTINUOUS_TRANSFORMS[
                     self.config.continuous_feature_transform
                 ]
                 self.continuous_transform = transform["callable"](**transform["params"])
+                # TODO implement quantile noise
                 data.loc[
                     :, self.config.continuous_cols
                 ] = self.continuous_transform.fit_transform(
@@ -109,6 +131,12 @@ class TabularDatamodule(pl.LightningDataModule):
                 ] = self.continuous_transform.transform(
                     data.loc[:, self.config.continuous_cols]
                 )
+        if self.config.task == "classification":
+            if stage=="fit":
+                self.label_encoder = LabelEncoder()
+                data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
+            else:
+                data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
         return data, added_features
 
     def setup(self, stage: Optional[str] = None):
@@ -305,6 +333,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def train_dataloader(self) -> DataLoader:
         """ Function that loads the train set. """
         dataset = TabularDataset(
+            task = self.config.task,
             data=self.train,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
@@ -317,6 +346,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         """ Function that loads the validation set. """
         dataset = TabularDataset(
+            task = self.config.task,
             data=self.validation,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
@@ -330,6 +360,7 @@ class TabularDatamodule(pl.LightningDataModule):
         """ Function that loads the validation set. """
         if self.test is not None:
             dataset = TabularDataset(
+                task = self.config.task,
                 data=self.test,
                 categorical_cols=self.categorical_cols,
                 continuous_cols=self.continuous_cols,
@@ -350,6 +381,7 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
 
         dataset = TabularDataset(
+            task = self.config.task,
             data=df,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
@@ -367,6 +399,7 @@ class TabularDataset(Dataset):
     def __init__(
         self,
         data: pd.DataFrame,
+        task: str, 
         continuous_cols: List[str] = None,
         categorical_cols: List[str] = None,
         target: List[str] = None,
@@ -375,21 +408,25 @@ class TabularDataset(Dataset):
 
         Args:
             data (pd.DataFrame): Pandas DataFrame to load during training
+            task (str): Whether it is a classification or regression task. If classification, it returns a LongTensor as target
             continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.
             categorical_cols (List[str], optional): A list of names of categorical columns.
             These columns must be ordinal encoded beforehand. Defaults to None.
             target (List[str], optional): A list of strings with target column name(s). Defaults to None.
         """
 
+        self.task = task
         self.n = data.shape[0]
 
         if target:
             self.y = data[target].astype(np.float32).values
             if isinstance(target, str):
-                self.y = self.y.reshape(-1, 1)
+                self.y = self.y.reshape(-1, 1)#.astype(np.int64)
         else:
-            self.y = np.zeros((self.n, 1))
+            self.y = np.zeros((self.n, 1))#.astype(np.int64)
 
+        if task == 'classification':
+            self.y = self.y.astype(np.int64)
         self.categorical_cols = categorical_cols if categorical_cols else []
         self.continuous_cols = continuous_cols if continuous_cols else []
 
