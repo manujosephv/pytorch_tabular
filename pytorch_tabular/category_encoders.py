@@ -17,7 +17,6 @@ NAN_CATEGORY = 0
 
 
 class BaseEncoder(object):
-
     def __init__(self, cols, handle_unseen, min_samples, imputed):
         self.cols = cols
         self.handle_unseen = handle_unseen
@@ -35,18 +34,22 @@ class BaseEncoder(object):
         :rtype: pandas.DataFrame
         """
         if not self._mapping:
-            raise ValueError('`fit` method must be called before `transform`.')
+            raise ValueError("`fit` method must be called before `transform`.")
         assert all(c in X.columns for c in self.cols)
 
         X_encoded = X.copy(deep=True)
         for col, mapping in self._mapping.items():
-            X_encoded.loc[:, col] = X_encoded[col].fillna(NAN_CATEGORY).map(mapping['value'])
+            X_encoded.loc[:, col] = (
+                X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
+            )
 
-            if self.handle_unseen == 'impute':
+            if self.handle_unseen == "impute":
                 X_encoded[col].fillna(self._imputed, inplace=True)
-            elif self.handle_unseen == 'error':
+            elif self.handle_unseen == "error":
                 if np.unique(X_encoded[col]).shape[0] > mapping.shape[0]:
-                    raise ValueError('Unseen categories found in `{}` column.'.format(col))
+                    raise ValueError(
+                        "Unseen categories found in `{}` column.".format(col)
+                    )
 
         return X_encoded
 
@@ -64,7 +67,9 @@ class BaseEncoder(object):
 
     def _input_check(self, name, value, options):
         if value not in options:
-            raise ValueError('Wrong input: {} parameter must be in {}'.format(name, options))
+            raise ValueError(
+                "Wrong input: {} parameter must be in {}".format(name, options)
+            )
 
     def _before_fit_check(self, X, y):
         # Checking columns to encode
@@ -73,17 +78,19 @@ class BaseEncoder(object):
         else:
             assert all(c in X.columns for c in self.cols)
         # Checking input, depending on encoder type
-        assert self.__class__.__name__ == 'OrdinalEncoder' or y is not None
+        assert self.__class__.__name__ == "OrdinalEncoder" or y is not None
         if y is not None:
             assert X.shape[0] == y.shape[0]
 
     def save_as_object_file(self, path):
         if not self._mapping:
-            raise ValueError('`fit` method must be called before `save_as_object_file`.')
-        pickle.dump(self.__dict__, open(path, 'wb'))
+            raise ValueError(
+                "`fit` method must be called before `save_as_object_file`."
+            )
+        pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):
-        for k, v in pickle.load(open(path, 'rb')).items():
+        for k, v in pickle.load(open(path, "rb")).items():
             setattr(self, k, v)
 
 
@@ -92,7 +99,7 @@ class OrdinalEncoder(BaseEncoder):
     Target Encoder for categorical features.
     """
 
-    def __init__(self, cols=None, handle_unseen='impute'):
+    def __init__(self, cols=None, handle_unseen="impute"):
         """Instantiation
         :param [str] cols: list of columns to encode, or None (then all dataset columns will be encoded at fitting time)
         :param str handle_unseen:
@@ -101,7 +108,7 @@ class OrdinalEncoder(BaseEncoder):
             'impute' - impute new categories to a predefined value, which is same as NAN_CATEGORY
         :return: None
         """
-        self._input_check('handle_unseen', handle_unseen, ['error', 'ignore','impute'])
+        self._input_check("handle_unseen", handle_unseen, ["error", "ignore", "impute"])
         super(OrdinalEncoder, self).__init__(cols, handle_unseen, 1, NAN_CATEGORY)
 
     def fit(self, X, y=None):
@@ -111,8 +118,10 @@ class OrdinalEncoder(BaseEncoder):
         """
         self._before_fit_check(X, y)
         for col in self.cols:
-            map = pd.Series(pd.unique(X[col].fillna(NAN_CATEGORY)), name=col)\
-                .reset_index()\
-                .rename(columns={'index': 'value'})
-            map['value'] +=1
+            map = (
+                pd.Series(pd.unique(X[col].fillna(NAN_CATEGORY)), name=col)
+                .reset_index()
+                .rename(columns={"index": "value"})
+            )
+            map["value"] += 1
             self._mapping[col] = map.set_index(col)

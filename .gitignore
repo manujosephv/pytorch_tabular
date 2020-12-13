@@ -141,3 +141,4 @@ cython_debug/
 data/
 wandb/
 saved_models/
+output/

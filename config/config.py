@@ -1,8 +1,8 @@
 from dataclasses import MISSING, dataclass, field
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Tuple
 import os
 from omegaconf import OmegaConf
-from omegaconf.dictconfig import DictConfig
+# from omegaconf.dictconfig import DictConfig
 
 
 def _read_yaml(filename):
@@ -43,14 +43,15 @@ class ModelConfig:
         dropout (float): probability of an classification element to be zeroed.
         use_batch_norm (bool): Whether to use batch normalization in the classification head
         initialization (str): Initialization scheme for the linear layersChoices are: kaiming xavier random
-        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Typically used for Regression problems. If left empty, will not apply any restrictions     
+        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Typically used for Regression problems. If left empty, will not apply any restrictions
         loss (Union[str, NoneType]): The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
         metrics (Union[List[str], NoneType]): the list of metrics you need to track during training. The metrics should be one of the metrics mplemented in PyTorch Lightning. By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
-    
+
     Raises:
         NotImplementedError: [description]
     """
+
     task: str = field(
         # default="regression",
         metadata={
@@ -107,6 +108,7 @@ class ModelConfig:
             "choices": ["kaiming", "xavier", "random"],
         },
     )
+    # TODO
     target_range: Optional[List] = field(
         default_factory=list,
         metadata={
@@ -126,10 +128,8 @@ class ModelConfig:
         },
     )
     metrics_params: Optional[List] = field(
-        default_factory= lambda : {},
-        metadata={
-            "help":"The parameters to be passed to the Metrics initialized"
-        }
+        default_factory=lambda: {},
+        metadata={"help": "The parameters to be passed to the Metrics initialized"},
     )
 
     def __post_init__(self):
@@ -147,7 +147,9 @@ class ModelConfig:
             raise NotImplementedError(
                 f"{self.task} is not a valid task. Should be one of {self.__dataclass_fields__['task'].metadata['choices']}"
             )
-        assert len(self.metrics) == len(self.metrics_params), "metrics and metric_params should have same length"
+        assert len(self.metrics) == len(
+            self.metrics_params
+        ), "metrics and metric_params should have same length"
 
 
 @dataclass
@@ -180,7 +182,7 @@ class DataConfig:
         },
     )
     date_cols: List = field(
-        default_factory=list, metadata={"help": "Column names of the date fields"}
+        default_factory=lambda: [], metadata={"help": "(Column names, Freq) tuples of the date fields. For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}"}
     )
 
     encode_date_cols: bool = field(
@@ -193,14 +195,28 @@ class DataConfig:
             "help": "Percentage of Training rows to keep aside as validation. Used only if Validation Data is not given separately"
         },
     )
+    target_transform: Optional[str] = field(
+        default=None,
+        metadata={
+            "help":"Whether or not to transform the target before modelling. By default it is turned off",
+            "choices": [None,"yeo-johnson", "box-cox", "log1p"]
+        }
+    )
+    continuous_feature_transform: Optional[str] = field(
+        default=None,
+        metadata={
+            "help":"Whether or not to transform the features before modelling. By default it is turned off.",
+            "choices": [None,"yeo-johnson", "box-cox", "quantile"]
+        }
+    )
     num_workers: Optional[int] = field(
         default=0,
         metadata={
             "help": "The number of workers used for data loading. For windows always set to 0"
         },
     )
-    categorical_dim: int = field(init=False)
 
+    categorical_dim: int = field(init=False)
     continuous_dim: int = field(init=False)
     output_dim: int = field(init=False)
 
@@ -455,6 +471,7 @@ class OptimizerConfig:
             config["lr_scheduler_params"] = {}
         return OptimizerConfig(**config)
 
+
 class ExperimentRunManager:
     def __init__(self, exp_version_manager="config/exp_version_manager.yml") -> None:
         super().__init__()
@@ -462,8 +479,8 @@ class ExperimentRunManager:
         if os.path.exists(exp_version_manager):
             self.exp_version_manager = OmegaConf.load(exp_version_manager)
         else:
-            self.exp_version_manager = OmegaConf.create({})    
-    
+            self.exp_version_manager = OmegaConf.create({})
+
     def update_versions(self, name):
         if name in self.exp_version_manager.keys():
             uid = self.exp_version_manager[name] + 1
@@ -473,6 +490,7 @@ class ExperimentRunManager:
         with open(self._exp_version_manager, "w") as file:
             OmegaConf.save(config=self.exp_version_manager, f=file)
         return uid
+
 
 # conf = OmegaConf.structured(ModelConfig(task='regression', loss="custom"))
 # print(OmegaConf.to_yaml(conf))
