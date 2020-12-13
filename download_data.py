@@ -8,10 +8,12 @@ from config.config import (
     OptimizerConfig,
     TrainerConfig,
 )
+from pytorch_tabular.models.category_embedding.config import CategoryEmbeddingModelConfig
+from pytorch_tabular.models.category_embedding.category_embedding_model import CategoryEmbeddingModel
 import pandas as pd
 from omegaconf import OmegaConf
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.tabular_model import CategoryEmbeddingModel, TabularModel
+from pytorch_tabular.tabular_model import TabularModel
 import pytorch_lightning as pl
 
 
@@ -36,7 +38,7 @@ data_config = DataConfig(
         categorical_cols=["HouseAgeBin"],
         continuous_feature_transform="yeo-johnson"
     )
-model_config = ModelConfig(task="regression")
+model_config = CategoryEmbeddingModelConfig(task="regression")
 trainer_config = TrainerConfig()
 experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
@@ -53,4 +55,4 @@ tabular_model.fit(train=train, test=test)
 result = tabular_model.evaluate(test)
 print(result)
 pred_df = tabular_model.predict(test)
-pred_df.to_csv("temp2.csv")
+pred_df.to_csv("output/temp2.csv")

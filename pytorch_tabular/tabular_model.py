@@ -11,7 +11,8 @@ from config.config import (
 import pandas as pd
 from omegaconf import OmegaConf
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.models.category_embedding_model import CategoryEmbeddingModel
+import pytorch_tabular.models as models
+from pytorch_tabular.models.category_embedding import CategoryEmbeddingModel
 import pytorch_lightning as pl
 
 
@@ -49,6 +50,7 @@ class TabularModel:
                 OmegaConf.to_container(optimizer_config),
             )
             self._setup_experiment_tracking()
+        self.model_callable = getattr(getattr(models, model_config._module_src),model_config._model_name)
 
     def _get_run_name_uid(self):
         name = self.config.run_name if self.config.run_name else f"{self.config.task}"
@@ -110,7 +112,7 @@ class TabularModel:
         val_loader = self.datamodule.val_dataloader()
         # Fetching the config as some data specific configs have been added in the datamodule
         config = self.datamodule.config
-        self.model = CategoryEmbeddingModel(config)
+        self.model = self.model_callable(config)
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(
                 self.model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
