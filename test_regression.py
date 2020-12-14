@@ -43,14 +43,14 @@ data_config = DataConfig(
     categorical_cols=["HouseAgeBin"],
     continuous_feature_transform="yeo-johnson",
 )
-model_config = CategoryEmbeddingModelConfig(
-    task="regression",
-    target_range=[
-        dataset.frame[dataset.target_names].min().item(),
-        dataset.frame[dataset.target_names].max().item(),
-    ],
-)
-# model_config = NodeConfig(task="regression", depth=2)
+# model_config = CategoryEmbeddingModelConfig(
+#     task="regression",
+#     target_range=[
+#         dataset.frame[dataset.target_names].min().item(),
+#         dataset.frame[dataset.target_names].max().item(),
+#     ],
+# )
+model_config = NodeConfig(task="regression", depth=2)
 trainer_config = TrainerConfig()
 experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
