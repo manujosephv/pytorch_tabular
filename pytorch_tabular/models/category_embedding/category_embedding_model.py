@@ -108,7 +108,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
             )
 
     def calculate_loss(self, y, y_hat, tag):
-        if (self.hparams.task =="regression") and (self.hparams.output_dim > 1):
+        if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
             losses = []
             for i in range(self.hparams.output_dim):
                 _loss = self.loss(y_hat[:, i], y[:, i])
@@ -137,7 +137,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
         for metric, metric_str in zip(self.metrics, self.hparams.metrics):
-            if (self.hparams.task =="regression") and (self.hparams.output_dim > 1):
+            if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     _metric = metric(y_hat[:, i], y[:, i])
@@ -152,7 +152,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
-                avg_metric = metric(y_hat, y.squeeze())
+                avg_metric = metric(y_hat.squeeze(), y.squeeze())
             metrics.append(avg_metric)
             self.log(
                 f"{tag}_{metric_str}",
@@ -186,6 +186,14 @@ class CategoryEmbeddingModel(pl.LightningModule):
                 x = continuous_data
 
         x = self.linear_layers(x)
+        if (
+            (self.hparams.task == "regression")
+            and (self.hparams.target_range is not None)
+            and (len(self.hparams.target_range) == 2)
+            and (len(self.hparams.output_dim==1))
+        ):
+            y_min, y_max = self.hparams.target_range
+            x = y_min + nn.Sigmoid()(x) * (y_max - y_min)
         return x
 
     def training_step(self, batch, batch_idx):

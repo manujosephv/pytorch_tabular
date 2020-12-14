@@ -8,8 +8,12 @@ from config.config import (
     OptimizerConfig,
     TrainerConfig,
 )
-from pytorch_tabular.models.category_embedding.config import CategoryEmbeddingModelConfig
-from pytorch_tabular.models.category_embedding.category_embedding_model import CategoryEmbeddingModel
+from pytorch_tabular.models.category_embedding.config import (
+    CategoryEmbeddingModelConfig,
+)
+from pytorch_tabular.models.category_embedding.category_embedding_model import (
+    CategoryEmbeddingModel,
+)
 import pandas as pd
 from omegaconf import OmegaConf
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
@@ -26,19 +30,25 @@ test = dataset.frame[dataset.frame.index.isin(test_idx)]
 train = dataset.frame[~dataset.frame.index.isin(test_idx)]
 
 data_config = DataConfig(
-        target=dataset.target_names + ["MedInc"],
-        continuous_cols=[
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-        categorical_cols=["HouseAgeBin"],
-        continuous_feature_transform="yeo-johnson"
-    )
-model_config = CategoryEmbeddingModelConfig(task="regression")
+    target=dataset.target_names,  # + ["MedInc"],
+    continuous_cols=[
+        "AveRooms",
+        "AveBedrms",
+        "Population",
+        "AveOccup",
+        "Latitude",
+        "Longitude",
+    ],
+    categorical_cols=["HouseAgeBin"],
+    continuous_feature_transform="yeo-johnson",
+)
+model_config = CategoryEmbeddingModelConfig(
+    task="regression",
+    target_range=[
+        dataset.frame[dataset.target_names].min().item(),
+        dataset.frame[dataset.target_names].max().item(),
+    ],
+)
 trainer_config = TrainerConfig()
 experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()

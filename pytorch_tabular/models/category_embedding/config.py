@@ -73,9 +73,9 @@ class CategoryEmbeddingModelConfig(ModelConfig):
             "choices": ["kaiming", "xavier", "random"],
         },
     )
-    # TODO
+    # TODO  Currently only works for single regression tasks
     target_range: Optional[List] = field(
-        default_factory=list,
+        default=None,
         metadata={
             "help": "The range in which we should limit the output variable. Typically used for Regression problems. If left empty, will not apply any restrictions"
         },

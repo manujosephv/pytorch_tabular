@@ -32,6 +32,7 @@ class TabularModel:
         trainer_config = OmegaConf.structured(trainer_config)
         optimizer_config = OmegaConf.structured(optimizer_config)
         self.exp_manager = ExperimentRunManager()
+        self.name, self.uid = self._get_run_name_uid()
         if experiment_config is None:
             self.track_experiment = False
             self.config = OmegaConf.merge(
@@ -61,14 +62,13 @@ class TabularModel:
         return name, uid
 
     def _setup_experiment_tracking(self):
-        name, uid = self._get_run_name_uid()
         if self.config.log_target == "tensorboard":
             self.logger = pl.loggers.TensorBoardLogger(
-                name=name, save_dir="tensorboard_logs", version=uid
+                name=self.name, save_dir="tensorboard_logs", version=self.uid
             )
         elif self.config.log_target == "wandb":
             self.logger = pl.loggers.WandbLogger(
-                name=f"{name}_{uid}", project=self.config.project_name, offline=False
+                name=f"{self.name}_{self.uid}", project=self.config.project_name, offline=False
             )
         else:
             raise NotImplementedError(
@@ -76,7 +76,6 @@ class TabularModel:
             )
 
     def _prepare_callbacks(self):
-        name, uid = self._get_run_name_uid()
         self.config.checkpoint_callback = True if self.config.checkpoints else False
         callbacks = []
         if self.config.early_stopping is not None:
@@ -89,7 +88,7 @@ class TabularModel:
             )
             callbacks.append(early_stop_callback)
         if self.config.checkpoints:
-            ckpt_name = f"{name}-{uid}"
+            ckpt_name = f"{self.name}-{self.uid}"
             ckpt_name = ckpt_name.replace(" ", "_") + "_{epoch}-{valid_loss:.2f}"
             model_checkpoint = pl.callbacks.ModelCheckpoint(
                 monitor=self.config.checkpoints,

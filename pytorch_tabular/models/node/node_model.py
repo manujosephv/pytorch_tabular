@@ -5,20 +5,19 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from .architecture_blocks import DenseODSTBlock
+
+# from .utils import sparsemax, sparsemoid, entmax15, entmoid15
+from .. import utils as utils
 
 logger = logging.getLogger(__name__)
 
 
-class CategoryEmbeddingModel(pl.LightningModule):
+class NODEModel(pl.LightningModule):
     def __init__(self, config: DictConfig):
         super().__init__()
         self.save_hyperparameters(config)
         # The concatenated output dim of the embedding layer
-        self.embedding_cat_dim = sum([y for x, y in self.hparams.embedding_dims])
-        self.continuous_dim = (
-            self.hparams.continuous_dim
-        )  # auto-calculated by the calling script
-
         self._build_network()
         self._setup_loss()
         self._setup_metrics()
@@ -49,45 +48,30 @@ class CategoryEmbeddingModel(pl.LightningModule):
         elif self.hparams.initialization == "random":
             nn.init.normal_(layer)
 
-    def _linear_dropout_bn(self, in_units, out_units, activation, dropout):
-        layers = [nn.Linear(in_units, out_units), activation()]
-        self._initialize_layers(layers[0])
-        if dropout != 0:
-            layers.append(nn.Dropout(dropout))
-        if self.hparams.use_batch_norm:
-            layers.append(nn.BatchNorm1d(num_features=out_units))
-        return layers
-
     def _build_network(self):
-        activation = getattr(nn, self.hparams.activation)
-        # Embedding layers
-
-        self.embedding_layers = nn.ModuleList(
-            [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
+        self.dense_block = DenseODSTBlock(
+            input_dim=self.config.continuous_dim + self.config.categorical_dim,
+            num_trees=self.config.num_trees,
+            num_layers=self.config.num_layers,
+            tree_dim=self.config.tree_dim,
+            max_features=self.config.max_features,
+            input_dropout=self.config.input_dropout,
+            depth=self.config.depth,
+            choice_function=getattr(utils, self.config.choice_function),
+            bin_function=getattr(utils, self.config.bin_function),
+            initialize_response_=getattr(
+                nn.init, self.config.initialize_response + "_"
+            ),
+            initialize_selection_logits_=getattr(
+                nn.init, self.config.initialize_selection_logits + "_"
+            ),
+            threshold_init_beta=self.config.threshold_init_beta,
+            threshold_init_cutoff=self.config.threshold_init_cutoff,
         )
-        # Continuous Layers
-        if self.hparams.batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(self.continuous_dim)
-        # Linear Layers
-        layers = []
-        _curr_units = self.embedding_cat_dim + self.continuous_dim
-        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
-            layers.append(nn.Dropout(self.hparams.embedding_dropout))
-        for units in self.hparams.layers.split("-"):
-            layers.extend(
-                self._linear_dropout_bn(
-                    _curr_units,
-                    int(units),
-                    activation,
-                    self.hparams.dropout,
-                )
-            )
-            _curr_units = int(units)
-        # Adding the last layer
-        layers.append(
-            nn.Linear(_curr_units, self.hparams.output_dim)
-        )  # output_dim auto-calculated from other config
-        self.linear_layers = nn.Sequential(*layers)
+        # average first n channels of every tree, where n is the number of output targets for regression 
+        # and number of classes for classification
+        self.output_response = utils.Lambda(lambda x: x[..., self.config.output_dim].mean(dim=-1))
+
 
     def _setup_loss(self):
         try:
@@ -165,27 +149,8 @@ class CategoryEmbeddingModel(pl.LightningModule):
         return metrics
 
     def forward(self, x: Dict):
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
-        if self.embedding_cat_dim != 0:
-            x = []
-            for i, embedding_layer in enumerate(self.embedding_layers):
-                x.append(embedding_layer(categorical_data[:, i]))
-            # x = [
-            #     embedding_layer(categorical_data[:, i])
-            #     for i, embedding_layer in enumerate(self.embedding_layers)
-            # ]
-            x = torch.cat(x, 1)
-
-        if self.continuous_dim != 0:
-            if self.hparams.batch_norm_continuous_input:
-                continuous_data = self.normalizing_batch_norm(continuous_data)
-
-            if self.embedding_cat_dim != 0:
-                x = torch.cat([x, continuous_data], 1)
-            else:
-                x = continuous_data
-
-        x = self.linear_layers(x)
+        x = self.dense_block(x)
+        x = self.output_response(x)
         return x
 
     def training_step(self, batch, batch_idx):

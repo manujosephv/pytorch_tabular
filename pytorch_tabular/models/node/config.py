@@ -28,24 +28,106 @@ class NodeConfig(ModelConfig):
         NotImplementedError: [description]
     """
 
-    layers: str = field(
-        default="128-64-32",
+    num_layers: int = field(
+        default=1,
         metadata={
-            "help": "Hypher-separated number of layers and units in the classification head. eg. 32-64-32."
+            "help": "Number of Oblivious Decision Tree Layers in the Dense Architecture"
         },
     )
-    batch_norm_continuous_input: bool = field(
-        default=True,
+    num_trees: int = field(
+        default=2048,
         metadata={
-            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer"
+            "help": "Number of Oblivious Decision Trees in each layer"
         },
     )
-    activation: str = field(
-        default="ReLU",
+    #TODO
+    tree_dim: int = field(
+        default=1,
         metadata={
-            "help": "The activation type in the classification head. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
+            "help": "Not sure what it is."
         },
     )
+    depth: int = field(
+        default=6,
+        metadata={
+            "help": "The depth of the individual Oblivious Decision Trees"
+        },
+    )
+    choice_function: str = field(
+        default="entmax15",
+        metadata={"help": "Generates a sparse probability distribution to be used as feature weights(aka, soft feature selection)",
+        "choices": ["entmax15","sparsemax"]}
+    )
+    bin_function: str = field(
+        default="entmoid15",
+        metadata={"help": "Generates a sparse probability distribution to be used as tree leaf weights",
+        "choices": ["entmoid15","sparsemoid"]}
+    )
+    max_features: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "If not None, sets a max limit on the number of features to be carried forward from layer to layer in the Dense Architecture"
+        },
+    )
+    input_dropout: float = field(
+        default=0.0,
+        metadata={
+            "help": "Dropout to be applied to the inputs between layers of the Dense Architecture"
+        },
+    )
+    initialize_response: str = field(
+        default="normal",
+        metadata={
+            "help": "Initializing the response variable in the Oblivious Decision Trees. By default, it is a standard normal distribution",
+            "choices": ["normal", "uniform"],
+        },
+    )
+    initialize_selection_logits: str = field(
+        default="uniform",
+        metadata={
+            "help": "Initializing the feature selector. By default is a uniform distribution across the features",
+            "choices": ["uniform", "normal"],
+        },
+    )
+    threshold_init_beta: float = field(
+        default=1.0,
+        metadata={
+            "help": """
+                Used in the Data-aware initialization of thresholds where the threshold is initialized randomly
+                (with a beta distribution) to feature values in the first batch.
+                It initializes threshold to a q-th quantile of data points. 
+                where q ~ Beta(:threshold_init_beta:, :threshold_init_beta:)
+                If this param is set to 1, initial thresholds will have the same distribution as data points
+                If greater than 1 (e.g. 10), thresholds will be closer to median data value
+                If less than 1 (e.g. 0.1), thresholds will approach min/max data values.
+            """
+        },
+    )
+    threshold_init_cutoff: float = field(
+        default=1.0,
+        metadata={
+            "help": """
+                Used in the Data-aware initialization of scales(used in the scaling ODTs).
+                It is initialized in such a way that all the samples in the first batch belong to the linear
+                region of the entmoid/sparsemoid(bin-selectors) and thereby have non-zero gradients
+                Threshold log-temperatures initializer, \in (0, inf)
+                By default(1.0), log-temperatures are initialized in such a way that all bin selectors
+                end up in the linear region of sparse-sigmoid. The temperatures are then scaled by this parameter.
+                Setting this value > 1.0 will result in some margin between data points and sparse-sigmoid cutoff value
+                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid region
+                For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
+                Setting this value > 1.0 will result in a margin between data points and sparse-sigmoid cutoff value
+                All points will be between (0.5 - 0.5 / threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
+            """
+        },
+    )
+    embed_categorical: bool = field(
+        default=False,
+        metadata={
+            "help":"Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder"
+        }
+    )
+    #TODO To implement later
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
@@ -56,35 +138,11 @@ class NodeConfig(ModelConfig):
         default=0.5,
         metadata={"help": "probability of an embedding element to be zeroed."},
     )
-    dropout: float = field(
-        default=0.5,
-        metadata={"help": "probability of an classification element to be zeroed."},
-    )
-    use_batch_norm: bool = field(
-        default=False,
-        metadata={
-            "help": "Whether to use batch normalization in the classification head"
-        },
-    )
-    initialization: str = field(
-        default="kaiming",
-        metadata={
-            "help": "Initialization scheme for the linear layers",
-            "choices": ["kaiming", "xavier", "random"],
-        },
-    )
-    # TODO
-    target_range: Optional[List] = field(
-        default_factory=list,
-        metadata={
-            "help": "The range in which we should limit the output variable. Typically used for Regression problems. If left empty, will not apply any restrictions"
-        },
-    )
     _module_src: str = field(
-        default="category_embedding"
+        default="node"
     )
     _model_name: str = field(
-        default="CategoryEmbeddingModel"
+        default="NODEModel"
     )
 
     # def __post_init__(self):

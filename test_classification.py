@@ -19,7 +19,7 @@ import numpy as np
 
 
 dataset = fetch_covtype(data_home="data")
-data = np.hstack([dataset.data, dataset.target.reshape(-1,1)])#[:1000,:]
+data = np.hstack([dataset.data, dataset.target.reshape(-1,1)])[:5000,:]
 col_names = [f"feature_{i}" for i in range(data.shape[-1])]
 col_names[-1] = "target"
 data = pd.DataFrame(data, columns=col_names)
