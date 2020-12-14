@@ -5,6 +5,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 from omegaconf import DictConfig
 from .category_encoders import OrdinalEncoder
+import category_encoders as ce
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
 import re
@@ -95,10 +96,17 @@ class TabularDatamodule(pl.LightningDataModule):
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
             if stage == "fit":
-                self.categorical_encoder = OrdinalEncoder(
-                    cols=self.config.categorical_cols
-                )
-                data = self.categorical_encoder.fit_transform(data)
+                if (self.config._model_name == "NODEModel") and (not self.config.embed_categorical):
+                    self.categorical_encoder = ce.LeaveOneOutEncoder(
+                        cols=self.config.categorical_cols, random_state=42
+                    )
+                    # Multi-Target Regression uses the first target to encode the categorical columns
+                    data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
+                else:
+                    self.categorical_encoder = OrdinalEncoder(
+                        cols=self.config.categorical_cols
+                    )
+                    data = self.categorical_encoder.fit_transform(data)
             else:
                 data = self.categorical_encoder.transform(data)
         # Normalizing Continuous Columns
@@ -432,15 +440,9 @@ class TabularDataset(Dataset):
 
         if self.continuous_cols:
             self.continuous_X = data[self.continuous_cols].astype(np.float32).values
-        else:
-            # Adding a dummy Continous column
-            # TODO check if needed
-            self.continuous_X = np.zeros((self.n, 1))
 
         if self.categorical_cols:
             self.categorical_X = data[categorical_cols].astype(np.int64).values
-        else:
-            self.categorical_X = np.zeros((self.n, 1))
 
     def __len__(self):
         """
@@ -454,6 +456,6 @@ class TabularDataset(Dataset):
         """
         return {
             "target": self.y[idx],
-            "continuous": self.continuous_X[idx],
-            "categorical": self.categorical_X[idx],
+            "continuous": self.continuous_X[idx] if self.continuous_cols else [],
+            "categorical": self.categorical_X[idx] if self.categorical_cols else [],
         }

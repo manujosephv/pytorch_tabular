@@ -15,7 +15,7 @@ def check_numpy(x):
     return x
 
 class ODST(ModuleWithInit):
-    def __init__(self, in_features, num_trees, depth=6, tree_dim=1, flatten_output=True,
+    def __init__(self, in_features, num_trees, depth=6, tree_output_dim=1, flatten_output=True,
                  choice_function=sparsemax, bin_function=sparsemoid,
                  initialize_response_=nn.init.normal_, initialize_selection_logits_=nn.init.uniform_,
                  threshold_init_beta=1.0, threshold_init_cutoff=1.0,
@@ -51,11 +51,11 @@ class ODST(ModuleWithInit):
             All points will be between (0.5 - 0.5 / threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
         """
         super().__init__()
-        self.depth, self.num_trees, self.tree_dim, self.flatten_output = depth, num_trees, tree_dim, flatten_output
+        self.depth, self.num_trees, self.tree_dim, self.flatten_output = depth, num_trees, tree_output_dim, flatten_output
         self.choice_function, self.bin_function = choice_function, bin_function
         self.threshold_init_beta, self.threshold_init_cutoff = threshold_init_beta, threshold_init_cutoff
 
-        self.response = nn.Parameter(torch.zeros([num_trees, tree_dim, 2 ** depth]), requires_grad=True)
+        self.response = nn.Parameter(torch.zeros([num_trees, tree_output_dim, 2 ** depth]), requires_grad=True)
         initialize_response_(self.response)
 
         self.feature_selection_logits = nn.Parameter(

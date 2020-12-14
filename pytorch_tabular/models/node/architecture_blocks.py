@@ -5,16 +5,16 @@ from .odst import ODST
 
 
 class DenseODSTBlock(nn.Sequential):
-    def __init__(self, input_dim, num_trees, num_layers, tree_dim=1, max_features=None,
-                 input_dropout=0.0, flatten_output=True, Module=ODST, **kwargs):
+    def __init__(self, input_dim, num_trees, num_layers, tree_output_dim=1, max_features=None,
+                 input_dropout=0.0, flatten_output=False, Module=ODST, **kwargs):
         layers = []
         for i in range(num_layers):
-            oddt = Module(input_dim, num_trees, tree_dim=tree_dim, flatten_output=True, **kwargs)
-            input_dim = min(input_dim + num_trees * tree_dim, max_features or float('inf'))
+            oddt = Module(input_dim, num_trees, tree_output_dim=tree_output_dim, flatten_output=True, **kwargs)
+            input_dim = min(input_dim + num_trees * tree_output_dim, max_features or float('inf'))
             layers.append(oddt)
 
         super().__init__(*layers)
-        self.num_layers, self.layer_dim, self.tree_dim = num_layers, num_trees, tree_dim
+        self.num_layers, self.layer_dim, self.tree_dim = num_layers, num_trees, tree_output_dim
         self.max_features, self.flatten_output = max_features, flatten_output
         self.input_dropout = input_dropout
 

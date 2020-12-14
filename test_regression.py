@@ -1,3 +1,4 @@
+from pytorch_tabular.models.node.config import NodeConfig
 from sklearn.datasets import fetch_california_housing
 from torch.utils import data
 from config.config import (
@@ -30,7 +31,7 @@ test = dataset.frame[dataset.frame.index.isin(test_idx)]
 train = dataset.frame[~dataset.frame.index.isin(test_idx)]
 
 data_config = DataConfig(
-    target=dataset.target_names,  # + ["MedInc"],
+    target=dataset.target_names,# + ["MedInc"],
     continuous_cols=[
         "AveRooms",
         "AveBedrms",
@@ -49,6 +50,7 @@ model_config = CategoryEmbeddingModelConfig(
         dataset.frame[dataset.target_names].max().item(),
     ],
 )
+# model_config = NodeConfig(task="regression", depth=2)
 trainer_config = TrainerConfig()
 experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()

@@ -40,11 +40,10 @@ class NodeConfig(ModelConfig):
             "help": "Number of Oblivious Decision Trees in each layer"
         },
     )
-    #TODO
-    tree_dim: int = field(
-        default=1,
+    additional_tree_output_dim: int = field(
+        default=0,
         metadata={
-            "help": "Not sure what it is."
+            "help": "The additional output dimensions which is only used to pass through different layers of the architectures. Only the first output_dim outpus will be used for prediction"
         },
     )
     depth: int = field(

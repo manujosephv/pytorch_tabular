@@ -123,7 +123,8 @@ class CategoryEmbeddingModel(pl.LightningModule):
                 )
             computed_loss = torch.stack(losses, dim=0).sum()
         else:
-            computed_loss = self.loss(y_hat, y.squeeze())
+            #TODO check if squeeze on both is fine
+            computed_loss = self.loss(y_hat.squeeze(), y.squeeze())
         self.log(
             f"{tag}_loss",
             computed_loss,
@@ -190,7 +191,7 @@ class CategoryEmbeddingModel(pl.LightningModule):
             (self.hparams.task == "regression")
             and (self.hparams.target_range is not None)
             and (len(self.hparams.target_range) == 2)
-            and (len(self.hparams.output_dim==1))
+            and (self.hparams.output_dim==1)
         ):
             y_min, y_max = self.hparams.target_range
             x = y_min + nn.Sigmoid()(x) * (y_max - y_min)

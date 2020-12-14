@@ -1,5 +1,6 @@
 from typing import Optional
 import torch
+from torch import nn
 from config.config import (
     DataConfig,
     ExperimentConfig,
@@ -32,7 +33,6 @@ class TabularModel:
         trainer_config = OmegaConf.structured(trainer_config)
         optimizer_config = OmegaConf.structured(optimizer_config)
         self.exp_manager = ExperimentRunManager()
-        self.name, self.uid = self._get_run_name_uid()
         if experiment_config is None:
             self.track_experiment = False
             self.config = OmegaConf.merge(
@@ -41,6 +41,7 @@ class TabularModel:
                 OmegaConf.to_container(trainer_config),
                 OmegaConf.to_container(optimizer_config),
             )
+            self.name, self.uid = self._get_run_name_uid()
         else:
             experiment_config = OmegaConf.structured(experiment_config)
             self.track_experiment = True
@@ -51,6 +52,7 @@ class TabularModel:
                 OmegaConf.to_container(experiment_config),
                 OmegaConf.to_container(optimizer_config),
             )
+            self.name, self.uid = self._get_run_name_uid()
             self._setup_experiment_tracking()
         self.model_callable = getattr(
             getattr(models, model_config._module_src), model_config._model_name
@@ -146,15 +148,22 @@ class TabularModel:
         predictions = []
         for sample in inference_dataloader:
             for k, v in sample.items():
+                if isinstance(v,list) and (len(v)==0):
+                    #Skipping empty list
+                    continue
                 sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
             y_hat = self.model(sample)
             predictions.append(y_hat.detach().cpu())
-        predictions = torch.cat(predictions, dim=0).numpy()
+        predictions = torch.cat(predictions, dim=0)
+        if predictions.ndim<2:
+            predictions = predictions.unsqueeze(-1)
         pred_df = test.copy()
         if self.config.task == "regression":
+            predictions = predictions.numpy()
             for i, target_col in enumerate(self.config.target):
                 pred_df[f"{target_col}_prediction"] = predictions[:, i]
         elif self.config.task == "classification":
+            predictions = nn.Softmax(dim=-1)(predictions).numpy()
             for i, class_ in enumerate(self.datamodule.label_encoder.classes_):
                 pred_df[f"{class_}_probability"] = predictions[:, i]
             pred_df[f"prediction"] = self.datamodule.label_encoder.inverse_transform(

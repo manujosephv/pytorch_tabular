@@ -8,7 +8,7 @@ from omegaconf import DictConfig
 from .architecture_blocks import DenseODSTBlock
 
 # from .utils import sparsemax, sparsemoid, entmax15, entmoid15
-from .. import utils as utils
+from . import utils as utils
 
 logger = logging.getLogger(__name__)
 
@@ -22,56 +22,32 @@ class NODEModel(pl.LightningModule):
         self._setup_loss()
         self._setup_metrics()
 
-    def _initialize_layers(self, layer):
-        if self.hparams.activation == "ReLU":
-            nonlinearity = "relu"
-        elif self.hparams.activation == "LeakyReLU":
-            nonlinearity = "leaky_relu"
-        else:
-            if self.hparams.initialization == "kaiming":
-                logger.warning(
-                    "Kaiming initialization is only recommended for ReLU and LeakyReLU. Resetting to LeakyRelu for nonlinearity in initialization"
-                )
-                nonlinearity = "leaky_relu"
-            else:
-                nonlinearity = "relu"
-
-        if self.hparams.initialization == "kaiming":
-            nn.init.kaiming_normal_(layer.weight, nonlinearity=nonlinearity)
-        elif self.hparams.initialization == "xavier":
-            nn.init.xavier_normal_(
-                layer.weight,
-                gain=nn.init.calculate_gain(nonlinearity)
-                if self.hparams.activation in ["ReLU", "LeakyReLU"]
-                else 1,
-            )
-        elif self.hparams.initialization == "random":
-            nn.init.normal_(layer)
-
     def _build_network(self):
         self.dense_block = DenseODSTBlock(
-            input_dim=self.config.continuous_dim + self.config.categorical_dim,
-            num_trees=self.config.num_trees,
-            num_layers=self.config.num_layers,
-            tree_dim=self.config.tree_dim,
-            max_features=self.config.max_features,
-            input_dropout=self.config.input_dropout,
-            depth=self.config.depth,
-            choice_function=getattr(utils, self.config.choice_function),
-            bin_function=getattr(utils, self.config.bin_function),
+            input_dim=self.hparams.continuous_dim + self.hparams.categorical_dim,
+            num_trees=self.hparams.num_trees,
+            num_layers=self.hparams.num_layers,
+            tree_output_dim=self.hparams.output_dim
+            + self.hparams.additional_tree_output_dim,
+            max_features=self.hparams.max_features,
+            input_dropout=self.hparams.input_dropout,
+            depth=self.hparams.depth,
+            choice_function=getattr(utils, self.hparams.choice_function),
+            bin_function=getattr(utils, self.hparams.bin_function),
             initialize_response_=getattr(
-                nn.init, self.config.initialize_response + "_"
+                nn.init, self.hparams.initialize_response + "_"
             ),
             initialize_selection_logits_=getattr(
-                nn.init, self.config.initialize_selection_logits + "_"
+                nn.init, self.hparams.initialize_selection_logits + "_"
             ),
-            threshold_init_beta=self.config.threshold_init_beta,
-            threshold_init_cutoff=self.config.threshold_init_cutoff,
+            threshold_init_beta=self.hparams.threshold_init_beta,
+            threshold_init_cutoff=self.hparams.threshold_init_cutoff,
         )
-        # average first n channels of every tree, where n is the number of output targets for regression 
+        # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
-        self.output_response = utils.Lambda(lambda x: x[..., self.config.output_dim].mean(dim=-1))
-
+        self.output_response = utils.Lambda(
+            lambda x: x[..., : self.hparams.output_dim].mean(dim=-2)
+        )
 
     def _setup_loss(self):
         try:
@@ -92,7 +68,7 @@ class NODEModel(pl.LightningModule):
             )
 
     def calculate_loss(self, y, y_hat, tag):
-        if self.hparams.output_dim > 1:
+        if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
             losses = []
             for i in range(self.hparams.output_dim):
                 _loss = self.loss(y_hat[:, i], y[:, i])
@@ -107,7 +83,7 @@ class NODEModel(pl.LightningModule):
                 )
             computed_loss = torch.stack(losses, dim=0).sum()
         else:
-            computed_loss = self.loss(y_hat, y)
+            computed_loss = self.loss(y_hat.squeeze(), y.squeeze())
         self.log(
             f"{tag}_loss",
             computed_loss,
@@ -121,7 +97,7 @@ class NODEModel(pl.LightningModule):
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
         for metric, metric_str in zip(self.metrics, self.hparams.metrics):
-            if self.hparams.output_dim > 1:
+            if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     _metric = metric(y_hat[:, i], y[:, i])
@@ -136,7 +112,7 @@ class NODEModel(pl.LightningModule):
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
-                avg_metric = metric(y_hat, y)
+                avg_metric = metric(y_hat.squeeze(), y.squeeze())
             metrics.append(avg_metric)
             self.log(
                 f"{tag}_{metric_str}",
@@ -149,6 +125,11 @@ class NODEModel(pl.LightningModule):
         return metrics
 
     def forward(self, x: Dict):
+        # unpacking into a tuple
+        x = x["continuous"], x["categorical"]
+        # eliminating None in case there is no categorical or continuous columns
+        x = (item for item in x if len(item)>0)
+        x = torch.cat(tuple(x), dim=1)
         x = self.dense_block(x)
         x = self.output_response(x)
         return x
