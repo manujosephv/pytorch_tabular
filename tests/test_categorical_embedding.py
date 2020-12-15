@@ -66,9 +66,9 @@ def test_regression(
 
         result = tabular_model.evaluate(test)
         if multi_target:
-            assert result[0]["train_loss"] < 21
+            assert result[0]["valid_loss"] < 21
         else:
-            assert result[0]["train_loss"] < 6
+            assert result[0]["valid_loss"] < 6
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -115,7 +115,7 @@ def test_classification(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert result[0]["train_loss"] < 2.5
+        assert result[0]["valid_loss"] < 2.5
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 

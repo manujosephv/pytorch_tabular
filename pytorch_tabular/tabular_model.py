@@ -30,6 +30,11 @@ class TabularModel:
         super().__init__()
         data_config = OmegaConf.structured(data_config)
         model_config = OmegaConf.structured(model_config)
+        # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
+        if (model_config._model_name == "NODEModel") and (
+            model_config.embed_categorical
+        ):
+            model_config._model_name = "CategoryEmbedding" + model_config._model_name
         trainer_config = OmegaConf.structured(trainer_config)
         optimizer_config = OmegaConf.structured(optimizer_config)
         self.exp_manager = ExperimentRunManager()
@@ -42,7 +47,7 @@ class TabularModel:
                 OmegaConf.to_container(optimizer_config),
             )
             self.name, self.uid = self._get_run_name_uid()
-            self.logger=None
+            self.logger = None
         else:
             experiment_config = OmegaConf.structured(experiment_config)
             self.track_experiment = True
@@ -71,7 +76,9 @@ class TabularModel:
             )
         elif self.config.log_target == "wandb":
             self.logger = pl.loggers.WandbLogger(
-                name=f"{self.name}_{self.uid}", project=self.config.project_name, offline=False
+                name=f"{self.name}_{self.uid}",
+                project=self.config.project_name,
+                offline=False,
             )
         else:
             raise NotImplementedError(
@@ -128,8 +135,8 @@ class TabularModel:
         callbacks = self._prepare_callbacks()
         trainer_args = vars(pl.Trainer()).keys()
         trainer_args_config = {k: v for k, v in config.items() if k in trainer_args}
-        #TODO For some weird reason, checkpoint_callback is not coming in the Trainer vars
-        trainer_args_config['checkpoint_callback'] = self.config.checkpoint_callback
+        # TODO For some weird reason, checkpoint_callback is not coming in the Trainer vars
+        trainer_args_config["checkpoint_callback"] = self.config.checkpoint_callback
         self.trainer = pl.Trainer(
             logger=self.logger,
             callbacks=callbacks,
@@ -155,14 +162,14 @@ class TabularModel:
         predictions = []
         for sample in inference_dataloader:
             for k, v in sample.items():
-                if isinstance(v,list) and (len(v)==0):
-                    #Skipping empty list
+                if isinstance(v, list) and (len(v) == 0):
+                    # Skipping empty list
                     continue
                 sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
             y_hat = self.model(sample)
             predictions.append(y_hat.detach().cpu())
         predictions = torch.cat(predictions, dim=0)
-        if predictions.ndim<2:
+        if predictions.ndim < 2:
             predictions = predictions.unsqueeze(-1)
         pred_df = test.copy()
         if self.config.task == "regression":

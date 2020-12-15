@@ -120,7 +120,7 @@ class DataConfig:
         assert (
             len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_cols)
             > 0
-        ), "Tehre should be at-least one feature defined in categorical, continuous, or date columns"
+        ), "There should be at-least one feature defined in categorical, continuous, or date columns"
         self.categorical_dim = (
             len(self.categorical_cols) if self.categorical_cols is not None else 0
         )

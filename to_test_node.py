@@ -1,31 +1,40 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
-import pytest
 
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.node import NodeConfig
 from pytorch_tabular.tabular_model import TabularModel
 
+import numpy as np
+import pandas as pd
+from sklearn.datasets import fetch_california_housing, fetch_covtype
 
-@pytest.mark.parametrize("multi_target", [True, False])
-@pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-        [],
-    ],
-)
-@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
-@pytest.mark.parametrize("embed_categorical", [True, False])
-@pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
-@pytest.mark.parametrize("normalize_continuous_features", [True, False])
+
+def regression_data():
+    dataset = fetch_california_housing(data_home="data", as_frame=True)
+    df = dataset.frame.sample(5000)
+    df["HouseAgeBin"] = pd.qcut(df["HouseAge"], q=4)
+    df["HouseAgeBin"] = "age_" + df.HouseAgeBin.cat.codes.astype(str)
+    test_idx = df.sample(int(0.2 * len(df)), random_state=42).index
+    test = df[df.index.isin(test_idx)]
+    train = df[~df.index.isin(test_idx)]
+    return (train, test, dataset.target_names)
+
+
+def classification_data():
+    dataset = fetch_covtype(data_home="data")
+    data = np.hstack([dataset.data, dataset.target.reshape(-1, 1)])[:10000, :]
+    col_names = [f"feature_{i}" for i in range(data.shape[-1])]
+    col_names[-1] = "target"
+    data = pd.DataFrame(data, columns=col_names)
+    data["feature_0_cat"] = pd.qcut(data["feature_0"], q=4)
+    data["feature_0_cat"] = "feature_0_" + data.feature_0_cat.cat.codes.astype(str)
+    test_idx = data.sample(int(0.2 * len(data)), random_state=42).index
+    test = data[data.index.isin(test_idx)]
+    train = data[~data.index.isin(test_idx)]
+    return (train, test, ["target"])
+
+
 def test_regression(
     regression_data,
     multi_target,
@@ -61,24 +70,13 @@ def test_regression(
 
         result = tabular_model.evaluate(test)
         if multi_target:
-            assert result[0]["valid_loss"] < 30
+            assert result[0]["train_loss"] < 30
         else:
-            assert result[0]["valid_loss"] < 8
+            assert result[0]["train_loss"] < 8
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
 
-@pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [f"feature_{i}" for i in range(54)],
-        [],
-    ],
-)
-@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"], []])
-@pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
-@pytest.mark.parametrize("embed_categorical", [True, False])
-@pytest.mark.parametrize("normalize_continuous_features", [True, False])
 def test_classification(
     classification_data,
     continuous_cols,
@@ -112,25 +110,27 @@ def test_classification(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert result[0]["valid_loss"] < 2.5
+        assert result[0]["train_loss"] < 2.5
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
 
-# test_regression(
-#     multi_target=False,
-#     continuous_cols=[
-#         "AveRooms",
-#         "AveBedrms",
-#         "Population",
-#         "AveOccup",
-#         "Latitude",
-#         "Longitude",
-#     ],
-#     categorical_cols=["HouseAgeBin"],
-#     continuous_feature_transform="yeo-johnson",
-#     normalize_continuous_features=True,
-#     target_range=True,
-# )
+test_regression(
+    regression_data(),
+    multi_target=True,
+    continuous_cols=[
+        "AveRooms",
+        "AveBedrms",
+        "Population",
+        "AveOccup",
+        "Latitude",
+        "Longitude",
+    ],
+    categorical_cols=["HouseAgeBin"],
+    embed_categorical=False,
+    continuous_feature_transform=None,
+    normalize_continuous_features=True,
+    # target_range=True,
+)
 
 # classification_data()

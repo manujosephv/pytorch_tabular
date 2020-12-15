@@ -31,7 +31,7 @@ test = dataset.frame[dataset.frame.index.isin(test_idx)]
 train = dataset.frame[~dataset.frame.index.isin(test_idx)]
 
 data_config = DataConfig(
-    target=dataset.target_names,# + ["MedInc"],
+    target=dataset.target_names+ ["MedInc"],
     # continuous_cols=[
     #     "AveRooms",
     #     "AveBedrms",
@@ -42,7 +42,8 @@ data_config = DataConfig(
     # ],
     continuous_cols=[],
     categorical_cols=["HouseAgeBin"],
-    continuous_feature_transform="yeo-johnson",
+    continuous_feature_transform=None,#"yeo-johnson",
+    normalize_continuous_features=True
 )
 # model_config = CategoryEmbeddingModelConfig(
 #     task="regression",
@@ -51,9 +52,9 @@ data_config = DataConfig(
 #         dataset.frame[dataset.target_names].max().item(),
 #     ],
 # )
-model_config = NodeConfig(task="regression", depth=2)
-trainer_config = TrainerConfig(checkpoints=None)
-experiment_config = ExperimentConfig(project_name="Tabular_test")
+model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
+trainer_config = TrainerConfig(checkpoints=None, max_epochs=1)
+# experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
 
 tabular_model = TabularModel(
@@ -61,11 +62,12 @@ tabular_model = TabularModel(
     model_config=model_config,
     optimizer_config=optimizer_config,
     trainer_config=trainer_config,
-    experiment_config=experiment_config,
+    # experiment_config=experiment_config,
 )
 tabular_model.fit(train=train, test=test)
 
 result = tabular_model.evaluate(test)
 print(result)
+print(result[0]['train_loss'])
 pred_df = tabular_model.predict(test)
 pred_df.to_csv("output/temp2.csv")

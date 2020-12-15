@@ -126,7 +126,6 @@ class NodeConfig(ModelConfig):
             "help":"Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder"
         }
     )
-    #TODO To implement later
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
@@ -145,8 +144,11 @@ class NodeConfig(ModelConfig):
     )
 
     # def __post_init__(self):
-    #     assert self._module_src == "category_embedding", "Do not change attributes starting with _"
-    #     assert self._model_name == "CategoryEmbeddingModel", "Do not change attributes starting wtih _"
+    #     self._model_name = "NODEModel"
+    #     if self.embed_categorical:
+    #         self._model_name = "CategoryEmbedding"+self._model_name
+        # assert self._module_src == "category_embedding", "Do not change attributes starting with _"
+        # assert self._model_name == "CategoryEmbeddingModel", "Do not change attributes starting wtih _"
 
 
 # conf = OmegaConf.structured(ModelConfig(task='regression', loss="custom"))
