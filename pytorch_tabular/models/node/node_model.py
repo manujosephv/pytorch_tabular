@@ -46,7 +46,7 @@ class NODEModel(BaseModel):
 
     def forward(self, x: Dict):
         # unpacking into a tuple
-        x = x["continuous"], x["categorical"]
+        x = x["categorical"], x["continuous"]
         # eliminating None in case there is no categorical or continuous columns
         x = (item for item in x if len(item)>0)
         x = torch.cat(tuple(x), dim=1)
