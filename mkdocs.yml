@@ -1,0 +1,30 @@
+site_name: Pytorch Tabular
+nav:
+    - Getting Started: index.md
+    - API Docs: apidocs.md
+    - Contributing: contributing.md
+    - Authors: authors.md
+    - History: history.md
+theme:
+  name: material
+  features:
+    - search.suggest
+  palette:
+    primary: deep purple
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          rendering:
+            show_root_heading: yes
+repo_url: https://github.com/manujosephv/pytorch_tabular
+  social:
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/manujosephv/
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/manujosephv
+    - icon: fontawesome/solid/blog
+      link: https://deep-and-shallow.com/
+    - icon: fontawesome/brands/medium
+      link: https://medium.com/@manujosephv

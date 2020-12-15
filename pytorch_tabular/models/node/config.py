@@ -1,4 +1,4 @@
-from config.config import ModelConfig
+from pytorch_tabular.config import ModelConfig
 from dataclasses import MISSING, dataclass, field
 from typing import List, Optional, Tuple
 import os

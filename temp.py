@@ -1,5 +1,5 @@
 from torch.utils import data
-from config.config import (
+from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
     ExperimentRunManager,

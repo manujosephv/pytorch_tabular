@@ -76,6 +76,7 @@ class DataConfig:
             "help": "Percentage of Training rows to keep aside as validation. Used only if Validation Data is not given separately"
         },
     )
+    #TODO
     target_transform: Optional[str] = field(
         default=None,
         metadata={
@@ -97,6 +98,7 @@ class DataConfig:
         }
 
     )
+    #TODO
     quantile_noise: int = field(
         default=0,
         metadata={
@@ -208,7 +210,7 @@ class TrainerConfig:
             "choices": [None, "simple", "advanced"],
         },
     )
-    early_stopping: str = field(
+    early_stopping: Optional[str] = field(
         default="valid_loss",
         metadata={
             "help": "The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping"
@@ -230,7 +232,7 @@ class TrainerConfig:
             "help": "The number of epochs to wait until there is no further improvements in loss/metric"
         },
     )
-    checkpoints: str = field(
+    checkpoints: Optional[str] = field(
         default="valid_loss",
         metadata={
             "help": "The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints"
@@ -367,7 +369,7 @@ class OptimizerConfig:
 
 
 class ExperimentRunManager:
-    def __init__(self, exp_version_manager="config/exp_version_manager.yml") -> None:
+    def __init__(self, exp_version_manager="pytorch_tabular/config/exp_version_manager.yml") -> None:
         super().__init__()
         self._exp_version_manager = exp_version_manager
         if os.path.exists(exp_version_manager):

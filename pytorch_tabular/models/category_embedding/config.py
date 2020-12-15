@@ -1,4 +1,4 @@
-from config.config import ModelConfig
+from pytorch_tabular.config import ModelConfig
 from dataclasses import MISSING, dataclass, field
 from typing import List, Optional, Tuple
 import os
@@ -9,8 +9,6 @@ from omegaconf import OmegaConf
 class CategoryEmbeddingModelConfig(ModelConfig):
     """Model configuration
     Args:
-        task (str): Specify whether the problem is regression of classification.Choices are: regression classification
-        learning_rate (float): The learning rate of the model
         layers (str): Hypher-separated number of layers and units in the classification head. eg. 32-64-32.
         batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer
         activation (str): The activation type in the classification head. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
@@ -20,6 +18,9 @@ class CategoryEmbeddingModelConfig(ModelConfig):
         use_batch_norm (bool): Whether to use batch normalization in the classification head
         initialization (str): Initialization scheme for the linear layersChoices are: kaiming xavier random
         target_range (Union[List, NoneType]): The range in which we should limit the output variable. Typically used for Regression problems. If left empty, will not apply any restrictions
+        
+        task (str): Specify whether the problem is regression of classification.Choices are: regression classification
+        learning_rate (float): The learning rate of the model
         loss (Union[str, NoneType]): The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
         metrics (Union[List[str], NoneType]): the list of metrics you need to track during training. The metrics should be one of the metrics mplemented in PyTorch Lightning. By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized

@@ -9,7 +9,12 @@ import category_encoders as ce
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
 import re
-from sklearn.preprocessing import PowerTransformer, QuantileTransformer, StandardScaler, LabelEncoder
+from sklearn.preprocessing import (
+    PowerTransformer,
+    QuantileTransformer,
+    StandardScaler,
+    LabelEncoder,
+)
 
 
 class TabularDatamodule(pl.LightningDataModule):
@@ -85,6 +90,11 @@ class TabularDatamodule(pl.LightningDataModule):
                 (x, min(50, (x + 1) // 2)) for x in self.config.categorical_cardinality
             ]
 
+    def do_leave_one_out_encoder(self):
+        return (self.config._model_name == "NODEModel") and (
+                    not self.config.embed_categorical
+                )
+
     def preprocess_data(self, data, stage="inference"):
         added_features = None
         if self.config.encode_date_cols:
@@ -96,12 +106,14 @@ class TabularDatamodule(pl.LightningDataModule):
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
             if stage == "fit":
-                if (self.config._model_name == "NODEModel") and (not self.config.embed_categorical):
+                if self.do_leave_one_out_encoder():
                     self.categorical_encoder = ce.LeaveOneOutEncoder(
                         cols=self.config.categorical_cols, random_state=42
                     )
                     # Multi-Target Regression uses the first target to encode the categorical columns
-                    data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
+                    data = self.categorical_encoder.fit_transform(
+                        data, data[self.config.target[0]]
+                    )
                 else:
                     self.categorical_encoder = OrdinalEncoder(
                         cols=self.config.categorical_cols
@@ -110,7 +122,9 @@ class TabularDatamodule(pl.LightningDataModule):
             else:
                 data = self.categorical_encoder.transform(data)
         # Normalizing Continuous Columns
-        if self.config.normalize_continuous_features:
+        if (self.config.normalize_continuous_features) and (
+            len(self.continuous_cols) > 0
+        ):
             if stage == "fit":
                 self.scaler = StandardScaler()
                 data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
@@ -121,7 +135,9 @@ class TabularDatamodule(pl.LightningDataModule):
                     data.loc[:, self.config.continuous_cols]
                 )
         # Transforming Continuous Columns
-        if self.config.continuous_feature_transform is not None:
+        if (self.config.continuous_feature_transform is not None) and (
+            len(self.continuous_cols) > 0
+        ):
             if stage == "fit":
                 transform = self.CONTINUOUS_TRANSFORMS[
                     self.config.continuous_feature_transform
@@ -140,11 +156,15 @@ class TabularDatamodule(pl.LightningDataModule):
                     data.loc[:, self.config.continuous_cols]
                 )
         if self.config.task == "classification":
-            if stage=="fit":
+            if stage == "fit":
                 self.label_encoder = LabelEncoder()
-                data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
+                data[self.config.target[0]] = self.label_encoder.fit_transform(
+                    data[self.config.target[0]]
+                )
             else:
-                data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
+                data[self.config.target[0]] = self.label_encoder.transform(
+                    data[self.config.target[0]]
+                )
         return data, added_features
 
     def setup(self, stage: Optional[str] = None):
@@ -341,10 +361,11 @@ class TabularDatamodule(pl.LightningDataModule):
     def train_dataloader(self) -> DataLoader:
         """ Function that loads the train set. """
         dataset = TabularDataset(
-            task = self.config.task,
+            task=self.config.task,
             data=self.train,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
+            embed_categorical= (not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         return DataLoader(
@@ -354,10 +375,11 @@ class TabularDatamodule(pl.LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         """ Function that loads the validation set. """
         dataset = TabularDataset(
-            task = self.config.task,
+            task=self.config.task,
             data=self.validation,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
+            embed_categorical= (not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         return DataLoader(
@@ -368,10 +390,11 @@ class TabularDatamodule(pl.LightningDataModule):
         """ Function that loads the validation set. """
         if self.test is not None:
             dataset = TabularDataset(
-                task = self.config.task,
+                task=self.config.task,
                 data=self.test,
                 categorical_cols=self.categorical_cols,
                 continuous_cols=self.continuous_cols,
+                embed_categorical= (not self.do_leave_one_out_encoder()),
                 target=self.target,
             )
             return DataLoader(
@@ -389,10 +412,11 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
 
         dataset = TabularDataset(
-            task = self.config.task,
+            task=self.config.task,
             data=df,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
+            embed_categorical= (not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         return DataLoader(
@@ -407,9 +431,10 @@ class TabularDataset(Dataset):
     def __init__(
         self,
         data: pd.DataFrame,
-        task: str, 
+        task: str,
         continuous_cols: List[str] = None,
         categorical_cols: List[str] = None,
+        embed_categorical: bool = True,
         target: List[str] = None,
     ):
         """Dataset to Load Tabular Data
@@ -429,11 +454,11 @@ class TabularDataset(Dataset):
         if target:
             self.y = data[target].astype(np.float32).values
             if isinstance(target, str):
-                self.y = self.y.reshape(-1, 1)#.astype(np.int64)
+                self.y = self.y.reshape(-1, 1)  # .astype(np.int64)
         else:
-            self.y = np.zeros((self.n, 1))#.astype(np.int64)
+            self.y = np.zeros((self.n, 1))  # .astype(np.int64)
 
-        if task == 'classification':
+        if task == "classification":
             self.y = self.y.astype(np.int64)
         self.categorical_cols = categorical_cols if categorical_cols else []
         self.continuous_cols = continuous_cols if continuous_cols else []
@@ -442,7 +467,11 @@ class TabularDataset(Dataset):
             self.continuous_X = data[self.continuous_cols].astype(np.float32).values
 
         if self.categorical_cols:
-            self.categorical_X = data[categorical_cols].astype(np.int64).values
+            self.categorical_X = data[categorical_cols]
+            if embed_categorical:
+                self.categorical_X = self.categorical_X.astype(np.int64).values
+            else:
+                self.categorical_X = self.categorical_X.astype(np.float32).values
 
     def __len__(self):
         """

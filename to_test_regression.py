@@ -1,7 +1,7 @@
 from pytorch_tabular.models.node.config import NodeConfig
 from sklearn.datasets import fetch_california_housing
 from torch.utils import data
-from config.config import (
+from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
     ExperimentRunManager,
@@ -32,14 +32,15 @@ train = dataset.frame[~dataset.frame.index.isin(test_idx)]
 
 data_config = DataConfig(
     target=dataset.target_names,# + ["MedInc"],
-    continuous_cols=[
-        "AveRooms",
-        "AveBedrms",
-        "Population",
-        "AveOccup",
-        "Latitude",
-        "Longitude",
-    ],
+    # continuous_cols=[
+    #     "AveRooms",
+    #     "AveBedrms",
+    #     "Population",
+    #     "AveOccup",
+    #     "Latitude",
+    #     "Longitude",
+    # ],
+    continuous_cols=[],
     categorical_cols=["HouseAgeBin"],
     continuous_feature_transform="yeo-johnson",
 )
@@ -51,7 +52,7 @@ data_config = DataConfig(
 #     ],
 # )
 model_config = NodeConfig(task="regression", depth=2)
-trainer_config = TrainerConfig()
+trainer_config = TrainerConfig(checkpoints=None)
 experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
 

@@ -1,7 +1,7 @@
 from typing import Optional
 import torch
 from torch import nn
-from config.config import (
+from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
     ExperimentRunManager,
@@ -42,6 +42,7 @@ class TabularModel:
                 OmegaConf.to_container(optimizer_config),
             )
             self.name, self.uid = self._get_run_name_uid()
+            self.logger=None
         else:
             experiment_config = OmegaConf.structured(experiment_config)
             self.track_experiment = True
@@ -78,7 +79,7 @@ class TabularModel:
             )
 
     def _prepare_callbacks(self):
-        self.config.checkpoint_callback = True if self.config.checkpoints else False
+        # self.config.checkpoint_callback = True if self.config.checkpoints else False
         callbacks = []
         if self.config.early_stopping is not None:
             early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
@@ -100,6 +101,9 @@ class TabularModel:
                 mode=self.config.checkpoints_mode,
             )
             callbacks.append(model_checkpoint)
+            self.config.checkpoint_callback = True
+        else:
+            self.config.checkpoint_callback = False
         return callbacks
 
     def fit(
@@ -123,10 +127,13 @@ class TabularModel:
             )
         callbacks = self._prepare_callbacks()
         trainer_args = vars(pl.Trainer()).keys()
+        trainer_args_config = {k: v for k, v in config.items() if k in trainer_args}
+        #TODO For some weird reason, checkpoint_callback is not coming in the Trainer vars
+        trainer_args_config['checkpoint_callback'] = self.config.checkpoint_callback
         self.trainer = pl.Trainer(
             logger=self.logger,
             callbacks=callbacks,
-            **{k: v for k, v in config.items() if k in trainer_args},
+            **trainer_args_config,
         )
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)

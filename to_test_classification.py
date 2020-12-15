@@ -1,6 +1,6 @@
 from sklearn.datasets import fetch_covtype
 # from torch.utils import data
-from config.config import (
+from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
     ExperimentRunManager,
