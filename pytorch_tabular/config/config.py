@@ -1,5 +1,9 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Config"""
 from dataclasses import MISSING, dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import os
 from omegaconf import OmegaConf
 
@@ -39,16 +43,16 @@ class DataConfig:
         categorical_cols (List): Column names of the categorical fields to pass through an embedding layer
         date_cols (List): Column names of the date fields
         encode_date_cols (bool): Whether or not to encode the derived variables from date
-        validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation. 
+        validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
         Used only if Validation Data is not given separately
-        target_transform (Union[str, NoneType]): NOT IMPLEMENTED. Whether or not to transform the target before modelling. 
+        target_transform (Union[str, NoneType]): NOT IMPLEMENTED. Whether or not to transform the target before modelling.
         By default it is turned offChoices are: None yeo-johnson box-cox log1p
-        continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling. 
+        continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
         By default it is turned off.Choices are: None yeo-johnson box-cox quantile
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
-        quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added 
-        gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable. 
-        Please note that this transformation does NOT apply gaussian noise to the resulting data, 
+        quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
+        gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
+        Please note that this transformation does NOT apply gaussian noise to the resulting data,
         the noise is only applied for QuantileTransformer
         num_workers (Union[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
     """
@@ -86,7 +90,7 @@ class DataConfig:
             "help": "Percentage of Training rows to keep aside as validation. Used only if Validation Data is not given separately"
         },
     )
-    #TODO
+    # TODO
     target_transform: Optional[str] = field(
         default=None,
         metadata={
@@ -103,12 +107,9 @@ class DataConfig:
     )
     normalize_continuous_features: bool = field(
         default=True,
-        metadata={
-            "help": "Flag to normalize the input features(continuous)"
-        }
-
+        metadata={"help": "Flag to normalize the input features(continuous)"},
     )
-    #TODO
+    # TODO
     quantile_noise: int = field(
         default=0,
         metadata={
@@ -148,18 +149,18 @@ class TrainerConfig:
         max_epochs (int): Maximum number of epochs to be run
         min_epochs (int): Minimum number of epochs to be run
         gpus (int): The index of the GPU to be used. If zero, will use CPU
-        accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict. 
+        accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
         Trainer also calls optimizer.step() for the last indivisible step number.
-        auto_scale_batch_size (Union[str, NoneType]): Automatically tries to find the largest batch size 
+        auto_scale_batch_size (Union[str, NoneType]): Automatically tries to find the largest batch size
         that fits into memory, before any training.
-        auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(), 
+        auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),
         to find optimal initial learning rate.
         check_val_every_n_epoch (int): Check val every n train epochs.
         gradient_clip_val (float): Gradient clipping value
-        overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same training set 
-        for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it. 
+        overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same training set
+        for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it.
         Useful for quickly debugging or trying to overfit on purpose.
-        profiler (Union[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks. 
+        profiler (Union[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks.
         Choices are: 'None' 'simple' 'advanced'
         early_stopping (str): The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping
         early_stopping_min_delta (float): The minimum delta in the loss/metric which qualifies as an improvement in early stopping
@@ -169,7 +170,7 @@ class TrainerConfig:
         checkpoints_path (str): The path where the saved models will be
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
         checkpoints_save_top_k (int): The number of best models to save
-        track_grad_norm (int): Track and Log Gradient Norms in the logger. 
+        track_grad_norm (int): Track and Log Gradient Norms in the logger.
         -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
     """
 
@@ -385,12 +386,15 @@ class OptimizerConfig:
 
 
 class ExperimentRunManager:
-    def __init__(self, exp_version_manager:str="pytorch_tabular/config/exp_version_manager.yml") -> None:
+    def __init__(
+        self,
+        exp_version_manager: str = "pytorch_tabular/config/exp_version_manager.yml",
+    ) -> None:
         """The manages the versions of the experiments based on the name. It is a simple dictionary(yaml) based lookup.
         Primary purpose is to avoid overwriting of saved models while runing the training without changing the experiment name.
 
         Args:
-            exp_version_manager (str, optional): The path of the yml file which acts as version control. 
+            exp_version_manager (str, optional): The path of the yml file which acts as version control.
             Defaults to "pytorch_tabular/config/exp_version_manager.yml".
         """
         super().__init__()
@@ -417,11 +421,11 @@ class ModelConfig:
     Args:
         task (str): Specify whether the problem is regression of classification.Choices are: regression classification
         learning_rate (float): The learning rate of the model
-        loss (Union[str, NoneType]): The loss function to be applied. 
-        By Default it is MSELoss for regression and CrossEntropyLoss for classification. 
+        loss (Union[str, NoneType]): The loss function to be applied.
+        By Default it is MSELoss for regression and CrossEntropyLoss for classification.
         Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
-        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training. 
-        The metrics should be one of the metrics implemented in PyTorch Lightning. 
+        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
+        The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
 

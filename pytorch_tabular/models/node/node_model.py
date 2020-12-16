@@ -1,14 +1,17 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Tabular Model"""
 import logging
 from typing import Dict
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from .architecture_blocks import DenseODSTBlock
 
 from ..base_model import BaseModel
 from . import utils as utils
+from .architecture_blocks import DenseODSTBlock
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +51,7 @@ class NODEModel(BaseModel):
         # unpacking into a tuple
         x = x["categorical"], x["continuous"]
         # eliminating None in case there is no categorical or continuous columns
-        x = (item for item in x if len(item)>0)
+        x = (item for item in x if len(item) > 0)
         x = torch.cat(tuple(x), dim=1)
         x = self.dense_block(x)
         x = self.output_response(x)

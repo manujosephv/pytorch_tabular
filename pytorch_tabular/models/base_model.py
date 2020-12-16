@@ -1,11 +1,15 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Base Model"""
 import logging
+from abc import ABCMeta, abstractmethod
 from typing import Dict
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from abc import ABCMeta, abstractmethod
 
 logger = logging.getLogger(__name__)
 

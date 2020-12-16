@@ -3,11 +3,7 @@
 # For license information, see LICENSE.TXT
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
 """Category Encoders"""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 try:
     import cPickle as pickle

@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """Tabular Data Module"""
 import re
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import category_encoders as ce
 import numpy as np
@@ -105,7 +105,9 @@ class TabularDatamodule(pl.LightningDataModule):
             not self.config.embed_categorical
         )
 
-    def preprocess_data(self, data: pd.DataFrame, stage: str="inference") -> Tuple[pd.DataFrame, list]:
+    def preprocess_data(
+        self, data: pd.DataFrame, stage: str = "inference"
+    ) -> Tuple[pd.DataFrame, list]:
         """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before feeding into the dataloder
 
         Args:
@@ -186,9 +188,9 @@ class TabularDatamodule(pl.LightningDataModule):
                 )
         return data, added_features
 
-    def setup(self, stage: Optional[str] = None)-> None:
-        """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc. 
-        This is called before accessing the dataloaders 
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc.
+        This is called before accessing the dataloaders
 
         Args:
             stage (Optional[str], optional): Internal parameter to distinguish between fit and inference. Defaults to None.
@@ -202,7 +204,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 self.train = self.train[~self.train.index.isin(val_idx)]
             # Preprocessing Train, Validation
             self.train, added_features = self.preprocess_data(self.train, stage="fit")
-            # The only features that are added aer the date features extracted 
+            # The only features that are added aer the date features extracted
             # from the date which are categorical in nature
             if added_features is not None:
                 self.config.categorical_cols += added_features

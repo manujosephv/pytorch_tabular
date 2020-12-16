@@ -1,11 +1,15 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""TabNet Model"""
 import logging
 from typing import Dict
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from pytorch_tabnet.tab_network import TabNet
 from omegaconf import DictConfig
+from pytorch_tabnet.tab_network import TabNet
+
 from ..base_model import BaseModel
 
 logger = logging.getLogger(__name__)

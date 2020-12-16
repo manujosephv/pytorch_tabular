@@ -1,8 +1,11 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Category Embedding Model Config"""
+from dataclasses import dataclass, field
+from typing import List, Optional
+
 from pytorch_tabular.config import ModelConfig
-from dataclasses import MISSING, dataclass, field
-from typing import List, Optional, Tuple
-import os
-from omegaconf import OmegaConf
 
 
 @dataclass
@@ -11,21 +14,21 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     Args:
         task (str): Specify whether the problem is regression of classification.Choices are: regression classification
         learning_rate (float): The learning rate of the model
-        loss (Union[str, NoneType]): The loss function to be applied. 
-        By Default it is MSELoss for regression and CrossEntropyLoss for classification. 
+        loss (Union[str, NoneType]): The loss function to be applied.
+        By Default it is MSELoss for regression and CrossEntropyLoss for classification.
         Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
-        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training. 
-        The metrics should be one of the metrics implemented in PyTorch Lightning. 
+        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
+        The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
 
         layers (str): Hypher-separated number of layers and units in the classification head. eg. 32-64-32.
         batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer
-        activation (str): The activation type in the classification head. 
-        The default activation in PyTorch like ReLU, TanH, LeakyReLU, etc. 
+        activation (str): The activation type in the classification head.
+        The default activation in PyTorch like ReLU, TanH, LeakyReLU, etc.
         https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
-        embedding_dims (Union[List[int], NoneType]): The dimensions of the embedding for each categorical column 
-        as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column 
+        embedding_dims (Union[List[int], NoneType]): The dimensions of the embedding for each categorical column
+        as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
         using the rule min(50, (x + 1) // 2)
         embedding_dropout (float): probability of an embedding element to be zeroed.
         dropout (float): probability of an classification element to be zeroed.
@@ -90,16 +93,8 @@ class CategoryEmbeddingModelConfig(ModelConfig):
             "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
         },
     )
-    _module_src: str = field(
-        default="category_embedding"
-    )
-    _model_name: str = field(
-        default="CategoryEmbeddingModel"
-    )
-
-    # def __post_init__(self):
-    #     assert self._module_src == "category_embedding", "Do not change attributes starting with _"
-    #     assert self._model_name == "CategoryEmbeddingModel", "Do not change attributes starting wtih _"
+    _module_src: str = field(default="category_embedding")
+    _model_name: str = field(default="CategoryEmbeddingModel")
 
 
 # cls = CategoryEmbeddingModelConfig

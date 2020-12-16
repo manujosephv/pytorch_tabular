@@ -1,6 +1,17 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Tabular Model"""
 from typing import List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+import pytorch_lightning as pl
 import torch
+from omegaconf import OmegaConf
 from torch import nn
+
+import pytorch_tabular.models as models
 from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
@@ -9,12 +20,7 @@ from pytorch_tabular.config import (
     OptimizerConfig,
     TrainerConfig,
 )
-import pandas as pd
-from omegaconf import OmegaConf
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
-import pytorch_tabular.models as models
-import pytorch_lightning as pl
-import numpy as np
 
 
 class TabularModel:

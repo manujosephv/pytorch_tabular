@@ -1,10 +1,14 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Category Embedding Model"""
 import logging
 from typing import Dict
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+
 from ..base_model import BaseModel
 
 logger = logging.getLogger(__name__)
