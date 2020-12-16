@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional, Tuple, Union
 import torch
 from torch import nn
 from pytorch_tabular.config import (
@@ -13,7 +13,6 @@ import pandas as pd
 from omegaconf import OmegaConf
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 import pytorch_tabular.models as models
-from pytorch_tabular.models.category_embedding import CategoryEmbeddingModel
 import pytorch_lightning as pl
 import numpy as np
 
@@ -27,6 +26,18 @@ class TabularModel:
         trainer_config: TrainerConfig,
         experiment_config: Optional[ExperimentConfig] = None,
     ) -> None:
+        """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
+
+        Args:
+            data_config (DataConfig): Data Parameters. Refer to DataConfig documentation
+            model_config (ModelConfig): Model Parameters. Can be any subclass of Model Config.
+            Depending on this class, the model determines to run the corresponding model on the data supplied.
+            Refer to individual ModelConfig documentation
+            optimizer_config (OptimizerConfig): Optimizer Parameters. Refer to OptimizerConfig documentation
+            trainer_config (TrainerConfig): Trainer Parameters. Refer to TrainerConfig Documentation
+            experiment_config (Optional[ExperimentConfig], optional): Experiment Tracking Parameters.
+            If Provided configures the experiment tracking. Refer to ExperimentConfig documentation. Defaults to None.
+        """
         super().__init__()
         data_config = OmegaConf.structured(data_config)
         model_config = OmegaConf.structured(model_config)
@@ -64,12 +75,22 @@ class TabularModel:
             getattr(models, model_config._module_src), model_config._model_name
         )
 
-    def _get_run_name_uid(self):
+    def _get_run_name_uid(self) -> Tuple[str, int]:
+        """Gets the name of the experiment and increments version by 1
+
+        Returns:
+            tuple[str, int]: Returns the name and version number
+        """
         name = self.config.run_name if self.config.run_name else f"{self.config.task}"
         uid = self.exp_manager.update_versions(name)
         return name, uid
 
     def _setup_experiment_tracking(self):
+        """Sets up the Experiment Tracking Framework according to the choices made in the Experimentconfig
+
+        Raises:
+            NotImplementedError: Raises an Error for invalid choices of log_target
+        """
         if self.config.log_target == "tensorboard":
             self.logger = pl.loggers.TensorBoardLogger(
                 name=self.name, save_dir="tensorboard_logs", version=self.uid
@@ -85,8 +106,12 @@ class TabularModel:
                 f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]"
             )
 
-    def _prepare_callbacks(self):
-        # self.config.checkpoint_callback = True if self.config.checkpoints else False
+    def _prepare_callbacks(self) -> List:
+        """Prepares the necesary callbacks to the Trainer based on the configuration
+
+        Returns:
+            List: A list of callbacks
+        """
         callbacks = []
         if self.config.early_stopping is not None:
             early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
@@ -118,10 +143,18 @@ class TabularModel:
         train: pd.DataFrame,
         valid: Optional[pd.DataFrame] = None,
         test: Optional[pd.DataFrame] = None,
-    ):
+    ) -> None:
+        """The fit method which takes in the data and triggers the training
+
+        Args:
+            train (pd.DataFrame): Training Dataframe
+            valid (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
+            Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+            test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
+            which you'll be able to check performance after the model is trained. Defaults to None.
+        """
         self.datamodule = TabularDatamodule(train=train, config=self.config, test=test)
         self.datamodule.prepare_data()
-        # splits/transforms
         self.datamodule.setup("fit")
         train_loader = self.datamodule.train_dataloader()
         val_loader = self.datamodule.val_dataloader()
@@ -146,18 +179,38 @@ class TabularModel:
             self.trainer.tune(self.model, train_loader, val_loader)
         self.trainer.fit(self.model, train_loader, val_loader)
 
-    def evaluate(self, test: Optional[pd.DataFrame]):
+    def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:
+        """Evaluates the dataframe using the loss and metrics already set in config
+
+        Args:
+            test (Optional[pd.DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
+            test provided during fit. If that was also not provided will return an empty dictionary
+
+        Returns:
+            Union[dict, list]: The final test result dictionary.
+        """
         if test is not None:
             test_loader = self.datamodule.prepare_inference_dataloader(test)
-        else:
+        elif self.test is not None:
             test_loader = self.datamodule.test_dataloader()
+        else:
+            return {}
         result = self.trainer.test(
             test_dataloaders=test_loader,
             ckpt_path="best" if self.config.checkpoints else None,
         )
         return result
 
-    def predict(self, test: pd.DataFrame):
+    def predict(self, test: pd.DataFrame) -> pd.DataFrame:
+        """Uses the trained model to predict on new data and return as a dataframe
+
+        Args:
+            test (pd.DataFrame): The new dataframe with the features defined during training
+
+        Returns:
+            pd.DataFrame: Returns a dataframe with predictions and features.
+            If classification, it returns probabilities and final prediction
+        """
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
         predictions = []
         for sample in inference_dataloader:

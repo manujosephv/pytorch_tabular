@@ -1,16 +1,29 @@
 """Top-level package for Pytorch Tabular."""
 
 __author__ = """Manu Joseph"""
-__email__ = 'manujosephv@gmail.com'
-__version__ = '0.1.0'
+__email__ = "manujosephv@gmail.com"
+__version__ = "0.1.0"
 
 # Relative imports
 from .tabular_model import TabularModel
 from .tabular_datamodule import TabularDatamodule
-from .models.category_embedding import CategoryEmbeddingModel, CategoryEmbeddingModelConfig
+from .models.category_embedding import (
+    CategoryEmbeddingModel,
+    CategoryEmbeddingModelConfig,
+)
 from .models.node import NodeConfig, NODEModel
+from .models.tabnet import TabNetModel, TabNetModelConfig
 
-__all__ = ["TabularModel","TabularDatamodule", "CategoryEmbeddingModel", "CategoryEmbeddingModelConfig", "NodeConfig", "NODEModel"]
+__all__ = [
+    "TabularModel",
+    "TabularDatamodule",
+    "CategoryEmbeddingModel",
+    "CategoryEmbeddingModelConfig",
+    "NodeConfig",
+    "NODEModel",
+    "TabNetModel",
+    "TabNetModelConfig",
+]
 
 # fix Sphinx issues, see https://bit.ly/2K2eptM
 for item in __all__:

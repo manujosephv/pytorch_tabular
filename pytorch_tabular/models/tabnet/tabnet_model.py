@@ -42,4 +42,12 @@ class TabNetModel(BaseModel):
         x = torch.cat(tuple(x), dim=1)
         # Returns output and Masked Loss. We only need the output
         x, _ = self.tabnet(x)
+        if (
+            (self.hparams.task == "regression")
+            and (self.hparams.target_range is not None)
+            and (len(self.hparams.target_range) == 2)
+            and (self.hparams.output_dim == 1)
+        ):
+            y_min, y_max = self.hparams.target_range
+            x = y_min + nn.Sigmoid()(x) * (y_max - y_min)
         return x

@@ -3,7 +3,7 @@
 import pytest
 
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
-from pytorch_tabular.models.tabnet import TabnetModelConfig
+from pytorch_tabular.models.tabnet import TabNetModelConfig
 from pytorch_tabular.tabular_model import TabularModel
 
 
@@ -25,6 +25,7 @@ from pytorch_tabular.tabular_model import TabularModel
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
 @pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
 @pytest.mark.parametrize("normalize_continuous_features", [True, False])
+@pytest.mark.parametrize("target_range", [True, False])
 def test_regression(
     regression_data,
     multi_target,
@@ -32,6 +33,7 @@ def test_regression(
     categorical_cols,
     continuous_feature_transform,
     normalize_continuous_features,
+    target_range
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -45,7 +47,12 @@ def test_regression(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(task="regression")
-        model_config = TabnetModelConfig(**model_config_params)
+        if target_range:
+            model_config_params["target_range"] = [
+                train[target].min().item(),
+                train[target].max().item(),
+            ]
+        model_config = TabNetModelConfig(**model_config_params)
         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()
 
@@ -92,7 +99,7 @@ def test_classification(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(task="regression")
-        model_config = TabnetModelConfig(**model_config_params)
+        model_config = TabNetModelConfig(**model_config_params)
         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()
 

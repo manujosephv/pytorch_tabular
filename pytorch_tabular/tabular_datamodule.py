@@ -1,20 +1,26 @@
-from typing import Optional, List
-import numpy as np
-import pytorch_lightning as pl
-import pandas as pd
-from torch.utils.data import DataLoader, Dataset
-from omegaconf import DictConfig
-from .category_encoders import OrdinalEncoder
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
+"""Tabular Data Module"""
+import re
+from typing import List, Optional, Tuple, Union
+
 import category_encoders as ce
+import numpy as np
+import pandas as pd
+import pytorch_lightning as pl
+from omegaconf import DictConfig
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
-import re
 from sklearn.preprocessing import (
+    LabelEncoder,
     PowerTransformer,
     QuantileTransformer,
     StandardScaler,
-    LabelEncoder,
 )
+from torch.utils.data import DataLoader, Dataset
+
+from .category_encoders import OrdinalEncoder
 
 
 class TabularDatamodule(pl.LightningDataModule):
@@ -57,11 +63,6 @@ class TabularDatamodule(pl.LightningDataModule):
         super().__init__()
         self.train = train.copy()
         self.validation = validation
-        # if validation is None:
-        #     val_idx = train.sample(int(config.validation_split * len(train))).index
-        #     self.validation = self.train[self.train.index.isin(val_idx)].copy()
-        #     self.train = self.train[~self.train.index.isin(val_idx)]
-        # else:
         self.validation = validation
         self.test = test if test is None else test.copy()
         self.categorical_cols = config.categorical_cols
@@ -69,9 +70,13 @@ class TabularDatamodule(pl.LightningDataModule):
         self.target = config.target
         self.batch_size = config.batch_size
         self.config = config
-        # self.update_config()
 
-    def update_config(self):
+    def update_config(self) -> None:
+        """Calculates and updates a few key information to the config object
+
+        Raises:
+            NotImplementedError: [description]
+        """
         if self.config.task == "regression":
             self.config.output_dim = len(self.config.target)
         elif self.config.task == "classification":
@@ -90,12 +95,26 @@ class TabularDatamodule(pl.LightningDataModule):
                 (x, min(50, (x + 1) // 2)) for x in self.config.categorical_cardinality
             ]
 
-    def do_leave_one_out_encoder(self):
-        return (self.config._model_name == "NODEModel") and (
-                    not self.config.embed_categorical
-                )
+    def do_leave_one_out_encoder(self) -> bool:
+        """Checks the special condition for NODE where we use a LeaveOneOutEncoder to encode categorical columns
 
-    def preprocess_data(self, data, stage="inference"):
+        Returns:
+            bool
+        """
+        return (self.config._model_name == "NODEModel") and (
+            not self.config.embed_categorical
+        )
+
+    def preprocess_data(self, data: pd.DataFrame, stage: str="inference") -> Tuple[pd.DataFrame, list]:
+        """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before feeding into the dataloder
+
+        Args:
+            data (pd.DataFrame): A dataframe with the features and target
+            stage (str, optional): Internal parameter. Used to distinguisj between fit and inference. Defaults to "inference".
+
+        Returns:
+            tuple[pd.DataFrame, list]: Returns the processed dataframe and the added features(list) as a tuple
+        """
         added_features = None
         if self.config.encode_date_cols:
             for field_name, freq in self.config.date_cols:
@@ -167,7 +186,13 @@ class TabularDatamodule(pl.LightningDataModule):
                 )
         return data, added_features
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: Optional[str] = None)-> None:
+        """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc. 
+        This is called before accessing the dataloaders 
+
+        Args:
+            stage (Optional[str], optional): Internal parameter to distinguish between fit and inference. Defaults to None.
+        """
         if stage == "fit" or stage is None:
             if self.validation is None:
                 val_idx = self.train.sample(
@@ -175,8 +200,10 @@ class TabularDatamodule(pl.LightningDataModule):
                 ).index
                 self.validation = self.train[self.train.index.isin(val_idx)]
                 self.train = self.train[~self.train.index.isin(val_idx)]
-            # Encoding Date Variables
+            # Preprocessing Train, Validation
             self.train, added_features = self.preprocess_data(self.train, stage="fit")
+            # The only features that are added aer the date features extracted 
+            # from the date which are categorical in nature
             if added_features is not None:
                 self.config.categorical_cols += added_features
             self.validation, _ = self.preprocess_data(
@@ -184,7 +211,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             if self.test is not None:
                 self.test, _ = self.preprocess_data(self.test, stage="inference")
-            # Calculating the categorical dims and embedding dims
+            # Calculating the categorical dims and embedding dims etc and updating the config
             self.update_config()
 
     # adapted from gluonts
@@ -365,7 +392,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data=self.train,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
-            embed_categorical= (not self.do_leave_one_out_encoder()),
+            embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         return DataLoader(
@@ -379,7 +406,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data=self.validation,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
-            embed_categorical= (not self.do_leave_one_out_encoder()),
+            embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         return DataLoader(
@@ -394,7 +421,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 data=self.test,
                 categorical_cols=self.categorical_cols,
                 continuous_cols=self.continuous_cols,
-                embed_categorical= (not self.do_leave_one_out_encoder()),
+                embed_categorical=(not self.do_leave_one_out_encoder()),
                 target=self.target,
             )
             return DataLoader(
@@ -404,8 +431,15 @@ class TabularDatamodule(pl.LightningDataModule):
                 num_workers=self.config.num_workers,
             )
 
-    def prepare_inference_dataloader(self, df) -> DataLoader:
-        """ Function that prepares and loads the new data. """
+    def prepare_inference_dataloader(self, df: pd.DataFrame) -> DataLoader:
+        """Function that prepares and loads the new data.
+
+        Args:
+            df (pd.DataFrame): Dataframe with the features and target
+
+        Returns:
+            DataLoader: The dataloader for the passed in dataframe
+        """
         df = df.copy()
         if len(set(self.target) - set(df.columns)) < 0:
             df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
@@ -416,7 +450,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data=df,
             categorical_cols=self.categorical_cols,
             continuous_cols=self.continuous_cols,
-            embed_categorical= (not self.do_leave_one_out_encoder()),
+            embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         return DataLoader(
@@ -445,6 +479,8 @@ class TabularDataset(Dataset):
             continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.
             categorical_cols (List[str], optional): A list of names of categorical columns.
             These columns must be ordinal encoded beforehand. Defaults to None.
+            embed_categorical (bool): Flag to tell the dataset whether to convert categorical columns to LongTensor or retain as float.
+            If we are going to embed categorical cols with an embedding layer, we need to convert the columns to LongTensor
             target (List[str], optional): A list of strings with target column name(s). Defaults to None.
         """
 

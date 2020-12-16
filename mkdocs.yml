@@ -19,12 +19,12 @@ plugins:
           rendering:
             show_root_heading: yes
 repo_url: https://github.com/manujosephv/pytorch_tabular
-  social:
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/in/manujosephv/
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/manujosephv
-    - icon: fontawesome/solid/blog
-      link: https://deep-and-shallow.com/
-    - icon: fontawesome/brands/medium
-      link: https://medium.com/@manujosephv
+social:
+  - icon: fontawesome/brands/linkedin
+    link: https://www.linkedin.com/in/manujosephv/
+  - icon: fontawesome/brands/twitter
+    link: https://twitter.com/manujosephv
+  - icon: fontawesome/solid/blog
+    link: https://deep-and-shallow.com/
+  - icon: fontawesome/brands/medium
+    link: https://medium.com/@manujosephv

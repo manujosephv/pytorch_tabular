@@ -1,4 +1,8 @@
+# Pytorch Tabular
+# Author: Manu Joseph <manujoseph@gmail.com>
+# For license information, see LICENSE.TXT
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
+"""Category Encoders"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

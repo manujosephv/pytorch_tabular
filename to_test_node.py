@@ -3,7 +3,7 @@
 
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.node import NodeConfig
-from pytorch_tabular.models.tabnet import TabnetModelConfig
+from pytorch_tabular.models.tabnet import TabNetModelConfig
 from pytorch_tabular.tabular_model import TabularModel
 
 import numpy as np
@@ -59,7 +59,7 @@ def test_regression(
         # model_config_params = dict(task="regression", depth=2, embed_categorical=embed_categorical)
         # model_config = NodeConfig(**model_config_params)
         model_config_params = dict(task="regression")
-        model_config = TabnetModelConfig(**model_config_params)
+        model_config = TabNetModelConfig(**model_config_params)
         
         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()

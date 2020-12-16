@@ -114,4 +114,12 @@ class CategoryEmbeddingNODEModel(BaseModel):
             x = self.embedding_dropout(x)
         x = self.dense_block(x)
         x = self.output_response(x)
+        if (
+            (self.hparams.task == "regression")
+            and (self.hparams.target_range is not None)
+            and (len(self.hparams.target_range) == 2)
+            and (self.hparams.output_dim == 1)
+        ):
+            y_min, y_max = self.hparams.target_range
+            x = y_min + nn.Sigmoid()(x) * (y_max - y_min)
         return x

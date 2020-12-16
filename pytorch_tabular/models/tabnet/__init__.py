@@ -1,4 +1,4 @@
 from .tabnet_model import TabNetModel
-from .config import TabnetModelConfig
+from .config import TabNetModelConfig
 
-__all__ = ["TabNetModel", "TabnetModelConfig"]
+__all__ = ["TabNetModel", "TabNetModelConfig"]
