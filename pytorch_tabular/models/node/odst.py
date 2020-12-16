@@ -57,7 +57,7 @@ class ODST(ModuleWithInit):
             If greater than 1 (e.g. 10), thresholds will be closer to median data value
             If less than 1 (e.g. 0.1), thresholds will approach min/max data values.
 
-        :param threshold_init_cutoff: threshold log-temperatures initializer, \in (0, inf)
+        :param threshold_init_cutoff: threshold log-temperatures initializer, in (0, inf)
             By default(1.0), log-remperatures are initialized in such a way that all bin selectors
             end up in the linear region of sparse-sigmoid. The temperatures are then scaled by this parameter.
             Setting this value > 1.0 will result in some margin between data points and sparse-sigmoid cutoff value
