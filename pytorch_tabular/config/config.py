@@ -464,7 +464,7 @@ class ModelConfig:
         if self.task == "regression":
             self.loss = "MSELoss" if self.loss is None else self.loss
             self.metrics = (
-                ["MeanSquaredLogError"] if self.metrics is None else self.metrics
+                ["MeanSquaredError"] if self.metrics is None else self.metrics
             )
             self.metrics_params = [{}]
         elif self.task == "classification":

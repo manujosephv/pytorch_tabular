@@ -65,8 +65,8 @@ class TabularDatamodule(pl.LightningDataModule):
         self.validation = validation
         self.validation = validation
         self.test = test if test is None else test.copy()
-        self.categorical_cols = config.categorical_cols
-        self.continuous_cols = config.continuous_cols
+        # self.categorical_cols = config.categorical_cols
+        # self.continuous_cols = config.continuous_cols
         self.target = config.target
         self.batch_size = config.batch_size
         self.config = config
@@ -85,15 +85,15 @@ class TabularDatamodule(pl.LightningDataModule):
                     "Multi-Target Classification is not implemented."
                 )
             self.config.output_dim = len(self.train[self.config.target[0]].unique())
-
-        self.config.categorical_cardinality = [
-            int(self.train[col].fillna("NA").nunique()) + 1
-            for col in self.config.categorical_cols
-        ]
-        if self.config.embedding_dims is None:
-            self.config.embedding_dims = [
-                (x, min(50, (x + 1) // 2)) for x in self.config.categorical_cardinality
+        if not self.do_leave_one_out_encoder():
+            self.config.categorical_cardinality = [
+                int(self.train[col].fillna("NA").nunique()) + 1
+                for col in self.config.categorical_cols
             ]
+            if self.config.embedding_dims is None:
+                self.config.embedding_dims = [
+                    (x, min(50, (x + 1) // 2)) for x in self.config.categorical_cardinality
+                ]
 
     def do_leave_one_out_encoder(self) -> bool:
         """Checks the special condition for NODE where we use a LeaveOneOutEncoder to encode categorical columns
@@ -124,6 +124,13 @@ class TabularDatamodule(pl.LightningDataModule):
                 data, added_features = self.add_datepart(
                     data, field_name, frequency=freq, prefix=None, drop=True
                 )
+        # The only features that are added aer the date features extracted
+        # from the date which are categorical in nature
+        if (added_features is not None) and (stage == "fit"):
+            self.config.categorical_cols += added_features
+            self.config.categorical_dim = (
+                len(self.config.categorical_cols) if self.config.categorical_cols is not None else 0
+            )
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
             if stage == "fit":
@@ -144,7 +151,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 data = self.categorical_encoder.transform(data)
         # Normalizing Continuous Columns
         if (self.config.normalize_continuous_features) and (
-            len(self.continuous_cols) > 0
+            len(self.config.continuous_cols) > 0
         ):
             if stage == "fit":
                 self.scaler = StandardScaler()
@@ -157,7 +164,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 )
         # Transforming Continuous Columns
         if (self.config.continuous_feature_transform is not None) and (
-            len(self.continuous_cols) > 0
+            len(self.config.continuous_cols) > 0
         ):
             if stage == "fit":
                 transform = self.CONTINUOUS_TRANSFORMS[
@@ -204,10 +211,6 @@ class TabularDatamodule(pl.LightningDataModule):
                 self.train = self.train[~self.train.index.isin(val_idx)]
             # Preprocessing Train, Validation
             self.train, added_features = self.preprocess_data(self.train, stage="fit")
-            # The only features that are added aer the date features extracted
-            # from the date which are categorical in nature
-            if added_features is not None:
-                self.config.categorical_cols += added_features
             self.validation, _ = self.preprocess_data(
                 self.validation, stage="inference"
             )
@@ -392,8 +395,8 @@ class TabularDatamodule(pl.LightningDataModule):
         dataset = TabularDataset(
             task=self.config.task,
             data=self.train,
-            categorical_cols=self.categorical_cols,
-            continuous_cols=self.continuous_cols,
+            categorical_cols=self.config.categorical_cols,
+            continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
@@ -406,8 +409,8 @@ class TabularDatamodule(pl.LightningDataModule):
         dataset = TabularDataset(
             task=self.config.task,
             data=self.validation,
-            categorical_cols=self.categorical_cols,
-            continuous_cols=self.continuous_cols,
+            categorical_cols=self.config.categorical_cols,
+            continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
@@ -421,8 +424,8 @@ class TabularDatamodule(pl.LightningDataModule):
             dataset = TabularDataset(
                 task=self.config.task,
                 data=self.test,
-                categorical_cols=self.categorical_cols,
-                continuous_cols=self.continuous_cols,
+                categorical_cols=self.config.categorical_cols,
+                continuous_cols=self.config.continuous_cols,
                 embed_categorical=(not self.do_leave_one_out_encoder()),
                 target=self.target,
             )
@@ -450,8 +453,8 @@ class TabularDatamodule(pl.LightningDataModule):
         dataset = TabularDataset(
             task=self.config.task,
             data=df,
-            categorical_cols=self.categorical_cols,
-            continuous_cols=self.continuous_cols,
+            categorical_cols=self.config.categorical_cols,
+            continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )

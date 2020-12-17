@@ -93,7 +93,6 @@ class ODST(ModuleWithInit):
             torch.full([num_trees, depth], float("nan"), dtype=torch.float32),
             requires_grad=True,
         )  # nan values will be initialized on first batch (data-aware init)
-
         self.log_temperatures = nn.Parameter(
             torch.full([num_trees, depth], float("nan"), dtype=torch.float32),
             requires_grad=True,

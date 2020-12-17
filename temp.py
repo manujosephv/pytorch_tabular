@@ -18,6 +18,7 @@ def read_style_df(n_seasons=4, periods=6):
     return df
 
 style_df = read_style_df(n_seasons=4, periods=6)
+style_df = style_df.dropna()
 test_size = int(0.2*(style_df[style_df['year']==2020].shape[0]))
 test_idx = style_df[style_df.year==2020].sample(test_size, random_state=42).index
 train = style_df[~style_df.index.isin(test_idx)].copy()
@@ -44,17 +45,18 @@ data_config = DataConfig(
         "mdl",
         "intro_period_qtr",
     ],
-    target_transform="quantile_normal"
-    # date_cols=[('intro_date_usa','D')],
-    # encode_date_cols=True
+    normalize_continuous_features=True,
+    continuous_feature_transform="quantile_normal",
+    date_cols=[('intro_date_usa','D')],
+    encode_date_cols=True
 )
-
-model_config = CategoryEmbeddingModelConfig(task="regression", layers="64-32-16", activation="SELU")
-# model_config = NodeConfig(task="regression")
+# TODO Data_cols and encode_date_col causing an error
+# model_config = CategoryEmbeddingModelConfig(task="regression", layers="64-32-16", activation="SELU")
+model_config = NodeConfig(task="regression", learning_rate=1, embed_categorical=True)
 trainer_config = TrainerConfig(
-    auto_lr_find=True,
+    # auto_lr_find=True,
     # auto_scale_batch_size=True,
-    batch_size=64,
+    batch_size=1024,
     max_epochs=1000,
     gpus=1,
     # track_grad_norm=2,

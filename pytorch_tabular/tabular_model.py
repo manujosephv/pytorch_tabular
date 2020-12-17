@@ -183,6 +183,11 @@ class TabularModel:
         )
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
+        # Parameters in NODE needs to be initialized again
+        # TODO make this data dependent
+        if self.config._model_name in ["CategoryEmbeddingNODEModel","NODEModel"]:
+            for block in self.model.dense_block:
+                block._is_initialized_bool = False
         self.trainer.fit(self.model, train_loader, val_loader)
 
     def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:

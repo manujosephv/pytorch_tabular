@@ -21,6 +21,7 @@ class NODEModel(BaseModel):
         super().__init__(config)
 
     def _build_network(self):
+        # TODO make initialize a separate funciton which can be called wirh higher batch size without CUDA error
         self.dense_block = DenseODSTBlock(
             input_dim=self.hparams.continuous_dim + self.hparams.categorical_dim,
             num_trees=self.hparams.num_trees,
