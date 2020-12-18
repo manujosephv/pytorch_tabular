@@ -135,7 +135,6 @@ model_config = NodeConfig(
 # model_config = TabNetModelConfig(task="regression",metrics=["MeanSquaredLogError"])
 trainer_config = TrainerConfig(
     auto_lr_find=True,
-    # auto_scale_batch_size=True,
     batch_size=128,
     max_epochs=1000,
     gpus=1,

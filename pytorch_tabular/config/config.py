@@ -196,12 +196,6 @@ class TrainerConfig:
             "help": "Accumulates grads every k batches or as set up in the dict. Trainer also calls optimizer.step() for the last indivisible step number."
         },
     )
-    auto_scale_batch_size: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Automatically tries to find the largest batch size that fits into memory, before any training."
-        },
-    )
     auto_lr_find: bool = field(
         default=False,
         metadata={
