@@ -390,7 +390,7 @@ class TabularDatamodule(pl.LightningDataModule):
             df.drop(field_name, axis=1, inplace=True)
         return df, added_features
 
-    def train_dataloader(self) -> DataLoader:
+    def train_dataloader(self, batch_size: Optional[int]=None) -> DataLoader:
         """ Function that loads the train set. """
         dataset = TabularDataset(
             task=self.config.task,
@@ -401,7 +401,7 @@ class TabularDatamodule(pl.LightningDataModule):
             target=self.target,
         )
         return DataLoader(
-            dataset, self.batch_size, shuffle=True, num_workers=self.config.num_workers
+            dataset, batch_size if batch_size is not None else self.batch_size, shuffle=True, num_workers=self.config.num_workers
         )
 
     def val_dataloader(self) -> DataLoader:

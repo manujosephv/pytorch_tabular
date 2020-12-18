@@ -47,13 +47,17 @@ class NODEModel(BaseModel):
         self.output_response = utils.Lambda(
             lambda x: x[..., : self.hparams.output_dim].mean(dim=-2)
         )
-
-    def forward(self, x: Dict):
+    
+    def unpack_input(self, x: Dict):
         # unpacking into a tuple
         x = x["categorical"], x["continuous"]
         # eliminating None in case there is no categorical or continuous columns
         x = (item for item in x if len(item) > 0)
         x = torch.cat(tuple(x), dim=1)
+        return x
+
+    def forward(self, x: Dict):
+        x = self.unpack_input(x)
         x = self.dense_block(x)
         x = self.output_response(x)
         return x
@@ -96,7 +100,7 @@ class CategoryEmbeddingNODEModel(BaseModel):
             lambda x: x[..., : self.hparams.output_dim].mean(dim=-2)
         )
 
-    def forward(self, x: Dict):
+    def unpack_input(self, x):
         # unpacking into a tuple
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         if self.embedding_cat_dim != 0:
@@ -114,6 +118,10 @@ class CategoryEmbeddingNODEModel(BaseModel):
                 x = torch.cat([x, continuous_data], 1)
             else:
                 x = continuous_data
+        return x
+
+    def forward(self, x: Dict):
+        x = self.unpack_input(x)
         if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
             x = self.embedding_dropout(x)
         x = self.dense_block(x)

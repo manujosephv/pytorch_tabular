@@ -144,6 +144,21 @@ class TabularModel:
             self.config.checkpoint_callback = False
         return callbacks
 
+    def data_aware_initialization(self):
+        # Need a big batch to initialize properly
+        alt_loader = self.datamodule.train_dataloader(batch_size=1024)
+        batch = next(iter(alt_loader))
+        for k, v in batch.items():
+            if isinstance(v, list) and (len(v) == 0):
+                # Skipping empty list
+                continue
+            # batch[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
+            batch[k] = v.to(self.model.device)
+
+        #single forward pass to initialize the ODST
+        with torch.no_grad():
+            self.model(batch)
+
     def fit(
         self,
         train: pd.DataFrame,
@@ -167,6 +182,9 @@ class TabularModel:
         # Fetching the config as some data specific configs have been added in the datamodule
         config = self.datamodule.config
         self.model = self.model_callable(config)
+        #Data Aware Initialization (NODE)
+        if self.config._model_name in ["CategoryEmbeddingNODEModel","NODEModel"]:
+            self.data_aware_initialization()
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(
                 self.model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
@@ -184,10 +202,8 @@ class TabularModel:
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
         # Parameters in NODE needs to be initialized again
-        # TODO make this data dependent
         if self.config._model_name in ["CategoryEmbeddingNODEModel","NODEModel"]:
-            for block in self.model.dense_block:
-                block._is_initialized_bool = False
+            self.data_aware_initialization()
         self.trainer.fit(self.model, train_loader, val_loader)
 
     def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:
