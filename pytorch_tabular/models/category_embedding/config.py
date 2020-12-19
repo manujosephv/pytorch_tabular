@@ -21,6 +21,8 @@ class CategoryEmbeddingModelConfig(ModelConfig):
         The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
+        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
+        Typically used for Regression problems. If left empty, will not apply any restrictions
 
         layers (str): Hypher-separated number of layers and units in the classification head. eg. 32-64-32.
         batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer
@@ -34,8 +36,6 @@ class CategoryEmbeddingModelConfig(ModelConfig):
         dropout (float): probability of an classification element to be zeroed.
         use_batch_norm (bool): Whether to use batch normalization in the classification head
         initialization (str): Initialization scheme for the linear layersChoices are: kaiming xavier random
-        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
-        Typically used for Regression problems. If left empty, will not apply any restrictions
 
     Raises:
         NotImplementedError: Raises an error if task is not in ['regression','classification']
@@ -84,13 +84,6 @@ class CategoryEmbeddingModelConfig(ModelConfig):
         metadata={
             "help": "Initialization scheme for the linear layers",
             "choices": ["kaiming", "xavier", "random"],
-        },
-    )
-    # TODO  Currently only works for single regression tasks
-    target_range: Optional[List] = field(
-        default=None,
-        metadata={
-            "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
         },
     )
     _module_src: str = field(default="category_embedding")

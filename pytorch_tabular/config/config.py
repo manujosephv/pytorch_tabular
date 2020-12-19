@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """Config"""
 from dataclasses import MISSING, dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import os
 from omegaconf import OmegaConf
 
@@ -422,6 +422,8 @@ class ModelConfig:
         The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
+        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
+        Typically used for Regression problems. If left empty, will not apply any restrictions
 
     Raises:
         NotImplementedError: Raises an error if task is not regression or classification
@@ -452,6 +454,12 @@ class ModelConfig:
     metrics_params: Optional[List] = field(
         default_factory=lambda: {},
         metadata={"help": "The parameters to be passed to the Metrics initialized"},
+    )
+    target_range: Optional[List] = field(
+        default=None,
+        metadata={
+            "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
+        },
     )
 
     def __post_init__(self):

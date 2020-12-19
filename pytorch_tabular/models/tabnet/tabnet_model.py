@@ -49,9 +49,9 @@ class TabNetModel(BaseModel):
         if (
             (self.hparams.task == "regression")
             and (self.hparams.target_range is not None)
-            and (len(self.hparams.target_range) == 2)
-            and (self.hparams.output_dim == 1)
+            and all([len(range_) == 2 for range_ in self.hparams.target_range])
         ):
-            y_min, y_max = self.hparams.target_range
-            x = y_min + nn.Sigmoid()(x) * (y_max - y_min)
+            for i in range(self.hparams.output_dim):
+                y_min, y_max = self.hparams.target_range[i]
+                x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
         return x

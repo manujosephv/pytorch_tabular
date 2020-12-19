@@ -21,6 +21,8 @@ class TabNetModelConfig(ModelConfig):
         The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
+        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
+        Typically used for Regression problems. If left empty, will not apply any restrictions
 
         n_d (int): Dimension of the prediction  layer (usually between 4 and 64)
         n_a (int): Dimension of the attention  layer (usually between 4 and 64)
@@ -33,10 +35,6 @@ class TabNetModelConfig(ModelConfig):
         n_shared (int): Number of independent GLU layer in each GLU block (default 2)
         virtual_batch_size (int): Batch size for Ghost Batch Normalization
         mask_type (str): Either 'sparsemax' or 'entmax' : this is the masking function to useChoices are: sparsemax entmax
-        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
-        Typically used for Regression problems. If left empty, will not apply any restrictions
-
-
 
     Raises:
         NotImplementedError: Raises an error if task is not in ['regression','classification']
@@ -93,13 +91,6 @@ class TabNetModelConfig(ModelConfig):
         metadata={
             "help": "Either 'sparsemax' or 'entmax' : this is the masking function to use",
             "choices": ["sparsemax", "entmax"],
-        },
-    )
-    # TODO  Currently only works for single regression tasks
-    target_range: Optional[List] = field(
-        default=None,
-        metadata={
-            "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
         },
     )
     _module_src: str = field(default="tabnet")

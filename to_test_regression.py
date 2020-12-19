@@ -45,14 +45,13 @@ data_config = DataConfig(
     continuous_feature_transform=None,#"yeo-johnson",
     normalize_continuous_features=True
 )
-# model_config = CategoryEmbeddingModelConfig(
-#     task="regression",
-#     target_range=[
-#         dataset.frame[dataset.target_names].min().item(),
-#         dataset.frame[dataset.target_names].max().item(),
-#     ],
-# )
-model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
+model_config = CategoryEmbeddingModelConfig(
+    task="regression",
+    target_range=[
+        (dataset.frame[dataset.target_names].min().item(),dataset.frame[dataset.target_names].max().item()),
+        (dataset.frame[["MedInc"]].min().item(), dataset.frame[["MedInc"]].max().item())]
+)
+# model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
 trainer_config = TrainerConfig(checkpoints=None, max_epochs=1)
 # experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()

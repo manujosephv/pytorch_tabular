@@ -17,6 +17,8 @@ class NodeConfig(ModelConfig):
         The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
+        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
+        Typically used for Regression problems. If left empty, will not apply any restrictions
 
         num_layers (int): Number of Oblivious Decision Tree Layers in the Dense Architecture
         num_trees (int): Number of Oblivious Decision Trees in each layer
@@ -59,8 +61,6 @@ class NodeConfig(ModelConfig):
         list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
         using the rule min(50, (x + 1) // 2)
         embedding_dropout (float): probability of an embedding element to be zeroed.
-        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
-        Typically used for Regression problems. If left empty, will not apply any restrictions
 
     Raises:
         NotImplementedError: Raises an error if task is not in ['regression','classification']
@@ -173,13 +173,6 @@ class NodeConfig(ModelConfig):
     embedding_dropout: float = field(
         default=0.5,
         metadata={"help": "probability of an embedding element to be zeroed."},
-    )
-    # TODO  Currently only works for single regression tasks
-    target_range: Optional[List] = field(
-        default=None,
-        metadata={
-            "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
-        },
     )
     _module_src: str = field(default="node")
     _model_name: str = field(default="NODEModel")

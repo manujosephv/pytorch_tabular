@@ -93,12 +93,12 @@ class CategoryEmbeddingModel(BaseModel):
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         if self.embedding_cat_dim != 0:
             x = []
-            for i, embedding_layer in enumerate(self.embedding_layers):
-                x.append(embedding_layer(categorical_data[:, i]))
-            # x = [
-            #     embedding_layer(categorical_data[:, i])
-            #     for i, embedding_layer in enumerate(self.embedding_layers)
-            # ]
+            # for i, embedding_layer in enumerate(self.embedding_layers):
+            #     x.append(embedding_layer(categorical_data[:, i]))
+            x = [
+                embedding_layer(categorical_data[:, i])
+                for i, embedding_layer in enumerate(self.embedding_layers)
+            ]
             x = torch.cat(x, 1)
 
         if self.continuous_dim != 0:
@@ -114,9 +114,9 @@ class CategoryEmbeddingModel(BaseModel):
         if (
             (self.hparams.task == "regression")
             and (self.hparams.target_range is not None)
-            and (len(self.hparams.target_range) == 2)
-            and (self.hparams.output_dim == 1)
+            and all([len(range_) == 2 for range_ in self.hparams.target_range])
         ):
-            y_min, y_max = self.hparams.target_range
-            x = y_min + nn.Sigmoid()(x) * (y_max - y_min)
+            for i in range(self.hparams.output_dim):
+                y_min, y_max = self.hparams.target_range[i]
+                x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
         return x
