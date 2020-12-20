@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class NODEModel(BaseModel):
-    def __init__(self, config: DictConfig):
-        super().__init__(config)
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
 
     def _build_network(self):
         self.dense_block = DenseODSTBlock(
@@ -70,9 +70,9 @@ class NODEModel(BaseModel):
 
 
 class CategoryEmbeddingNODEModel(BaseModel):
-    def __init__(self, config: DictConfig):
+    def __init__(self, config: DictConfig, **kwargs):
         self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
-        super().__init__(config)
+        super().__init__(config, **kwargs)
 
     def _build_network(self):
         self.embedding_layers = nn.ModuleList(

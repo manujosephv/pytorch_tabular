@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class TabNetModel(BaseModel):
-    def __init__(self, config: DictConfig):
-        super().__init__(config)
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
 
     def _build_network(self):
         self.tabnet = TabNet(

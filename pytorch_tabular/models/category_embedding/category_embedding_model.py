@@ -15,13 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class CategoryEmbeddingModel(BaseModel):
-    def __init__(self, config: DictConfig):
+    def __init__(self, config: DictConfig, **kwargs):
         # The concatenated output dim of the embedding layer
         self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         self.continuous_dim = (
             config.continuous_dim
         )  # auto-calculated by the calling script
-        super().__init__(config)
+        super().__init__(config, **kwargs)
 
     def _initialize_layers(self, layer):
         if self.hparams.activation == "ReLU":

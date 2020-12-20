@@ -4,7 +4,7 @@
 """Base Model"""
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Dict
+from typing import Callable, Dict, List, Optional
 
 import pytorch_lightning as pl
 import torch
@@ -15,8 +15,19 @@ logger = logging.getLogger(__name__)
 
 
 class BaseModel(pl.LightningModule, metaclass=ABCMeta):
-    def __init__(self, config: DictConfig):
+    def __init__(
+        self,
+        config: DictConfig,
+        custom_loss: Optional[torch.nn.Module] = None,
+        custom_metrics: Optional[List[Callable]] = None,
+        custom_optimizer: Optional[torch.optim.Optimizer] = None,
+        custom_optimizer_params: Dict = {},
+    ):
         super().__init__()
+        self.custom_loss = custom_loss
+        self.custom_metrics = custom_metrics
+        self.custom_optimizer = custom_optimizer
+        self.custom_optimizer_params = custom_optimizer_params
         self.save_hyperparameters(config)
         # The concatenated output dim of the embedding layer
         self._build_network()
@@ -28,27 +39,31 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         pass
 
     def _setup_loss(self):
-        try:
-            self.loss = getattr(nn, self.hparams.loss)()
-        except AttributeError as e:
-            logger.error(
-                f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
-            )
-            raise e
-
-    def _setup_metrics(self):
-        self.metrics = []
-        task_module = pl.metrics.functional
-        for metric in self.hparams.metrics:
+        if self.custom_loss is None:
             try:
-                self.metrics.append(
-                    getattr(task_module, metric)
-                )
+                self.loss = getattr(nn, self.hparams.loss)()
             except AttributeError as e:
                 logger.error(
-                    f"{metric} is not a valid functional metric defined in the pytorch_lightning.metrics.functional module"
+                    f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
                 )
-            raise e
+                raise e
+        else:
+            self.loss = self.custom_loss
+
+    def _setup_metrics(self):
+        if self.custom_metrics is None:
+            self.metrics = []
+            task_module = pl.metrics.functional
+            for metric in self.hparams.metrics:
+                try:
+                    self.metrics.append(getattr(task_module, metric))
+                except AttributeError as e:
+                    logger.error(
+                        f"{metric} is not a valid functional metric defined in the pytorch_lightning.metrics.functional module"
+                    )
+                    raise e
+        else:
+            self.metrics = self.custom_metrics
 
     def calculate_loss(self, y, y_hat, tag):
         if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
@@ -86,7 +101,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 for i in range(self.hparams.output_dim):
                     if isinstance(metric, pl.metrics.functional.mean_squared_log_error):
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
-                        _metric = metric(torch.clip(y_hat[:, i], min=0), torch.clip(y[:, i], min=0))
+                        _metric = metric(
+                            torch.clip(y_hat[:, i], min=0), torch.clip(y[:, i], min=0)
+                        )
                     else:
                         _metric = metric(y_hat[:, i], y[:, i])
                     self.log(
@@ -138,13 +155,16 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return y_hat, y
 
     def configure_optimizers(self):
-        try:
-            self._optimizer = getattr(torch.optim, self.hparams.optimizer)
-        except AttributeError as e:
-            logger.error(
-                f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module"
-            )
-            raise e
+        if self.custom_optimizer is None:
+            try:
+                self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+            except AttributeError as e:
+                logger.error(
+                    f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module"
+                )
+                raise e
+        else:
+            self._optimizer = self.custom_optimizer
 
         opt = self._optimizer(
             self.parameters(),

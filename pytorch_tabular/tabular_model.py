@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """Tabular Model"""
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -105,7 +105,6 @@ class TabularModel:
                         "Targe Range, if defined, should be list tuples of length two(min,max). The length of the list should be equal to hte length of target columns"
                     )
 
-
     def _get_run_name_uid(self) -> Tuple[str, int]:
         """Gets the name of the experiment and increments version by 1
 
@@ -194,11 +193,17 @@ class TabularModel:
         val_loader = self.datamodule.val_dataloader()
         return train_loader, val_loader
 
-    def _prepare_model(self):
+    def _prepare_model(self, loss, metrics, optimizer, optimizer_params):
         logger.info(f"Preparing the Model: {self.config._model_name}...")
         # Fetching the config as some data specific configs have been added in the datamodule
         self.config = self.datamodule.config
-        self.model = self.model_callable(self.config)
+        self.model = self.model_callable(
+            self.config,
+            custom_loss=loss,
+            custom_metrics=metrics,
+            custom_optimizer=optimizer,
+            custom_optimizer_params=optimizer_params,
+        )
         # Data Aware Initialization (NODE)
         if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
             self.data_aware_initialization()
@@ -222,6 +227,10 @@ class TabularModel:
         train: pd.DataFrame,
         valid: Optional[pd.DataFrame] = None,
         test: Optional[pd.DataFrame] = None,
+        loss: Optional[torch.nn.Module] = None,
+        metrics: Optional[List[Callable]] = None,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+        optimizer_params: Dict = {},
     ) -> None:
         """The fit method which takes in the data and triggers the training
 
@@ -231,9 +240,14 @@ class TabularModel:
             Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
             test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
             which you'll be able to check performance after the model is trained. Defaults to None.
+            loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
+            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the signature metric_fn(y_hat, y)
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
+            This should be the Class and not the initialized object
+            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
         """
         train_loader, val_loader = self._prepare_dataloader(train, valid, test)
-        self._prepare_model()
+        self._prepare_model(loss, metrics, optimizer, optimizer_params)
 
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(
