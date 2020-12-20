@@ -448,7 +448,7 @@ class ModelConfig:
     metrics: Optional[List[str]] = field(
         default=None,
         metadata={
-            "help": "the list of metrics you need to track during training. The metrics should be one of the metrics mplemented in PyTorch Lightning. By default, it is Accuracy if classification and MeanSquaredLogError for regression"
+            "help": "the list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in PyTorch Lightning. By default, it is accuracy if classification and MeanSquaredLogError for regression"
         },
     )
     metrics_params: Optional[List] = field(
@@ -466,12 +466,12 @@ class ModelConfig:
         if self.task == "regression":
             self.loss = "MSELoss" if self.loss is None else self.loss
             self.metrics = (
-                ["MeanSquaredError"] if self.metrics is None else self.metrics
+                ["mean_squared_error"] if self.metrics is None else self.metrics
             )
             self.metrics_params = [{}]
         elif self.task == "classification":
             self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
-            self.metrics = ["Accuracy"] if self.metrics is None else self.metrics
+            self.metrics = ["accuracy"] if self.metrics is None else self.metrics
             self.metrics_params = [{}]
         else:
             raise NotImplementedError(

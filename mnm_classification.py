@@ -1,3 +1,4 @@
+from pytorch_tabular.models.tabnet.config import TabNetModelConfig
 from sklearn.datasets import fetch_covtype
 
 # from torch.utils import data
@@ -113,7 +114,7 @@ numerical_cols = [
     "wind_speed",
 ]
 date_columns = []
-train = orig_train[numerical_cols + categorical_cols + date_columns + [target]].copy()
+train = orig_train[numerical_cols + categorical_cols + date_columns + target].copy()
 
 data_config = DataConfig(
     target=target,
@@ -123,24 +124,43 @@ data_config = DataConfig(
     normalize_continuous_features=True,
 )
 # model_config = CategoryEmbeddingModelConfig(task="classification")
-model_config = NodeConfig(
+# model_config = CategoryEmbeddingModelConfig(
+#     task="classification",
+#     layers="256-64-128",
+#     activation="SELU",
+#     metrics=["auroc"],
+# )
+# model_config = NodeConfig(
+#     task="classification",
+#     num_layers=2,
+#     num_trees=512,
+#     depth=4,
+#     learning_rate=1e-1,
+#     embed_categorical=True,
+#     metrics=["auroc"],
+# )
+model_config = TabNetModelConfig(
     task="classification",
-    num_layers=2,
-    num_trees=512,
-    learning_rate=1e-1,
-    embed_categorical=True,
-    metrics=["MeanSquaredLogError"],
+    metrics=["auroc"],
 )
-trainer_config = TrainerConfig()
-experiment_config = ExperimentConfig(project_name="Tabular_test")
-optimizer_config = OptimizerConfig()
+trainer_config = TrainerConfig(
+    auto_lr_find=True,
+    batch_size=1024,
+    max_epochs=1000,
+    gpus=1,
+    early_stopping_patience=10
+    # track_grad_norm=2,
+    # gradient_clip_val=10,
+)
+# experiment_config = ExperimentConfig(project_name="Tabular_test")
+optimizer_config = OptimizerConfig(optimizer_params={"weight_decay": 1e-2})
 
 tabular_model = TabularModel(
     data_config=data_config,
     model_config=model_config,
     optimizer_config=optimizer_config,
     trainer_config=trainer_config,
-    experiment_config=experiment_config,
+    # experiment_config=experiment_config,
 )
 tabular_model.fit(train=train)
 

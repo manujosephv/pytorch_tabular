@@ -37,12 +37,10 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def _setup_metrics(self):
         self.metrics = []
-        task_module = getattr(pl.metrics, self.hparams.task)
+        task_module = pl.metrics.functional
         for metric in self.hparams.metrics:
             self.metrics.append(
-                getattr(task_module, metric)().to(
-                    "cpu" if self.hparams.gpus == 0 else "cuda"
-                )
+                getattr(task_module, metric)
             )
 
     def calculate_loss(self, y, y_hat, tag):
@@ -79,7 +77,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []
                 for i in range(self.hparams.output_dim):
-                    if isinstance(metric, pl.metrics.MeanSquaredLogError):
+                    if isinstance(metric, pl.metrics.functional.mean_squared_log_error):
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(torch.clip(y_hat[:, i], min=0), torch.clip(y[:, i], min=0))
                     else:
