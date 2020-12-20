@@ -5,7 +5,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from pytorch_tabular.config import ModelConfig
+from pytorch_tabular.config import ModelConfig, _validate_choices
 
 
 @dataclass

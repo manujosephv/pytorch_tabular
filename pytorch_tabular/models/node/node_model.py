@@ -21,7 +21,6 @@ class NODEModel(BaseModel):
         super().__init__(config)
 
     def _build_network(self):
-        # TODO make initialize a separate funciton which can be called wirh higher batch size without CUDA error
         self.dense_block = DenseODSTBlock(
             input_dim=self.hparams.continuous_dim + self.hparams.categorical_dim,
             num_trees=self.hparams.num_trees,
@@ -60,6 +59,13 @@ class NODEModel(BaseModel):
         x = self.unpack_input(x)
         x = self.dense_block(x)
         x = self.output_response(x)
+        if (
+            (self.hparams.task == "regression")
+            and (self.hparams.target_range is not None)
+        ):
+            for i in range(self.hparams.output_dim):
+                y_min, y_max = self.hparams.target_range[i]
+                x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
         return x
 
 
@@ -129,7 +135,6 @@ class CategoryEmbeddingNODEModel(BaseModel):
         if (
             (self.hparams.task == "regression")
             and (self.hparams.target_range is not None)
-            and all([len(range_) == 2 for range_ in self.hparams.target_range])
         ):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]

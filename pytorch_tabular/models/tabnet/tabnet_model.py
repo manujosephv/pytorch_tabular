@@ -49,7 +49,6 @@ class TabNetModel(BaseModel):
         if (
             (self.hparams.task == "regression")
             and (self.hparams.target_range is not None)
-            and all([len(range_) == 2 for range_ in self.hparams.target_range])
         ):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]

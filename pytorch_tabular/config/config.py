@@ -34,6 +34,17 @@ def _read_yaml(filename):
     return config
 
 
+def _validate_choices(cls):
+    for key in cls.__dataclass_fields__.keys():
+        atr = cls.__dataclass_fields__[key]
+        if atr.init:
+            if "choices" in atr.metadata.keys():
+                if getattr(cls, key) not in atr.metadata.get("choices"):
+                    raise ValueError(
+                        f"{getattr(cls, key)} is not a valid choice for {key}. Please choose from on of the following: {atr.metadata['choices']}"
+                    )
+
+
 @dataclass
 class DataConfig:
     """Data configuration
@@ -46,9 +57,9 @@ class DataConfig:
         validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
         Used only if Validation Data is not given separately
         target_transform (Union[str, NoneType]): NOT IMPLEMENTED. Whether or not to transform the target before modelling.
-        By default it is turned offChoices are: None yeo-johnson box-cox log1p
+        By default it is turned offChoices are: None "yeo-johnson" "box-cox" "log1p"
         continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
-        By default it is turned off.Choices are: None yeo-johnson box-cox quantile
+        By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
         quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
         gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
@@ -102,7 +113,13 @@ class DataConfig:
         default=None,
         metadata={
             "help": "Whether or not to transform the features before modelling. By default it is turned off.",
-            "choices": [None, "yeo-johnson", "box-cox", "quantile"],
+            "choices": [
+                None,
+                "yeo-johnson",
+                "box-cox",
+                "quantile_normal",
+                "quantile_uniform",
+            ],
         },
     )
     normalize_continuous_features: bool = field(
@@ -138,6 +155,7 @@ class DataConfig:
         self.continuous_dim = (
             len(self.continuous_cols) if self.continuous_cols is not None else 0
         )
+        _validate_choices(self)
 
 
 @dataclass
@@ -151,8 +169,6 @@ class TrainerConfig:
         gpus (int): The index of the GPU to be used. If zero, will use CPU
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
         Trainer also calls optimizer.step() for the last indivisible step number.
-        auto_scale_batch_size (Union[str, NoneType]): Automatically tries to find the largest batch size
-        that fits into memory, before any training.
         auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),
         to find optimal initial learning rate.
         check_val_every_n_epoch (int): Check val every n train epochs.
@@ -269,6 +285,9 @@ class TrainerConfig:
         },
     )
 
+    def __post_init__(self):
+        _validate_choices(self)
+
 
 @dataclass
 class ExperimentConfig:
@@ -328,6 +347,9 @@ class ExperimentConfig:
         default=100,
         metadata={"help": "step count between logging of gradients and parameters."},
     )
+
+    def __post_init__(self):
+        _validate_choices(self)
 
 
 @dataclass
@@ -480,6 +502,7 @@ class ModelConfig:
         assert len(self.metrics) == len(
             self.metrics_params
         ), "metrics and metric_params should have same length"
+        _validate_choices(self)
 
 
 # conf = OmegaConf.structured(ModelConfig(task='regression', loss="custom"))

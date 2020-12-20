@@ -47,13 +47,15 @@ data_config = DataConfig(
 )
 model_config = CategoryEmbeddingModelConfig(
     task="regression",
+    initialization="blah",
     target_range=[
         (dataset.frame[dataset.target_names].min().item(),dataset.frame[dataset.target_names].max().item()),
         (dataset.frame[["MedInc"]].min().item(), dataset.frame[["MedInc"]].max().item())]
 )
+# model_config.validate()
 # model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
 trainer_config = TrainerConfig(checkpoints=None, max_epochs=1)
-# experiment_config = ExperimentConfig(project_name="Tabular_test")
+# experiment_config =F ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
 
 tabular_model = TabularModel(

@@ -30,18 +30,25 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def _setup_loss(self):
         try:
             self.loss = getattr(nn, self.hparams.loss)()
-        except AttributeError:
+        except AttributeError as e:
             logger.error(
                 f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
             )
+            raise e
 
     def _setup_metrics(self):
         self.metrics = []
         task_module = pl.metrics.functional
         for metric in self.hparams.metrics:
-            self.metrics.append(
-                getattr(task_module, metric)
-            )
+            try:
+                self.metrics.append(
+                    getattr(task_module, metric)
+                )
+            except AttributeError as e:
+                logger.error(
+                    f"{metric} is not a valid functional metric defined in the pytorch_lightning.metrics.functional module"
+                )
+            raise e
 
     def calculate_loss(self, y, y_hat, tag):
         if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
@@ -131,16 +138,29 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return y_hat, y
 
     def configure_optimizers(self):
-        self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+        try:
+            self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+        except AttributeError as e:
+            logger.error(
+                f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module"
+            )
+            raise e
+
         opt = self._optimizer(
             self.parameters(),
             lr=self.hparams.learning_rate,
             **self.hparams.optimizer_params,
         )
         if self.hparams.lr_scheduler is not None:
-            self._lr_scheduler = getattr(
-                torch.optim.lr_scheduler, self.hparams.lr_scheduler
-            )
+            try:
+                self._lr_scheduler = getattr(
+                    torch.optim.lr_scheduler, self.hparams.lr_scheduler
+                )
+            except AttributeError as e:
+                logger.error(
+                    f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined in the torch.optim.lr_scheduler module"
+                )
+                raise e
             if isinstance(self._lr_scheduler, torch.optim.lr_scheduler._LRScheduler):
                 return {
                     "optimizer": opt,

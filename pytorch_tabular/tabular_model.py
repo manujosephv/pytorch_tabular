@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model"""
+import logging
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
@@ -21,6 +22,8 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
+
+logger = logging.getLogger(__name__)
 
 
 class TabularModel:
@@ -56,6 +59,7 @@ class TabularModel:
         optimizer_config = OmegaConf.structured(optimizer_config)
         self.exp_manager = ExperimentRunManager()
         if experiment_config is None:
+            logger.info("Experiment Tracking is turned off")
             self.track_experiment = False
             self.config = OmegaConf.merge(
                 OmegaConf.to_container(data_config),
@@ -80,6 +84,27 @@ class TabularModel:
         self.model_callable = getattr(
             getattr(models, model_config._module_src), model_config._model_name
         )
+        self._run_vaidation()
+
+    def _run_vaidation(self):
+        if self.config.task == "classification":
+            if len(self.config.target) > 1:
+                raise NotImplementedError(
+                    "Multi-Target Classification is not implemented."
+                )
+        if self.config.task == "regression":
+            if self.config.target_range is not None:
+                if (
+                    (len(self.config.target_range) != len(self.config.target))
+                    or any([len(range_) != 2 for range_ in self.hparams.target_range])
+                    or any(
+                        [range_[0] > range_[1] for range_ in self.hparams.target_range]
+                    )
+                ):
+                    raise ValueError(
+                        "Targe Range, if defined, should be list tuples of length two(min,max). The length of the list should be equal to hte length of target columns"
+                    )
+
 
     def _get_run_name_uid(self) -> Tuple[str, int]:
         """Gets the name of the experiment and increments version by 1
@@ -142,6 +167,7 @@ class TabularModel:
             self.config.checkpoint_callback = True
         else:
             self.config.checkpoint_callback = False
+        logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
     def data_aware_initialization(self):
@@ -155,9 +181,41 @@ class TabularModel:
             # batch[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
             batch[k] = v.to(self.model.device)
 
-        #single forward pass to initialize the ODST
+        # single forward pass to initialize the ODST
         with torch.no_grad():
             self.model(batch)
+
+    def _prepare_dataloader(self, train, validation, test):
+        logger.info("Preparing the DataLoaders...")
+        self.datamodule = TabularDatamodule(train=train, config=self.config, test=test)
+        self.datamodule.prepare_data()
+        self.datamodule.setup("fit")
+        train_loader = self.datamodule.train_dataloader()
+        val_loader = self.datamodule.val_dataloader()
+        return train_loader, val_loader
+
+    def _prepare_model(self):
+        logger.info(f"Preparing the Model: {self.config._model_name}...")
+        # Fetching the config as some data specific configs have been added in the datamodule
+        self.config = self.datamodule.config
+        self.model = self.model_callable(self.config)
+        # Data Aware Initialization (NODE)
+        if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
+            self.data_aware_initialization()
+
+    def _prepare_trainer(self):
+        logger.info("Preparing the Trainer...")
+        trainer_args = vars(pl.Trainer()).keys()
+        trainer_args_config = {
+            k: v for k, v in self.config.items() if k in trainer_args
+        }
+        # For some weird reason, checkpoint_callback is not appearing in the Trainer vars
+        trainer_args_config["checkpoint_callback"] = self.config.checkpoint_callback
+        self.trainer = pl.Trainer(
+            logger=self.logger,
+            callbacks=self.callbacks,
+            **trainer_args_config,
+        )
 
     def fit(
         self,
@@ -174,37 +232,25 @@ class TabularModel:
             test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
             which you'll be able to check performance after the model is trained. Defaults to None.
         """
-        self.datamodule = TabularDatamodule(train=train, config=self.config, test=test)
-        self.datamodule.prepare_data()
-        self.datamodule.setup("fit")
-        train_loader = self.datamodule.train_dataloader()
-        val_loader = self.datamodule.val_dataloader()
-        # Fetching the config as some data specific configs have been added in the datamodule
-        config = self.datamodule.config
-        self.model = self.model_callable(config)
-        #Data Aware Initialization (NODE)
-        if self.config._model_name in ["CategoryEmbeddingNODEModel","NODEModel"]:
-            self.data_aware_initialization()
+        train_loader, val_loader = self._prepare_dataloader(train, valid, test)
+        self._prepare_model()
+
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(
                 self.model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
             )
-        callbacks = self._prepare_callbacks()
-        trainer_args = vars(pl.Trainer()).keys()
-        trainer_args_config = {k: v for k, v in config.items() if k in trainer_args}
-        # TODO For some weird reason, checkpoint_callback is not coming in the Trainer vars
-        trainer_args_config["checkpoint_callback"] = self.config.checkpoint_callback
-        self.trainer = pl.Trainer(
-            logger=self.logger,
-            callbacks=callbacks,
-            **trainer_args_config,
-        )
+        self.callbacks = self._prepare_callbacks()
+        self._prepare_trainer()
+
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
+
         # Parameters in NODE needs to be initialized again
-        if self.config._model_name in ["CategoryEmbeddingNODEModel","NODEModel"]:
+        if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
             self.data_aware_initialization()
+
         self.trainer.fit(self.model, train_loader, val_loader)
+        logger.info("Training the model completed...")
 
     def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:
         """Evaluates the dataframe using the loss and metrics already set in config
@@ -249,7 +295,7 @@ class TabularModel:
             y_hat = self.model(sample)
             predictions.append(y_hat.detach().cpu())
         predictions = torch.cat(predictions, dim=0)
-        if predictions.ndim < 2:
+        if predictions.ndim == 1:
             predictions = predictions.unsqueeze(-1)
         pred_df = test.copy()
         if self.config.task == "regression":

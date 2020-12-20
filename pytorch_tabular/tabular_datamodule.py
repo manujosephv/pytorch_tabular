@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Data Module"""
+import logging
 import re
 from typing import List, Optional, Tuple
 
@@ -21,6 +22,8 @@ from sklearn.preprocessing import (
 from torch.utils.data import DataLoader, Dataset
 
 from .category_encoders import OrdinalEncoder
+
+logger = logging.getLogger(__name__)
 
 
 class TabularDatamodule(pl.LightningDataModule):
@@ -65,8 +68,6 @@ class TabularDatamodule(pl.LightningDataModule):
         self.validation = validation
         self.validation = validation
         self.test = test if test is None else test.copy()
-        # self.categorical_cols = config.categorical_cols
-        # self.continuous_cols = config.continuous_cols
         self.target = config.target
         self.batch_size = config.batch_size
         self.config = config
@@ -80,10 +81,6 @@ class TabularDatamodule(pl.LightningDataModule):
         if self.config.task == "regression":
             self.config.output_dim = len(self.config.target)
         elif self.config.task == "classification":
-            if len(self.config.target) > 1:
-                raise NotImplementedError(
-                    "Multi-Target Classification is not implemented."
-                )
             self.config.output_dim = len(self.train[self.config.target[0]].unique())
         if not self.do_leave_one_out_encoder():
             self.config.categorical_cardinality = [
@@ -117,6 +114,7 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns:
             tuple[pd.DataFrame, list]: Returns the processed dataframe and the added features(list) as a tuple
         """
+        logger.info(f"Preprocessing data: Stage: {stage}...")
         added_features = None
         if self.config.encode_date_cols:
             for field_name, freq in self.config.date_cols:
@@ -124,9 +122,10 @@ class TabularDatamodule(pl.LightningDataModule):
                 data, added_features = self.add_datepart(
                     data, field_name, frequency=freq, prefix=None, drop=True
                 )
-        # The only features that are added aer the date features extracted
+        # The only features that are added are the date features extracted
         # from the date which are categorical in nature
         if (added_features is not None) and (stage == "fit"):
+            logger.debug(f"Added {added_features} features after encoding the date_columns")
             self.config.categorical_cols += added_features
             self.config.categorical_dim = (
                 len(self.config.categorical_cols) if self.config.categorical_cols is not None else 0
@@ -135,14 +134,18 @@ class TabularDatamodule(pl.LightningDataModule):
         if len(self.config.categorical_cols) > 0:
             if stage == "fit":
                 if self.do_leave_one_out_encoder():
+                    logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
                     self.categorical_encoder = ce.LeaveOneOutEncoder(
                         cols=self.config.categorical_cols, random_state=42
                     )
                     # Multi-Target Regression uses the first target to encode the categorical columns
+                    if len(self.config.target)>0:
+                        logger.warning("Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns")
                     data = self.categorical_encoder.fit_transform(
                         data, data[self.config.target[0]]
                     )
                 else:
+                    logger.debug("Encoding Categorical Columns using OrdinalEncoder")
                     self.categorical_encoder = OrdinalEncoder(
                         cols=self.config.categorical_cols
                     )
@@ -204,13 +207,14 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         if stage == "fit" or stage is None:
             if self.validation is None:
+                logger.debug(f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation")
                 val_idx = self.train.sample(
                     int(self.config.validation_split * len(self.train)), random_state=42
                 ).index
                 self.validation = self.train[self.train.index.isin(val_idx)]
                 self.train = self.train[~self.train.index.isin(val_idx)]
             # Preprocessing Train, Validation
-            self.train, added_features = self.preprocess_data(self.train, stage="fit")
+            self.train, _ = self.preprocess_data(self.train, stage="fit")
             self.validation, _ = self.preprocess_data(
                 self.validation, stage="inference"
             )
