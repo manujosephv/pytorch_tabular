@@ -4,6 +4,7 @@
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
 """Category Encoders"""
 from __future__ import absolute_import, division, print_function, unicode_literals
+from typing import List
 
 try:
     import cPickle as pickle
@@ -12,6 +13,7 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 
 NAN_CATEGORY = 0
 
@@ -125,3 +127,94 @@ class OrdinalEncoder(BaseEncoder):
             )
             map["value"] += 1
             self._mapping[col] = map.set_index(col)
+
+
+class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
+    
+    NAN_CATEGORY = 0
+
+    def __init__(self, tabular_model):
+        """Initializes the Transformer and extracts the neural embeddings
+
+        Args:
+            tabular_model (TabularModel): The trained TabularModel object
+        """
+        self.tabular_model = tabular_model
+        self._model = tabular_model.model
+        self._categorical_encoder = tabular_model.datamodule.categorical_encoder
+        # dict {str: np.ndarray} column name --> mapping from category (index of df) to value (column of df)
+        self._mapping = {}
+
+        self._extract_embedding()
+    
+    def _extract_embedding(self):
+        if hasattr(self._model, "embedding_layers"):
+            embedding_layers = self._model.embedding_layers
+        elif hasattr(self._model, "extract_embedding"):
+            embedding_layers = self._model.extract_embedding()
+        else:
+            embedding_layers = None
+        if embedding_layers is not None:
+            for i, col in enumerate(self.tabular_model.model.hparams.categorical_cols):
+                self._mapping[col] = {}
+                embedding = embedding_layers[i]
+                self._mapping[col][self.NAN_CATEGORY] = embedding.weight[0,:].detach().cpu().numpy().ravel()
+                for key in self._categorical_encoder._mapping[col].index:
+                    self._mapping[col][key] = embedding.weight[self._categorical_encoder._mapping[col].loc[key],:].detach().cpu().numpy().ravel()
+
+    def fit(self, X, y=None):
+        """Just for compatibility. Does not do anything
+        """
+        return self
+
+    def transform(self, X: pd.DataFrame, y=None):
+        """Transforms the categorical columns specified to the trained neural embedding from the model
+
+        Args:
+            X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
+            y ([type], optional): Only for compatibility. Not used. Defaults to None.
+
+        Raises:
+            ValueError: [description]
+
+        Returns:
+            pd.DataFrame: The encoded dataframe
+        """
+        if not self._mapping:
+            raise ValueError("Passed model should either have an attribute `embeddng_layers` or a method `extract_embedding` defined for `transform`.")
+        assert all(c in X.columns for c in self.tabular_model.model.hparams.categorical_cols)
+
+        X_encoded = X.copy(deep=True)
+        for col, mapping in self._mapping.items():
+            for dim in range(mapping[self.NAN_CATEGORY].shape[0]):
+                X_encoded.loc[:, f"{col}_embed_dim_{dim}"] = (
+                    X_encoded[col].fillna(self.NAN_CATEGORY).map({k:v[dim] for k,v in mapping.items()})
+                )
+                #Filling unseen categories also with NAN Embedding
+                X_encoded[f"{col}_embed_dim_{dim}"].fillna(mapping[self.NAN_CATEGORY][dim], inplace=True)
+        X_encoded.drop(columns=self.tabular_model.model.hparams.categorical_cols, inplace=True)
+        return X_encoded
+
+    def fit_transform(self, X: pd.DataFrame, y=None):
+        """Encode given columns of X based on the learned embedding.
+
+        Args:
+            X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
+            y ([type], optional): Only for compatibility. Not used. Defaults to None.
+
+        Returns:
+            pd.DataFrame: The encoded dataframe
+        """
+        self.fit(X, y)
+        return self.transform(X)
+
+    def save_as_object_file(self, path):
+        if not self._mapping:
+            raise ValueError(
+                "`fit` method must be called before `save_as_object_file`."
+            )
+        pickle.dump(self.__dict__, open(path, "wb"))
+
+    def load_from_object_file(self, path):
+        for k, v in pickle.load(open(path, "rb")).items():
+            setattr(self, k, v)
