@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """Base Model"""
 import logging
+import random
 from abc import ABCMeta, abstractmethod
 from typing import Callable, Dict, List, Optional
 
@@ -10,6 +11,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+import wandb
 
 logger = logging.getLogger(__name__)
 
@@ -198,3 +200,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 }
         else:
             return opt
+
+    def validation_epoch_end(self, outputs) -> None:
+        do_log_logits = self.hparams.log_logits and self.hparams.log_target == "wandb"
+        if do_log_logits:
+            logits = [output[0] for output in outputs]
+            flattened_logits = torch.flatten(torch.cat(logits))
+            wandb.log(
+                {
+                    "valid_logits": wandb.Histogram(flattened_logits.to("cpu")),
+                    "global_step": self.global_step,
+                }
+            )

@@ -417,7 +417,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             df.insert(3, prefix + "Week", week)
             added_features.append(prefix + "Week")
-        # TODO Not adding Elapsed by default. Need to route it through config
+        # Not adding Elapsed by default. Need to route it through config
         # mask = ~field.isna()
         # df[prefix + "Elapsed"] = np.where(
         #     mask, field.values.astype(np.int64) // 10 ** 9, None

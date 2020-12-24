@@ -56,8 +56,6 @@ class DataConfig:
         encode_date_cols (bool): Whether or not to encode the derived variables from date
         validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
         Used only if Validation Data is not given separately
-        target_transform (Union[str, NoneType]): NOT IMPLEMENTED. Whether or not to transform the target before modelling.
-        By default it is turned offChoices are: None "yeo-johnson" "box-cox" "log1p"
         continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
         By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
@@ -101,14 +99,6 @@ class DataConfig:
             "help": "Percentage of Training rows to keep aside as validation. Used only if Validation Data is not given separately"
         },
     )
-    # TODO
-    target_transform: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "NOT IMPLEMENTED. Whether or not to transform the target before modelling. By default it is turned off",
-            "choices": [None, "yeo-johnson", "box-cox", "log1p"],
-        },
-    )
     continuous_feature_transform: Optional[str] = field(
         default=None,
         metadata={
@@ -126,7 +116,6 @@ class DataConfig:
         default=True,
         metadata={"help": "Flag to normalize the input features(continuous)"},
     )
-    # TODO
     quantile_noise: int = field(
         default=0,
         metadata={
@@ -302,7 +291,6 @@ class ExperimentConfig:
             exp_watch (Union[str, NoneType]): The level of logging required.  can be 'gradients' (default), 'parameters', 'all' or None.
             log_target (str): Determines where logging happens - Tensorboard or W&BChoices are: wandb tensorboard
             log_logits (bool): Turn this on to log the logits as a histogram in W&B
-            log_val_predictions (bool): Turn this on to log the sample predictions for each validation
             exp_log_freq (int): step count between logging of gradients and parameters.
             _exp_version_manager (str): The location of the yaml file which manages versions of experiments
     """
@@ -338,13 +326,6 @@ class ExperimentConfig:
     log_logits: bool = field(
         default=False,
         metadata={"help": "Turn this on to log the logits as a histogram in W&B"},
-    )
-
-    log_val_predictions: bool = field(
-        default=False,
-        metadata={
-            "help": "Turn this on to log the sample predictions for each validation"
-        },
     )
 
     exp_log_freq: int = field(
