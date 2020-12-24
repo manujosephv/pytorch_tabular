@@ -130,7 +130,7 @@ class OrdinalEncoder(BaseEncoder):
 
 
 class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
-    
+
     NAN_CATEGORY = 0
 
     def __init__(self, tabular_model):
@@ -139,32 +139,42 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         Args:
             tabular_model (TabularModel): The trained TabularModel object
         """
-        self.tabular_model = tabular_model
-        self._model = tabular_model.model
+        # self.tabular_model = tabular_model
+        # self._model = tabular_model.model
         self._categorical_encoder = tabular_model.datamodule.categorical_encoder
+        self.cols = tabular_model.model.hparams.categorical_cols
         # dict {str: np.ndarray} column name --> mapping from category (index of df) to value (column of df)
         self._mapping = {}
 
-        self._extract_embedding()
-    
-    def _extract_embedding(self):
-        if hasattr(self._model, "embedding_layers"):
-            embedding_layers = self._model.embedding_layers
-        elif hasattr(self._model, "extract_embedding"):
-            embedding_layers = self._model.extract_embedding()
+        self._extract_embedding(tabular_model.model)
+
+    def _extract_embedding(self, model):
+        if hasattr(model, "embedding_layers"):
+            embedding_layers = model.embedding_layers
+        elif hasattr(model, "extract_embedding"):
+            embedding_layers = model.extract_embedding()
         else:
             embedding_layers = None
         if embedding_layers is not None:
-            for i, col in enumerate(self.tabular_model.model.hparams.categorical_cols):
+            for i, col in enumerate(self.cols):
                 self._mapping[col] = {}
                 embedding = embedding_layers[i]
-                self._mapping[col][self.NAN_CATEGORY] = embedding.weight[0,:].detach().cpu().numpy().ravel()
+                self._mapping[col][self.NAN_CATEGORY] = (
+                    embedding.weight[0, :].detach().cpu().numpy().ravel()
+                )
                 for key in self._categorical_encoder._mapping[col].index:
-                    self._mapping[col][key] = embedding.weight[self._categorical_encoder._mapping[col].loc[key],:].detach().cpu().numpy().ravel()
+                    self._mapping[col][key] = (
+                        embedding.weight[
+                            self._categorical_encoder._mapping[col].loc[key], :
+                        ]
+                        .detach()
+                        .cpu()
+                        .numpy()
+                        .ravel()
+                    )
 
     def fit(self, X, y=None):
-        """Just for compatibility. Does not do anything
-        """
+        """Just for compatibility. Does not do anything"""
         return self
 
     def transform(self, X: pd.DataFrame, y=None):
@@ -181,18 +191,28 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
             pd.DataFrame: The encoded dataframe
         """
         if not self._mapping:
-            raise ValueError("Passed model should either have an attribute `embeddng_layers` or a method `extract_embedding` defined for `transform`.")
-        assert all(c in X.columns for c in self.tabular_model.model.hparams.categorical_cols)
+            raise ValueError(
+                "Passed model should either have an attribute `embeddng_layers` or a method `extract_embedding` defined for `transform`."
+            )
+        assert all(
+            c in X.columns for c in self.cols
+        )
 
         X_encoded = X.copy(deep=True)
         for col, mapping in self._mapping.items():
             for dim in range(mapping[self.NAN_CATEGORY].shape[0]):
                 X_encoded.loc[:, f"{col}_embed_dim_{dim}"] = (
-                    X_encoded[col].fillna(self.NAN_CATEGORY).map({k:v[dim] for k,v in mapping.items()})
+                    X_encoded[col]
+                    .fillna(self.NAN_CATEGORY)
+                    .map({k: v[dim] for k, v in mapping.items()})
                 )
-                #Filling unseen categories also with NAN Embedding
-                X_encoded[f"{col}_embed_dim_{dim}"].fillna(mapping[self.NAN_CATEGORY][dim], inplace=True)
-        X_encoded.drop(columns=self.tabular_model.model.hparams.categorical_cols, inplace=True)
+                # Filling unseen categories also with NAN Embedding
+                X_encoded[f"{col}_embed_dim_{dim}"].fillna(
+                    mapping[self.NAN_CATEGORY][dim], inplace=True
+                )
+        X_encoded.drop(
+            columns=self.cols, inplace=True
+        )
         return X_encoded
 
     def fit_transform(self, X: pd.DataFrame, y=None):

@@ -23,6 +23,7 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.tabular_model import TabularModel
 import pytorch_lightning as pl
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 X_train = pd.read_csv("data/mnm/dust_primer_cb_train.csv")
@@ -115,41 +116,45 @@ numerical_cols = [
 ]
 date_columns = []
 train = orig_train[numerical_cols + categorical_cols + date_columns + target].copy()
+train, val = train_test_split(train, test_size=0.2)
+aug_train = pd.read_csv("data/mnm/ctgan_synthetic.csv")[numerical_cols + categorical_cols + date_columns + target]
+aug_train['dust'] = aug_train['dust'].astype(int)
+train = pd.concat([train, aug_train], sort=False)
 
 data_config = DataConfig(
     target=target,
     continuous_cols=numerical_cols,
     categorical_cols=categorical_cols,
-    continuous_feature_transform="quantile_normal",
+    # continuous_feature_transform="quantile_uniform",
     normalize_continuous_features=True,
 )
 # model_config = CategoryEmbeddingModelConfig(task="classification")
-# model_config = CategoryEmbeddingModelConfig(
-#     task="classification",
-#     layers="256-64-128",
-#     activation="SELU",
-#     metrics=["auroc"],
-# )
-model_config = NodeConfig(
+model_config = CategoryEmbeddingModelConfig(
     task="classification",
-    num_layers=2,
-    num_trees=1024,
-    depth=6,
-    learning_rate=1e-1,
-    embed_categorical=True,
+    layers="2048-1024-2048",
+    activation="SELU",
     metrics=["auroc"],
 )
+# model_config = NodeConfig(
+#     task="classification",
+#     num_layers=2,
+#     num_trees=1024,
+#     depth=6,
+#     learning_rate=1e-1,
+#     embed_categorical=True,
+#     metrics=["auroc"],
+# )
 # model_config = TabNetModelConfig(
 #     task="classification",
 #     metrics=["auroc"],
 # )
 trainer_config = TrainerConfig(
     auto_lr_find=True,
-    batch_size=64,
+    batch_size=1024,
     max_epochs=1000,
     gpus=1,
     early_stopping_patience=10,
-    checkpoints_save_top_k=3,
+    checkpoints_save_top_k=1,
     # track_grad_norm=2,
     # gradient_clip_val=10,
 )
@@ -308,13 +313,14 @@ class FocalLoss_Ori(nn.Module):
 
 tabular_model.fit(
     train=train,
-    # loss=FocalLoss_Ori(num_class=2),
+    valid=val,
+    loss=FocalLoss_Ori(num_class=2),
     # metrics=[lambda y_hat, y: roc_auc_score(y_hat.detach().cpu().numpy(), y.detach().cpu().numpy(), multi_class='ovr')],
     optimizer=custom_optim.QHAdam,
     optimizer_params={"nus": (0.7, 1.0), "betas": (0.95, 0.998)},
 )
 
-result = tabular_model.evaluate(train)
+result = tabular_model.evaluate(val)
 print(result)
-pred_df = tabular_model.predict(train)
+pred_df = tabular_model.predict(val)
 pred_df.to_csv("output/mnm.csv")

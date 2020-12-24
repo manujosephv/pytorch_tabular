@@ -37,7 +37,7 @@ data_config = DataConfig(
 # model_config = CategoryEmbeddingModelConfig(task="classification")
 model_config = NodeConfig(task="classification", depth=2)
 trainer_config = TrainerConfig()
-experiment_config = ExperimentConfig(project_name="Tabular_test")
+# experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
 
 tabular_model = TabularModel(
@@ -45,11 +45,14 @@ tabular_model = TabularModel(
     model_config=model_config,
     optimizer_config=optimizer_config,
     trainer_config=trainer_config,
-    experiment_config=experiment_config,
+    # experiment_config=experiment_config,
 )
 tabular_model.fit(train=train, test=test)
 
 result = tabular_model.evaluate(test)
 print(result)
-pred_df = tabular_model.predict(test)
-pred_df.to_csv("output/temp2.csv")
+# pred_df = tabular_model.predict(test)
+# pred_df.to_csv("output/temp2.csv")
+tabular_model.save_model("test_save")
+new_model = TabularModel.load_from_checkpoint("test_save")
+result = new_model.evaluate(test)

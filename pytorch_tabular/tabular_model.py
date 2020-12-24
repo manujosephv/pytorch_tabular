@@ -3,14 +3,18 @@
 # For license information, see LICENSE.TXT
 """Tabular Model"""
 import logging
+import os
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from omegaconf.dictconfig import DictConfig
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.utilities.cloud_io import load as pl_load
 from omegaconf import OmegaConf
 from torch import nn
+import joblib
 
 import pytorch_tabular.models as models
 from pytorch_tabular.config import (
@@ -29,64 +33,93 @@ logger = logging.getLogger(__name__)
 class TabularModel:
     def __init__(
         self,
-        data_config: DataConfig,
-        model_config: ModelConfig,
-        optimizer_config: OptimizerConfig,
-        trainer_config: TrainerConfig,
-        experiment_config: Optional[ExperimentConfig] = None,
+        config: Optional[DictConfig] = None,
+        data_config: Optional[Union[DataConfig, str]] = None,
+        model_config: Optional[Union[ModelConfig, str]] = None,
+        optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
+        trainer_config: Optional[Union[TrainerConfig, str]] = None,
+        experiment_config: Optional[Union[ExperimentConfig, str]] = None,
     ) -> None:
         """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
 
         Args:
-            data_config (DataConfig): Data Parameters. Refer to DataConfig documentation
-            model_config (ModelConfig): Model Parameters. Can be any subclass of Model Config.
-            Depending on this class, the model determines to run the corresponding model on the data supplied.
-            Refer to individual ModelConfig documentation
-            optimizer_config (OptimizerConfig): Optimizer Parameters. Refer to OptimizerConfig documentation
-            trainer_config (TrainerConfig): Trainer Parameters. Refer to TrainerConfig Documentation
-            experiment_config (Optional[ExperimentConfig], optional): Experiment Tracking Parameters.
-            If Provided configures the experiment tracking. Refer to ExperimentConfig documentation. Defaults to None.
+            config (Optional[Union[DictConfig, str]], optional): Single OmegaConf DictConfig object or
+            the path to the yaml file holding all the config parameters. Defaults to None.
+            data_config (Optional[Union[DataConfig, str]], optional): DataConfig object or str to the yaml file. Defaults to None.
+            model_config (Optional[Union[ModelConfig, str]], optional): A subclass of ModelConfig or str to the yaml file.
+            DEtermines which model to run from the type of config. Defaults to None.
+            optimizer_config (Optional[Union[OptimizerConfig, str]], optional): OptimizerConfig object or str to the yaml file.
+            Defaults to None.
+            trainer_config (Optional[Union[TrainerConfig, str]], optional): TrainerConfig object or str to the yaml file.
+            Defaults to None.
+            experiment_config (Optional[Union[ExperimentConfig, str]], optional): ExperimentConfig object or str to the yaml file.
+            If Provided configures the experiment tracking. Defaults to None.
         """
         super().__init__()
-        data_config = OmegaConf.structured(data_config)
-        model_config = OmegaConf.structured(model_config)
-        # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
-        if (model_config._model_name == "NODEModel") and (
-            model_config.embed_categorical
-        ):
-            model_config._model_name = "CategoryEmbedding" + model_config._model_name
-        trainer_config = OmegaConf.structured(trainer_config)
-        optimizer_config = OmegaConf.structured(optimizer_config)
         self.exp_manager = ExperimentRunManager()
-        if experiment_config is None:
-            logger.info("Experiment Tracking is turned off")
-            self.track_experiment = False
-            self.config = OmegaConf.merge(
-                OmegaConf.to_container(data_config),
-                OmegaConf.to_container(model_config),
-                OmegaConf.to_container(trainer_config),
-                OmegaConf.to_container(optimizer_config),
-            )
-            self.name, self.uid = self._get_run_name_uid()
-            self.logger = None
+        if config is None:
+            assert (
+                (data_config is not None)
+                or (model_config is not None)
+                or (optimizer_config is not None)
+                or (trainer_config is not None)
+            ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
+            #TODO make config load from yaml files
+            data_config = OmegaConf.structured(data_config)
+            model_config = OmegaConf.structured(model_config)
+            # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
+            if (
+                hasattr(model_config, "_model_name")
+                and (model_config._model_name == "NODEModel")
+                and (model_config.embed_categorical)
+                and ("CategoryEmbedding" not in model_config._model_name)
+            ):
+                model_config._model_name = (
+                    "CategoryEmbedding" + model_config._model_name
+                )
+            trainer_config = OmegaConf.structured(trainer_config)
+            optimizer_config = OmegaConf.structured(optimizer_config)
+            if experiment_config is None:
+                logger.info("Experiment Tracking is turned off")
+                self.track_experiment = False
+                self.config = OmegaConf.merge(
+                    OmegaConf.to_container(data_config),
+                    OmegaConf.to_container(model_config),
+                    OmegaConf.to_container(trainer_config),
+                    OmegaConf.to_container(optimizer_config),
+                )
+            else:
+                experiment_config = OmegaConf.structured(experiment_config)
+                self.track_experiment = True
+                self.config = OmegaConf.merge(
+                    OmegaConf.to_container(data_config),
+                    OmegaConf.to_container(model_config),
+                    OmegaConf.to_container(trainer_config),
+                    OmegaConf.to_container(experiment_config),
+                    OmegaConf.to_container(optimizer_config),
+                )
         else:
-            experiment_config = OmegaConf.structured(experiment_config)
-            self.track_experiment = True
-            self.config = OmegaConf.merge(
-                OmegaConf.to_container(data_config),
-                OmegaConf.to_container(model_config),
-                OmegaConf.to_container(trainer_config),
-                OmegaConf.to_container(experiment_config),
-                OmegaConf.to_container(optimizer_config),
-            )
-            self.name, self.uid = self._get_run_name_uid()
-            self._setup_experiment_tracking()
-        self.model_callable = getattr(
-            getattr(models, model_config._module_src), model_config._model_name
-        )
-        self._run_vaidation()
+            self.config = config
+            if not hasattr(config, "log_target") and (config.log_target is not None):
+                experiment_config = OmegaConf.structured(experiment_config)
+                self.track_experiment = True
+            else:
+                logger.info("Experiment Tracking is turned off")
+                self.track_experiment = False
 
-    def _run_vaidation(self):
+        self.name, self.uid = self._get_run_name_uid()
+        if self.track_experiment:
+            self._setup_experiment_tracking()
+        else:
+            self.logger = None
+
+        self.exp_manager = ExperimentRunManager()
+        self.model_callable = getattr(
+            getattr(models, self.config._module_src), self.config._model_name
+        )
+        self._run_validation()
+
+    def _run_validation(self):
         if self.config.task == "classification":
             if len(self.config.target) > 1:
                 raise NotImplementedError(
@@ -222,6 +255,13 @@ class TabularModel:
             **trainer_args_config,
         )
 
+    def load_best_model(self):
+        logger.info("Loading the best model...")
+        ckpt_path = self.trainer.checkpoint_callback.best_model_path
+        logger.debug(f"Model Checkpoint: {ckpt_path}")
+        ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
+        self.model.load_state_dict(ckpt["state_dict"])
+
     def fit(
         self,
         train: pd.DataFrame,
@@ -265,6 +305,8 @@ class TabularModel:
 
         self.trainer.fit(self.model, train_loader, val_loader)
         logger.info("Training the model completed...")
+        if self.config.load_best:
+            self.load_best_model()
 
     def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:
         """Evaluates the dataframe using the loss and metrics already set in config
@@ -324,3 +366,49 @@ class TabularModel:
                 np.argmax(predictions, axis=1)
             )
         return pred_df
+
+    def save_model(self, dir: str):
+        if os.path.exists(dir) and (os.listdir(dir)):
+            logger.warning("Directory is not empty. Overwriting the contents.")
+            for f in os.listdir(dir):
+                os.remove(os.path.join(dir, f))
+        os.makedirs(dir, exist_ok=True)
+        with open(os.path.join(dir, "config.yml"), "w") as fp:
+            OmegaConf.save(self.config, fp, resolve=True)
+        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
+        if hasattr(self.config, "log_target") and self.config.log_target is not None:
+            joblib.dump(self.logger, os.path.join(dir, "exp_logger.sav"))
+        if hasattr(self, "callbacks"):
+            joblib.dump(self.callbacks, os.path.join(dir, "callbacks.sav"))
+        self.trainer.save_checkpoint(os.path.join(dir, "model.ckpt"))
+        # joblib.dump(self.trainer, os.path.join(dir, "trainer.sav"))
+
+    @classmethod
+    def load_from_checkpoint(cls, dir: str):
+        config = OmegaConf.load(os.path.join(dir, "config.yml"))
+        datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
+        if hasattr(config, "log_target") and (config.log_target is not None) and os.path.exists(os.path.join(dir, "exp_logger.sav")):
+            logger = joblib.load(os.path.join(dir, "exp_logger.sav"))
+        else:
+            logger = None
+        if os.path.exists(os.path.join(dir, "callbacks.sav")):
+            callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
+        else:
+            callbacks = []
+        model_callable = getattr(
+            getattr(models, config._module_src), config._model_name
+        )
+        model = model_callable.load_from_checkpoint(
+            checkpoint_path=os.path.join(dir, "model.ckpt")
+        )
+        # trainer = joblib.load(os.path.join(dir, "trainer.sav"))
+        tabular_model = cls(
+            config=config
+        )
+        tabular_model.model = model
+        tabular_model.datamodule = datamodule
+        tabular_model.callbacks = callbacks
+        tabular_model._prepare_trainer()
+        tabular_model.trainer.model = model
+        tabular_model.logger = logger
+        return tabular_model

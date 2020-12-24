@@ -186,6 +186,7 @@ class TrainerConfig:
         checkpoints_path (str): The path where the saved models will be
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
         checkpoints_save_top_k (int): The number of best models to save
+        load_best (bool): Flag to load the best model saved during training
         track_grad_norm (int): Track and Log Gradient Norms in the logger.
         -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
     """
@@ -277,7 +278,10 @@ class TrainerConfig:
         default=1,
         metadata={"help": "The number of best models to save"},
     )
-
+    load_best: bool = field(
+        default=True,
+        metadata={"help": "Flag to load the best model saved during training"},
+    )
     track_grad_norm: int = field(
         default=-1,
         metadata={
