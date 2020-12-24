@@ -1,0 +1,26 @@
+task: classification
+learning_rate: 0.001
+loss: CrossEntropyLoss
+metrics:
+- accuracy
+metrics_params:
+- {}
+target_range: null
+num_layers: 1
+num_trees: 2048
+additional_tree_output_dim: 0
+depth: 2
+choice_function: entmax15
+bin_function: entmoid15
+max_features: null
+input_dropout: 0.0
+initialize_response: normal
+initialize_selection_logits: uniform
+threshold_init_beta: 1.0
+threshold_init_cutoff: 1.0
+embed_categorical: false
+embedding_dims: null
+embedding_dropout: 0.5
+_module_src: node
+_model_name: NODEModel
+_config_name: NodeConfig

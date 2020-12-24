@@ -1,0 +1,7 @@
+optimizer: Adam
+optimizer_params:
+  weight_decay: 0
+  amsgrad: false
+lr_scheduler: null
+lr_scheduler_params: {}
+lr_scheduler_monitor_metric: val_loss

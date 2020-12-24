@@ -88,6 +88,7 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     )
     _module_src: str = field(default="category_embedding")
     _model_name: str = field(default="CategoryEmbeddingModel")
+    _config_name: str = field(default="CategoryEmbeddingModelConfig")
 
 
 # cls = CategoryEmbeddingModelConfig

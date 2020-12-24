@@ -64,9 +64,9 @@ class TabularModel:
                 or (optimizer_config is not None)
                 or (trainer_config is not None)
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
-            #TODO make config load from yaml files
-            data_config = OmegaConf.structured(data_config)
-            model_config = OmegaConf.structured(model_config)
+            # TODO make config load from yaml files
+            data_config = self._read_parse_config(data_config, DataConfig)
+            model_config = self._read_parse_config(model_config, ModelConfig)
             # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
             if (
                 hasattr(model_config, "_model_name")
@@ -77,8 +77,8 @@ class TabularModel:
                 model_config._model_name = (
                     "CategoryEmbedding" + model_config._model_name
                 )
-            trainer_config = OmegaConf.structured(trainer_config)
-            optimizer_config = OmegaConf.structured(optimizer_config)
+            trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
+            optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
             if experiment_config is None:
                 logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
@@ -89,7 +89,7 @@ class TabularModel:
                     OmegaConf.to_container(optimizer_config),
                 )
             else:
-                experiment_config = OmegaConf.structured(experiment_config)
+                experiment_config = self._read_parse_config(experiment_config, ExperimentConfig)
                 self.track_experiment = True
                 self.config = OmegaConf.merge(
                     OmegaConf.to_container(data_config),
@@ -137,6 +137,27 @@ class TabularModel:
                     raise ValueError(
                         "Targe Range, if defined, should be list tuples of length two(min,max). The length of the list should be equal to hte length of target columns"
                     )
+
+    def _read_parse_config(self, config, cls):
+        if isinstance(config, str):
+            if os.path.exists(config):
+                _config = OmegaConf.load(config)
+                if cls == ModelConfig:
+                    cls = getattr(
+                        getattr(models, _config._module_src), _config._config_name
+                    )
+                config = cls(
+                    **{
+                        k: v
+                        for k, v in _config.items()
+                        if (k in cls.__dataclass_fields__.keys())
+                        and (cls.__dataclass_fields__[k].init)
+                    }
+                )
+            else:
+                raise ValueError(f"{config} is not a valid path")
+        config = OmegaConf.structured(config)
+        return config
 
     def _get_run_name_uid(self) -> Tuple[str, int]:
         """Gets the name of the experiment and increments version by 1
@@ -387,7 +408,11 @@ class TabularModel:
     def load_from_checkpoint(cls, dir: str):
         config = OmegaConf.load(os.path.join(dir, "config.yml"))
         datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
-        if hasattr(config, "log_target") and (config.log_target is not None) and os.path.exists(os.path.join(dir, "exp_logger.sav")):
+        if (
+            hasattr(config, "log_target")
+            and (config.log_target is not None)
+            and os.path.exists(os.path.join(dir, "exp_logger.sav"))
+        ):
             logger = joblib.load(os.path.join(dir, "exp_logger.sav"))
         else:
             logger = None
@@ -402,9 +427,7 @@ class TabularModel:
             checkpoint_path=os.path.join(dir, "model.ckpt")
         )
         # trainer = joblib.load(os.path.join(dir, "trainer.sav"))
-        tabular_model = cls(
-            config=config
-        )
+        tabular_model = cls(config=config)
         tabular_model.model = model
         tabular_model.datamodule = datamodule
         tabular_model.callbacks = callbacks

@@ -176,6 +176,7 @@ class NodeConfig(ModelConfig):
     )
     _module_src: str = field(default="node")
     _model_name: str = field(default="NODEModel")
+    _config_name: str = field(default="NodeConfig")
 
     # def __post_init__(self):
     #     self._model_name = "NODEModel"

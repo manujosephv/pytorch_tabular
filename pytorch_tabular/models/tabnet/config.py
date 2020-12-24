@@ -95,6 +95,7 @@ class TabNetModelConfig(ModelConfig):
     )
     _module_src: str = field(default="tabnet")
     _model_name: str = field(default="TabNetModel")
+    _config_name: str = field(default="TabNetModelConfig")
 
     # def __post_init__(self):
     #     assert self._module_src == "category_embedding", "Do not change attributes starting with _"
