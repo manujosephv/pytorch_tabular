@@ -4,7 +4,7 @@
 """Tabular Data Module"""
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
 import numpy as np
@@ -13,11 +13,13 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
+from sklearn.base import TransformerMixin, copy
 from sklearn.preprocessing import (
     LabelEncoder,
     PowerTransformer,
     QuantileTransformer,
     StandardScaler,
+    FunctionTransformer,
 )
 from torch.utils.data import DataLoader, Dataset
 
@@ -50,6 +52,7 @@ class TabularDatamodule(pl.LightningDataModule):
         config: DictConfig,
         validation: pd.DataFrame = None,
         test: pd.DataFrame = None,
+        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
     ):
         """The Pytorch Lightning Datamodule for Tabular Data
 
@@ -62,11 +65,22 @@ class TabularDatamodule(pl.LightningDataModule):
             Defaults to None.
             test (pd.DataFrame, optional): Holdout DataFrame to check final performance on.
             Defaults to None.
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
+            and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+            a tuple of callables (transform_func, inverse_transform_func)
         """
         super().__init__()
         self.train = train.copy()
         self.validation = validation
-        self.validation = validation
+        if target_transform is not None:
+            if isinstance(target_transform, Iterable):
+                target_transform = FunctionTransformer(
+                    func=target_transform[0], inverse_func=target_transform[1]
+                )
+            self.do_target_transform = True
+        else:
+            self.do_target_transform = False
+        self.target_transform_template = target_transform
         self.test = test if test is None else test.copy()
         self.target = config.target
         self.batch_size = config.batch_size
@@ -89,7 +103,8 @@ class TabularDatamodule(pl.LightningDataModule):
             ]
             if self.config.embedding_dims is None:
                 self.config.embedding_dims = [
-                    (x, min(50, (x + 1) // 2)) for x in self.config.categorical_cardinality
+                    (x, min(50, (x + 1) // 2))
+                    for x in self.config.categorical_cardinality
                 ]
 
     def do_leave_one_out_encoder(self) -> bool:
@@ -125,10 +140,14 @@ class TabularDatamodule(pl.LightningDataModule):
         # The only features that are added are the date features extracted
         # from the date which are categorical in nature
         if (added_features is not None) and (stage == "fit"):
-            logger.debug(f"Added {added_features} features after encoding the date_columns")
+            logger.debug(
+                f"Added {added_features} features after encoding the date_columns"
+            )
             self.config.categorical_cols += added_features
             self.config.categorical_dim = (
-                len(self.config.categorical_cols) if self.config.categorical_cols is not None else 0
+                len(self.config.categorical_cols)
+                if self.config.categorical_cols is not None
+                else 0
             )
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
@@ -139,8 +158,10 @@ class TabularDatamodule(pl.LightningDataModule):
                         cols=self.config.categorical_cols, random_state=42
                     )
                     # Multi-Target Regression uses the first target to encode the categorical columns
-                    if len(self.config.target)>0:
-                        logger.warning("Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns")
+                    if len(self.config.target) > 0:
+                        logger.warning(
+                            "Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
+                        )
                     data = self.categorical_encoder.fit_transform(
                         data, data[self.config.target[0]]
                     )
@@ -186,6 +207,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 ] = self.continuous_transform.transform(
                     data.loc[:, self.config.continuous_cols]
                 )
+        # Converting target labels to a 0 indexed label
         if self.config.task == "classification":
             if stage == "fit":
                 self.label_encoder = LabelEncoder()
@@ -196,6 +218,15 @@ class TabularDatamodule(pl.LightningDataModule):
                 data[self.config.target[0]] = self.label_encoder.transform(
                     data[self.config.target[0]]
                 )
+        #Target Transforms
+        if all([col in data.columns for col in self.config.target]):
+            if self.do_target_transform:
+                target_transforms = []
+                for col in self.config.target:
+                    _target_transform = copy.deepcopy(self.target_transform_template)
+                    data[col] = _target_transform.fit_transform(data[col].values.reshape(-1,1))
+                    target_transforms.append(_target_transform)
+                self.target_transforms = target_transforms
         return data, added_features
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -207,7 +238,9 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         if stage == "fit" or stage is None:
             if self.validation is None:
-                logger.debug(f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation")
+                logger.debug(
+                    f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation"
+                )
                 val_idx = self.train.sample(
                     int(self.config.validation_split * len(self.train)), random_state=42
                 ).index
@@ -394,7 +427,7 @@ class TabularDatamodule(pl.LightningDataModule):
             df.drop(field_name, axis=1, inplace=True)
         return df, added_features
 
-    def train_dataloader(self, batch_size: Optional[int]=None) -> DataLoader:
+    def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
         """ Function that loads the train set. """
         dataset = TabularDataset(
             task=self.config.task,
@@ -405,7 +438,10 @@ class TabularDatamodule(pl.LightningDataModule):
             target=self.target,
         )
         return DataLoader(
-            dataset, batch_size if batch_size is not None else self.batch_size, shuffle=True, num_workers=self.config.num_workers
+            dataset,
+            batch_size if batch_size is not None else self.batch_size,
+            shuffle=True,
+            num_workers=self.config.num_workers,
         )
 
     def val_dataloader(self) -> DataLoader:

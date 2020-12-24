@@ -17,6 +17,7 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.tabular_model import TabularModel
 import pytorch_lightning as pl
 import numpy as np
+from sklearn.preprocessing import PowerTransformer
 
 
 dataset = fetch_covtype(data_home="data")
@@ -47,7 +48,7 @@ tabular_model = TabularModel(
     trainer_config="examples/trainer_config.yml",
     # experiment_config=experiment_config,
 )
-tabular_model.fit(train=train, test=test)
+tabular_model.fit(train=train, test=test, target_transform=PowerTransformer(method="yeo-johnson"))
 
 result = tabular_model.evaluate(test)
 print(result)

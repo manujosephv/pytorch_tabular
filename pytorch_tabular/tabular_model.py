@@ -4,9 +4,10 @@
 """Tabular Model"""
 import logging
 import os
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
+from sklearn.base import TransformerMixin
 from omegaconf.dictconfig import DictConfig
 import pandas as pd
 import pytorch_lightning as pl
@@ -64,7 +65,6 @@ class TabularModel:
                 or (optimizer_config is not None)
                 or (trainer_config is not None)
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
-            # TODO make config load from yaml files
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
             # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
@@ -78,7 +78,9 @@ class TabularModel:
                     "CategoryEmbedding" + model_config._model_name
                 )
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
-            optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
+            optimizer_config = self._read_parse_config(
+                optimizer_config, OptimizerConfig
+            )
             if experiment_config is None:
                 logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
@@ -89,7 +91,9 @@ class TabularModel:
                     OmegaConf.to_container(optimizer_config),
                 )
             else:
-                experiment_config = self._read_parse_config(experiment_config, ExperimentConfig)
+                experiment_config = self._read_parse_config(
+                    experiment_config, ExperimentConfig
+                )
                 self.track_experiment = True
                 self.config = OmegaConf.merge(
                     OmegaConf.to_container(data_config),
@@ -129,9 +133,9 @@ class TabularModel:
             if self.config.target_range is not None:
                 if (
                     (len(self.config.target_range) != len(self.config.target))
-                    or any([len(range_) != 2 for range_ in self.hparams.target_range])
+                    or any([len(range_) != 2 for range_ in self.config.target_range])
                     or any(
-                        [range_[0] > range_[1] for range_ in self.hparams.target_range]
+                        [range_[0] > range_[1] for range_ in self.config.target_range]
                     )
                 ):
                     raise ValueError(
@@ -238,9 +242,14 @@ class TabularModel:
         with torch.no_grad():
             self.model(batch)
 
-    def _prepare_dataloader(self, train, validation, test):
+    def _prepare_dataloader(self, train, validation, test, target_transform=None):
         logger.info("Preparing the DataLoaders...")
-        self.datamodule = TabularDatamodule(train=train, config=self.config, test=test)
+        self.datamodule = TabularDatamodule(
+            train=train,
+            config=self.config,
+            test=test,
+            target_transform=target_transform,
+        )
         self.datamodule.prepare_data()
         self.datamodule.setup("fit")
         train_loader = self.datamodule.train_dataloader()
@@ -277,11 +286,14 @@ class TabularModel:
         )
 
     def load_best_model(self):
-        logger.info("Loading the best model...")
-        ckpt_path = self.trainer.checkpoint_callback.best_model_path
-        logger.debug(f"Model Checkpoint: {ckpt_path}")
-        ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
-        self.model.load_state_dict(ckpt["state_dict"])
+        if self.trainer.checkpoint_callback is not None:
+            logger.info("Loading the best model...")
+            ckpt_path = self.trainer.checkpoint_callback.best_model_path
+            logger.debug(f"Model Checkpoint: {ckpt_path}")
+            ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
+            self.model.load_state_dict(ckpt["state_dict"])
+        else:
+            logger.info("No best model available to load. Did you run it more than 1 epoch?...")
 
     def fit(
         self,
@@ -292,6 +304,7 @@ class TabularModel:
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
+        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
     ) -> None:
         """The fit method which takes in the data and triggers the training
 
@@ -306,8 +319,26 @@ class TabularModel:
             optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
             This should be the Class and not the initialized object
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
+            and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+            a tuple of callables (transform_func, inverse_transform_func)
         """
-        train_loader, val_loader = self._prepare_dataloader(train, valid, test)
+        if (target_transform is not None) and isinstance(target_transform, Iterable):
+            assert (
+                len(target_transform) == 2
+            ), "If `target_transform` is a tuple, it should have and only have forward and backward transformations"
+        elif isinstance(target_transform, TransformerMixin):
+            pass
+        else:
+            raise ValueError(
+                "`target_transform` should wither be an sklearn Transformer or a tuple of callables."
+            )
+        if self.config.task=="classification" and target_transform is not None:
+            logger.warning("For classification task, target transform is not used. Ignoring the parameter")
+            target_transform = None
+        train_loader, val_loader = self._prepare_dataloader(
+            train, valid, test, target_transform
+        )
         self._prepare_model(loss, metrics, optimizer, optimizer_params)
 
         if self.track_experiment and self.config.log_target == "wandb":
@@ -378,7 +409,12 @@ class TabularModel:
         if self.config.task == "regression":
             predictions = predictions.numpy()
             for i, target_col in enumerate(self.config.target):
-                pred_df[f"{target_col}_prediction"] = predictions[:, i]
+                if self.datamodule.do_target_transform:
+                    if self.config.target[i] in pred_df.columns:
+                        pred_df[self.config.target[i]] = self.datamodule.target_transforms[i].inverse_transform(pred_df[self.config.target[i]].values.reshape(-1,1))
+                    pred_df[f"{target_col}_prediction"] = self.datamodule.target_transforms[i].inverse_transform(predictions[:, i].reshape(-1,1))
+                else:
+                    pred_df[f"{target_col}_prediction"] = predictions[:, i]
         elif self.config.task == "classification":
             predictions = nn.Softmax(dim=-1)(predictions).numpy()
             for i, class_ in enumerate(self.datamodule.label_encoder.classes_):

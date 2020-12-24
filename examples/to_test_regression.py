@@ -20,7 +20,7 @@ from omegaconf import OmegaConf
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.tabular_model import TabularModel
 import pytorch_lightning as pl
-
+from sklearn.preprocessing import PowerTransformer
 
 dataset = fetch_california_housing(data_home="data", as_frame=True)
 dataset.frame["HouseAgeBin"] = pd.qcut(dataset.frame["HouseAge"], q=4)
@@ -47,14 +47,14 @@ data_config = DataConfig(
 )
 model_config = CategoryEmbeddingModelConfig(
     task="regression",
-    initialization="blah",
+    # initialization="blah",
     target_range=[
         (dataset.frame[dataset.target_names].min().item(),dataset.frame[dataset.target_names].max().item()),
         (dataset.frame[["MedInc"]].min().item(), dataset.frame[["MedInc"]].max().item())]
 )
 # model_config.validate()
 # model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
-trainer_config = TrainerConfig(checkpoints=None, max_epochs=1)
+trainer_config = TrainerConfig(checkpoints=None, max_epochs=5)
 # experiment_config =F ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
 
@@ -65,10 +65,10 @@ tabular_model = TabularModel(
     trainer_config=trainer_config,
     # experiment_config=experiment_config,
 )
-tabular_model.fit(train=train, test=test)
+tabular_model.fit(train=train, test=test, target_transform=PowerTransformer(method="yeo-johnson"))
 
 result = tabular_model.evaluate(test)
 print(result)
-print(result[0]['train_loss'])
+# print(result[0]['train_loss'])
 pred_df = tabular_model.predict(test)
 pred_df.to_csv("output/temp2.csv")
