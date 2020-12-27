@@ -97,17 +97,17 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
         y_hat = torch.clip(y_hat, min=0)
-        for metric, metric_str in zip(self.metrics, self.hparams.metrics):
+        for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     if metric.__name__==pl.metrics.functional.mean_squared_log_error.__name__:
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(
-                            torch.clip(y_hat[:, i], min=0), torch.clip(y[:, i], min=0)
+                            torch.clip(y_hat[:, i], min=0), torch.clip(y[:, i], min=0), **metric_params
                         )
                     else:
-                        _metric = metric(y_hat[:, i], y[:, i])
+                        _metric = metric(y_hat[:, i], y[:, i], **metric_params)
                     self.log(
                         f"{tag}_{metric_str}_{i}",
                         _metric,
@@ -119,7 +119,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
-                avg_metric = metric(y_hat.squeeze(), y.squeeze())
+                avg_metric = metric(y_hat.squeeze(), y.squeeze(), **metric_params)
             metrics.append(avg_metric)
             self.log(
                 f"{tag}_{metric_str}",

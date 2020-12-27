@@ -25,6 +25,7 @@ data = np.hstack([dataset.data, dataset.target.reshape(-1,1)])[:5000,:]
 col_names = [f"feature_{i}" for i in range(data.shape[-1])]
 col_names[-1] = "target"
 data = pd.DataFrame(data, columns=col_names)
+num_classes = len(data['target'].unique())
 test_idx = data.sample(int(0.2 * len(data)), random_state=42).index
 test = data[data.index.isin(test_idx)]
 train = data[~data.index.isin(test_idx)]
@@ -36,16 +37,23 @@ data_config = DataConfig(
         continuous_feature_transform="yeo-johnson"
     )
 # model_config = CategoryEmbeddingModelConfig(task="classification")
-model_config = NodeConfig(task="classification", depth=2, metrics=["auroc","accuracy"], metrics_params=[{},{}])
+model_config = NodeConfig(task="classification", depth=2, metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
 trainer_config = TrainerConfig()
 # experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
 
+# tabular_model = TabularModel(
+#     data_config="examples/data_config.yml",
+#     model_config="examples/model_config.yml",
+#     optimizer_config="examples/optimizer_config.yml",
+#     trainer_config="examples/trainer_config.yml",
+#     # experiment_config=experiment_config,
+# )
 tabular_model = TabularModel(
-    data_config="examples/data_config.yml",
-    model_config="examples/model_config.yml",
-    optimizer_config="examples/optimizer_config.yml",
-    trainer_config="examples/trainer_config.yml",
+    data_config=data_config,
+    model_config=model_config,
+    optimizer_config=optimizer_config,
+    trainer_config=trainer_config,
     # experiment_config=experiment_config,
 )
 tabular_model.fit(train=train, test=test, target_transform=PowerTransformer(method="yeo-johnson"))

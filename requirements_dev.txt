@@ -22,3 +22,5 @@ pytorch-lightning==1.1.0
 omegaconf==2.0.5
 tensorboard>=2.2.0
 pytorch-tabnet==3.0.0
+wandb==0.10.11
+PyYAML>=5.1  # OmegaConf requirement >=5.1
