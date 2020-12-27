@@ -313,7 +313,7 @@ class FocalLoss_Ori(nn.Module):
 
 tabular_model.fit(
     train=train,
-    valid=val,
+    validation=val,
     loss=FocalLoss_Ori(num_class=2),
     # metrics=[lambda y_hat, y: roc_auc_score(y_hat.detach().cpu().numpy(), y.detach().cpu().numpy(), multi_class='ovr')],
     optimizer=custom_optim.QHAdam,

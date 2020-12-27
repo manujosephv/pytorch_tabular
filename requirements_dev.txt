@@ -25,3 +25,4 @@ pytorch-tabnet==3.0.0
 wandb==0.10.11
 PyYAML>=5.1  # OmegaConf requirement >=5.1
 importlib-metadata <1,>=0.12
+ipywidgets

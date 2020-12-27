@@ -4,8 +4,7 @@ import pytest
 from sklearn.datasets import fetch_california_housing, fetch_covtype
 
 
-@pytest.fixture(scope="session", autouse=True)
-def regression_data():
+def load_regression_data():
     dataset = fetch_california_housing(data_home="data", as_frame=True)
     df = dataset.frame.sample(5000)
     df["HouseAgeBin"] = pd.qcut(df["HouseAge"], q=4)
@@ -16,8 +15,7 @@ def regression_data():
     return (train, test, dataset.target_names)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def classification_data():
+def load_classification_data():
     dataset = fetch_covtype(data_home="data")
     data = np.hstack([dataset.data, dataset.target.reshape(-1, 1)])[:10000, :]
     col_names = [f"feature_{i}" for i in range(data.shape[-1])]
@@ -29,3 +27,13 @@ def classification_data():
     test = data[data.index.isin(test_idx)]
     train = data[~data.index.isin(test_idx)]
     return (train, test, ["target"])
+
+
+@pytest.fixture(scope="session", autouse=True)
+def regression_data():
+    return load_regression_data()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def classification_data():
+    return load_classification_data()

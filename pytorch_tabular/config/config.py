@@ -47,22 +47,23 @@ def _validate_choices(cls):
 
 @dataclass
 class DataConfig:
-    """Data configuration
+    """Data configuration.
+
     Args:
         target (List[str]): A list of strings with the names of the target column(s)
-        continuous_cols (List[str]): Column names of the numeric fields. By default, we assume everything is numerical
+        continuous_cols (List[str]): Column names of the numeric fields. Defaults to []
         categorical_cols (List): Column names of the categorical fields to pass through an embedding layer
         date_cols (List): Column names of the date fields
         encode_date_cols (bool): Whether or not to encode the derived variables from date
         validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
-        Used only if Validation Data is not given separately
+            Used only if Validation Data is not given separately
         continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
-        By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
+            By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
         quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
-        gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
-        Please note that this transformation does NOT apply gaussian noise to the resulting data,
-        the noise is only applied for QuantileTransformer
+            gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
+            Please note that this transformation does NOT apply gaussian noise to the resulting data,
+            the noise is only applied for QuantileTransformer
         num_workers (Union[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
     """
 
@@ -73,7 +74,7 @@ class DataConfig:
     continuous_cols: List[str] = field(
         default_factory=list,
         metadata={
-            "help": "Column names of the numeric fields. By default, we assume everything is numerical"
+            "help": "Column names of the numeric fields. Defaults to []"
         },
     )
     categorical_cols: List = field(

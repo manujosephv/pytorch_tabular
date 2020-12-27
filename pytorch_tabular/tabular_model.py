@@ -298,7 +298,7 @@ class TabularModel:
     def fit(
         self,
         train: pd.DataFrame,
-        valid: Optional[pd.DataFrame] = None,
+        validation: Optional[pd.DataFrame] = None,
         test: Optional[pd.DataFrame] = None,
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
@@ -338,7 +338,7 @@ class TabularModel:
             logger.warning("For classification task, target transform is not used. Ignoring the parameter")
             target_transform = None
         train_loader, val_loader = self._prepare_dataloader(
-            train, valid, test, target_transform
+            train, validation, test, target_transform
         )
         self._prepare_model(loss, metrics, optimizer, optimizer_params)
 

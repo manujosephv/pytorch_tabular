@@ -158,21 +158,28 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def configure_optimizers(self):
         if self.custom_optimizer is None:
+            #Loading from the config
             try:
                 self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+                opt = self._optimizer(
+                    self.parameters(),
+                    lr=self.hparams.learning_rate,
+                    **self.hparams.optimizer_params,
+                )
             except AttributeError as e:
                 logger.error(
                     f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module"
                 )
                 raise e
         else:
+            #Loading from custom fit arguments
             self._optimizer = self.custom_optimizer
 
-        opt = self._optimizer(
-            self.parameters(),
-            lr=self.hparams.learning_rate,
-            **self.hparams.optimizer_params,
-        )
+            opt = self._optimizer(
+                self.parameters(),
+                lr=self.hparams.learning_rate,
+                **self.custom_optimizer_params,
+            )
         if self.hparams.lr_scheduler is not None:
             try:
                 self._lr_scheduler = getattr(
