@@ -400,7 +400,8 @@ class TabularModel:
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
                     continue
-                sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
+                # sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
+                sample[k] = v.to(self.model.device)
             y_hat = self.model(sample)
             predictions.append(y_hat.detach().cpu())
         predictions = torch.cat(predictions, dim=0)
