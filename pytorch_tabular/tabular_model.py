@@ -323,16 +323,17 @@ class TabularModel:
             and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
             a tuple of callables (transform_func, inverse_transform_func)
         """
-        if (target_transform is not None) and isinstance(target_transform, Iterable):
-            assert (
-                len(target_transform) == 2
-            ), "If `target_transform` is a tuple, it should have and only have forward and backward transformations"
-        elif isinstance(target_transform, TransformerMixin):
-            pass
-        else:
-            raise ValueError(
-                "`target_transform` should wither be an sklearn Transformer or a tuple of callables."
-            )
+        if (target_transform is not None):
+            if isinstance(target_transform, Iterable):
+                assert (
+                    len(target_transform) == 2
+                ), "If `target_transform` is a tuple, it should have and only have forward and backward transformations"
+            elif isinstance(target_transform, TransformerMixin):
+                pass
+            else:
+                raise ValueError(
+                    "`target_transform` should wither be an sklearn Transformer or a tuple of callables."
+                )
         if self.config.task=="classification" and target_transform is not None:
             logger.warning("For classification task, target transform is not used. Ignoring the parameter")
             target_transform = None

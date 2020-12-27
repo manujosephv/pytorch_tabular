@@ -428,7 +428,7 @@ class ModelConfig:
         metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
         The metrics should be one of the metrics implemented in PyTorch Lightning.
         By default, it is Accuracy if classification and MeanSquaredLogError for regression
-        metrics_params (Union[List, NoneType]): The parameters to be passed to the Metrics initialized
+        metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function
         target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
         Typically used for Regression problems. If left empty, will not apply any restrictions
 
@@ -459,8 +459,8 @@ class ModelConfig:
         },
     )
     metrics_params: Optional[List] = field(
-        default_factory=lambda: {},
-        metadata={"help": "The parameters to be passed to the Metrics initialized"},
+        default=None,
+        metadata={"help": "The parameters to be passed to the metrics function"},
     )
     target_range: Optional[List] = field(
         default=None,
@@ -479,7 +479,7 @@ class ModelConfig:
         elif self.task == "classification":
             self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
             self.metrics = ["accuracy"] if self.metrics is None else self.metrics
-            self.metrics_params = [{}]
+            self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         else:
             raise NotImplementedError(
                 f"{self.task} is not a valid task. Should be one of {self.__dataclass_fields__['task'].metadata['choices']}"

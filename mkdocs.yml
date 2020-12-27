@@ -1,16 +1,25 @@
-site_name: Pytorch Tabular
+site_name: PyTorch Tabular
 nav:
     - Getting Started: index.md
-    - API Docs: apidocs.md
-    - Contributing: contributing.md
+    - Tutorials: tutorials.md
+    - Data: data.md
+    - Models: models.md
+    - Training and Optimization: training.md
+    - Experiment Tracking: experiment_tracking.md
+    - FAQ: faq.md
+    - API: apidocs.md
     - Authors: authors.md
     - History: history.md
+    - Contributing: contributing.md
 theme:
   name: material
   features:
     - search.suggest
+    - navigation.tabs
+    - navigation.tabs.sticky
   palette:
     primary: deep purple
+  logo: imgs/pytorch_tabular_logo.svg
 plugins:
   - search
   - mkdocstrings:
@@ -19,12 +28,14 @@ plugins:
           rendering:
             show_root_heading: yes
 repo_url: https://github.com/manujosephv/pytorch_tabular
-social:
-  - icon: fontawesome/brands/linkedin
-    link: https://www.linkedin.com/in/manujosephv/
-  - icon: fontawesome/brands/twitter
-    link: https://twitter.com/manujosephv
-  - icon: fontawesome/solid/blog
-    link: https://deep-and-shallow.com/
-  - icon: fontawesome/brands/medium
-    link: https://medium.com/@manujosephv
+extra:
+  social:
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/manujosephv/
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/manujosephv
+    - icon: fontawesome/solid/blog
+      link: https://deep-and-shallow.com/
+    - icon: fontawesome/brands/medium
+      link: https://medium.com/@manujosephv
+copyright: Copyright &copy; 2020 Manu Joseph

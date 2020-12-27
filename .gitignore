@@ -142,5 +142,4 @@ data/
 wandb/
 saved_models/
 output/
-docs/
 .vscode/

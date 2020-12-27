@@ -158,9 +158,9 @@ class TabularDatamodule(pl.LightningDataModule):
                         cols=self.config.categorical_cols, random_state=42
                     )
                     # Multi-Target Regression uses the first target to encode the categorical columns
-                    if len(self.config.target) > 0:
+                    if len(self.config.target) > 1:
                         logger.warning(
-                            "Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
+                            f"Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
                         )
                     data = self.categorical_encoder.fit_transform(
                         data, data[self.config.target[0]]

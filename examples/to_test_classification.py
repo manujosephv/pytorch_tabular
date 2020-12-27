@@ -36,7 +36,7 @@ data_config = DataConfig(
         continuous_feature_transform="yeo-johnson"
     )
 # model_config = CategoryEmbeddingModelConfig(task="classification")
-model_config = NodeConfig(task="classification", depth=2)
+model_config = NodeConfig(task="classification", depth=2, metrics=["auroc","accuracy"], metrics_params=[{},{}])
 trainer_config = TrainerConfig()
 # experiment_config = ExperimentConfig(project_name="Tabular_test")
 optimizer_config = OptimizerConfig()
