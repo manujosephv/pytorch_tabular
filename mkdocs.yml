@@ -19,7 +19,9 @@ theme:
     - navigation.tabs.sticky
   palette:
     primary: deep purple
-  logo: imgs/pytorch_tabular_logo.svg
+  logo: imgs/pytorch_tabular_logo_small.svg
+markdown_extensions:
+  - admonition
 plugins:
   - search
   - mkdocstrings:

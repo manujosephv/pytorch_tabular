@@ -52,8 +52,9 @@ class DataConfig:
     Args:
         target (List[str]): A list of strings with the names of the target column(s)
         continuous_cols (List[str]): Column names of the numeric fields. Defaults to []
-        categorical_cols (List): Column names of the categorical fields to pass through an embedding layer
-        date_cols (List): Column names of the date fields
+        categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to []
+        date_cols (List): (Column names, Freq) tuples of the date fields. For eg. a field named introduction_date
+            and with a monthly frequency should have an entry ('intro_date','M'}
         encode_date_cols (bool): Whether or not to encode the derived variables from date
         validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
             Used only if Validation Data is not given separately
@@ -80,17 +81,17 @@ class DataConfig:
     categorical_cols: List = field(
         default_factory=list,
         metadata={
-            "help": "Column names of the categorical fields to pass through an embedding layer"
+            "help": "Column names of the categorical fields to treat differently. Defaults to []"
         },
     )
-    date_cols: List = field(
+    date_columns: List = field(
         default_factory=lambda: [],
         metadata={
             "help": "(Column names, Freq) tuples of the date fields. For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}"
         },
     )
 
-    encode_date_cols: bool = field(
+    encode_date_columns: bool = field(
         default=True,
         metadata={"help": "Whether or not to encode the derived variables from date"},
     )
@@ -136,7 +137,7 @@ class DataConfig:
 
     def __post_init__(self):
         assert (
-            len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_cols)
+            len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_columns)
             > 0
         ), "There should be at-least one feature defined in categorical, continuous, or date columns"
         self.categorical_dim = (
@@ -424,14 +425,14 @@ class ModelConfig:
         task (str): Specify whether the problem is regression of classification.Choices are: regression classification
         learning_rate (float): The learning rate of the model
         loss (Union[str, NoneType]): The loss function to be applied.
-        By Default it is MSELoss for regression and CrossEntropyLoss for classification.
-        Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
+            By Default it is MSELoss for regression and CrossEntropyLoss for classification.
+            Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
         metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
-        The metrics should be one of the metrics implemented in PyTorch Lightning.
-        By default, it is Accuracy if classification and MeanSquaredLogError for regression
+            The metrics should be one of the metrics implemented in PyTorch Lightning.
+            By default, it is Accuracy if classification and MeanSquaredLogError for regression
         metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function
         target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
-        Typically used for Regression problems. If left empty, will not apply any restrictions
+            Typically used for Regression problems. If left empty, will not apply any restrictions
 
     Raises:
         NotImplementedError: Raises an error if task is not regression or classification

@@ -39,10 +39,10 @@ class TabularDatamodule(pl.LightningDataModule):
             "callable": QuantileTransformer,
             "params": dict(output_distribution="normal", random_state=42),
         },
-        "box-cox": {"callable": PowerTransformer, "params": dict(method="box-cox")},
+        "box-cox": {"callable": PowerTransformer, "params": dict(method="box-cox", standardize=False)},
         "yeo-johnson": {
             "callable": PowerTransformer,
-            "params": dict(method="yeo-johnson"),
+            "params": dict(method="yeo-johnson", standardize=False),
         },
     }
 
