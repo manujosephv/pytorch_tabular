@@ -159,19 +159,19 @@ class TrainerConfig:
         min_epochs (int): Minimum number of epochs to be run
         gpus (int): The index of the GPU to be used. If zero, will use CPU
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
-        Trainer also calls optimizer.step() for the last indivisible step number.
+            Trainer also calls optimizer.step() for the last indivisible step number.
         auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),
-        to find optimal initial learning rate.
+            to find optimal initial learning rate.
         check_val_every_n_epoch (int): Check val every n train epochs.
         gradient_clip_val (float): Gradient clipping value
         overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same training set
-        for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it.
-        Useful for quickly debugging or trying to overfit on purpose.
+            for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it.
+            Useful for quickly debugging or trying to overfit on purpose.
         profiler (Union[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks.
-        Choices are: 'None' 'simple' 'advanced'
+            Choices are: 'None' 'simple' 'advanced'
         early_stopping (str): The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping
         early_stopping_min_delta (float): The minimum delta in the loss/metric which qualifies as an improvement in early stopping
-        early_stopping_mode (str): The direction in which the loss/metric should be optimized
+        early_stopping_mode (str): The direction in which the loss/metric should be optimized. Choices are `max` and `min`
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements in loss/metric
         checkpoints (str): The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints
         checkpoints_path (str): The path where the saved models will be
@@ -179,7 +179,7 @@ class TrainerConfig:
         checkpoints_save_top_k (int): The number of best models to save
         load_best (bool): Flag to load the best model saved during training
         track_grad_norm (int): Track and Log Gradient Norms in the logger.
-        -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
+            -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
     """
 
     batch_size: int = field(
@@ -195,7 +195,7 @@ class TrainerConfig:
         default=1, metadata={"help": "Minimum number of epochs to be run"}
     )
     gpus: int = field(
-        default=1,
+        default=0,
         metadata={"help": "The index of the GPU to be used. If zero, will use CPU"},
     )
     accumulate_grad_batches: int = field(
@@ -243,7 +243,8 @@ class TrainerConfig:
     )
     early_stopping_mode: str = field(
         default="min",
-        metadata={"help": "The direction in which the loss/metric should be optimized"},
+        metadata={"help": "The direction in which the loss/metric should be optimized",
+        "choices": ["max","min"]},
     )
     early_stopping_patience: int = field(
         default=3,

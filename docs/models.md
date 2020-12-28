@@ -117,3 +117,26 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 ## Implementing New Architectures
 
+PyTorch Tabular is very easy to extend and infinitely customizable. All the models that have been implemented in PyTorch Tabular inherits an Abstract Class `BaseModel` which is in fact a PyTorchLightning Model.
+
+It handles all the major functions like decoding the config params and setting up the loss and metrics. It also calculates the Loss and metrics and feeds it back to the PyTorch Lightning Trainer which does the back-propagation.
+
+There are two methods that need to be defined in any class that inherits the Base Model:
+
+1. `_build_network` --> This is where you initialize the components required for your model to work
+2. `forward` --> This is the forward pass of the model.
+
+While this is the bare minimum, you can redefine or use any of the Pytorch Lightning standard methods to tweak your model and training to your liking.
+
+In addition to the model, you will also need to define a config. Configs are python dataclasses and should inherit `ModelConfig` and will have all the parameters of the ModelConfig. by default. Any additional parameter should be defined in the dataclass. 
+
+
+**Key things to note:**
+
+1. All the different parameters in the different configs(like TrainerConfig, OptimizerConfig, etc) are all available in `config` before calling `super()` and in `self.hparams` after.
+2. the input batch at the `forward` method is a dictionary with keys `continuous` and `categorical`
+3. In the `_build_network` method, save every component that you want access in the `forward` to `self`
+4. The `forward` method should just have the forward pass and return the outut of the forward pass. In case of classification, do not apply a Sigmoid or Softmax at the end in the forward pass.
+5. There is one deviation from the normal when we create a TabularModel object with the configs. Earlier the model was inferred from the config and initialized autmatically. But here, we have to use the `model_callable` parameter of the TabularModel and pass in the model class(not the initialized object)
+
+Please checkout the Implementing New Architectures [tutorial](tutorials.md) for a working example.
