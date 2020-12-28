@@ -40,21 +40,24 @@ class TabularModel:
         optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
         trainer_config: Optional[Union[TrainerConfig, str]] = None,
         experiment_config: Optional[Union[ExperimentConfig, str]] = None,
+        model_callable: Optional[Callable] = None
     ) -> None:
         """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
 
         Args:
             config (Optional[Union[DictConfig, str]], optional): Single OmegaConf DictConfig object or
-            the path to the yaml file holding all the config parameters. Defaults to None.
+                the path to the yaml file holding all the config parameters. Defaults to None.
             data_config (Optional[Union[DataConfig, str]], optional): DataConfig object or str to the yaml file. Defaults to None.
             model_config (Optional[Union[ModelConfig, str]], optional): A subclass of ModelConfig or str to the yaml file.
-            DEtermines which model to run from the type of config. Defaults to None.
+                Determines which model to run from the type of config. Defaults to None.
             optimizer_config (Optional[Union[OptimizerConfig, str]], optional): OptimizerConfig object or str to the yaml file.
-            Defaults to None.
+                Defaults to None.
             trainer_config (Optional[Union[TrainerConfig, str]], optional): TrainerConfig object or str to the yaml file.
-            Defaults to None.
+                Defaults to None.
             experiment_config (Optional[Union[ExperimentConfig, str]], optional): ExperimentConfig object or str to the yaml file.
-            If Provided configures the experiment tracking. Defaults to None.
+                If Provided configures the experiment tracking. Defaults to None.
+            model_callable (Optional[Callable], optional): If provided, will override the model callable that will be loaded from the config.
+                Typically used when providing Custom Models
         """
         super().__init__()
         self.exp_manager = ExperimentRunManager()
@@ -118,9 +121,12 @@ class TabularModel:
             self.logger = None
 
         self.exp_manager = ExperimentRunManager()
-        self.model_callable = getattr(
-            getattr(models, self.config._module_src), self.config._model_name
-        )
+        if model_callable is None:
+            self.model_callable = getattr(
+                getattr(models, self.config._module_src), self.config._model_name
+            )
+        else:
+            self.model_callable = model_callable
         self._run_validation()
 
     def _run_validation(self):

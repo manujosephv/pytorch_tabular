@@ -119,3 +119,4 @@ class CategoryEmbeddingModel(BaseModel):
                 y_min, y_max = self.hparams.target_range[i]
                 x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
         return x
+
