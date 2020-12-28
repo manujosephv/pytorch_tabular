@@ -320,7 +320,7 @@ class ExperimentConfig:
     )
 
     log_target: str = field(
-        default="wandb",
+        default="tensorboard",
         metadata={
             "help": "Determines where logging happens - Tensorboard or W&B",
             "choices": ["wandb", "tensorboard"],
@@ -338,6 +338,11 @@ class ExperimentConfig:
 
     def __post_init__(self):
         _validate_choices(self)
+        if self.log_target == 'wandb':
+            try:
+                import wandb
+            except ImportError:
+                raise ImportError("No W&B installation detected. `pip install wandb` to install W&B if you set log_target as `wandb`")
 
 
 @dataclass
