@@ -3,8 +3,8 @@
 import pytest
 
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
-from pytorch_tabular.models.node import NodeConfig
-from pytorch_tabular.tabular_model import TabularModel
+from pytorch_tabular.models import NodeConfig
+from pytorch_tabular import TabularModel
 
 
 @pytest.mark.parametrize("multi_target", [True, False])
