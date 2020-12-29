@@ -3,7 +3,7 @@ category-encoders==2.2.2
 numpy>=1.16.6
 pandas==1.1.5
 scikit-learn==0.23.2
-pytorch-lightning==1.1.0
+pytorch-lightning==1.1.2
 omegaconf==2.0.5
 tensorboard>=2.2.0
 pytorch-tabnet==3.0.0
