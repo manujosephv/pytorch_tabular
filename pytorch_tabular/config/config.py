@@ -74,9 +74,7 @@ class DataConfig:
     )
     continuous_cols: List[str] = field(
         default_factory=list,
-        metadata={
-            "help": "Column names of the numeric fields. Defaults to []"
-        },
+        metadata={"help": "Column names of the numeric fields. Defaults to []"},
     )
     categorical_cols: List = field(
         default_factory=list,
@@ -137,7 +135,9 @@ class DataConfig:
 
     def __post_init__(self):
         assert (
-            len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_columns)
+            len(self.categorical_cols)
+            + len(self.continuous_cols)
+            + len(self.date_columns)
             > 0
         ), "There should be at-least one feature defined in categorical, continuous, or date columns"
         self.categorical_dim = (
@@ -175,6 +175,9 @@ class TrainerConfig:
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements in loss/metric
         checkpoints (str): The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints
         checkpoints_path (str): The path where the saved models will be
+        checkpoints_name(Optional[str]): The name under which the models will be saved.
+            If left blank, first it will look for `run_name` in experiment_config and if that is also None
+            then it will use a generic name like task_version.
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
         checkpoints_save_top_k (int): The number of best models to save
         load_best (bool): Flag to load the best model saved during training
@@ -243,8 +246,10 @@ class TrainerConfig:
     )
     early_stopping_mode: str = field(
         default="min",
-        metadata={"help": "The direction in which the loss/metric should be optimized",
-        "choices": ["max","min"]},
+        metadata={
+            "help": "The direction in which the loss/metric should be optimized",
+            "choices": ["max", "min"],
+        },
     )
     early_stopping_patience: int = field(
         default=3,
@@ -261,6 +266,12 @@ class TrainerConfig:
     checkpoints_path: str = field(
         default="saved_models",
         metadata={"help": "The path where the saved models will be"},
+    )
+    checkpoints_name: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The name under which the models will be saved. If left blank, first it will look for `run_name` in experiment_config and if that is also None then it will use a generic name like task_version."
+        }
     )
     checkpoints_mode: str = field(
         default="min",
@@ -338,11 +349,13 @@ class ExperimentConfig:
 
     def __post_init__(self):
         _validate_choices(self)
-        if self.log_target == 'wandb':
+        if self.log_target == "wandb":
             try:
                 import wandb
             except ImportError:
-                raise ImportError("No W&B installation detected. `pip install wandb` to install W&B if you set log_target as `wandb`")
+                raise ImportError(
+                    "No W&B installation detected. `pip install wandb` to install W&B if you set log_target as `wandb`"
+                )
 
 
 @dataclass
@@ -487,7 +500,11 @@ class ModelConfig:
         elif self.task == "classification":
             self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
             self.metrics = ["accuracy"] if self.metrics is None else self.metrics
-            self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
+            self.metrics_params = (
+                [{} for _ in self.metrics]
+                if self.metrics_params is None
+                else self.metrics_params
+            )
         else:
             raise NotImplementedError(
                 f"{self.task} is not a valid task. Should be one of {self.__dataclass_fields__['task'].metadata['choices']}"

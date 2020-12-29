@@ -92,7 +92,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             f"{tag}_loss",
             computed_loss,
             on_epoch=(tag == "valid"),
-            on_step=(tag == "train"),
+            # on_step=(tag == "train"),
+            on_step=False,
             logger=True,
             prog_bar=True,
         )
@@ -221,5 +222,6 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 {
                     "valid_logits": wandb.Histogram(flattened_logits.to("cpu")),
                     "global_step": self.global_step,
-                }
+                },
+                commit=False
             )

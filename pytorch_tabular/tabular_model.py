@@ -175,7 +175,12 @@ class TabularModel:
         Returns:
             tuple[str, int]: Returns the name and version number
         """
-        name = self.config.run_name if self.config.run_name else f"{self.config.task}"
+        if self.config.run_name is not None:
+            name = self.config.run_name
+        elif self.config.checkpoints_name is not None:
+            name = self.config.checkpoints_name
+        else:
+            name = self.config.task
         uid = self.exp_manager.update_versions(name)
         return name, uid
 

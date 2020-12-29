@@ -22,6 +22,7 @@ theme:
   logo: imgs/pytorch_tabular_logo_small.svg
 markdown_extensions:
   - admonition
+  # - pymdownx.inlinehilite
 plugins:
   - search
   - mkdocstrings:
