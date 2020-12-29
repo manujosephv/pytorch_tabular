@@ -47,14 +47,14 @@ class TabularModel:
         Args:
             config (Optional[Union[DictConfig, str]], optional): Single OmegaConf DictConfig object or
                 the path to the yaml file holding all the config parameters. Defaults to None.
-            data_config (Optional[Union[DataConfig, str]], optional): DataConfig object or str to the yaml file. Defaults to None.
-            model_config (Optional[Union[ModelConfig, str]], optional): A subclass of ModelConfig or str to the yaml file.
+            data_config (Optional[Union[DataConfig, str]], optional): DataConfig object or path to the yaml file. Defaults to None.
+            model_config (Optional[Union[ModelConfig, str]], optional): A subclass of ModelConfig or path to the yaml file.
                 Determines which model to run from the type of config. Defaults to None.
-            optimizer_config (Optional[Union[OptimizerConfig, str]], optional): OptimizerConfig object or str to the yaml file.
+            optimizer_config (Optional[Union[OptimizerConfig, str]], optional): OptimizerConfig object or path to the yaml file.
                 Defaults to None.
-            trainer_config (Optional[Union[TrainerConfig, str]], optional): TrainerConfig object or str to the yaml file.
+            trainer_config (Optional[Union[TrainerConfig, str]], optional): TrainerConfig object or path to the yaml file.
                 Defaults to None.
-            experiment_config (Optional[Union[ExperimentConfig, str]], optional): ExperimentConfig object or str to the yaml file.
+            experiment_config (Optional[Union[ExperimentConfig, str]], optional): ExperimentConfig object or path to the yaml file.
                 If Provided configures the experiment tracking. Defaults to None.
             model_callable (Optional[Callable], optional): If provided, will override the model callable that will be loaded from the config.
                 Typically used when providing Custom Models
@@ -130,6 +130,12 @@ class TabularModel:
         self._run_validation()
 
     def _run_validation(self):
+        """Validates the Config params and throws errors if something is wrong
+
+        Raises:
+            NotImplementedError: If you provide a multi-target config to a classification task
+            ValueError: If there is a problem with Target Range
+        """
         if self.config.task == "classification":
             if len(self.config.target) > 1:
                 raise NotImplementedError(
@@ -192,7 +198,7 @@ class TabularModel:
         """
         if self.config.log_target == "tensorboard":
             self.logger = pl.loggers.TensorBoardLogger(
-                name=self.name, save_dir="tensorboard_logs", version=self.uid
+                name=self.name, save_dir=self.config.project_name, version=self.uid
             )
         elif self.config.log_target == "wandb":
             self.logger = pl.loggers.WandbLogger(
@@ -239,6 +245,8 @@ class TabularModel:
         return callbacks
 
     def data_aware_initialization(self):
+        """Performs data-aware initialization for NODE
+        """
         # Need a big batch to initialize properly
         alt_loader = self.datamodule.train_dataloader(batch_size=1024)
         batch = next(iter(alt_loader))
@@ -297,6 +305,8 @@ class TabularModel:
         )
 
     def load_best_model(self):
+        """Loads the best model after training is done
+        """
         if self.trainer.checkpoint_callback is not None:
             logger.info("Loading the best model...")
             ckpt_path = self.trainer.checkpoint_callback.best_model_path
@@ -322,17 +332,17 @@ class TabularModel:
         Args:
             train (pd.DataFrame): Training Dataframe
             valid (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-            Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
             test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
-            which you'll be able to check performance after the model is trained. Defaults to None.
+                which you'll be able to check performance after the model is trained. Defaults to None.
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the signature metric_fn(y_hat, y)
             optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
-            This should be the Class and not the initialized object
+                This should be the Class and not the initialized object
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
             target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
-            and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
-            a tuple of callables (transform_func, inverse_transform_func)
+                and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+                a tuple of callables (transform_func, inverse_transform_func)
         """
         if (target_transform is not None):
             if isinstance(target_transform, Iterable):
@@ -438,6 +448,11 @@ class TabularModel:
         return pred_df
 
     def save_model(self, dir: str):
+        """Saves the model and checkpoints in the specified directory
+
+        Args:
+            dir (str): The path to the directory to save the model
+        """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")
             for f in os.listdir(dir):
@@ -455,6 +470,14 @@ class TabularModel:
 
     @classmethod
     def load_from_checkpoint(cls, dir: str):
+        """Loads a saved model from the directory
+
+        Args:
+            dir (str): The directory where the model wa saved, along with the checkpoints
+
+        Returns:
+            TabularModel: The saved TabularModel
+        """
         config = OmegaConf.load(os.path.join(dir, "config.yml"))
         datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
         if (

@@ -1,13 +1,16 @@
+![PyTorch Tabular](imgs/pytorch_tabular_logo.png)
+
 [![pypi](https://img.shields.io/pypi/v/pytorch_tabular.svg)](https://pypi.python.org/pypi/pytorch_tabular)
 [![travis](https://img.shields.io/travis/manujosephv/pytorch_tabular.svg)](https://travis-ci.com/manujosephv/pytorch_tabular)
 [![documentation status](https://readthedocs.org/projects/pytorch_tabular/badge/?version=latest)](https://pytorch_tabular.readthedocs.io/en/latest/?badge=latest)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square)](https://github.com/manujosephv/pytorch_tabular/issues)
 <!-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zhenye-Na/DA-RNN/blob/master/src/da_rnn.ipynb.py) -->
 
-PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:   
-- Low Resistance Useability   
-- Easy Customization   
-- Scalable and Easier to Deploy   
+PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
+
+- **Low Resistance Useability**
+- **Easy Customization**
+- **Scalable and Easier to Deploy**
 
 It has been built on the shoulders of giants like [**PyTorch**](https://pytorch.org/)(obviously), and [**PyTorch Lightning**](https://www.pytorchlightning.ai/).
 
@@ -18,13 +21,19 @@ Although the installation includes PyTorch, the best and recommended way is to f
 
 Once, you have got Pytorch installed, just use:
 ```
+ pip install pytorch_tabular[all]
+```
+
+to install the complete library with extra dependencies.
+
+And :
+```
  pip install pytorch_tabular
 ```
 
-to install the library.
+for the bare essentials.
 
-
-The sources for pytorch_tabular can be downloaded from the `Github repo`_.
+The sources for pytorch_tabular can be downloaded from the `Github repo`.
 
 You can either clone the public repository:
 
@@ -39,12 +48,45 @@ python setup.py install
 ```
 
 ## Usage
-```
+```python
+from pytorch_tabular import TabularModel
+from pytorch_tabular.models import CategoryEmbeddingModelConfig
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig, ExperimentConfig
 
-```
+data_config = DataConfig(
+    target=['target'], #target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
+    continuous_cols=num_col_names,
+    categorical_cols=cat_col_names,
+)
+trainer_config = TrainerConfig(
+    auto_lr_find=True, # Runs the LRFinder to automatically derive a learning rate
+    batch_size=1024,
+    max_epochs=100,
+    gpus=1, #index of the GPU to use. 0, means CPU
+)
+optimizer_config = OptimizerConfig()
 
+model_config = CategoryEmbeddingModelConfig(
+    task="classification",
+    layers="1024-512-512",  # Number of nodes in each layer
+    activation="LeakyReLU", # Activation between each layers
+    learning_rate = 1e-3
+)
+
+tabular_model = TabularModel(
+    data_config=data_config,
+    model_config=model_config,
+    optimizer_config=optimizer_config,
+    trainer_config=trainer_config,
+)
+tabular_model.fit(train=train, validation=val)
+result = tabular_model.evaluate(test)
+pred_df = tabular_model.predict(test)
+tabular_model.save_model("examples/basic")
+loaded_model = TabularModel.load_from_checkpoint("examples/basic")
+```
 ## References and Citations
 
-[1] Ali Caner Turkmen, Yuyang Wang, Tim Januschowski. [*"Intermittent Demand Forecasting with Deep Renewal Processes"*](https://arxiv.org/pdf/1911.10416.pdf). arXiv:1911.10416 [cs.LG] (2019)
+[1] Sergei Popov, Stanislav Morozov, Artem Babenko. [*"Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data"*](https://arxiv.org/abs/1909.06312). arXiv:1909.06312 [cs.LG] (2019)
 
-[2] Alexander Alexandrov, Konstantinos Benidis, Michael Bohlke-Schneider, Valentin Flunkert, Jan Gasthaus, Tim Januschowski, Danielle C. Maddix, Syama Rangapuram, David Salinas, Jasper Schulz, Lorenzo Stella, Ali Caner Türkmen, Yuyang Wang;. [*"GluonTS: Probabilistic and Neural Time Series Modeling in Python"*](https://www.jmlr.org/papers/v21/19-820.html). (2020).
+[2] Sercan O. Arik, Tomas Pfister;. [*"TabNet: Attentive Interpretable Tabular Learning"*](https://arxiv.org/abs/1908.07442). 	arXiv:1908.07442 (2019).

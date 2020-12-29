@@ -1,16 +1,29 @@
 site_name: PyTorch Tabular
 nav:
-    - Getting Started: index.md
-    - Tutorials: tutorials.md
-    - Data: data.md
-    - Models: models.md
-    - Training and Optimization: training.md
-    - Experiment Tracking: experiment_tracking.md
-    - FAQ: faq.md
-    - API: apidocs.md
-    - Authors: authors.md
-    - History: history.md
-    - Contributing: contributing.md
+    - Getting Started: 
+      - " ": index.md
+    - Tutorials:
+      - Basic Usage: 01-Basic_Usage.ipynb
+      - Advanced Usage: 02-Advanced_Usage.ipynb
+      - Extracting and Using Learned Embeddings: 03-Extracting and Using Learned Embeddings.ipynb
+      - Implementing New Architectures: 04-Implementing New Architectures.ipynb
+      # - Experiment Tracking: 05-Experiment_Tracking.ipynb
+    - Configuration:
+      - Data: data.md
+      - Models: models.md
+      - Training: training.md
+      - Optimizer and Learning Rate Scheduler: optimizer.md
+      - Experiment Tracking: experiment_tracking.md
+    - Tabular Model:
+      - TabularModel: tabular_model.md
+    # - FAQ: faq.md
+    - API: 
+      - API: apidocs.md
+    - Contributions:
+      - Contributing: contributing.md
+    - Credits and History:
+      - Authors: authors.md
+      - History: history.md
 theme:
   name: material
   features:
@@ -22,9 +35,11 @@ theme:
   logo: imgs/pytorch_tabular_logo_small.svg
 markdown_extensions:
   - admonition
+  - codehilite
   # - pymdownx.inlinehilite
 plugins:
   - search
+  - mknotebooks
   - mkdocstrings:
       handlers:
         python:

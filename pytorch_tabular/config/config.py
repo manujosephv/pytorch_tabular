@@ -301,8 +301,12 @@ class ExperimentConfig:
     """Experiment configuration. Experiment Tracking with WandB and Tensorboard
     Args:
             project_name (str): The name of the project under which all runs will be logged.
-            run_name (Union[str, NoneType]): The name of the run. If left blank, will be assigned a auto-generated name
-            exp_watch (Union[str, NoneType]): The level of logging required.  can be 'gradients' (default), 'parameters', 'all' or None.
+                For Tensorboard this defines the folder under which the logs will be saved and
+                for W&B it defines the project name.
+            run_name (Union[str, NoneType]): The name of the run; a specific identifier to
+                recognize the run. If left blank, will be assigned a auto-generated name
+            exp_watch (Union[str, NoneType]): The level of logging required.
+                Can be `gradients`, `parameters`, `all` or `None`. Defaults to None
             log_target (str): Determines where logging happens - Tensorboard or W&BChoices are: wandb tensorboard
             log_logits (bool): Turn this on to log the logits as a histogram in W&B
             exp_log_freq (int): step count between logging of gradients and parameters.
@@ -312,20 +316,20 @@ class ExperimentConfig:
     project_name: str = field(
         default=MISSING,
         metadata={
-            "help": "The name of the project under which all runs will be logged."
+            "help": "The name of the project under which all runs will be logged. For Tensorboard this defines the folder under which the logs will be saved and for W&B it defines the project name"
         },
     )
 
     run_name: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The name of the run. If left blank, will be assigned a auto-generated name"
+            "help": "The name of the run; a specific identifier to recognize the run. If left blank, will be assigned a auto-generated name"
         },
     )
     exp_watch: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The level of logging required.  can be 'gradients' (default), 'parameters', 'all' or None.",
+            "help": "The level of logging required.  Can be `gradients`, `parameters`, `all` or `None`. Defaults to None",
             "choices": ["gradients", "parameters", "all", None],
         },
     )
@@ -362,16 +366,18 @@ class ExperimentConfig:
 class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
     Args:
-        optimizer (str): The name of the optimizer from torch.optim.
+        optimizer (str): Any of the standard optimizers from 
+            [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms). Defaults to `Adam`"
         optimizer_params (dict): The parameters for the optimizer. If left blank, will use default parameters.
-        lr_scheduler (Union[str, NoneType]): The name of the LearningRateScheduler to use, if any, from torch.optim.lr_scheduler. If None, will not use any scheduler
+        lr_scheduler (Union[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). 
+            If None, will not use any scheduler. Defaults to `None`
         lr_scheduler_params (Union[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
-        lr_scheduler_monitor_metric (Union[str, NoneType]): Used with ReduceLROnPlateau, where the plateau is decided based on this metric
+        lr_scheduler_monitor_metric (Union[str, NoneType]): Used with `ReduceLROnPlateau`, where the plateau is decided based on this metric
     """
 
     optimizer: str = field(
         default="Adam",
-        metadata={"help": "The name of the optimizer from torch.optim."},
+        metadata={"help": "Any of the standard optimizers from [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."},
     )
     optimizer_params: dict = field(
         default_factory=lambda: {"weight_decay": 0, "amsgrad": False},
@@ -382,7 +388,7 @@ class OptimizerConfig:
     lr_scheduler: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The name of the LearningRateScheduler to use, if any, from torch.optim.lr_scheduler. If None, will not use any scheduler",
+            "help": "The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). If None, will not use any scheduler. Defaults to `None`",
         },
     )
     lr_scheduler_params: Optional[dict] = field(

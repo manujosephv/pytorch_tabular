@@ -11,6 +11,11 @@ The parameters that you would set most frequently are:
 -   `gpus`: int: The index of the GPU to be used. If zero, will use CPU. Defaults to `0`
 -   `load_best`: int: Flag to load the best model saved during training. This will be ignored if checkpoint saving is turned off. Defaults to True
 
+### Usage Example
+```python
+trainer_config = TrainerConfig(batch_size=64, max_epochs=10, gpus=1)
+```
+
 PyTorch Tabular uses Early Stopping by default and monitors `valid_loss` to stop training. Checkpoint saving is also turned on by default, which monitors `valid_loss` and saved the best model in a folder `saved_models`. All of these are configurable as we will see in the next section.
 
 ## Advanced Usage
