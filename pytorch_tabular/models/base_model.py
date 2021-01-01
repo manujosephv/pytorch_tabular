@@ -92,8 +92,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             f"{tag}_loss",
             computed_loss,
             on_epoch=(tag == "valid"),
-            # on_step=(tag == "train"),
-            on_step=False,
+            on_step=(tag == "train"),
+            # on_step=False,
             logger=True,
             prog_bar=True,
         )
