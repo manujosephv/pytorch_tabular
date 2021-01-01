@@ -50,12 +50,14 @@ class CategoryEmbeddingModel(BaseModel):
             nn.init.normal_(layer)
 
     def _linear_dropout_bn(self, in_units, out_units, activation, dropout):
-        layers = [nn.Linear(in_units, out_units), activation()]
-        self._initialize_layers(layers[0])
-        if dropout != 0:
-            layers.append(nn.Dropout(dropout))
+        layers = []
         if self.hparams.use_batch_norm:
             layers.append(nn.BatchNorm1d(num_features=out_units))
+        linear = nn.Linear(in_units, out_units)
+        self._initialize_layers(linear)
+        layers.extend([linear, activation()])
+        if dropout != 0:
+            layers.append(nn.Dropout(dropout))
         return layers
 
     def _build_network(self):
