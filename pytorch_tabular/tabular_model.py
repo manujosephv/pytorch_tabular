@@ -248,7 +248,7 @@ class TabularModel:
         """Performs data-aware initialization for NODE
         """
         # Need a big batch to initialize properly
-        alt_loader = self.datamodule.train_dataloader(batch_size=1024)
+        alt_loader = self.datamodule.train_dataloader(batch_size=2000)
         batch = next(iter(alt_loader))
         for k, v in batch.items():
             if isinstance(v, list) and (len(v) == 0):
@@ -372,10 +372,9 @@ class TabularModel:
 
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
-
-        # Parameters in NODE needs to be initialized again
-        if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
-            self.data_aware_initialization()
+            # Parameters in NODE needs to be initialized again
+            if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
+                self.data_aware_initialization()
 
         self.trainer.fit(self.model, train_loader, val_loader)
         logger.info("Training the model completed...")

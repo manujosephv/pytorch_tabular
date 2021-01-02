@@ -399,7 +399,7 @@ class OptimizerConfig:
     )
 
     lr_scheduler_monitor_metric: Optional[str] = field(
-        default="val_loss",
+        default="valid_loss",
         metadata={
             "help": "Used with ReduceLROnPlateau, where the plateau is decided based on this metric"
         },

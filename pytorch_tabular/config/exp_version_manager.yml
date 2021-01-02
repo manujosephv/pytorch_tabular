@@ -1,7 +1,8 @@
 regression: 2458
-classification: 765
+classification: 777
 synthetic_classification_cat_embedding: 3
 synthetic_classification_node: 5
 synthetic_classification_tabnet: 9
 synthetic_classification_node_cat_embed: 3
 wand_debug: 4
+node_forest_cov: 1

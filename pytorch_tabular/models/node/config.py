@@ -107,7 +107,7 @@ class NodeConfig(ModelConfig):
         },
     )
     input_dropout: float = field(
-        default=0.5,
+        default=0.0,
         metadata={
             "help": "Dropout to be applied to the inputs between layers of the Dense Architecture"
         },
@@ -171,7 +171,7 @@ class NodeConfig(ModelConfig):
         },
     )
     embedding_dropout: float = field(
-        default=0.5,
+        default=0.0,
         metadata={"help": "probability of an embedding element to be zeroed."},
     )
     _module_src: str = field(default="node")
