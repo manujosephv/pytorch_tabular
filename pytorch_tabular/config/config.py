@@ -51,20 +51,29 @@ class DataConfig:
 
     Args:
         target (List[str]): A list of strings with the names of the target column(s)
+
         continuous_cols (List[str]): Column names of the numeric fields. Defaults to []
+
         categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to []
+
         date_cols (List): (Column names, Freq) tuples of the date fields. For eg. a field named introduction_date
             and with a monthly frequency should have an entry ('intro_date','M'}
+
         encode_date_cols (bool): Whether or not to encode the derived variables from date
+
         validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
             Used only if Validation Data is not given separately
+
         continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
             By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
+
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
+
         quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
             gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
             Please note that this transformation does NOT apply gaussian noise to the resulting data,
             the noise is only applied for QuantileTransformer
+
         num_workers (Union[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
     """
 
@@ -154,33 +163,54 @@ class TrainerConfig:
     """Trainer configuration
     Args:
         batch_size (int): Number of samples in each batch of training
+
         fast_dev_run (bool): Quick Debug Run of Val
+
         max_epochs (int): Maximum number of epochs to be run
+
         min_epochs (int): Minimum number of epochs to be run
+
         gpus (int): The index of the GPU to be used. If zero, will use CPU
+
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
             Trainer also calls optimizer.step() for the last indivisible step number.
+
         auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),
             to find optimal initial learning rate.
+
         check_val_every_n_epoch (int): Check val every n train epochs.
+
         gradient_clip_val (float): Gradient clipping value
+
         overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same training set
             for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it.
             Useful for quickly debugging or trying to overfit on purpose.
+
         profiler (Union[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks.
             Choices are: 'None' 'simple' 'advanced'
+
         early_stopping (str): The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping
+
         early_stopping_min_delta (float): The minimum delta in the loss/metric which qualifies as an improvement in early stopping
+
         early_stopping_mode (str): The direction in which the loss/metric should be optimized. Choices are `max` and `min`
+
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements in loss/metric
+
         checkpoints (str): The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints
+
         checkpoints_path (str): The path where the saved models will be
+
         checkpoints_name(Optional[str]): The name under which the models will be saved.
             If left blank, first it will look for `run_name` in experiment_config and if that is also None
             then it will use a generic name like task_version.
+
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
+
         checkpoints_save_top_k (int): The number of best models to save
+
         load_best (bool): Flag to load the best model saved during training
+
         track_grad_norm (int): Track and Log Gradient Norms in the logger.
             -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
     """
@@ -303,13 +333,19 @@ class ExperimentConfig:
             project_name (str): The name of the project under which all runs will be logged.
                 For Tensorboard this defines the folder under which the logs will be saved and
                 for W&B it defines the project name.
+
             run_name (Union[str, NoneType]): The name of the run; a specific identifier to
                 recognize the run. If left blank, will be assigned a auto-generated name
+
             exp_watch (Union[str, NoneType]): The level of logging required.
                 Can be `gradients`, `parameters`, `all` or `None`. Defaults to None
+
             log_target (str): Determines where logging happens - Tensorboard or W&BChoices are: wandb tensorboard
+
             log_logits (bool): Turn this on to log the logits as a histogram in W&B
+
             exp_log_freq (int): step count between logging of gradients and parameters.
+
             _exp_version_manager (str): The location of the yaml file which manages versions of experiments
     """
 
@@ -368,10 +404,14 @@ class OptimizerConfig:
     Args:
         optimizer (str): Any of the standard optimizers from 
             [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms). Defaults to `Adam`"
+
         optimizer_params (dict): The parameters for the optimizer. If left blank, will use default parameters.
+
         lr_scheduler (Union[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). 
             If None, will not use any scheduler. Defaults to `None`
+
         lr_scheduler_params (Union[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
+
         lr_scheduler_monitor_metric (Union[str, NoneType]): Used with `ReduceLROnPlateau`, where the plateau is decided based on this metric
     """
 
@@ -448,14 +488,19 @@ class ModelConfig:
     """Base Model configuration
     Args:
         task (str): Specify whether the problem is regression of classification.Choices are: regression classification
+
         learning_rate (float): The learning rate of the model
+
         loss (Union[str, NoneType]): The loss function to be applied.
             By Default it is MSELoss for regression and CrossEntropyLoss for classification.
             Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
+
         metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
             The metrics should be one of the metrics implemented in PyTorch Lightning.
             By default, it is Accuracy if classification and MeanSquaredLogError for regression
+
         metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function
+
         target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
             Typically used for Regression problems. If left empty, will not apply any restrictions
 

@@ -44,3 +44,4 @@ tabular_model = TabularModel(
 ::: pytorch_tabular.TabularModel.predict
 ::: pytorch_tabular.TabularModel.save_model
 ::: pytorch_tabular.TabularModel.load_from_checkpoint
+::: pytorch_tabular.TabularModel.find_learning_rate

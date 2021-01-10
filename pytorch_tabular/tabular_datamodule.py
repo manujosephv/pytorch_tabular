@@ -85,6 +85,7 @@ class TabularDatamodule(pl.LightningDataModule):
         self.target = config.target
         self.batch_size = config.batch_size
         self.config = config
+        self._fitted = False
 
     def update_config(self) -> None:
         """Calculates and updates a few key information to the config object
@@ -255,6 +256,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 self.test, _ = self.preprocess_data(self.test, stage="inference")
             # Calculating the categorical dims and embedding dims etc and updating the config
             self.update_config()
+            self._fitted = True
 
     # adapted from gluonts
     @classmethod
@@ -496,7 +498,7 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target,
+            # target=self.target,
         )
         return DataLoader(
             dataset,
