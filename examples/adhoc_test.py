@@ -49,7 +49,7 @@ train, val = train_test_split(train, random_state=42)
 from pytorch_tabular import TabularModel
 from pytorch_tabular.models import CategoryEmbeddingModelConfig, NodeConfig, TabNetModelConfig
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig, ExperimentConfig
-from pytorch_tabular.category_encoders import CategoricalEmbeddingTransformer
+from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 
 data_config = DataConfig(
     target=['target'], #target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented

@@ -23,7 +23,7 @@ from sklearn.preprocessing import (
 )
 from torch.utils.data import DataLoader, Dataset
 
-from .category_encoders import OrdinalEncoder
+from .categorical_encoders import OrdinalEncoder
 
 logger = logging.getLogger(__name__)
 
