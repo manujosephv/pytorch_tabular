@@ -216,9 +216,10 @@ class TabularDatamodule(pl.LightningDataModule):
                     data[self.config.target[0]]
                 )
             else:
-                data[self.config.target[0]] = self.label_encoder.transform(
-                    data[self.config.target[0]]
-                )
+                if self.config.target[0] in data.columns:
+                    data[self.config.target[0]] = self.label_encoder.transform(
+                        data[self.config.target[0]]
+                    )
         #Target Transforms
         if all([col in data.columns for col in self.config.target]):
             if self.do_target_transform:

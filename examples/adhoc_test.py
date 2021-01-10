@@ -63,6 +63,7 @@ trainer_config = TrainerConfig(
     batch_size=1024,
     max_epochs=10,
     gpus=1, #index of the GPU to use. 0, means CPU
+    fast_dev_run=True
 )
 optimizer_config = OptimizerConfig()
 model_config = CategoryEmbeddingModelConfig(
@@ -80,9 +81,9 @@ tabular_model = TabularModel(
 )
 
 tabular_model.fit(train=train, validation=val)
+test.drop(columns=['target'], inplace=True)
+pred_df = tabular_model.predict(test)
 
-tabular_model.fit(train=train, validation=val)
-
-tabular_model.fit(train=train, validation=val, max_epochs=5)
-
-tabular_model.fit(train=train, validation=val, max_epochs=5, reset=True)
+# tabular_model.fit(train=train, validation=val)
+# tabular_model.fit(train=train, validation=val, max_epochs=5)
+# tabular_model.fit(train=train, validation=val, max_epochs=5, reset=True)
