@@ -13,6 +13,7 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
+from tqdm.autonotebook import tqdm
 from sklearn.base import BaseEstimator, TransformerMixin
 
 NAN_CATEGORY = 0
@@ -139,8 +140,6 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         Args:
             tabular_model (TabularModel): The trained TabularModel object
         """
-        # self.tabular_model = tabular_model
-        # self._model = tabular_model.model
         self._categorical_encoder = tabular_model.datamodule.categorical_encoder
         self.cols = tabular_model.model.hparams.categorical_cols
         # dict {str: np.ndarray} column name --> mapping from category (index of df) to value (column of df)
@@ -199,7 +198,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         )
 
         X_encoded = X.copy(deep=True)
-        for col, mapping in self._mapping.items():
+        for col, mapping in tqdm(self._mapping.items(), desc="Encoding the data...", total=len(self._mapping.values())):
             for dim in range(mapping[self.NAN_CATEGORY].shape[0]):
                 X_encoded.loc[:, f"{col}_embed_dim_{dim}"] = (
                     X_encoded[col]

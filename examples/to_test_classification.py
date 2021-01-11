@@ -87,16 +87,16 @@ data_config = DataConfig(
     continuous_feature_transform=None,#"quantile_normal",
     normalize_continuous_features=False
 )
-# model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
-model_config = NodeConfig(
-    task="classification",
-    depth=4,
-    num_trees=1024,
-    input_dropout=0.0,
-    metrics=["f1", "accuracy"],
-    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
-)
-trainer_config = TrainerConfig(gpus=1)
+model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
+# model_config = NodeConfig(
+#     task="classification",
+#     depth=4,
+#     num_trees=1024,
+#     input_dropout=0.0,
+#     metrics=["f1", "accuracy"],
+#     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+# )
+trainer_config = TrainerConfig(gpus=1, fast_dev_run=True)
 experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
                                      run_name="node_forest_cov", 
                                      exp_watch="gradients", 
@@ -116,13 +116,14 @@ tabular_model = TabularModel(
     model_config=model_config,
     optimizer_config=optimizer_config,
     trainer_config=trainer_config,
-    experiment_config=experiment_config,
+    # experiment_config=experiment_config,
 )
 tabular_model.fit(
     train=train, validation=val)
 
 result = tabular_model.evaluate(test)
 print(result)
+test.drop(columns=target_name, inplace=True)
 pred_df = tabular_model.predict(test)
 pred_df.to_csv("output/temp2.csv")
 # tabular_model.save_model("test_save")
