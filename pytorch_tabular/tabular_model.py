@@ -6,16 +6,16 @@ import logging
 import os
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
+import joblib
 import numpy as np
-from sklearn.base import TransformerMixin
-from omegaconf.dictconfig import DictConfig
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.utilities.cloud_io import load as pl_load
 from omegaconf import OmegaConf
+from omegaconf.dictconfig import DictConfig
+from pytorch_lightning.utilities.cloud_io import load as pl_load
+from sklearn.base import TransformerMixin
 from torch import nn
-import joblib
 from tqdm.autonotebook import tqdm
 
 import pytorch_tabular.models as models
@@ -279,6 +279,7 @@ class TabularModel:
         else:
             self.datamodule = TabularDatamodule(
                 train=train,
+                validation=validation,
                 config=self.config,
                 test=test,
                 target_transform=target_transform,
@@ -503,7 +504,7 @@ class TabularModel:
             early_stop_threshold(Optional[float], optional): threshold for stopping the search. If the
                 loss at any point is larger than early_stop_threshold*best_loss
                 then the search is stopped. To disable, set to None.
-            
+
             plot(bool, optional): If true, will plot using matplotlib
         """
 

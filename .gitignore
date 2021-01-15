@@ -144,3 +144,6 @@ saved_models/
 output/
 .vscode/
 examples/basic/
+.tmp/
+exp_version_manager.yml
+.tmp/exp_version_manager.yml

@@ -3,11 +3,11 @@ nav:
     - Getting Started: 
       - " ": index.md
     - Tutorials:
-      - Basic Usage: 01-Basic_Usage.ipynb
-      - Advanced Usage: 02-Advanced_Usage.ipynb
-      - Extracting and Using Learned Embeddings: 03-Extracting and Using Learned Embeddings.ipynb
-      - Implementing New Architectures: 04-Implementing New Architectures.ipynb
-      - Experiment Tracking: 05-Experiment_Tracking.ipynb
+      - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
+      - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
+      - Extracting and Using Learned Embeddings: "tutorials/03-Extracting and Using Learned Embeddings.ipynb"
+      - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
+      - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
     - Configuration:
       - Data: data.md
       - Models: models.md

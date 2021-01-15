@@ -1,3 +1,7 @@
+from io import BytesIO
+from urllib.request import urlopen
+from zipfile import ZipFile
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -29,6 +33,16 @@ def load_classification_data():
     return (train, test, ["target"])
 
 
+def load_timeseries_data():
+    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00357/occupancy_data.zip"
+    resp = urlopen(url)
+    zipfile = ZipFile(BytesIO(resp.read()))
+    train = pd.read_csv(zipfile.open("datatraining.txt"), sep=",")
+    val = pd.read_csv(zipfile.open("datatest.txt"), sep=",")
+    test = pd.read_csv(zipfile.open("datatest2.txt"), sep=",")
+    return (pd.concat([train, val], sort=False), test, ["Occupancy"])
+
+
 @pytest.fixture(scope="session", autouse=True)
 def regression_data():
     return load_regression_data()
@@ -37,3 +51,8 @@ def regression_data():
 @pytest.fixture(scope="session", autouse=True)
 def classification_data():
     return load_classification_data()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def timeseries_data():
+    return load_timeseries_data()

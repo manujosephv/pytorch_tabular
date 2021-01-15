@@ -15,11 +15,11 @@ from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
 from sklearn.base import TransformerMixin, copy
 from sklearn.preprocessing import (
+    FunctionTransformer,
     LabelEncoder,
     PowerTransformer,
     QuantileTransformer,
     StandardScaler,
-    FunctionTransformer,
 )
 from torch.utils.data import DataLoader, Dataset
 
@@ -39,7 +39,10 @@ class TabularDatamodule(pl.LightningDataModule):
             "callable": QuantileTransformer,
             "params": dict(output_distribution="normal", random_state=42),
         },
-        "box-cox": {"callable": PowerTransformer, "params": dict(method="box-cox", standardize=False)},
+        "box-cox": {
+            "callable": PowerTransformer,
+            "params": dict(method="box-cox", standardize=False),
+        },
         "yeo-johnson": {
             "callable": PowerTransformer,
             "params": dict(method="yeo-johnson", standardize=False),
@@ -174,19 +177,7 @@ class TabularDatamodule(pl.LightningDataModule):
                     data = self.categorical_encoder.fit_transform(data)
             else:
                 data = self.categorical_encoder.transform(data)
-        # Normalizing Continuous Columns
-        if (self.config.normalize_continuous_features) and (
-            len(self.config.continuous_cols) > 0
-        ):
-            if stage == "fit":
-                self.scaler = StandardScaler()
-                data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
-            else:
-                data.loc[:, self.config.continuous_cols] = self.scaler.transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
+
         # Transforming Continuous Columns
         if (self.config.continuous_feature_transform is not None) and (
             len(self.config.continuous_cols) > 0
@@ -208,6 +199,21 @@ class TabularDatamodule(pl.LightningDataModule):
                 ] = self.continuous_transform.transform(
                     data.loc[:, self.config.continuous_cols]
                 )
+
+        # Normalizing Continuous Columns
+        if (self.config.normalize_continuous_features) and (
+            len(self.config.continuous_cols) > 0
+        ):
+            if stage == "fit":
+                self.scaler = StandardScaler()
+                data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
+                    data.loc[:, self.config.continuous_cols]
+                )
+            else:
+                data.loc[:, self.config.continuous_cols] = self.scaler.transform(
+                    data.loc[:, self.config.continuous_cols]
+                )
+
         # Converting target labels to a 0 indexed label
         if self.config.task == "classification":
             if stage == "fit":
@@ -220,13 +226,15 @@ class TabularDatamodule(pl.LightningDataModule):
                     data[self.config.target[0]] = self.label_encoder.transform(
                         data[self.config.target[0]]
                     )
-        #Target Transforms
+        # Target Transforms
         if all([col in data.columns for col in self.config.target]):
             if self.do_target_transform:
                 target_transforms = []
                 for col in self.config.target:
                     _target_transform = copy.deepcopy(self.target_transform_template)
-                    data[col] = _target_transform.fit_transform(data[col].values.reshape(-1,1))
+                    data[col] = _target_transform.fit_transform(
+                        data[col].values.reshape(-1, 1)
+                    )
                     target_transforms.append(_target_transform)
                 self.target_transforms = target_transforms
         return data, added_features
@@ -248,6 +256,8 @@ class TabularDatamodule(pl.LightningDataModule):
                 ).index
                 self.validation = self.train[self.train.index.isin(val_idx)]
                 self.train = self.train[~self.train.index.isin(val_idx)]
+            else:
+                self.validation = self.validation.copy()
             # Preprocessing Train, Validation
             self.train, _ = self.preprocess_data(self.train, stage="fit")
             self.validation, _ = self.preprocess_data(
@@ -489,7 +499,7 @@ class TabularDatamodule(pl.LightningDataModule):
             DataLoader: The dataloader for the passed in dataframe
         """
         df = df.copy()
-        if len(set(self.target) - set(df.columns)) < 0:
+        if len(set(self.target) - set(df.columns)) > 0:
             df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
         df, _ = self.preprocess_data(df, stage="inference")
 

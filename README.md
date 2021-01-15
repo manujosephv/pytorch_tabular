@@ -4,14 +4,14 @@
 [![travis](https://img.shields.io/travis/manujosephv/pytorch_tabular.svg)](https://travis-ci.com/manujosephv/pytorch_tabular)
 [![documentation status](https://readthedocs.org/projects/pytorch_tabular/badge/?version=latest)](https://pytorch_tabular.readthedocs.io/en/latest/?badge=latest)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square)](https://github.com/manujosephv/pytorch_tabular/issues)
-<!-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zhenye-Na/DA-RNN/blob/master/src/da_rnn.ipynb.py) -->
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/manujosephv/pytorch_tabular/blob/main/docs/tutorials/01-Basic_Usage.ipynb.py)
 
 PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
 * Low Resistance Useability
 * Easy Customization
 * Scalable and Easier to Deploy
 
-It has been build on the shoulders of giants like **PyTorch**(obviously), and **PyTorch Lightning**.
+It has been built on the shoulders of giants like **PyTorch**(obviously), and **PyTorch Lightning**.
 
 ## Table of Contents
 
@@ -106,7 +106,9 @@ pred_df = tabular_model.predict(test)
 tabular_model.save_model("examples/basic")
 loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ```
+## Blog
 
+_TBD_
 ## References and Citations
 
 [1] Sergei Popov, Stanislav Morozov, Artem Babenko. [*"Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data"*](https://arxiv.org/abs/1909.06312). arXiv:1909.06312 [cs.LG] (2019)

@@ -44,7 +44,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
-    description="A standard framework for modelling Neural models for tabular data",
+    description="A standard framework for using Deep Learning for tabular data",
     install_requires=requirements,
     extras_require={"all": requirements_extra},
     license="MIT license",
