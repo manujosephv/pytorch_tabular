@@ -8,6 +8,6 @@ omegaconf==2.0.5
 tensorboard>=2.2.0
 pytorch-tabnet==3.0.0
 PyYAML>=5.1  # OmegaConf requirement >=5.1
-importlib-metadata <1,>=0.12
+# importlib-metadata <1,>=0.12
 ipywidgets
 matplotlib
