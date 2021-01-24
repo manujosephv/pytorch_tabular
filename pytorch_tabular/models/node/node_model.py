@@ -43,9 +43,10 @@ class NODEModel(BaseModel):
         )
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
-        self.output_response = utils.Lambda(
-            lambda x: x[..., : self.hparams.output_dim].mean(dim=-2)
-        )
+        
+        def subset(x):
+            return x[..., : self.hparams.output_dim].mean(dim=-2)
+        self.output_response = utils.Lambda(subset)
 
     def unpack_input(self, x: Dict):
         # unpacking into a tuple
@@ -102,9 +103,10 @@ class CategoryEmbeddingNODEModel(BaseModel):
         )
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
-        self.output_response = utils.Lambda(
-            lambda x: x[..., : self.hparams.output_dim].mean(dim=-2)
-        )
+
+        def subset(x):
+            return x[..., : self.hparams.output_dim].mean(dim=-2)
+        self.output_response = utils.Lambda(subset)
 
     def unpack_input(self, x):
         # unpacking into a tuple
