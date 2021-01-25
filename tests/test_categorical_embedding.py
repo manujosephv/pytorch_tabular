@@ -61,7 +61,7 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
         )
         optimizer_config = OptimizerConfig()
 
@@ -74,10 +74,11 @@ def test_regression(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
+        # print(result[0]["valid_loss"])
         if multi_target:
-            assert result[0]["valid_loss"] < 21
+            assert result[0]["valid_loss"] < 15
         else:
-            assert result[0]["valid_loss"] < 6
+            assert result[0]["valid_loss"] < 4
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -113,7 +114,7 @@ def test_classification(
         model_config_params = dict(task="classification")
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
         )
         optimizer_config = OptimizerConfig()
 
@@ -126,7 +127,8 @@ def test_classification(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert result[0]["valid_loss"] < 2.5
+        # print(result[0]["valid_loss"])
+        assert result[0]["valid_loss"] < 2
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
