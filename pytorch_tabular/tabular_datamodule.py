@@ -135,8 +135,8 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         logger.info(f"Preprocessing data: Stage: {stage}...")
         added_features = None
-        if self.config.encode_date_cols:
-            for field_name, freq in self.config.date_cols:
+        if self.config.encode_date_columns:
+            for field_name, freq in self.config.date_columns:
                 data = self.make_date(data, field_name)
                 data, added_features = self.add_datepart(
                     data, field_name, frequency=freq, prefix=None, drop=True
@@ -438,6 +438,12 @@ class TabularDatamodule(pl.LightningDataModule):
         # added_features.append(prefix + "Elapsed")
         if drop:
             df.drop(field_name, axis=1, inplace=True)
+        
+        #Removing features woth zero variations
+        for col in added_features:
+            if len(df[col].unique())==1:
+                df.drop(columns=col, inplace=True)
+                added_features.remove(col)
         return df, added_features
 
     def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
@@ -509,7 +515,7 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
-            # target=self.target,
+            target=self.target if all([col in df.columns for col in self.target]) else None,
         )
         return DataLoader(
             dataset,

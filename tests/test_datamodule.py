@@ -62,6 +62,7 @@ def test_dataloader(
             categorical_cols=categorical_cols,
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
+            validation_split=validation_split,
         )
         model_config_params = dict(task="regression", embedding_dims=embedding_dims)
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
@@ -105,58 +106,73 @@ def test_dataloader(
         assert np.not_equal(chk_1, chk_2).sum().item() == 0
 
 
-# @pytest.mark.parametrize(
-#     "continuous_cols",
-#     [
-#         [f"feature_{i}" for i in range(54)],
-#         [],
-#     ],
-# )
-# @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"], []])
-# @pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
-# @pytest.mark.parametrize("normalize_continuous_features", [True, False])
-# def test_classification(
-#     classification_data,
-#     continuous_cols,
-#     categorical_cols,
-#     continuous_feature_transform,
-#     normalize_continuous_features,
-# ):
-#     (train, test, target) = classification_data
-#     if len(continuous_cols) + len(categorical_cols) == 0:
-#         assert True
-#     else:
-#         data_config = DataConfig(
-#             target=target,
-#             continuous_cols=continuous_cols,
-#             categorical_cols=categorical_cols,
-#             continuous_feature_transform=continuous_feature_transform,
-#             normalize_continuous_features=normalize_continuous_features,
-#         )
-#         model_config_params = dict(task="classification")
-#         model_config = CategoryEmbeddingModelConfig(**model_config_params)
-#         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
-#         optimizer_config = OptimizerConfig()
+@pytest.mark.parametrize(
+    "freq",
+    ["H", "D", "T", "S"],
+)
+def test_date_encoding(timeseries_data, freq):
+    (train, test, target) = timeseries_data
+    train, valid = train_test_split(train, random_state=42)
+    data_config = DataConfig(
+        target=target + ["Occupancy"],
+        continuous_cols=["Temperature", "Humidity", "Light", "CO2", "HumidityRatio"],
+        categorical_cols=[],
+        date_columns=[("date", freq)],
+        encode_date_columns=True,
+    )
+    model_config_params = dict(task="regression")
+    model_config = CategoryEmbeddingModelConfig(**model_config_params)
+    trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
+    optimizer_config = OptimizerConfig()
 
-#         tabular_model = TabularModel(
-#             data_config=data_config,
-#             model_config=model_config,
-#             optimizer_config=optimizer_config,
-#             trainer_config=trainer_config,
-#         )
-#         tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    config = tabular_model.config
+    datamodule = TabularDatamodule(
+        train=train,
+        validation=valid,
+        config=config,
+        test=test,
+    )
+    datamodule.prepare_data()
+    if freq != "S":
+        datamodule.setup("fit")
+        config = datamodule.config
+        if freq == "H":
+            assert "_Hour" in datamodule.train.columns
+        elif freq == "D":
+            assert "_Dayofyear" in datamodule.train.columns
+        elif freq == "T":
+            assert "_Minute" in datamodule.train.columns
+    elif freq == "S":
+        try:
+            datamodule.setup("fit")
+            assert False
+        except RuntimeError:
+            assert True
 
-#         result = tabular_model.evaluate(test)
-#         assert result[0]["valid_loss"] < 2.5
-#         pred_df = tabular_model.predict(test)
-#         assert pred_df.shape[0] == test.shape[0]
 
+# from io import BytesIO
+# from urllib.request import urlopen
+# from zipfile import ZipFile
 
 # import numpy as np
 # import pandas as pd
 # import pytest
 # from sklearn.datasets import fetch_california_housing, fetch_covtype
 
+# def load_timeseries_data():
+#     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00357/occupancy_data.zip"
+#     resp = urlopen(url)
+#     zipfile = ZipFile(BytesIO(resp.read()))
+#     train = pd.read_csv(zipfile.open("datatraining.txt"), sep=",")
+#     val = pd.read_csv(zipfile.open("datatest.txt"), sep=",")
+#     test = pd.read_csv(zipfile.open("datatest2.txt"), sep=",")
+#     return (pd.concat([train, val], sort=False), test, ["Occupancy"])
 
 # def load_regression_data():
 #     dataset = fetch_california_housing(data_home="data", as_frame=True)
@@ -187,3 +203,6 @@ def test_dataloader(
 #     target_transform=None,
 #     embedding_dims=None
 # )
+
+# test_date_encoding(load_timeseries_data(), "S")
+# ["H","D", "T", "S"],

@@ -5,6 +5,7 @@ import pytest
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import TabNetModelConfig
 from pytorch_tabular import TabularModel
+from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 
 
 @pytest.mark.parametrize("multi_target", [True, False])
@@ -48,12 +49,17 @@ def test_regression(
         )
         model_config_params = dict(task="regression")
         if target_range:
-            model_config_params["target_range"] = [
-                train[target].min().item(),
-                train[target].max().item(),
-            ]
+            _target_range = []
+            for target in data_config.target:
+                _target_range.append(
+                    (
+                        train[target].min().item(),
+                        train[target].max().item(),
+                    )
+                )
+            model_config_params["target_range"] = _target_range
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
+        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=0)
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -100,7 +106,7 @@ def test_classification(
         )
         model_config_params = dict(task="regression")
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
+        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=0)
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -115,6 +121,52 @@ def test_classification(
         assert "valid_loss" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
+
+# Feature not developed
+# Commented out
+# def test_embedding_transformer(regression_data):
+#     (train, test, target) = regression_data
+#     data_config = DataConfig(
+#         target=target,
+#         continuous_cols=[
+#             "AveRooms",
+#             "AveBedrms",
+#             "Population",
+#             "AveOccup",
+#             "Latitude",
+#             "Longitude",
+#         ],
+#         categorical_cols=["HouseAgeBin"],
+#     )
+#     model_config_params = dict(task="regression")
+#     model_config = TabNetModelConfig(**model_config_params)
+#     trainer_config = TrainerConfig(
+#         max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
+#     )
+#     optimizer_config = OptimizerConfig()
+
+#     tabular_model = TabularModel(
+#         data_config=data_config,
+#         model_config=model_config,
+#         optimizer_config=optimizer_config,
+#         trainer_config=trainer_config,
+#     )
+#     tabular_model.fit(train=train, test=test)
+
+#     transformer = CategoricalEmbeddingTransformer(tabular_model)
+#     train_transform = transformer.fit_transform(train)
+#     embed_cols = [
+#         col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col
+#     ]
+#     assert len(train["HouseAgeBin"].unique()) + 1 == len(
+#         transformer._mapping["HouseAgeBin"].keys()
+#     )
+#     assert all(
+#         [
+#             val.shape[0] == len(embed_cols)
+#             for val in transformer._mapping["HouseAgeBin"].values()
+#         ]
+#     )
 
 
 # test_regression(

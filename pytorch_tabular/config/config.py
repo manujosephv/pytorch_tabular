@@ -56,10 +56,10 @@ class DataConfig:
 
         categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to []
 
-        date_cols (List): (Column names, Freq) tuples of the date fields. For eg. a field named introduction_date
+        date_columns (List): (Column names, Freq) tuples of the date fields. For eg. a field named introduction_date
             and with a monthly frequency should have an entry ('intro_date','M'}
 
-        encode_date_cols (bool): Whether or not to encode the derived variables from date
+        encode_date_columns (bool): Whether or not to encode the derived variables from date
 
         validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
             Used only if Validation Data is not given separately
@@ -92,7 +92,7 @@ class DataConfig:
         },
     )
     date_columns: List = field(
-        default_factory=lambda: [],
+        default_factory=list,
         metadata={
             "help": "(Column names, Freq) tuples of the date fields. For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}"
         },
