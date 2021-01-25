@@ -36,7 +36,7 @@ def test_regression(
     categorical_cols,
     continuous_feature_transform,
     normalize_continuous_features,
-    target_range
+    target_range,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -49,7 +49,12 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression", depth=2, embed_categorical=embed_categorical)
+        model_config_params = dict(
+            task="regression",
+            depth=2,
+            num_trees=50,
+            embed_categorical=embed_categorical,
+        )
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -61,7 +66,9 @@ def test_regression(
                 )
             model_config_params["target_range"] = _target_range
         model_config = NodeConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=0)
+        trainer_config = TrainerConfig(
+            max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
+        )
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -111,9 +118,16 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="classification", depth=2, embed_categorical=embed_categorical)
+        model_config_params = dict(
+            task="classification",
+            depth=2,
+            num_trees=50,
+            embed_categorical=embed_categorical,
+        )
         model_config = NodeConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=0)
+        trainer_config = TrainerConfig(
+            max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
+        )
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -144,8 +158,10 @@ def test_embedding_transformer(regression_data):
         ],
         categorical_cols=["HouseAgeBin"],
     )
-    model_config_params = dict(task="regression")
-    model_config = NodeConfig(embed_categorical=True, **model_config_params)
+    model_config_params = dict(
+        task="regression", depth=2, num_trees=50, embed_categorical=True
+    )
+    model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
     )
