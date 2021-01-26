@@ -58,6 +58,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/manujosephv/pytorch_tabular",
-    version="0.1.3",
+    version="0.0.0",
     zip_safe=False,
 )
