@@ -101,7 +101,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
-        y_hat = torch.clip(y_hat, min=0)
+        y_hat = torch.clamp(y_hat, min=0)
         for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []
@@ -109,7 +109,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     if metric.__name__==pl.metrics.functional.mean_squared_log_error.__name__:
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(
-                            torch.clip(y_hat[:, i], min=0), torch.clip(y[:, i], min=0), **metric_params
+                            torch.clamp(y_hat[:, i], min=0), torch.clamp(y[:, i], min=0), **metric_params
                         )
                     else:
                         _metric = metric(y_hat[:, i], y[:, i], **metric_params)

@@ -108,7 +108,8 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ```
 ## Blog
 
-_TBD_
+[PyTorch Tabular – A Framework for Deep Learning for Tabular Data](https://deep-and-shallow.com/2021/01/27/pytorch-tabular-a-framework-for-deep-learning-for-tabular-data/)
+
 ## References and Citations
 
 [1] Sergei Popov, Stanislav Morozov, Artem Babenko. [*"Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data"*](https://arxiv.org/abs/1909.06312). arXiv:1909.06312 [cs.LG] (2019)
