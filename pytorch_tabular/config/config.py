@@ -170,7 +170,7 @@ class TrainerConfig:
 
         min_epochs (int): Minimum number of epochs to be run
 
-        gpus (int): The index of the GPU to be used. If zero, will use CPU
+        gpus (int): The index of the GPU to be used. If `None`, will use CPU
 
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
             Trainer also calls optimizer.step() for the last indivisible step number.
@@ -227,9 +227,9 @@ class TrainerConfig:
     min_epochs: int = field(
         default=1, metadata={"help": "Minimum number of epochs to be run"}
     )
-    gpus: int = field(
-        default=0,
-        metadata={"help": "The index of the GPU to be used. If zero, will use CPU"},
+    gpus: Optional[int] = field(
+        default=None,
+        metadata={"help": "The index of the GPU to be used. If None, will use CPU"},
     )
     accumulate_grad_batches: int = field(
         default=1,
