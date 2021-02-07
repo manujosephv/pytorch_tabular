@@ -8,6 +8,7 @@ nav:
       - Extracting and Using Learned Embeddings: "tutorials/03-Extracting and Using Learned Embeddings.ipynb"
       - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
       - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
+      - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
     - Configuration:
       - Data: data.md
       - Models: models.md
