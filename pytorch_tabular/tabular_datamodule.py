@@ -10,6 +10,7 @@ import category_encoders as ce
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
+import torch
 from omegaconf import DictConfig
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
@@ -56,6 +57,7 @@ class TabularDatamodule(pl.LightningDataModule):
         validation: pd.DataFrame = None,
         test: pd.DataFrame = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
     ):
         """The Pytorch Lightning Datamodule for Tabular Data
 
@@ -87,6 +89,7 @@ class TabularDatamodule(pl.LightningDataModule):
         self.test = test if test is None else test.copy()
         self.target = config.target
         self.batch_size = config.batch_size
+        self.train_sampler = train_sampler
         self.config = config
         self._fitted = False
 
@@ -438,10 +441,10 @@ class TabularDatamodule(pl.LightningDataModule):
         # added_features.append(prefix + "Elapsed")
         if drop:
             df.drop(field_name, axis=1, inplace=True)
-        
-        #Removing features woth zero variations
+
+        # Removing features woth zero variations
         for col in added_features:
-            if len(df[col].unique())==1:
+            if len(df[col].unique()) == 1:
                 df.drop(columns=col, inplace=True)
                 added_features.remove(col)
         return df, added_features
@@ -459,8 +462,9 @@ class TabularDatamodule(pl.LightningDataModule):
         return DataLoader(
             dataset,
             batch_size if batch_size is not None else self.batch_size,
-            shuffle=True,
+            shuffle=True if self.train_sampler is None else False,
             num_workers=self.config.num_workers,
+            sampler=self.train_sampler,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -506,7 +510,10 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         df = df.copy()
         if len(set(self.target) - set(df.columns)) > 0:
-            df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
+            if self.config.task == "classification":
+                df.loc[:, self.target] = np.array([self.label_encoder.classes_[0]]*len(df))
+            else:
+                df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
         df, _ = self.preprocess_data(df, stage="inference")
 
         dataset = TabularDataset(
@@ -515,7 +522,9 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target if all([col in df.columns for col in self.target]) else None,
+            target=self.target
+            if all([col in df.columns for col in self.target])
+            else None,
         )
         return DataLoader(
             dataset,

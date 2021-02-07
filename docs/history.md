@@ -6,9 +6,11 @@ History
 
 -   First release on PyPI.
 
-0.2.0.dev0 (2021-02-03)
+0.2.0 (2021-02-07)
 ------------------
 
 -   Fixed an issue with torch.clip and torch version
 -   Fixed an issue with `gpus` parameter in TrainerConfig, by setting default value to `None` for CPU
+-   Added feature to use custom sampler in the training dataloader
+-   Updated documentation and added a new tutorial for imbalanced classification
 

@@ -110,6 +110,16 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 
 [PyTorch Tabular – A Framework for Deep Learning for Tabular Data](https://deep-and-shallow.com/2021/01/27/pytorch-tabular-a-framework-for-deep-learning-for-tabular-data/)
 
+## Future Roadmap(Contributions are Welcome)
+
+1. Add GaussRank as Feature Transformation
+2. Add ability to use custom activations in CategoryEmbeddingModel
+3. Add differential dropouts(layer-wise) in CategoryEmbeddingModel
+4. Add Fourier Encoding for cyclic time variables
+5. Integrate Optuna Hyperparameter Tuning
+6. Add Text and Image Modalities for mixed modal problems
+7. Integrate Wide and Deep model
+8. Integrate TabTransformer
 ## References and Citations
 
 [1] Sergei Popov, Stanislav Morozov, Artem Babenko. [*"Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data"*](https://arxiv.org/abs/1909.06312). arXiv:1909.06312 [cs.LG] (2019)

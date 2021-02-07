@@ -268,7 +268,9 @@ class TabularModel:
         with torch.no_grad():
             self.model(batch)
 
-    def _prepare_dataloader(self, train, validation, test, target_transform=None):
+    def _prepare_dataloader(
+        self, train, validation, test, target_transform=None, train_sampler=None
+    ):
         logger.info("Preparing the DataLoaders...")
         if (
             hasattr(self, "datamodule")
@@ -283,6 +285,7 @@ class TabularModel:
                 config=self.config,
                 test=test,
                 target_transform=target_transform,
+                train_sampler=train_sampler,
             )
             self.datamodule.prepare_data()
             self.datamodule.setup("fit")
@@ -350,6 +353,7 @@ class TabularModel:
         metrics: Optional[List[Callable]],
         optimizer: Optional[torch.optim.Optimizer],
         optimizer_params: Dict,
+        train_sampler: Optional[torch.utils.data.Sampler],
         target_transform: Optional[Union[TransformerMixin, Tuple]],
         max_epochs: int,
         min_epochs: int,
@@ -373,7 +377,7 @@ class TabularModel:
             )
             target_transform = None
         train_loader, val_loader = self._prepare_dataloader(
-            train, validation, test, target_transform
+            train, validation, test, target_transform, train_sampler
         )
         self._prepare_model(loss, metrics, optimizer, optimizer_params, reset)
 
@@ -394,6 +398,7 @@ class TabularModel:
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
@@ -419,6 +424,8 @@ class TabularModel:
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
+            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+
             target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
                 and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
                 a tuple of callables (transform_func, inverse_transform_func)
@@ -438,6 +445,7 @@ class TabularModel:
             metrics,
             optimizer,
             optimizer_params,
+            train_sampler,
             target_transform,
             max_epochs,
             min_epochs,

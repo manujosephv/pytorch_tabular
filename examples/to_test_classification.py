@@ -31,7 +31,8 @@ import pytorch_lightning as pl
 from sklearn.preprocessing import PowerTransformer
 from sklearn.model_selection import train_test_split
 from pathlib import Path
-import wget
+# import wget
+from pytorch_tabular.utils import get_balanced_sampler, get_class_weighted_cross_entropy
 
 
 BASE_DIR = Path.home().joinpath('data')
@@ -85,7 +86,7 @@ data_config = DataConfig(
     continuous_cols=num_col_names,
     categorical_cols=cat_col_names,
     continuous_feature_transform=None,#"quantile_normal",
-    normalize_continuous_features=False
+    normalize_continuous_features=False,
 )
 model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
 # model_config = NodeConfig(
@@ -96,7 +97,7 @@ model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1"
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-trainer_config = TrainerConfig(gpus=1, fast_dev_run=True)
+trainer_config = TrainerConfig(gpus=1, fast_dev_run=False, max_epochs=5, batch_size=1024)
 experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
                                      run_name="node_forest_cov", 
                                      exp_watch="gradients", 
@@ -118,14 +119,19 @@ tabular_model = TabularModel(
     trainer_config=trainer_config,
     # experiment_config=experiment_config,
 )
+sampler = get_balanced_sampler(train[target_name].values.ravel())
+# cust_loss = get_class_weighted_cross_entropy(train[target_name].values.ravel())
 tabular_model.fit(
-    train=train, validation=val)
+    train=train, 
+    validation=val, 
+    # loss=cust_loss,
+    train_sampler=sampler)
 
 result = tabular_model.evaluate(test)
 print(result)
-test.drop(columns=target_name, inplace=True)
-pred_df = tabular_model.predict(test)
-pred_df.to_csv("output/temp2.csv")
+# test.drop(columns=target_name, inplace=True)
+# pred_df = tabular_model.predict(test)
+# pred_df.to_csv("output/temp2.csv")
 # tabular_model.save_model("test_save")
 # new_model = TabularModel.load_from_checkpoint("test_save")
 # result = new_model.evaluate(test)
