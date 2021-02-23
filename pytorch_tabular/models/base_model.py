@@ -140,23 +140,26 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def forward(self, x: Dict):
         pass
 
+    def predict(self, x: Dict):
+        return self.forward(x).get("logits")
+
     def training_step(self, batch, batch_idx):
         y = batch["target"]
-        y_hat = self(batch)
+        y_hat = self(batch)['logits']
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
         y = batch["target"]
-        y_hat = self(batch)
+        y_hat = self(batch)['logits']
         _ = self.calculate_loss(y, y_hat, tag="valid")
         _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
         y = batch["target"]
-        y_hat = self(batch)
+        y_hat = self(batch)['logits']
         _ = self.calculate_loss(y, y_hat, tag="test")
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y

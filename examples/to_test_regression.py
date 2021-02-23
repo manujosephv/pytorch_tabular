@@ -12,6 +12,14 @@ from pytorch_tabular.config import (
 from pytorch_tabular.models.category_embedding.config import (
     CategoryEmbeddingModelConfig,
 )
+
+from pytorch_tabular.models.mixture_density import (
+    CategoryEmbeddingMDNConfig, MixtureDensityHeadConfig
+)
+
+from pytorch_tabular.models.deep_gmm import (
+    DeepGaussianMixtureModelConfig,
+)
 from pytorch_tabular.models.category_embedding.category_embedding_model import (
     CategoryEmbeddingModel,
 )
@@ -31,44 +39,38 @@ test = dataset.frame[dataset.frame.index.isin(test_idx)]
 train = dataset.frame[~dataset.frame.index.isin(test_idx)]
 
 data_config = DataConfig(
-    target=dataset.target_names + ["MedInc"],
-    # continuous_cols=[
-    #     "AveRooms",
-    #     "AveBedrms",
-    #     "Population",
-    #     "AveOccup",
-    #     "Latitude",
-    #     "Longitude",
-    # ],
-    continuous_cols=[],
+    target=dataset.target_names,
+    continuous_cols=[
+        "AveRooms",
+        "AveBedrms",
+        "Population",
+        "AveOccup",
+        "Latitude",
+        "Longitude",
+    ],
+    # continuous_cols=[],
     categorical_cols=["HouseAgeBin"],
     continuous_feature_transform=None,  # "yeo-johnson",
     normalize_continuous_features=True,
 )
-model_config = CategoryEmbeddingModelConfig(
+
+mdn_config = MixtureDensityHeadConfig(num_gaussian=2)
+model_config = CategoryEmbeddingMDNConfig(
     task="regression",
     # initialization="blah",
-    target_range=[
-        (
-            dataset.frame[dataset.target_names].min().item(),
-            dataset.frame[dataset.target_names].max().item(),
-        ),
-        (
-            dataset.frame[["MedInc"]].min().item(),
-            dataset.frame[["MedInc"]].max().item(),
-        ),
-    ],
+    batch_norm_continuous_input=False,
+    mdn_config = mdn_config
 )
 # model_config.validate()
 # model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
-trainer_config = TrainerConfig(checkpoints=None, max_epochs=5)
-experiment_config = ExperimentConfig(
-    project_name="Tabular_test",
-    run_name="wand_debug",
-    log_target="wandb",
-    exp_watch="gradients",
-    log_logits=True
-)
+trainer_config = TrainerConfig(checkpoints=None, max_epochs=5, gpus=1, profiler=None)
+# experiment_config = ExperimentConfig(
+#     project_name="DeepGMM_test",
+#     run_name="wand_debug",
+#     log_target="wandb",
+#     exp_watch="gradients",
+#     log_logits=True
+# )
 optimizer_config = OptimizerConfig()
 
 tabular_model = TabularModel(
@@ -76,12 +78,13 @@ tabular_model = TabularModel(
     model_config=model_config,
     optimizer_config=optimizer_config,
     trainer_config=trainer_config,
-    experiment_config=experiment_config,
+    # experiment_config=experiment_config,
 )
 tabular_model.fit(train=train, test=test)
 
 result = tabular_model.evaluate(test)
 # print(result)
 # # print(result[0]['train_loss'])
-# pred_df = tabular_model.predict(test)
+pred_df = tabular_model.predict(test, quantiles=[0.25])
+print(pred_df.head())
 # pred_df.to_csv("output/temp2.csv")

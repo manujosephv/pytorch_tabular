@@ -554,7 +554,7 @@ class TabularModel:
 
         Args:
             test (Optional[pd.DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
-            test provided during fit. If that was also not provided will return an empty dictionary
+                test provided during fit. If that was also not provided will return an empty dictionary
 
         Returns:
             Union[dict, list]: The final test result dictionary.
@@ -571,33 +571,54 @@ class TabularModel:
         )
         return result
 
-    def predict(self, test: pd.DataFrame) -> pd.DataFrame:
+    def predict(self, test: pd.DataFrame, quantiles: Optional[List]=[0.25, 0.5, 0.75], n_samples: Optional[int]=100) -> pd.DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe
 
         Args:
             test (pd.DataFrame): The new dataframe with the features defined during training
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies 
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe. 
+                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
+            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
+                Ignored for non-probabilistic models. Defaults to 100
 
         Returns:
             pd.DataFrame: Returns a dataframe with predictions and features.
-            If classification, it returns probabilities and final prediction
+                If classification, it returns probabilities and final prediction
         """
+        assert all([q<=1 and q>=0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
-        predictions = []
-        for sample in tqdm(inference_dataloader, desc="Generating Predictions..."):
-            for k, v in sample.items():
+        point_predictions = []
+        quantile_predictions = []
+        is_probabilistic = hasattr(self.model.hparams, "_probabilistic") and self.model.hparams._probabilistic
+        for batch in tqdm(inference_dataloader, desc="Generating Predictions..."):
+            for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
                     continue
                 # sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
-                sample[k] = v.to(self.model.device)
-            y_hat = self.model(sample)
-            predictions.append(y_hat.detach().cpu())
-        predictions = torch.cat(predictions, dim=0)
-        if predictions.ndim == 1:
-            predictions = predictions.unsqueeze(-1)
+                batch[k] = v.to(self.model.device)
+            if is_probabilistic:
+                samples = self.model.sample(batch, n_samples)
+                y_hat = torch.mean(samples, dim=-1)
+                quantile_preds = []
+                for q in quantiles:
+                    quantile_preds.append(torch.quantile(samples, q=q, dim=-1).unsqueeze(1))
+            else:
+                y_hat = self.model.predict(batch)
+            point_predictions.append(y_hat.detach().cpu())
+            quantile_predictions.append(torch.cat(quantile_preds, dim=-1))
+        point_predictions = torch.cat(point_predictions, dim=0)
+        if point_predictions.ndim == 1:
+            point_predictions = point_predictions.unsqueeze(-1)
+        # Make dim correct and include a dim for target
+        quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1).detach().cpu()
+        if quantile_predictions.ndim == 2:
+            quantile_predictions = quantile_predictions.unsqueeze(-1)
         pred_df = test.copy()
         if self.config.task == "regression":
-            predictions = predictions.numpy()
+            point_predictions = point_predictions.numpy()
+            quantile_predictions = quantile_predictions.numpy()
             for i, target_col in enumerate(self.config.target):
                 if self.datamodule.do_target_transform:
                     if self.config.target[i] in pred_df.columns:
@@ -609,16 +630,29 @@ class TabularModel:
                     pred_df[
                         f"{target_col}_prediction"
                     ] = self.datamodule.target_transforms[i].inverse_transform(
-                        predictions[:, i].reshape(-1, 1)
+                        point_predictions[:, i].reshape(-1, 1)
                     )
+                    if is_probabilistic:
+                        for j, q in enumerate(quantiles):
+                            pred_df[
+                            f"{target_col}_q{int(q*100)}"
+                        ] = self.datamodule.target_transforms[i].inverse_transform(
+                            quantile_predictions[:, j, i].reshape(-1, 1)
+                        )
                 else:
-                    pred_df[f"{target_col}_prediction"] = predictions[:, i]
+                    pred_df[f"{target_col}_prediction"] = point_predictions[:, i]
+                    if is_probabilistic:
+                        for j, q in enumerate(quantiles):
+                            pred_df[
+                            f"{target_col}_q{int(q*100)}"
+                        ] = quantile_predictions[:, j, i].reshape(-1, 1)
+
         elif self.config.task == "classification":
-            predictions = nn.Softmax(dim=-1)(predictions).numpy()
+            point_predictions = nn.Softmax(dim=-1)(point_predictions).numpy()
             for i, class_ in enumerate(self.datamodule.label_encoder.classes_):
-                pred_df[f"{class_}_probability"] = predictions[:, i]
+                pred_df[f"{class_}_probability"] = point_predictions[:, i]
             pred_df[f"prediction"] = self.datamodule.label_encoder.inverse_transform(
-                np.argmax(predictions, axis=1)
+                np.argmax(point_predictions, axis=1)
             )
         return pred_df
 

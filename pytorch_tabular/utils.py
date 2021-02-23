@@ -1,6 +1,12 @@
+import logging
+
 import numpy as np
 import torch
+import torch.nn as nn
+from typing import Dict
 from sklearn.preprocessing import LabelEncoder
+
+logger = logging.getLogger(__name__)
 
 
 def _make_smooth_weights_for_balanced_classes(y_train, mu=0.15):
@@ -17,7 +23,7 @@ def _make_smooth_weights_for_balanced_classes(y_train, mu=0.15):
 
 
 def get_class_weighted_cross_entropy(y_train, mu=0.15):
-    assert y_train.ndim==1, "Utility function only works for binary classification"
+    assert y_train.ndim == 1, "Utility function only works for binary classification"
     y_train = LabelEncoder().fit_transform(y_train)
     weights = _make_smooth_weights_for_balanced_classes(y_train, mu=0.15)
     criterion = torch.nn.CrossEntropyLoss(weight=torch.FloatTensor(weights))
@@ -25,7 +31,7 @@ def get_class_weighted_cross_entropy(y_train, mu=0.15):
 
 
 def get_balanced_sampler(y_train):
-    assert y_train.ndim==1, "Utility function only works for binary classification"
+    assert y_train.ndim == 1, "Utility function only works for binary classification"
     y_train = LabelEncoder().fit_transform(y_train)
     class_sample_counts = np.bincount(y_train)
     # compute weight for all the samples in the dataset
@@ -37,3 +43,29 @@ def get_balanced_sampler(y_train):
         train_samples_weight, len(y_train)
     )
     return train_sampler
+
+def _initialize_layers(hparams, layer):
+    if hparams.activation == "ReLU":
+        nonlinearity = "relu"
+    elif hparams.activation == "LeakyReLU":
+        nonlinearity = "leaky_relu"
+    else:
+        if hparams.initialization == "kaiming":
+            logger.warning(
+                "Kaiming initialization is only recommended for ReLU and LeakyReLU."
+            )
+            nonlinearity = "leaky_relu"
+        else:
+            nonlinearity = "relu"
+
+    if hparams.initialization == "kaiming":
+        nn.init.kaiming_normal_(layer.weight, nonlinearity=nonlinearity)
+    elif hparams.initialization == "xavier":
+        nn.init.xavier_normal_(
+            layer.weight,
+            gain=nn.init.calculate_gain(nonlinearity)
+            if hparams.activation in ["ReLU", "LeakyReLU"]
+            else 1,
+        )
+    elif hparams.initialization == "random":
+        nn.init.normal_(layer.weight)
