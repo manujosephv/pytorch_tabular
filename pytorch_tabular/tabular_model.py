@@ -77,16 +77,16 @@ class TabularModel:
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
-            # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
-            if (
-                hasattr(model_config, "_model_name")
-                and (model_config._model_name == "NODEModel")
-                and (model_config.embed_categorical)
-                and ("CategoryEmbedding" not in model_config._model_name)
-            ):
-                model_config._model_name = (
-                    "CategoryEmbedding" + model_config._model_name
-                )
+            # # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
+            # if (
+            #     hasattr(model_config, "_model_name")
+            #     and (model_config._model_name == "NODEModel")
+            #     and (model_config.embed_categorical)
+            #     and ("CategoryEmbedding" not in model_config._model_name)
+            # ):
+            #     model_config._model_name = (
+            #         "CategoryEmbedding" + model_config._model_name
+            #     )
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
             optimizer_config = self._read_parse_config(
                 optimizer_config, OptimizerConfig
@@ -607,18 +607,20 @@ class TabularModel:
             else:
                 y_hat = self.model.predict(batch)
             point_predictions.append(y_hat.detach().cpu())
-            quantile_predictions.append(torch.cat(quantile_preds, dim=-1))
+            if is_probabilistic:
+                quantile_predictions.append(torch.cat(quantile_preds, dim=-1).detach().cpu())
         point_predictions = torch.cat(point_predictions, dim=0)
         if point_predictions.ndim == 1:
             point_predictions = point_predictions.unsqueeze(-1)
-        # Make dim correct and include a dim for target
-        quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1).detach().cpu()
-        if quantile_predictions.ndim == 2:
-            quantile_predictions = quantile_predictions.unsqueeze(-1)
+        if is_probabilistic:
+            quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
+            if quantile_predictions.ndim == 2:
+                quantile_predictions = quantile_predictions.unsqueeze(-1)
         pred_df = test.copy()
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
-            quantile_predictions = quantile_predictions.numpy()
+            if is_probabilistic:
+                quantile_predictions = quantile_predictions.numpy()
             for i, target_col in enumerate(self.config.target):
                 if self.datamodule.do_target_transform:
                     if self.config.target[i] in pred_df.columns:

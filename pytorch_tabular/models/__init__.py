@@ -1,7 +1,14 @@
 from .category_embedding import CategoryEmbeddingModel, CategoryEmbeddingModelConfig
 from .node import NODEModel, NodeConfig
 from .tabnet import TabNetModel, TabNetModelConfig
-from .mixture_density import CategoryEmbeddingMDN, CategoryEmbeddingMDNConfig, MixtureDensityHead, MixtureDensityHeadConfig
+from .mixture_density import (
+    CategoryEmbeddingMDN,
+    CategoryEmbeddingMDNConfig,
+    MixtureDensityHead,
+    MixtureDensityHeadConfig,
+    NODEMDNConfig,
+    NODEMDN,
+)
 from .base_model import BaseModel
 
 __all__ = [
@@ -12,8 +19,10 @@ __all__ = [
     "TabNetModel",
     "TabNetModelConfig",
     "BaseModel",
-    "CategoryEmbeddingMDN", 
-    "CategoryEmbeddingMDNConfig", 
-    "MixtureDensityHead", 
-    'MixtureDensityHeadConfig'
+    "CategoryEmbeddingMDN",
+    "CategoryEmbeddingMDNConfig",
+    "MixtureDensityHead",
+    "MixtureDensityHeadConfig",
+    "NODEMDNConfig",
+    "NODEMDN"
 ]

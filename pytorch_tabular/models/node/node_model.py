@@ -53,10 +53,20 @@ class NODEBackbone(BaseModel):
 
 class NODEModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
+        if config.embed_categorical:
+            self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):
-        self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
+        if self.hparams.embed_categorical:
+            self.embedding_layers = nn.ModuleList(
+                [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
+            )
+            if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+                self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
+            self.hparams.node_input_dim = self.hparams.continuous_dim + self.embedding_cat_dim
+        else:
+            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
         self.backbone = NODEBackbone(self.hparams)
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
@@ -67,71 +77,37 @@ class NODEModel(BaseModel):
         self.output_response = utils.Lambda(subset)
 
     def unpack_input(self, x: Dict):
-        # unpacking into a tuple
-        x = x["categorical"], x["continuous"]
-        # eliminating None in case there is no categorical or continuous columns
-        x = (item for item in x if len(item) > 0)
-        x = torch.cat(tuple(x), dim=1)
-        return x
-
-    def forward(self, x: Dict):
-        x = self.unpack_input(x)
-        x = self.backbone(x)
-        y_hat = self.output_response(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
-        return {"logits": y_hat, "backbone_features": x}
-
-
-class CategoryEmbeddingNODEModel(BaseModel):
-    def __init__(self, config: DictConfig, **kwargs):
-        self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
-        super().__init__(config, **kwargs)
-
-    def _build_network(self):
-        self.embedding_layers = nn.ModuleList(
-            [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
-        )
-        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
-            self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
-        self.hparams.node_input_dim = self.hparams.continuous_dim + self.embedding_cat_dim
-        self.backbone = NODEBackbone(self.hparams)
-        # average first n channels of every tree, where n is the number of output targets for regression
-        # and number of classes for classification
-
-        def subset(x):
-            return x[..., : self.hparams.output_dim].mean(dim=-2)
-
-        self.output_response = utils.Lambda(subset)
-
-    def unpack_input(self, x):
-        # unpacking into a tuple
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
-        if self.embedding_cat_dim != 0:
-            # x = []
-            # for i, embedding_layer in enumerate(self.embedding_layers):
-            #     x.append(embedding_layer(categorical_data[:, i]))
-            x = [
-                embedding_layer(categorical_data[:, i])
-                for i, embedding_layer in enumerate(self.embedding_layers)
-            ]
-            x = torch.cat(x, 1)
-
-        if self.hparams.continuous_dim != 0:
+        if self.hparams.embed_categorical:
+            # unpacking into a tuple
+            continuous_data, categorical_data = x["continuous"], x["categorical"]
             if self.embedding_cat_dim != 0:
-                x = torch.cat([x, continuous_data], 1)
-            else:
-                x = continuous_data
+                # x = []
+                # for i, embedding_layer in enumerate(self.embedding_layers):
+                #     x.append(embedding_layer(categorical_data[:, i]))
+                x = [
+                    embedding_layer(categorical_data[:, i])
+                    for i, embedding_layer in enumerate(self.embedding_layers)
+                ]
+                x = torch.cat(x, 1)
+
+            if self.hparams.continuous_dim != 0:
+                if self.embedding_cat_dim != 0:
+                    x = torch.cat([x, continuous_data], 1)
+                else:
+                    x = continuous_data
+        else:
+            # unpacking into a tuple
+            x = x["categorical"], x["continuous"]
+            # eliminating None in case there is no categorical or continuous columns
+            x = (item for item in x if len(item) > 0)
+            x = torch.cat(tuple(x), dim=1)
         return x
 
     def forward(self, x: Dict):
         x = self.unpack_input(x)
-        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
-            x = self.embedding_dropout(x)
+        if self.hparams.embed_categorical:
+            if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+                x = self.embedding_dropout(x)
         x = self.backbone(x)
         y_hat = self.output_response(x)
         if (self.hparams.task == "regression") and (

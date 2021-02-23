@@ -14,12 +14,12 @@ from pytorch_tabular.models.category_embedding.config import (
 )
 
 from pytorch_tabular.models.mixture_density import (
-    CategoryEmbeddingMDNConfig, MixtureDensityHeadConfig
+    CategoryEmbeddingMDNConfig, MixtureDensityHeadConfig, NODEMDNConfig
 )
 
-from pytorch_tabular.models.deep_gmm import (
-    DeepGaussianMixtureModelConfig,
-)
+# from pytorch_tabular.models.deep_gmm import (
+#     DeepGaussianMixtureModelConfig,
+# )
 from pytorch_tabular.models.category_embedding.category_embedding_model import (
     CategoryEmbeddingModel,
 )
@@ -55,10 +55,9 @@ data_config = DataConfig(
 )
 
 mdn_config = MixtureDensityHeadConfig(num_gaussian=2)
-model_config = CategoryEmbeddingMDNConfig(
+model_config = NODEMDNConfig(
     task="regression",
     # initialization="blah",
-    batch_norm_continuous_input=False,
     mdn_config = mdn_config
 )
 # model_config.validate()
