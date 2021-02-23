@@ -2,11 +2,14 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Deep Gaussian Mixture Model"""
+from abc import abstractmethod
 import logging
 import math
 from pytorch_tabular.models.category_embedding import (
     FeedForwardBackbone,
-    CategoryEmbeddingModel,
+)
+from pytorch_tabular.models.node import (
+    NODEBackbone
 )
 from typing import Dict, Optional
 
@@ -18,6 +21,7 @@ from omegaconf import DictConfig
 
 from ..base_model import BaseModel
 from pytorch_tabular.utils import _initialize_layers
+from pytorch_tabular.node import utils as utils
 
 logger = logging.getLogger(__name__)
 
@@ -132,55 +136,23 @@ class MixtureDensityHead(nn.Module):
         return y_hat
 
 
-class CategoryEmbeddingMDN(FeedForwardBackbone):
+class BaseMDN(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         assert (
             config.task == "regression"
-        ), "CategoryEmbeddingMDN is only implemented for Regression"
+        ), "MDN is only implemented for Regression"
         assert (
             config.output_dim == 1
-        ), "CategoryEmbeddingMDN is not implemented for multi-targets"
+        ), "MDN is not implemented for multi-targets"
         if config.target_range is not None:
             logger.warning(
-                "CategoryEmbeddingMDN does not use target range. Ignoring it."
+                "MDN does not use target range. Ignoring it."
             )
         super().__init__(config, **kwargs)
 
-    def _build_network(self):
-        # Embedding layers
-        self.embedding_layers = nn.ModuleList(
-            [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
-        )
-        # Continuous Layers
-        if self.hparams.batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
-        # Backbone
-        self.backbone = FeedForwardBackbone(self.hparams)
-        # Adding the last layer
-        self.hparams.mdn_config.input_dim = self.backbone.output_dim
-        self.mdn = MixtureDensityHead(self.hparams.mdn_config)
-
+    @abstractmethod
     def unpack_input(self, x: Dict):
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
-        if self.embedding_cat_dim != 0:
-            x = []
-            # for i, embedding_layer in enumerate(self.embedding_layers):
-            #     x.append(embedding_layer(categorical_data[:, i]))
-            x = [
-                embedding_layer(categorical_data[:, i])
-                for i, embedding_layer in enumerate(self.embedding_layers)
-            ]
-            x = torch.cat(x, 1)
-
-        if self.hparams.continuous_dim != 0:
-            if self.hparams.batch_norm_continuous_input:
-                continuous_data = self.normalizing_batch_norm(continuous_data)
-
-            if self.embedding_cat_dim != 0:
-                x = torch.cat([x, continuous_data], 1)
-            else:
-                x = continuous_data
-        return x
+        pass
 
     def forward(self, x: Dict):
         x = self.unpack_input(x)
@@ -259,3 +231,114 @@ class CategoryEmbeddingMDN(FeedForwardBackbone):
         )
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
+
+
+class CategoryEmbeddingMDN(BaseMDN):
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
+
+    def _build_network(self):
+        # Embedding layers
+        self.embedding_layers = nn.ModuleList(
+            [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
+        )
+        # Continuous Layers
+        if self.hparams.batch_norm_continuous_input:
+            self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
+        # Backbone
+        self.backbone = FeedForwardBackbone(self.hparams)
+        # Adding the last layer
+        self.hparams.mdn_config.input_dim = self.backbone.output_dim
+        self.mdn = MixtureDensityHead(self.hparams.mdn_config)
+
+    def unpack_input(self, x: Dict):
+        continuous_data, categorical_data = x["continuous"], x["categorical"]
+        if self.embedding_cat_dim != 0:
+            x = []
+            # for i, embedding_layer in enumerate(self.embedding_layers):
+            #     x.append(embedding_layer(categorical_data[:, i]))
+            x = [
+                embedding_layer(categorical_data[:, i])
+                for i, embedding_layer in enumerate(self.embedding_layers)
+            ]
+            x = torch.cat(x, 1)
+
+        if self.hparams.continuous_dim != 0:
+            if self.hparams.batch_norm_continuous_input:
+                continuous_data = self.normalizing_batch_norm(continuous_data)
+
+            if self.embedding_cat_dim != 0:
+                x = torch.cat([x, continuous_data], 1)
+            else:
+                x = continuous_data
+        return x
+
+class NODEMDN(BaseMDN):
+    
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
+
+    def _build_network(self):
+        self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
+        self.backbone = NODEBackbone(self.hparams)
+        # average first n channels of every tree, where n is the number of output targets for regression
+        # and number of classes for classification
+
+        def subset(x):
+            return x[..., : ].mean(dim=-2)
+
+        self.output_response = utils.Lambda(subset)
+        # Adding the last layer
+        self.hparams.mdn_config.input_dim = self.backbone.output_dim
+        self.mdn = MixtureDensityHead(self.hparams.mdn_config)
+
+    def unpack_input(self, x: Dict):
+        # unpacking into a tuple
+        x = x["categorical"], x["continuous"]
+        # eliminating None in case there is no categorical or continuous columns
+        x = (item for item in x if len(item) > 0)
+        x = torch.cat(tuple(x), dim=1)
+        return x
+
+class CategoryEmbeddingNODEMDN(BaseMDN):
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
+
+    def _build_network(self):
+        self.embedding_layers = nn.ModuleList(
+            [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
+        )
+        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+            self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
+        self.hparams.node_input_dim = self.hparams.continuous_dim + self.embedding_cat_dim
+        self.backbone = NODEBackbone(self.hparams)
+        # average first n channels of every tree, where n is the number of output targets for regression
+        # and number of classes for classification
+
+        def subset(x):
+            return x[..., :].mean(dim=-2)
+
+        self.output_response = utils.Lambda(subset)
+        # Adding the last layer
+        self.hparams.mdn_config.input_dim = self.backbone.output_dim
+        self.mdn = MixtureDensityHead(self.hparams.mdn_config)
+
+    def unpack_input(self, x):
+        # unpacking into a tuple
+        continuous_data, categorical_data = x["continuous"], x["categorical"]
+        if self.embedding_cat_dim != 0:
+            # x = []
+            # for i, embedding_layer in enumerate(self.embedding_layers):
+            #     x.append(embedding_layer(categorical_data[:, i]))
+            x = [
+                embedding_layer(categorical_data[:, i])
+                for i, embedding_layer in enumerate(self.embedding_layers)
+            ]
+            x = torch.cat(x, 1)
+
+        if self.hparams.continuous_dim != 0:
+            if self.embedding_cat_dim != 0:
+                x = torch.cat([x, continuous_data], 1)
+            else:
+                x = continuous_data
+        return x
