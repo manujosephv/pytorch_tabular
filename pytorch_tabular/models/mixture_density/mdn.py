@@ -92,32 +92,13 @@ class MixtureDensityHead(nn.Module):
         sample = sample * sigma.gather(1, pis) + mu.gather(1, pis)
         return sample
 
-    def calculate_loss(self, y, pi, sigma, mu, tag="train"):
-        # NLL Loss
-        log_prob = self.log_prob(pi, sigma, mu, y)
-        loss = torch.mean(-log_prob)
-        # pi1, pi2 = torch.mean(pi, dim=0)
-        # loss = torch.mean(-log_prob) + torch.abs(pi1-pi2)
-        # log_sigma = torch.log(sigma)
-        # kl_div = log_sigma[:,0] - log_sigma[:,1]+ torch.pow(sigma[:,0],2) + torch.pow((mu[:,0]-mu[:,1]),2)/ 2*torch.pow(sigma[:,1],2) - 0.5
-        # kl_div = torch.mean(kl_div)
-        # loss = torch.mean(-log_prob) - 1e-8*kl_div
-        self.log(
-            f"{tag}_loss",
-            loss,
-            on_epoch=(tag == "valid"),
-            on_step=(tag == "train"),
-            # on_step=False,
-            logger=True,
-            prog_bar=True,
-        )
-        return loss
-
     def generate_samples(self, pi, sigma, mu, n_samples=None):
         if n_samples is None:
             n_samples = self.hparams.n_samples
         samples = []
         softmax_pi = nn.functional.gumbel_softmax(pi, tau=1, dim=-1)
+        if (softmax_pi<0).sum().item()>0:
+            print("pi has negative")
         for _ in range(n_samples):
             samples.append(self.sample(softmax_pi, sigma, mu))
         samples = torch.cat(samples, dim=1)
