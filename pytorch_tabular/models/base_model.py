@@ -101,7 +101,6 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
-        y_hat = torch.clamp(y_hat, min=0)
         for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []

@@ -13,6 +13,7 @@ from omegaconf import DictConfig
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
+import wandb
 from pytorch_tabular.models.category_embedding import FeedForwardBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
@@ -20,6 +21,12 @@ from pytorch_tabular.utils import _initialize_layers
 
 from ..base_model import BaseModel
 
+try:
+    import wandb
+
+    WANDB_INSTALLED = True
+except ImportError:
+    WANDB_INSTALLED = False
 logger = logging.getLogger(__name__)
 
 ONEOVERSQRT2PI = 1.0 / math.sqrt(2 * math.pi)
@@ -97,8 +104,9 @@ class MixtureDensityHead(nn.Module):
             n_samples = self.hparams.n_samples
         samples = []
         softmax_pi = nn.functional.gumbel_softmax(pi, tau=1, dim=-1)
-        if (softmax_pi<0).sum().item()>0:
-            print("pi has negative")
+        assert (
+            softmax_pi < 0
+        ).sum().item() == 0, "pi parameter should not have negative"
         for _ in range(n_samples):
             samples.append(self.sample(softmax_pi, sigma, mu))
         samples = torch.cat(samples, dim=1)
@@ -148,12 +156,6 @@ class BaseMDN(BaseModel):
         # NLL Loss
         log_prob = self.mdn.log_prob(pi, sigma, mu, y)
         loss = torch.mean(-log_prob)
-        # pi1, pi2 = torch.mean(pi, dim=0)
-        # loss = torch.mean(-log_prob) + torch.abs(pi1-pi2)
-        # log_sigma = torch.log(sigma)
-        # kl_div = log_sigma[:,0] - log_sigma[:,1]+ torch.pow(sigma[:,0],2) + torch.pow((mu[:,0]-mu[:,1]),2)/ 2*torch.pow(sigma[:,1],2) - 0.5
-        # kl_div = torch.mean(kl_div)
-        # loss = torch.mean(-log_prob) - 1e-8*kl_div
         self.log(
             f"{tag}_loss",
             loss,
@@ -190,7 +192,7 @@ class BaseMDN(BaseModel):
             ret_value["pi"], ret_value["sigma"], ret_value["mu"]
         )
         _ = self.calculate_metrics(y, y_hat, tag="valid")
-        return y_hat, y
+        return y_hat, y, ret_value
 
     def test_step(self, batch, batch_idx):
         y = batch["target"]
@@ -203,6 +205,50 @@ class BaseMDN(BaseModel):
         )
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
+
+    def validation_epoch_end(self, outputs) -> None:
+        do_log_logits = (
+            self.hparams.log_logits
+            and self.hparams.log_target == "wandb"
+            and WANDB_INSTALLED
+        )
+        if do_log_logits:
+            logits = [output[0] for output in outputs]
+            flattened_logits = torch.flatten(torch.cat(logits))
+            wandb.log(
+                {
+                    "valid_logits": wandb.Histogram(flattened_logits.to("cpu")),
+                    "global_step": self.global_step,
+                },
+                commit=False,
+            )
+            pi = [output[1]["pi"] for output in outputs]
+            flattened_pi = torch.flatten(torch.cat(pi))
+            wandb.log(
+                {
+                    "valid_pi": wandb.Histogram(flattened_pi.to("cpu")),
+                    "global_step": self.global_step,
+                },
+                commit=False,
+            )
+            mu = [output[1]["mu"] for output in outputs]
+            flattened_mu = torch.flatten(torch.cat(mu))
+            wandb.log(
+                {
+                    "valid_mu": wandb.Histogram(flattened_mu.to("cpu")),
+                    "global_step": self.global_step,
+                },
+                commit=False,
+            )
+            sigma = [output[1]["sigma"] for output in outputs]
+            flattened_sigma = torch.flatten(torch.cat(sigma))
+            wandb.log(
+                {
+                    "valid_sigma": wandb.Histogram(flattened_sigma.to("cpu")),
+                    "global_step": self.global_step,
+                },
+                commit=False,
+            )
 
 
 class CategoryEmbeddingMDN(BaseMDN):
