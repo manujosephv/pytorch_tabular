@@ -51,7 +51,7 @@ class MixtureDensityHead(nn.Module):
         pi = self.pi(x)
         sigma = self.sigma(x)
         # Applying modified ELU activation
-        sigma = nn.ReLU()(sigma) + 1
+        sigma = nn.ELU()(sigma) + 1 + 1e-15
         mu = self.mu(x)
         return pi, sigma, mu
 
