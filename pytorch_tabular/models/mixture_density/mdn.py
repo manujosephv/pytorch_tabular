@@ -222,7 +222,7 @@ class BaseMDN(BaseModel):
                 },
                 commit=False,
             )
-            pi = [output[1]["pi"] for output in outputs]
+            pi = [output[2]["pi"] for output in outputs]
             flattened_pi = torch.flatten(torch.cat(pi))
             wandb.log(
                 {
@@ -231,7 +231,7 @@ class BaseMDN(BaseModel):
                 },
                 commit=False,
             )
-            mu = [output[1]["mu"] for output in outputs]
+            mu = [output[2]["mu"] for output in outputs]
             flattened_mu = torch.flatten(torch.cat(mu))
             wandb.log(
                 {
@@ -240,7 +240,7 @@ class BaseMDN(BaseModel):
                 },
                 commit=False,
             )
-            sigma = [output[1]["sigma"] for output in outputs]
+            sigma = [output[2]["sigma"] for output in outputs]
             flattened_sigma = torch.flatten(torch.cat(sigma))
             wandb.log(
                 {
