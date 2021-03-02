@@ -456,7 +456,7 @@ class TabularModel:
             # Parameters in NODE needs to be initialized again
             if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
                 self.data_aware_initialization()
-
+        self.model.train()
         self.trainer.fit(self.model, train_loader, val_loader)
         logger.info("Training the model completed...")
         if self.config.load_best:
@@ -581,6 +581,7 @@ class TabularModel:
             pd.DataFrame: Returns a dataframe with predictions and features.
             If classification, it returns probabilities and final prediction
         """
+        self.model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
         predictions = []
         for sample in tqdm(inference_dataloader, desc="Generating Predictions..."):
