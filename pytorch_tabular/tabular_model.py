@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model"""
+from collections import defaultdict
 import logging
 import os
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -436,7 +437,6 @@ class TabularModel:
 
             reset: (bool): Flag to reset the model and train again from scratch
         """
-
         train_loader, val_loader = self._pre_fit(
             train,
             validation,
@@ -451,6 +451,7 @@ class TabularModel:
             min_epochs,
             reset,
         )
+        self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
             # Parameters in NODE needs to be initialized again
@@ -571,44 +572,69 @@ class TabularModel:
         )
         return result
 
-    def predict(self, test: pd.DataFrame, quantiles: Optional[List]=[0.25, 0.5, 0.75], n_samples: Optional[int]=100) -> pd.DataFrame:
+    def predict(
+        self,
+        test: pd.DataFrame,
+        quantiles: Optional[List] = [0.25, 0.5, 0.75],
+        n_samples: Optional[int] = 100,
+        ret_logits=False,
+    ) -> pd.DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe
 
         Args:
             test (pd.DataFrame): The new dataframe with the features defined during training
-            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies 
-                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe. 
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
                 For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
             n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
                 Ignored for non-probabilistic models. Defaults to 100
+            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
+                with the dataframe. Defaults to False
 
         Returns:
             pd.DataFrame: Returns a dataframe with predictions and features.
                 If classification, it returns probabilities and final prediction
         """
-        assert all([q<=1 and q>=0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
+        assert all(
+            [q <= 1 and q >= 0 for q in quantiles]
+        ), "Quantiles should be a decimal between 0 and 1"
+        self.model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
         point_predictions = []
         quantile_predictions = []
-        is_probabilistic = hasattr(self.model.hparams, "_probabilistic") and self.model.hparams._probabilistic
+        logits_predictions = defaultdict(list)
+        is_probabilistic = (
+            hasattr(self.model.hparams, "_probabilistic")
+            and self.model.hparams._probabilistic
+        )
         for batch in tqdm(inference_dataloader, desc="Generating Predictions..."):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
                     continue
-                # sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
                 batch[k] = v.to(self.model.device)
             if is_probabilistic:
-                samples = self.model.sample(batch, n_samples)
+                samples, ret_value = self.model.sample(
+                    batch, n_samples, ret_model_output=True
+                )
                 y_hat = torch.mean(samples, dim=-1)
                 quantile_preds = []
                 for q in quantiles:
-                    quantile_preds.append(torch.quantile(samples, q=q, dim=-1).unsqueeze(1))
+                    quantile_preds.append(
+                        torch.quantile(samples, q=q, dim=-1).unsqueeze(1)
+                    )
             else:
-                y_hat = self.model.predict(batch)
+                y_hat, ret_value = self.model.predict(batch, ret_model_output=True)
+            if ret_logits:
+                for k, v in ret_value.items():
+                    if k == "backbone_features":
+                        continue
+                    logits_predictions[k].append(v.detach().cpu())
             point_predictions.append(y_hat.detach().cpu())
             if is_probabilistic:
-                quantile_predictions.append(torch.cat(quantile_preds, dim=-1).detach().cpu())
+                quantile_predictions.append(
+                    torch.cat(quantile_preds, dim=-1).detach().cpu()
+                )
         point_predictions = torch.cat(point_predictions, dim=0)
         if point_predictions.ndim == 1:
             point_predictions = point_predictions.unsqueeze(-1)
@@ -619,6 +645,7 @@ class TabularModel:
         pred_df = test.copy()
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
+            # Probabilistic Models are only implemented for Regression
             if is_probabilistic:
                 quantile_predictions = quantile_predictions.numpy()
             for i, target_col in enumerate(self.config.target):
@@ -637,17 +664,17 @@ class TabularModel:
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
                             pred_df[
-                            f"{target_col}_q{int(q*100)}"
-                        ] = self.datamodule.target_transforms[i].inverse_transform(
-                            quantile_predictions[:, j, i].reshape(-1, 1)
-                        )
+                                f"{target_col}_q{int(q*100)}"
+                            ] = self.datamodule.target_transforms[i].inverse_transform(
+                                quantile_predictions[:, j, i].reshape(-1, 1)
+                            )
                 else:
                     pred_df[f"{target_col}_prediction"] = point_predictions[:, i]
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
                             pred_df[
-                            f"{target_col}_q{int(q*100)}"
-                        ] = quantile_predictions[:, j, i].reshape(-1, 1)
+                                f"{target_col}_q{int(q*100)}"
+                            ] = quantile_predictions[:, j, i].reshape(-1, 1)
 
         elif self.config.task == "classification":
             point_predictions = nn.Softmax(dim=-1)(point_predictions).numpy()
@@ -656,6 +683,16 @@ class TabularModel:
             pred_df[f"prediction"] = self.datamodule.label_encoder.inverse_transform(
                 np.argmax(point_predictions, axis=1)
             )
+        if ret_logits:
+            for k, v in logits_predictions.items():
+                v = torch.cat(v, dim=0).numpy()
+                if v.ndim == 1:
+                    v = v.reshape(-1, 1)
+                for i in range(v.shape[-1]):
+                    if v.shape[-1] > 1:
+                        pred_df[f"{k}_{i}"] = v[:, i]
+                    else:
+                        pred_df[f"{k}"] = v[:, i]
         return pred_df
 
     def save_model(self, dir: str):

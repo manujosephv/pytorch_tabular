@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Deep Gaussian Mixture Model"""
+"""Mixture Density Models"""
 import logging
 import math
 from abc import abstractmethod
@@ -13,11 +13,9 @@ from omegaconf import DictConfig
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
-import wandb
 from pytorch_tabular.models.category_embedding import FeedForwardBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
-from pytorch_tabular.utils import _initialize_layers
 
 from ..base_model import BaseModel
 
@@ -42,10 +40,16 @@ class MixtureDensityHead(nn.Module):
     def _build_network(self):
         self.pi = nn.Linear(self.hparams.input_dim, self.hparams.num_gaussian)
         nn.init.normal_(self.pi.weight)
-        self.sigma = nn.Linear(self.hparams.input_dim, self.hparams.num_gaussian)
-        nn.init.normal_(self.sigma.weight)
+        self.sigma = nn.Linear(
+            self.hparams.input_dim,
+            self.hparams.num_gaussian,
+            bias=self.hparams.sigma_bias_flag,
+        )
         self.mu = nn.Linear(self.hparams.input_dim, self.hparams.num_gaussian)
         nn.init.normal_(self.mu.weight)
+        if self.hparams.mu_bias_init is not None:
+            for i, bias in enumerate(self.hparams.mu_bias_init):
+                nn.init.constant_(self.mu.bias[i], bias)
 
     def forward(self, x):
         pi = self.pi(x)
@@ -146,16 +150,44 @@ class BaseMDN(BaseModel):
             ret_value["pi"], ret_value["sigma"], ret_value["mu"]
         )
 
-    def sample(self, x: Dict, n_samples: Optional[int] = None):
+    def sample(self, x: Dict, n_samples: Optional[int] = None, ret_model_output = False):
         ret_value = self.forward(x)
-        return self.mdn.generate_samples(
+        samples= self.mdn.generate_samples(
             ret_value["pi"], ret_value["sigma"], ret_value["mu"], n_samples
         )
+        if ret_model_output:
+            return samples, ret_value
+        else:
+            return samples
 
     def calculate_loss(self, y, pi, sigma, mu, tag="train"):
         # NLL Loss
         log_prob = self.mdn.log_prob(pi, sigma, mu, y)
         loss = torch.mean(-log_prob)
+        if self.hparams.mdn_config.weight_regularization is not None:
+            sigma_l1_reg = 0
+            pi_l1_reg = 0
+            mu_l1_reg = 0
+            if self.hparams.mdn_config.lambda_sigma > 0:
+                # Weight Regularization Sigma
+                sigma_params = torch.cat(
+                    [x.view(-1) for x in self.mdn.sigma.parameters()]
+                )
+                sigma_l1_reg = self.hparams.mdn_config.lambda_sigma * torch.norm(
+                    sigma_params, self.hparams.mdn_config.weight_regularization
+                )
+            if self.hparams.mdn_config.lambda_pi > 0:
+                pi_params = torch.cat([x.view(-1) for x in self.mdn.pi.parameters()])
+                pi_l1_reg = self.hparams.mdn_config.lambda_sigma * torch.norm(
+                    pi_params, self.hparams.mdn_config.weight_regularization
+                )
+            if self.hparams.mdn_config.lambda_mu > 0:
+                mu_params = torch.cat([x.view(-1) for x in self.mdn.mu.parameters()])
+                mu_l1_reg = self.hparams.mdn_config.lambda_mu * torch.norm(
+                    mu_params, self.hparams.mdn_config.weight_regularization
+                )
+
+            loss = loss + sigma_l1_reg + pi_l1_reg + mu_l1_reg
         self.log(
             f"{tag}_loss",
             loss,
@@ -173,7 +205,7 @@ class BaseMDN(BaseModel):
         loss = self.calculate_loss(
             y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="train"
         )
-        if self.hparams.fast_training:
+        if self.hparams.mdn_config.speedup_training:
             pass
         else:
             y_hat = self.mdn.generate_point_predictions(
@@ -212,43 +244,85 @@ class BaseMDN(BaseModel):
             and self.hparams.log_target == "wandb"
             and WANDB_INSTALLED
         )
+        pi = [
+            nn.functional.gumbel_softmax(output[2]["pi"], tau=1, dim=-1)
+            for output in outputs
+        ]
+        pi = torch.cat(pi).detach().cpu()
+        for i in range(self.hparams.mdn_config.num_gaussian):
+            self.log(
+                f"mean_pi_{i}",
+                pi[:, i].mean(),
+                on_epoch=True,
+                on_step=False,
+                logger=True,
+                prog_bar=False,
+            )
+
+        mu = [output[2]["mu"] for output in outputs]
+        mu = torch.cat(mu).detach().cpu()
+        for i in range(self.hparams.mdn_config.num_gaussian):
+            self.log(
+                f"mean_mu_{i}",
+                mu[:, i].mean(),
+                on_epoch=True,
+                on_step=False,
+                logger=True,
+                prog_bar=False,
+            )
+
+        sigma = [output[2]["sigma"] for output in outputs]
+        sigma = torch.cat(sigma).detach().cpu()
+        for i in range(self.hparams.mdn_config.num_gaussian):
+            self.log(
+                f"mean_sigma_{i}",
+                sigma[:, i].mean(),
+                on_epoch=True,
+                on_step=False,
+                logger=True,
+                prog_bar=False,
+            )
+
         if do_log_logits:
             logits = [output[0] for output in outputs]
-            flattened_logits = torch.flatten(torch.cat(logits))
+            logits = torch.cat(logits).detach().cpu()
+            fig = self.create_plotly_histogram(logits.unsqueeze(1), "logits")
             wandb.log(
                 {
-                    "valid_logits": wandb.Histogram(flattened_logits.to("cpu")),
+                    "valid_logits": fig,
                     "global_step": self.global_step,
                 },
                 commit=False,
             )
-            pi = [output[2]["pi"] for output in outputs]
-            flattened_pi = torch.flatten(torch.cat(pi))
-            wandb.log(
-                {
-                    "valid_pi": wandb.Histogram(flattened_pi.to("cpu")),
-                    "global_step": self.global_step,
-                },
-                commit=False,
-            )
-            mu = [output[2]["mu"] for output in outputs]
-            flattened_mu = torch.flatten(torch.cat(mu))
-            wandb.log(
-                {
-                    "valid_mu": wandb.Histogram(flattened_mu.to("cpu")),
-                    "global_step": self.global_step,
-                },
-                commit=False,
-            )
-            sigma = [output[2]["sigma"] for output in outputs]
-            flattened_sigma = torch.flatten(torch.cat(sigma))
-            wandb.log(
-                {
-                    "valid_sigma": wandb.Histogram(flattened_sigma.to("cpu")),
-                    "global_step": self.global_step,
-                },
-                commit=False,
-            )
+            if self.hparams.mdn_config.log_debug_plot:
+                fig = self.create_plotly_histogram(
+                    pi, "pi", bin_dict=dict(start=0.0, end=1.0, size=0.1)
+                )
+                wandb.log(
+                    {
+                        "valid_pi": fig,
+                        "global_step": self.global_step,
+                    },
+                    commit=False,
+                )
+
+                fig = self.create_plotly_histogram(mu, "mu")
+                wandb.log(
+                    {
+                        "valid_mu": fig,
+                        "global_step": self.global_step,
+                    },
+                    commit=False,
+                )
+
+                fig = self.create_plotly_histogram(sigma, "sigma")
+                wandb.log(
+                    {
+                        "valid_sigma": fig,
+                        "global_step": self.global_step,
+                    },
+                    commit=False,
+                )
 
 
 class CategoryEmbeddingMDN(BaseMDN):

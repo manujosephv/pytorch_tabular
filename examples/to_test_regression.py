@@ -54,14 +54,14 @@ data_config = DataConfig(
     normalize_continuous_features=True,
 )
 
-mdn_config = MixtureDensityHeadConfig(num_gaussian=2)
-model_config = NODEMDNConfig(
-    task="regression",
-    # initialization="blah",
-    mdn_config = mdn_config
-)
-# model_config.validate()
-# model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
+# mdn_config = MixtureDensityHeadConfig(num_gaussian=2)
+# model_config = NODEMDNConfig(
+#     task="regression",
+#     # initialization="blah",
+#     mdn_config = mdn_config
+# )
+# # model_config.validate()
+model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
 trainer_config = TrainerConfig(checkpoints=None, max_epochs=5, gpus=1, profiler=None)
 # experiment_config = ExperimentConfig(
 #     project_name="DeepGMM_test",
@@ -84,6 +84,6 @@ tabular_model.fit(train=train, test=test)
 result = tabular_model.evaluate(test)
 # print(result)
 # # print(result[0]['train_loss'])
-pred_df = tabular_model.predict(test, quantiles=[0.25])
+pred_df = tabular_model.predict(test, quantiles=[0.25], ret_logits=True)
 print(pred_df.head())
 # pred_df.to_csv("output/temp2.csv")

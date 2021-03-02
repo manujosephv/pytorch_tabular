@@ -18,7 +18,21 @@ class MixtureDensityHeadConfig:
     Args:
         num_gaussian (int): Number of Gaussian Distributions in the mixture model. Defaults to 1
         n_samples (int): Number of samples to draw from the posterior to get prediction. Defaults to 100
-        central_tendency (str): Which measure to use to get the point prediction. Choices are 'mean', 'median'. Defaults to `mean`
+        central_tendency (str): Which measure to use to get the point prediction. 
+            Choices are 'mean', 'median'. Defaults to `mean`
+        sigma_bias_flag (bool): Whether to have a bias term in the sigma layer. Defaults to False
+        mu_bias_init (Optional[List]): To initialize the bias parameter of the mu layer to predefined cluster centers. 
+            Should be a list with the same length as number of gaussians in the mixture model. 
+            It is highly recommended to set the parameter to combat mode collapse. Defaults to None
+        weight_regularization (Optional[int]): Whether to apply L1 or L2 Norm to the MDN layers. 
+            It is highly recommended to use this to avoid mode collapse. Choices are [1,2]. Defaults to L2
+        lambda_sigma (Optional[float]): The regularization constant for weight regularization of sigma layer. Defaults to 0.1
+        lambda_pi (Optional[float]): The regularization constant for weight regularization of pi layer. Defaults to 0.1
+        lambda_mu (Optional[float]): The regularization constant for weight regularization of mu layer. Defaults to 0.1
+        speedup_training (bool): Turning on this parameter does away with sampling during training which speeds up training, 
+            but also doesn't give you visibility on train metrics. Defaults to False
+        log_debug_plot (bool): Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits
+            (if log_logits is turned on in experment config). Defaults to False
 
     """
 
@@ -26,6 +40,45 @@ class MixtureDensityHeadConfig:
         default=1,
         metadata={
             "help": "Number of Gaussian Distributions in the mixture model. Defaults to 1",
+        },
+    )
+    sigma_bias_flag: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to have a bias term in the sigma layer. Defaults to False",
+        },
+    )
+    mu_bias_init: Optional[List] = field(
+        default=None,
+        metadata={
+            "help": "To initialize the bias parameter of the mu layer to predefined cluster centers. Should be a list with the same length as number of gaussians in the mixture model. It is highly recommended to set the parameter to combat mode collapse. Defaults to None",
+        },
+    )
+
+    weight_regularization: Optional[int] = field(
+        default=2,
+        metadata={
+            "help": "Whether to apply L1 or L2 Norm to the MDN layers. Defaults to L2",
+            "choices": [1, 2],
+        },
+    )
+
+    lambda_sigma: Optional[float] = field(
+        default=0.1,
+        metadata={
+            "help": "The regularization constant for weight regularization of sigma layer. Defaults to 0.1",
+        },
+    )
+    lambda_pi: Optional[float] = field(
+        default=0.1,
+        metadata={
+            "help": "The regularization constant for weight regularization of pi layer. Defaults to 0.1",
+        },
+    )
+    lambda_mu: Optional[float] = field(
+        default=0,
+        metadata={
+            "help": "The regularization constant for weight regularization of mu layer. Defaults to 0",
         },
     )
     n_samples: int = field(
@@ -41,10 +94,16 @@ class MixtureDensityHeadConfig:
             "choices": ["mean", "median"],
         },
     )
-    fast_training: bool = field(
+    speedup_training: bool = field(
         default=False,
         metadata={
-            "help": "Turning onthis parameter does away with sampling during training which speeds up training, but also doesn't give you visibility on training metrics. Defaults to True",
+            "help": "Turning on this parameter does away with sampling during training which speeds up training, but also doesn't give you visibility on train metrics. Defaults to False",
+        },
+    )
+    log_debug_plot: bool = field(
+        default=False,
+        metadata={
+            "help": "Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits(if log_logits is turned on in experment config). Defaults to False",
         },
     )
     _module_src: str = field(default="mixture_density")
@@ -87,7 +146,8 @@ class CategoryEmbeddingMDNConfig(CategoryEmbeddingModelConfig):
     """
 
     mdn_config: MixtureDensityHeadConfig = field(
-        default=None, metadata={"help": "The config for defining the Mixed Density Network Head"}
+        default=None,
+        metadata={"help": "The config for defining the Mixed Density Network Head"},
     )
     _module_src: str = field(default="mixture_density")
     _model_name: str = field(default="CategoryEmbeddingMDN")
@@ -159,7 +219,8 @@ class NODEMDNConfig(NodeConfig):
     """
 
     mdn_config: MixtureDensityHeadConfig = field(
-        default=None, metadata={"help": "The config for defining the Mixed Density Network Head"}
+        default=None,
+        metadata={"help": "The config for defining the Mixed Density Network Head"},
     )
     _module_src: str = field(default="mixture_density")
     _model_name: str = field(default="NODEMDN")
