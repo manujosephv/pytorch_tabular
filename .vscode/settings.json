@@ -2,5 +2,6 @@
     "python.pythonPath": "env\\Scripts\\python.exe",
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": false,
+    "restructuredtext.languageServer.disabled": true
 }

@@ -10,6 +10,7 @@ from .mixture_density import (
     NODEMDN,
 )
 from .base_model import BaseModel
+from . import category_embedding, node, mixture_density, tabnet
 
 __all__ = [
     "CategoryEmbeddingModel",
@@ -24,5 +25,9 @@ __all__ = [
     "MixtureDensityHead",
     "MixtureDensityHeadConfig",
     "NODEMDNConfig",
-    "NODEMDN"
+    "NODEMDN",
+    "category_embedding",
+    "node",
+    "mixture_density",
+    "tabnet",
 ]
