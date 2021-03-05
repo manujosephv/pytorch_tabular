@@ -8,9 +8,12 @@ from .mixture_density import (
     MixtureDensityHeadConfig,
     NODEMDNConfig,
     NODEMDN,
+    AutoIntMDN,
+    AutoIntMDNConfig
 )
+from .autoint import AutoIntConfig, AutoIntModel
 from .base_model import BaseModel
-from . import category_embedding, node, mixture_density, tabnet
+from . import category_embedding, node, mixture_density, tabnet, autoint
 
 __all__ = [
     "CategoryEmbeddingModel",
@@ -26,8 +29,13 @@ __all__ = [
     "MixtureDensityHeadConfig",
     "NODEMDNConfig",
     "NODEMDN",
+    "AutoIntMDN",
+    "AutoIntMDNConfig",
+    "AutoIntConfig",
+    "AutoIntModel",
     "category_embedding",
     "node",
     "mixture_density",
     "tabnet",
+    "autoint",
 ]

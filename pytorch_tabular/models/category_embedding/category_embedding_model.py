@@ -8,7 +8,7 @@ from typing import Dict
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from pytorch_tabular.utils import _initialize_layers
+from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 from ..base_model import BaseModel
 
@@ -20,17 +20,6 @@ class FeedForwardBackbone(BaseModel):
         self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
-    def _linear_dropout_bn(self, in_units, out_units, activation, dropout):
-        layers = []
-        if self.hparams.use_batch_norm:
-            layers.append(nn.BatchNorm1d(num_features=in_units))
-        linear = nn.Linear(in_units, out_units)
-        _initialize_layers(self.hparams, linear)
-        layers.extend([linear, activation()])
-        if dropout != 0:
-            layers.append(nn.Dropout(dropout))
-        return layers
-
     def _build_network(self):
         activation = getattr(nn, self.hparams.activation)
         # Linear Layers
@@ -40,7 +29,8 @@ class FeedForwardBackbone(BaseModel):
             layers.append(nn.Dropout(self.hparams.embedding_dropout))
         for units in self.hparams.layers.split("-"):
             layers.extend(
-                self._linear_dropout_bn(
+                _linear_dropout_bn(
+                    self.hparams,
                     _curr_units,
                     int(units),
                     activation,

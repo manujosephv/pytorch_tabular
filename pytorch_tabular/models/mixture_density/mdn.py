@@ -16,6 +16,7 @@ from torch.distributions import Categorical
 from pytorch_tabular.models.category_embedding import FeedForwardBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
+from pytorch_tabular.models.autoint import AutoIntBackbone
 
 from ..base_model import BaseModel
 
@@ -394,4 +395,19 @@ class NODEMDN(BaseMDN):
         # eliminating None in case there is no categorical or continuous columns
         x = (item for item in x if len(item) > 0)
         x = torch.cat(tuple(x), dim=1)
+        return x
+
+class AutoIntMDN(BaseMDN):
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
+
+    def _build_network(self):
+        # Backbone
+        self.backbone = AutoIntBackbone(self.hparams)
+        # Adding the last layer
+        self.hparams.mdn_config.input_dim = self.backbone.output_dim
+        self.mdn = MixtureDensityHead(self.hparams.mdn_config)
+
+    def unpack_input(self, x: Dict):
+        #Returning the dict because autoInt backbone expects the dict output
         return x

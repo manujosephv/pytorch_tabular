@@ -1,4 +1,4 @@
-from .category_embedding_model import CategoryEmbeddingModel, FeedForwardBackbone
-from .config import CategoryEmbeddingModelConfig
+from .autoint import AutoIntBackbone, AutoIntModel
+from .config import AutoIntConfig
 
-__all__ = ["CategoryEmbeddingModel", "CategoryEmbeddingModelConfig", "FeedForwardBackbone"]
+__all__ = ["AutoIntModel", "AutoIntBackbone", "AutoIntConfig"]
