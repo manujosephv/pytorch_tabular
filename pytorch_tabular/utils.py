@@ -69,3 +69,14 @@ def _initialize_layers(hparams, layer):
         )
     elif hparams.initialization == "random":
         nn.init.normal_(layer.weight)
+
+def _linear_dropout_bn(hparams, in_units, out_units, activation, dropout):
+    layers = []
+    if hparams.use_batch_norm:
+        layers.append(nn.BatchNorm1d(num_features=in_units))
+    linear = nn.Linear(in_units, out_units)
+    _initialize_layers(hparams, linear)
+    layers.extend([linear, activation()])
+    if dropout != 0:
+        layers.append(nn.Dropout(dropout))
+    return layers

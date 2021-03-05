@@ -12,6 +12,7 @@ from pytorch_tabular.config import (
 from pytorch_tabular.models.category_embedding.config import (
     CategoryEmbeddingModelConfig,
 )
+from pytorch_tabular.models import AutoIntModel, AutoIntConfig
 
 from pytorch_tabular.models.mixture_density import (
     CategoryEmbeddingMDNConfig, MixtureDensityHeadConfig, NODEMDNConfig
@@ -33,6 +34,8 @@ from sklearn.preprocessing import PowerTransformer
 dataset = fetch_california_housing(data_home="data", as_frame=True)
 dataset.frame["HouseAgeBin"] = pd.qcut(dataset.frame["HouseAge"], q=4)
 dataset.frame.HouseAgeBin = "age_" + dataset.frame.HouseAgeBin.cat.codes.astype(str)
+dataset.frame["AveRoomsBin"] = pd.qcut(dataset.frame["AveRooms"], q=3)
+dataset.frame.AveRoomsBin = "av_rm_" + dataset.frame.AveRoomsBin.cat.codes.astype(str)
 
 test_idx = dataset.frame.sample(int(0.2 * len(dataset.frame)), random_state=42).index
 test = dataset.frame[dataset.frame.index.isin(test_idx)]
@@ -49,7 +52,7 @@ data_config = DataConfig(
         "Longitude",
     ],
     # continuous_cols=[],
-    categorical_cols=["HouseAgeBin"],
+    categorical_cols=["HouseAgeBin","AveRoomsBin"],
     continuous_feature_transform=None,  # "yeo-johnson",
     normalize_continuous_features=True,
 )
@@ -61,8 +64,9 @@ data_config = DataConfig(
 #     mdn_config = mdn_config
 # )
 # # model_config.validate()
-model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
-trainer_config = TrainerConfig(checkpoints=None, max_epochs=5, gpus=1, profiler=None)
+# model_config = CategoryEmbeddingModelConfig(task="regression")
+model_config = AutoIntConfig(task="regression", deep_layers=True, embedding_dropout=0.2, batch_norm_continuous_input=True)
+trainer_config = TrainerConfig(checkpoints=None, max_epochs=25, gpus=1, profiler=None, fast_dev_run=False, auto_lr_find=True)
 # experiment_config = ExperimentConfig(
 #     project_name="DeepGMM_test",
 #     run_name="wand_debug",
