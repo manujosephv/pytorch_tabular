@@ -39,7 +39,8 @@ class AutoIntConfig(ModelConfig):
             Defaults to ReLU
         dropout (float): probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0
         use_batch_norm (bool): Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False
-        batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer
+        batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer. Defaults to False
+        attention_pooling (bool): If True, will combine the attention outputs of each block for final prediction. Defaults to False
         initialization (str): Initialization scheme for the linear layers. Defaults to `kaiming`.
             Choices are: [`kaiming`,`xavier`,`random`].
 
@@ -122,7 +123,13 @@ class AutoIntConfig(ModelConfig):
     batch_norm_continuous_input: bool = field(
         default=False,
         metadata={
-            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer"
+            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. Defaults to Fasle"
+        },
+    )
+    attention_pooling: bool = field(
+        default=False,
+        metadata={
+            "help": "If True, will combine the attention outputs of each block for final prediction. Defaults to False"
         },
     )
     initialization: str = field(

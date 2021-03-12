@@ -30,6 +30,7 @@ from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 @pytest.mark.parametrize("target_range", [True, False])
 @pytest.mark.parametrize("deep_layers", [True, False])
 @pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
+@pytest.mark.parametrize("attention_pooling", [True, False])
 def test_regression(
     regression_data,
     multi_target,
@@ -39,7 +40,8 @@ def test_regression(
     normalize_continuous_features,
     target_range,
     deep_layers,
-    batch_norm_continuous_input
+    batch_norm_continuous_input,
+    attention_pooling
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -65,6 +67,7 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config_params["deep_layers"] = deep_layers
         model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
+        model_config_params["attention_pooling"] = attention_pooling
         model_config = AutoIntConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=3, checkpoints=None, early_stopping=None, gpus=0

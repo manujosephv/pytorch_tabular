@@ -65,7 +65,8 @@ data_config = DataConfig(
 # )
 # # model_config.validate()
 # model_config = CategoryEmbeddingModelConfig(task="regression")
-model_config = AutoIntConfig(task="regression", deep_layers=True, embedding_dropout=0.2, batch_norm_continuous_input=True)
+model_config = AutoIntConfig(task="regression", deep_layers=True, embedding_dropout=0.2, 
+batch_norm_continuous_input=True, attention_pooling=True)
 trainer_config = TrainerConfig(checkpoints=None, max_epochs=25, gpus=1, profiler=None, fast_dev_run=False, auto_lr_find=True)
 # experiment_config = ExperimentConfig(
 #     project_name="DeepGMM_test",

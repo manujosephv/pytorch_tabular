@@ -627,8 +627,8 @@ class TabularModel:
                 y_hat, ret_value = self.model.predict(batch, ret_model_output=True)
             if ret_logits:
                 for k, v in ret_value.items():
-                    if k == "backbone_features":
-                        continue
+                    # if k == "backbone_features":
+                    #     continue
                     logits_predictions[k].append(v.detach().cpu())
             point_predictions.append(y_hat.detach().cpu())
             if is_probabilistic:
@@ -751,6 +751,8 @@ class TabularModel:
         tabular_model.model = model
         tabular_model.datamodule = datamodule
         tabular_model.callbacks = callbacks
+        #TODO max_epochs and min_epochs, make it optional
+        #TODO custom model and custom metrics need to be dealt with separately
         tabular_model._prepare_trainer()
         tabular_model.trainer.model = model
         tabular_model.logger = logger

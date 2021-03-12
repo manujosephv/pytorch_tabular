@@ -72,11 +72,16 @@ class AutoIntBackbone(BaseModel):
         )
         if self.hparams.has_residuals:
             self.V_res_embedding = torch.nn.Linear(
-                _curr_units, self.hparams.attn_embed_dim
+                _curr_units,
+                self.hparams.attn_embed_dim * self.hparams.num_attn_blocks
+                if self.hparams.attention_pooling
+                else self.hparams.attn_embed_dim,
             )
         self.output_dim = (
             self.hparams.continuous_dim + self.hparams.categorical_dim
         ) * self.hparams.attn_embed_dim
+        if self.hparams.attention_pooling:
+            self.output_dim = self.output_dim * self.hparams.num_attn_blocks
 
     def forward(self, x: Dict):
         # (B, N)
@@ -109,8 +114,14 @@ class AutoIntBackbone(BaseModel):
             x = self.linear_layers(x)
         # (N, B, E*) --> E* is the Attn Dimention
         cross_term = self.attn_proj(x).transpose(0, 1)
+        if self.hparams.attention_pooling:
+            attention_ops = []
         for self_attn in self.self_attns:
             cross_term, _ = self_attn(cross_term, cross_term, cross_term)
+            if self.hparams.attention_pooling:
+                attention_ops.append(cross_term)
+        if self.hparams.attention_pooling:
+            cross_term = torch.cat(attention_ops, dim=-1)
         # (B, N, E*)
         cross_term = cross_term.transpose(0, 1)
         if self.hparams.has_residuals:

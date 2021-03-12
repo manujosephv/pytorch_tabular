@@ -73,6 +73,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     raise e
         else:
             self.metrics = self.custom_metrics
+            self.hparams.metrics = [m.__name__ for m in self.custom_metrics]
 
     def calculate_loss(self, y, y_hat, tag):
         if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
