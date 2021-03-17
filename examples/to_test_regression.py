@@ -15,7 +15,9 @@ from pytorch_tabular.models.category_embedding.config import (
 from pytorch_tabular.models import AutoIntModel, AutoIntConfig
 
 from pytorch_tabular.models.mixture_density import (
-    CategoryEmbeddingMDNConfig, MixtureDensityHeadConfig, NODEMDNConfig
+    CategoryEmbeddingMDNConfig,
+    MixtureDensityHeadConfig,
+    NODEMDNConfig,
 )
 
 # from pytorch_tabular.models.deep_gmm import (
@@ -30,6 +32,7 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.tabular_model import TabularModel
 import pytorch_lightning as pl
 from sklearn.preprocessing import PowerTransformer
+import torch
 
 dataset = fetch_california_housing(data_home="data", as_frame=True)
 dataset.frame["HouseAgeBin"] = pd.qcut(dataset.frame["HouseAge"], q=4)
@@ -52,7 +55,7 @@ data_config = DataConfig(
         "Longitude",
     ],
     # continuous_cols=[],
-    categorical_cols=["HouseAgeBin","AveRoomsBin"],
+    categorical_cols=["HouseAgeBin", "AveRoomsBin"],
     continuous_feature_transform=None,  # "yeo-johnson",
     normalize_continuous_features=True,
 )
@@ -65,9 +68,21 @@ data_config = DataConfig(
 # )
 # # model_config.validate()
 # model_config = CategoryEmbeddingModelConfig(task="regression")
-model_config = AutoIntConfig(task="regression", deep_layers=True, embedding_dropout=0.2, 
-batch_norm_continuous_input=True, attention_pooling=True)
-trainer_config = TrainerConfig(checkpoints=None, max_epochs=25, gpus=1, profiler=None, fast_dev_run=False, auto_lr_find=True)
+model_config = AutoIntConfig(
+    task="regression",
+    deep_layers=True,
+    embedding_dropout=0.2,
+    batch_norm_continuous_input=True,
+    attention_pooling=True,
+)
+trainer_config = TrainerConfig(
+    checkpoints=None,
+    max_epochs=2,
+    gpus=1,
+    profiler=None,
+    fast_dev_run=False,
+    auto_lr_find=True,
+)
 # experiment_config = ExperimentConfig(
 #     project_name="DeepGMM_test",
 #     run_name="wand_debug",
@@ -77,6 +92,14 @@ trainer_config = TrainerConfig(checkpoints=None, max_epochs=25, gpus=1, profiler
 # )
 optimizer_config = OptimizerConfig()
 
+
+def fake_metric(y_hat, y):
+    return (y_hat - y).mean()
+
+
+from sklearn.preprocessing import PowerTransformer
+
+tr = PowerTransformer()
 tabular_model = TabularModel(
     data_config=data_config,
     model_config=model_config,
@@ -84,11 +107,27 @@ tabular_model = TabularModel(
     trainer_config=trainer_config,
     # experiment_config=experiment_config,
 )
-tabular_model.fit(train=train, test=test)
-
+tabular_model.fit(
+    train=train,
+    test=test,
+    metrics=[fake_metric],
+    target_transform=tr,
+    loss=torch.nn.L1Loss(),
+    optimizer=torch.optim.Adagrad,
+    optimizer_params={},
+)
+tabular_model.save_model("examples/sample")
 result = tabular_model.evaluate(test)
-# print(result)
+print(result)
 # # print(result[0]['train_loss'])
+new_mdl = TabularModel.load_from_checkpoint("examples/sample")
+# TODO test none no test loader
+result = new_mdl.evaluate(test)
+print(result)
+tabular_model.fit(
+    train=train, test=test, metrics=[fake_metric], target_transform=tr, max_epochs=2
+)
 pred_df = tabular_model.predict(test, quantiles=[0.25], ret_logits=True)
 print(pred_df.head())
+
 # pred_df.to_csv("output/temp2.csv")

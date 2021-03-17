@@ -133,8 +133,10 @@ class TabularModel:
             self.model_callable = getattr(
                 getattr(models, self.config._module_src), self.config._model_name
             )
+            self.custom_model = False
         else:
             self.model_callable = model_callable
+            self.custom_model = True
         self._run_validation()
 
     def _run_validation(self):
@@ -310,10 +312,10 @@ class TabularModel:
                 custom_optimizer_params=optimizer_params,
             )
             # Data Aware Initialization (NODE)
-            if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
+            if self.config._model_name in ["NODEModel"]:
                 self.data_aware_initialization()
 
-    def _prepare_trainer(self, max_epochs, min_epochs):
+    def _prepare_trainer(self, max_epochs=None, min_epochs=None):
         logger.info("Preparing the Trainer...")
         if max_epochs is not None:
             self.config.max_epochs = max_epochs
@@ -418,7 +420,8 @@ class TabularModel:
 
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
-            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the signature metric_fn(y_hat, y)
+            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
+                signature metric_fn(y_hat, y) and works on torch tensor inputs
 
             optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
                 This should be the Class and not the initialized object
@@ -714,7 +717,16 @@ class TabularModel:
         if hasattr(self, "callbacks"):
             joblib.dump(self.callbacks, os.path.join(dir, "callbacks.sav"))
         self.trainer.save_checkpoint(os.path.join(dir, "model.ckpt"))
-        # joblib.dump(self.trainer, os.path.join(dir, "trainer.sav"))
+        custom_params = {}
+        custom_params["custom_loss"] = self.model.custom_loss
+        custom_params["custom_metrics"] = self.model.custom_metrics
+        custom_params["custom_optimizer"] = self.model.custom_optimizer
+        custom_params["custom_optimizer_params"] = self.model.custom_optimizer_params
+        joblib.dump(custom_params, os.path.join(dir, "custom_params.sav"))
+        if self.custom_model:
+            joblib.dump(
+                self.model_callable, os.path.join(dir, "custom_model_callable.sav")
+            )
 
     @classmethod
     def load_from_checkpoint(cls, dir: str):
@@ -740,19 +752,52 @@ class TabularModel:
             callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
         else:
             callbacks = []
-        model_callable = getattr(
-            getattr(models, config._module_src), config._model_name
-        )
+        if os.path.exists(os.path.join(dir, "custom_model_callable.sav")):
+            model_callable = joblib.load(os.path.join(dir, "custom_model_callable.sav"))
+            custom_model = True
+        else:
+            model_callable = getattr(
+                getattr(models, config._module_src), config._model_name
+            )
+            custom_model = False
+        custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
+        model_args = {}
+        if custom_params.get("custom_loss") is not None:
+            model_args['loss'] = "MSELoss"
+        if custom_params.get("custom_metrics") is not None:
+            model_args['metrics'] = ["mean_squared_error"]
+            model_args['metric_params'] = [{}]
+        if custom_params.get("custom_optimizer") is not None:
+            model_args['optimizer'] = "Adam"
+        if custom_params.get("custom_optimizer_params") is not None:
+            model_args['optimizer_params'] = {}
+        
+        # Initializing with default metrics, losses, and optimizers. Will revert once initialized
         model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt")
+            checkpoint_path=os.path.join(dir, "model.ckpt"),
+            **model_args
         )
-        # trainer = joblib.load(os.path.join(dir, "trainer.sav"))
-        tabular_model = cls(config=config)
+        # else:
+        #     # Initializing with default values
+        #     model = model_callable.load_from_checkpoint(
+        #         checkpoint_path=os.path.join(dir, "model.ckpt"),
+        #     )
+        # Updating config with custom parameters for experiment tracking
+        if custom_params.get("custom_loss") is not None:
+            model.custom_loss = custom_params["custom_loss"]
+        if custom_params.get("custom_metrics") is not None:
+            model.custom_metrics = custom_params["custom_metrics"]
+        if custom_params.get("custom_optimizer") is not None:
+            model.custom_optimizer = custom_params["custom_optimizer"]
+        if custom_params.get("custom_optimizer_params") is not None:
+            model.custom_optimizer_params = custom_params["custom_optimizer_params"]
+        model._setup_loss()
+        model._setup_metrics()
+        tabular_model = cls(config=config, model_callable=model_callable)
         tabular_model.model = model
+        tabular_model.custom_model = custom_model
         tabular_model.datamodule = datamodule
         tabular_model.callbacks = callbacks
-        #TODO max_epochs and min_epochs, make it optional
-        #TODO custom model and custom metrics need to be dealt with separately
         tabular_model._prepare_trainer()
         tabular_model.trainer.model = model
         tabular_model.logger = logger

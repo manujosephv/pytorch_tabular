@@ -1,9 +1,11 @@
 import logging
+from typing import Dict
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
-from typing import Dict
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
 logger = logging.getLogger(__name__)
@@ -44,6 +46,7 @@ def get_balanced_sampler(y_train):
     )
     return train_sampler
 
+
 def _initialize_layers(hparams, layer):
     if hparams.activation == "ReLU":
         nonlinearity = "relu"
@@ -70,6 +73,7 @@ def _initialize_layers(hparams, layer):
     elif hparams.initialization == "random":
         nn.init.normal_(layer.weight)
 
+
 def _linear_dropout_bn(hparams, in_units, out_units, activation, dropout):
     layers = []
     if hparams.use_batch_norm:
@@ -80,3 +84,12 @@ def _linear_dropout_bn(hparams, in_units, out_units, activation, dropout):
     if dropout != 0:
         layers.append(nn.Dropout(dropout))
     return layers
+
+
+def get_gaussian_centers(y, n_components):
+    if isinstance(y, pd.Series) or isinstance(y, pd.DataFrame):
+        y = y.values
+    if y.ndim == 1:
+        y = y.reshape(-1, 1)
+    cluster = KMeans(n_clusters=n_components, random_state=42).fit(y)
+    return cluster.cluster_centers_.ravel().tolist()

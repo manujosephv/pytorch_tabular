@@ -4,7 +4,7 @@
 """Mixture Density Models"""
 import logging
 import math
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
 
 import torch
@@ -13,10 +13,10 @@ from omegaconf import DictConfig
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
+from pytorch_tabular.models.autoint import AutoIntBackbone
 from pytorch_tabular.models.category_embedding import FeedForwardBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
-from pytorch_tabular.models.autoint import AutoIntBackbone
 
 from ..base_model import BaseModel
 
@@ -91,7 +91,10 @@ class MixtureDensityHead(nn.Module):
     def log_prob(self, pi, sigma, mu, y):
         log_component_prob = self.gaussian_probability(sigma, mu, y, log=True)
         log_mix_prob = torch.log(
-            nn.functional.gumbel_softmax(pi, tau=1, dim=-1) + 1e-15
+            nn.functional.gumbel_softmax(
+                pi, tau=self.hparams.softmax_temperature, dim=-1
+            )
+            + 1e-15
         )
         return torch.logsumexp(log_component_prob + log_mix_prob, dim=-1)
 
@@ -108,7 +111,9 @@ class MixtureDensityHead(nn.Module):
         if n_samples is None:
             n_samples = self.hparams.n_samples
         samples = []
-        softmax_pi = nn.functional.gumbel_softmax(pi, tau=1, dim=-1)
+        softmax_pi = nn.functional.gumbel_softmax(
+            pi, tau=self.hparams.softmax_temperature, dim=-1
+        )
         assert (
             softmax_pi < 0
         ).sum().item() == 0, "pi parameter should not have negative"
@@ -127,7 +132,7 @@ class MixtureDensityHead(nn.Module):
         return y_hat
 
 
-class BaseMDN(BaseModel):
+class BaseMDN(BaseModel, metaclass=ABCMeta):
     def __init__(self, config: DictConfig, **kwargs):
         assert config.task == "regression", "MDN is only implemented for Regression"
         assert config.output_dim == 1, "MDN is not implemented for multi-targets"
@@ -151,9 +156,9 @@ class BaseMDN(BaseModel):
             ret_value["pi"], ret_value["sigma"], ret_value["mu"]
         )
 
-    def sample(self, x: Dict, n_samples: Optional[int] = None, ret_model_output = False):
+    def sample(self, x: Dict, n_samples: Optional[int] = None, ret_model_output=False):
         ret_value = self.forward(x)
-        samples= self.mdn.generate_samples(
+        samples = self.mdn.generate_samples(
             ret_value["pi"], ret_value["sigma"], ret_value["mu"], n_samples
         )
         if ret_model_output:
@@ -246,7 +251,9 @@ class BaseMDN(BaseModel):
             and WANDB_INSTALLED
         )
         pi = [
-            nn.functional.gumbel_softmax(output[2]["pi"], tau=1, dim=-1)
+            nn.functional.gumbel_softmax(
+                output[2]["pi"], tau=self.hparams.mdn_config.softmax_temperature, dim=-1
+            )
             for output in outputs
         ]
         pi = torch.cat(pi).detach().cpu()
@@ -397,6 +404,7 @@ class NODEMDN(BaseMDN):
         x = torch.cat(tuple(x), dim=1)
         return x
 
+
 class AutoIntMDN(BaseMDN):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
@@ -409,5 +417,5 @@ class AutoIntMDN(BaseMDN):
         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
 
     def unpack_input(self, x: Dict):
-        #Returning the dict because autoInt backbone expects the dict output
+        # Returning the dict because autoInt backbone expects the dict output
         return x

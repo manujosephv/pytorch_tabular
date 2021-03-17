@@ -5,6 +5,7 @@
 import logging
 from typing import Dict
 
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -15,9 +16,11 @@ from ..base_model import BaseModel
 logger = logging.getLogger(__name__)
 
 
-class TabNetBackbone(BaseModel):
+class TabNetBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig, **kwargs):
-        super().__init__(config, **kwargs)
+        super().__init__()
+        self.save_hyperparameters(config)
+        self._build_network()
 
     def _build_network(self):
         self.tabnet = TabNet(

@@ -500,7 +500,7 @@ class ModelConfig:
 
         metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
             The metrics should be one of the metrics implemented in PyTorch Lightning.
-            By default, it is Accuracy if classification and MeanSquaredLogError for regression
+            By default, it is accuracy if classification and mean_squared_error for regression
 
         metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function
 

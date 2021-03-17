@@ -31,12 +31,23 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_metrics: Optional[List[Callable]] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
         custom_optimizer_params: Dict = {},
+        **kwargs
     ):
         super().__init__()
         self.custom_loss = custom_loss
         self.custom_metrics = custom_metrics
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
+        #Updating config with custom parameters for experiment tracking
+        if self.custom_loss is not None:
+            config.loss = str(self.custom_loss)
+        if self.custom_metrics is not None:
+            config.metrics = [str(m) for m in self.custom_metrics]
+            config.metrics_params = [vars(m) for m in self.custom_metrics]
+        if self.custom_optimizer is not None:
+            config.optimizer = str(self.custom_optimizer.__class__.__name__)
+        if self.custom_optimizer_params is not None:
+            config.optimizer_params = self.custom_optimizer_params
         self.save_hyperparameters(config)
         # The concatenated output dim of the embedding layer
         self._build_network()

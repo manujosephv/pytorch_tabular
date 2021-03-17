@@ -2,11 +2,19 @@
 """Tests for `pytorch_tabular` package."""
 
 import pytest
-
+import numpy as np
+import torch
+from sklearn.preprocessing import PowerTransformer
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
 from pytorch_tabular import TabularModel
 from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
+
+# TODO Tests for custom parameters and saving with custom_params
+
+
+def fake_metric(y_hat, y):
+    return (y_hat - y).mean()
 
 
 @pytest.mark.parametrize("multi_target", [True, False])
@@ -28,6 +36,13 @@ from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 @pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
 @pytest.mark.parametrize("normalize_continuous_features", [True, False])
 @pytest.mark.parametrize("target_range", [True, False])
+@pytest.mark.parametrize(
+    "target_transform",
+    [None, PowerTransformer(), (lambda x: np.power(x,2), lambda x: np.sqrt(x))],
+)
+@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
+@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
 def test_regression(
     regression_data,
     multi_target,
@@ -36,6 +51,10 @@ def test_regression(
     continuous_feature_transform,
     normalize_continuous_features,
     target_range,
+    target_transform,
+    custom_metrics,
+    custom_loss,
+    custom_optimizer,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -71,7 +90,15 @@ def test_regression(
             optimizer_config=optimizer_config,
             trainer_config=trainer_config,
         )
-        tabular_model.fit(train=train, test=test)
+        tabular_model.fit(
+            train=train,
+            test=test,
+            metrics=custom_metrics,
+            target_transform=target_transform,
+            loss=custom_loss,
+            optimizer=custom_optimizer,
+            optimizer_params=None if custom_optimizer is None else {},
+        )
 
         result = tabular_model.evaluate(test)
         # print(result[0]["valid_loss"])
@@ -219,7 +246,10 @@ def test_embedding_transformer(regression_data):
 #     categorical_cols=[],
 #     continuous_feature_transform="yeo-johnson",
 #     normalize_continuous_features=False,
-#     target_range=True,
+#     target_range=False,
+#     target_transform = PowerTransformer(),
+#     custom_metrics = [fake_metric],
+#     custom_loss = None, custom_optimizer = None
 # )
 # test_embedding_transformer(regression_data())
 

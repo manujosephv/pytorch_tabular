@@ -9,6 +9,7 @@ nav:
       - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
       - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
       - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
+      - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
     - Configuration:
       - Data: data.md
       - Models: models.md

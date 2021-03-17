@@ -5,21 +5,25 @@
 import logging
 from typing import Dict
 
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
+from pytorch_tabular.utils import _initialize_layers
+
 from ..base_model import BaseModel
 from . import utils as utils
-from pytorch_tabular.utils import _initialize_layers
 from .architecture_blocks import DenseODSTBlock
 
 logger = logging.getLogger(__name__)
 
 
-class NODEBackbone(BaseModel):
+class NODEBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig, **kwargs):
-        super().__init__(config, **kwargs)
+        super().__init__()
+        self.save_hyperparameters(config)
+        self._build_network()
 
     def _build_network(self):
         self.dense_block = DenseODSTBlock(
@@ -64,9 +68,13 @@ class NODEModel(BaseModel):
             )
             if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
                 self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.embedding_cat_dim
+            self.hparams.node_input_dim = (
+                self.hparams.continuous_dim + self.embedding_cat_dim
+            )
         else:
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
+            self.hparams.node_input_dim = (
+                self.hparams.continuous_dim + self.hparams.categorical_dim
+            )
         self.backbone = NODEBackbone(self.hparams)
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
