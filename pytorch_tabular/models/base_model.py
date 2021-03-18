@@ -10,8 +10,11 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+
 try:
     import wandb
+    import plotly.graph_objects as go
+
     WANDB_INSTALLED = True
 except ImportError:
     WANDB_INSTALLED = False
@@ -28,12 +31,23 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_metrics: Optional[List[Callable]] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
         custom_optimizer_params: Dict = {},
+        **kwargs
     ):
         super().__init__()
         self.custom_loss = custom_loss
         self.custom_metrics = custom_metrics
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
+        #Updating config with custom parameters for experiment tracking
+        if self.custom_loss is not None:
+            config.loss = str(self.custom_loss)
+        if self.custom_metrics is not None:
+            config.metrics = [str(m) for m in self.custom_metrics]
+            config.metrics_params = [vars(m) for m in self.custom_metrics]
+        if self.custom_optimizer is not None:
+            config.optimizer = str(self.custom_optimizer.__class__.__name__)
+        if self.custom_optimizer_params is not None:
+            config.optimizer_params = self.custom_optimizer_params
         self.save_hyperparameters(config)
         # The concatenated output dim of the embedding layer
         self._build_network()
@@ -70,6 +84,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     raise e
         else:
             self.metrics = self.custom_metrics
+            self.hparams.metrics = [m.__name__ for m in self.custom_metrics]
 
     def calculate_loss(self, y, y_hat, tag):
         if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
@@ -101,15 +116,21 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
-        y_hat = torch.clamp(y_hat, min=0)
-        for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
+        for metric, metric_str, metric_params in zip(
+            self.metrics, self.hparams.metrics, self.hparams.metrics_params
+        ):
             if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
                 _metrics = []
                 for i in range(self.hparams.output_dim):
-                    if metric.__name__==pl.metrics.functional.mean_squared_log_error.__name__:
+                    if (
+                        metric.__name__
+                        == pl.metrics.functional.mean_squared_log_error.__name__
+                    ):
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(
-                            torch.clamp(y_hat[:, i], min=0), torch.clamp(y[:, i], min=0), **metric_params
+                            torch.clamp(y_hat[:, i], min=0),
+                            torch.clamp(y[:, i], min=0),
+                            **metric_params,
                         )
                     else:
                         _metric = metric(y_hat[:, i], y[:, i], **metric_params)
@@ -140,30 +161,37 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def forward(self, x: Dict):
         pass
 
+    def predict(self, x: Dict, ret_model_output: bool = False):
+        ret_value = self.forward(x)
+        if ret_model_output:
+            return ret_value.get("logits"), ret_value
+        else:
+            return ret_value.get("logits")
+
     def training_step(self, batch, batch_idx):
         y = batch["target"]
-        y_hat = self(batch)
+        y_hat = self(batch)["logits"]
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
         y = batch["target"]
-        y_hat = self(batch)
+        y_hat = self(batch)["logits"]
         _ = self.calculate_loss(y, y_hat, tag="valid")
         _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
         y = batch["target"]
-        y_hat = self(batch)
+        y_hat = self(batch)["logits"]
         _ = self.calculate_loss(y, y_hat, tag="test")
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
 
     def configure_optimizers(self):
         if self.custom_optimizer is None:
-            #Loading from the config
+            # Loading from the config
             try:
                 self._optimizer = getattr(torch.optim, self.hparams.optimizer)
                 opt = self._optimizer(
@@ -177,7 +205,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 )
                 raise e
         else:
-            #Loading from custom fit arguments
+            # Loading from custom fit arguments
             self._optimizer = self.custom_optimizer
 
             opt = self._optimizer(
@@ -213,15 +241,42 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             return opt
 
+    def create_plotly_histogram(self, arr, name, bin_dict=None):
+        fig = go.Figure()
+        for i in range(arr.shape[-1]):
+            fig.add_trace(
+                go.Histogram(
+                    x=arr[:, i],
+                    histnorm="probability",
+                    name=f"{name}_{i}",
+                    xbins=bin_dict,  # dict(start=0.0, end=1.0, size=0.1),  # bins used for histogram
+                )
+            )
+        # Overlay both histograms
+        fig.update_layout(
+            barmode="overlay",
+            legend=dict(
+                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+            ),
+        )
+        # Reduce opacity to see both histograms
+        fig.update_traces(opacity=0.5)
+        return fig
+
     def validation_epoch_end(self, outputs) -> None:
-        do_log_logits = self.hparams.log_logits and self.hparams.log_target == "wandb" and WANDB_INSTALLED
+        do_log_logits = (
+            self.hparams.log_logits
+            and self.hparams.log_target == "wandb"
+            and WANDB_INSTALLED
+        )
         if do_log_logits:
             logits = [output[0] for output in outputs]
-            flattened_logits = torch.flatten(torch.cat(logits))
+            logits = torch.cat(logits).detach().cpu()
+            fig = self.create_plotly_histogram(logits.unsqueeze(1), "logits")
             wandb.log(
                 {
-                    "valid_logits": wandb.Histogram(flattened_logits.to("cpu")),
+                    "valid_logits": fig,
                     "global_step": self.global_step,
                 },
-                commit=False
+                commit=False,
             )

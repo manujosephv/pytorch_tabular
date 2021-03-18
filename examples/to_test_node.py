@@ -56,10 +56,10 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        # model_config_params = dict(task="regression", depth=2, embed_categorical=embed_categorical)
+        model_config_params = dict(task="regression", depth=2, embed_categorical=embed_categorical)
+        model_config = NodeConfig(**model_config_params)
+        # model_config_params = dict(task="regression")
         # model_config = NodeConfig(**model_config_params)
-        model_config_params = dict(task="regression")
-        model_config = TabNetModelConfig(**model_config_params)
         
         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()
@@ -121,7 +121,7 @@ def test_classification(
 
 test_regression(
     regression_data(),
-    multi_target=True,
+    multi_target=False,
     continuous_cols=[
         "AveRooms",
         "AveBedrms",
@@ -131,7 +131,7 @@ test_regression(
         "Longitude",
     ],
     categorical_cols=["HouseAgeBin"],
-    embed_categorical=False,
+    embed_categorical=True,
     continuous_feature_transform=None,
     normalize_continuous_features=True,
     # target_range=True,

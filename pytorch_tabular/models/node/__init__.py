@@ -1,4 +1,4 @@
 from .config import NodeConfig
-from .node_model import CategoryEmbeddingNODEModel, NODEModel
+from .node_model import NODEModel, NODEBackbone
 
-__all__ = ["NODEModel", "NodeConfig", "CategoryEmbeddingNODEModel"]
+__all__ = ["NODEModel", "NodeConfig", "NODEBackbone"]

@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model"""
+from collections import defaultdict
 import logging
 import os
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -77,16 +78,16 @@ class TabularModel:
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
-            # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
-            if (
-                hasattr(model_config, "_model_name")
-                and (model_config._model_name == "NODEModel")
-                and (model_config.embed_categorical)
-                and ("CategoryEmbedding" not in model_config._model_name)
-            ):
-                model_config._model_name = (
-                    "CategoryEmbedding" + model_config._model_name
-                )
+            # # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
+            # if (
+            #     hasattr(model_config, "_model_name")
+            #     and (model_config._model_name == "NODEModel")
+            #     and (model_config.embed_categorical)
+            #     and ("CategoryEmbedding" not in model_config._model_name)
+            # ):
+            #     model_config._model_name = (
+            #         "CategoryEmbedding" + model_config._model_name
+            #     )
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
             optimizer_config = self._read_parse_config(
                 optimizer_config, OptimizerConfig
@@ -132,8 +133,10 @@ class TabularModel:
             self.model_callable = getattr(
                 getattr(models, self.config._module_src), self.config._model_name
             )
+            self.custom_model = False
         else:
             self.model_callable = model_callable
+            self.custom_model = True
         self._run_validation()
 
     def _run_validation(self):
@@ -309,10 +312,10 @@ class TabularModel:
                 custom_optimizer_params=optimizer_params,
             )
             # Data Aware Initialization (NODE)
-            if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
+            if self.config._model_name in ["NODEModel"]:
                 self.data_aware_initialization()
 
-    def _prepare_trainer(self, max_epochs, min_epochs):
+    def _prepare_trainer(self, max_epochs=None, min_epochs=None):
         logger.info("Preparing the Trainer...")
         if max_epochs is not None:
             self.config.max_epochs = max_epochs
@@ -417,7 +420,8 @@ class TabularModel:
 
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
-            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the signature metric_fn(y_hat, y)
+            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
+                signature metric_fn(y_hat, y) and works on torch tensor inputs
 
             optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
                 This should be the Class and not the initialized object
@@ -436,7 +440,6 @@ class TabularModel:
 
             reset: (bool): Flag to reset the model and train again from scratch
         """
-
         train_loader, val_loader = self._pre_fit(
             train,
             validation,
@@ -451,6 +454,7 @@ class TabularModel:
             min_epochs,
             reset,
         )
+        self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
             # Parameters in NODE needs to be initialized again
@@ -554,7 +558,7 @@ class TabularModel:
 
         Args:
             test (Optional[pd.DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
-            test provided during fit. If that was also not provided will return an empty dictionary
+                test provided during fit. If that was also not provided will return an empty dictionary
 
         Returns:
             Union[dict, list]: The final test result dictionary.
@@ -571,34 +575,82 @@ class TabularModel:
         )
         return result
 
-    def predict(self, test: pd.DataFrame) -> pd.DataFrame:
+    def predict(
+        self,
+        test: pd.DataFrame,
+        quantiles: Optional[List] = [0.25, 0.5, 0.75],
+        n_samples: Optional[int] = 100,
+        ret_logits=False,
+    ) -> pd.DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe
 
         Args:
             test (pd.DataFrame): The new dataframe with the features defined during training
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
+                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
+            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
+                Ignored for non-probabilistic models. Defaults to 100
+            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
+                with the dataframe. Defaults to False
 
         Returns:
             pd.DataFrame: Returns a dataframe with predictions and features.
-            If classification, it returns probabilities and final prediction
+                If classification, it returns probabilities and final prediction
         """
+        assert all(
+            [q <= 1 and q >= 0 for q in quantiles]
+        ), "Quantiles should be a decimal between 0 and 1"
         self.model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
-        predictions = []
-        for sample in tqdm(inference_dataloader, desc="Generating Predictions..."):
-            for k, v in sample.items():
+        point_predictions = []
+        quantile_predictions = []
+        logits_predictions = defaultdict(list)
+        is_probabilistic = (
+            hasattr(self.model.hparams, "_probabilistic")
+            and self.model.hparams._probabilistic
+        )
+        for batch in tqdm(inference_dataloader, desc="Generating Predictions..."):
+            for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
                     continue
-                # sample[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
-                sample[k] = v.to(self.model.device)
-            y_hat = self.model(sample)
-            predictions.append(y_hat.detach().cpu())
-        predictions = torch.cat(predictions, dim=0)
-        if predictions.ndim == 1:
-            predictions = predictions.unsqueeze(-1)
+                batch[k] = v.to(self.model.device)
+            if is_probabilistic:
+                samples, ret_value = self.model.sample(
+                    batch, n_samples, ret_model_output=True
+                )
+                y_hat = torch.mean(samples, dim=-1)
+                quantile_preds = []
+                for q in quantiles:
+                    quantile_preds.append(
+                        torch.quantile(samples, q=q, dim=-1).unsqueeze(1)
+                    )
+            else:
+                y_hat, ret_value = self.model.predict(batch, ret_model_output=True)
+            if ret_logits:
+                for k, v in ret_value.items():
+                    # if k == "backbone_features":
+                    #     continue
+                    logits_predictions[k].append(v.detach().cpu())
+            point_predictions.append(y_hat.detach().cpu())
+            if is_probabilistic:
+                quantile_predictions.append(
+                    torch.cat(quantile_preds, dim=-1).detach().cpu()
+                )
+        point_predictions = torch.cat(point_predictions, dim=0)
+        if point_predictions.ndim == 1:
+            point_predictions = point_predictions.unsqueeze(-1)
+        if is_probabilistic:
+            quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
+            if quantile_predictions.ndim == 2:
+                quantile_predictions = quantile_predictions.unsqueeze(-1)
         pred_df = test.copy()
         if self.config.task == "regression":
-            predictions = predictions.numpy()
+            point_predictions = point_predictions.numpy()
+            # Probabilistic Models are only implemented for Regression
+            if is_probabilistic:
+                quantile_predictions = quantile_predictions.numpy()
             for i, target_col in enumerate(self.config.target):
                 if self.datamodule.do_target_transform:
                     if self.config.target[i] in pred_df.columns:
@@ -610,17 +662,40 @@ class TabularModel:
                     pred_df[
                         f"{target_col}_prediction"
                     ] = self.datamodule.target_transforms[i].inverse_transform(
-                        predictions[:, i].reshape(-1, 1)
+                        point_predictions[:, i].reshape(-1, 1)
                     )
+                    if is_probabilistic:
+                        for j, q in enumerate(quantiles):
+                            pred_df[
+                                f"{target_col}_q{int(q*100)}"
+                            ] = self.datamodule.target_transforms[i].inverse_transform(
+                                quantile_predictions[:, j, i].reshape(-1, 1)
+                            )
                 else:
-                    pred_df[f"{target_col}_prediction"] = predictions[:, i]
+                    pred_df[f"{target_col}_prediction"] = point_predictions[:, i]
+                    if is_probabilistic:
+                        for j, q in enumerate(quantiles):
+                            pred_df[
+                                f"{target_col}_q{int(q*100)}"
+                            ] = quantile_predictions[:, j, i].reshape(-1, 1)
+
         elif self.config.task == "classification":
-            predictions = nn.Softmax(dim=-1)(predictions).numpy()
+            point_predictions = nn.Softmax(dim=-1)(point_predictions).numpy()
             for i, class_ in enumerate(self.datamodule.label_encoder.classes_):
-                pred_df[f"{class_}_probability"] = predictions[:, i]
+                pred_df[f"{class_}_probability"] = point_predictions[:, i]
             pred_df[f"prediction"] = self.datamodule.label_encoder.inverse_transform(
-                np.argmax(predictions, axis=1)
+                np.argmax(point_predictions, axis=1)
             )
+        if ret_logits:
+            for k, v in logits_predictions.items():
+                v = torch.cat(v, dim=0).numpy()
+                if v.ndim == 1:
+                    v = v.reshape(-1, 1)
+                for i in range(v.shape[-1]):
+                    if v.shape[-1] > 1:
+                        pred_df[f"{k}_{i}"] = v[:, i]
+                    else:
+                        pred_df[f"{k}"] = v[:, i]
         return pred_df
 
     def save_model(self, dir: str):
@@ -642,7 +717,16 @@ class TabularModel:
         if hasattr(self, "callbacks"):
             joblib.dump(self.callbacks, os.path.join(dir, "callbacks.sav"))
         self.trainer.save_checkpoint(os.path.join(dir, "model.ckpt"))
-        # joblib.dump(self.trainer, os.path.join(dir, "trainer.sav"))
+        custom_params = {}
+        custom_params["custom_loss"] = self.model.custom_loss
+        custom_params["custom_metrics"] = self.model.custom_metrics
+        custom_params["custom_optimizer"] = self.model.custom_optimizer
+        custom_params["custom_optimizer_params"] = self.model.custom_optimizer_params
+        joblib.dump(custom_params, os.path.join(dir, "custom_params.sav"))
+        if self.custom_model:
+            joblib.dump(
+                self.model_callable, os.path.join(dir, "custom_model_callable.sav")
+            )
 
     @classmethod
     def load_from_checkpoint(cls, dir: str):
@@ -668,15 +752,50 @@ class TabularModel:
             callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
         else:
             callbacks = []
-        model_callable = getattr(
-            getattr(models, config._module_src), config._model_name
-        )
+        if os.path.exists(os.path.join(dir, "custom_model_callable.sav")):
+            model_callable = joblib.load(os.path.join(dir, "custom_model_callable.sav"))
+            custom_model = True
+        else:
+            model_callable = getattr(
+                getattr(models, config._module_src), config._model_name
+            )
+            custom_model = False
+        custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
+        model_args = {}
+        if custom_params.get("custom_loss") is not None:
+            model_args['loss'] = "MSELoss"
+        if custom_params.get("custom_metrics") is not None:
+            model_args['metrics'] = ["mean_squared_error"]
+            model_args['metric_params'] = [{}]
+        if custom_params.get("custom_optimizer") is not None:
+            model_args['optimizer'] = "Adam"
+        if custom_params.get("custom_optimizer_params") is not None:
+            model_args['optimizer_params'] = {}
+        
+        # Initializing with default metrics, losses, and optimizers. Will revert once initialized
         model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt")
+            checkpoint_path=os.path.join(dir, "model.ckpt"),
+            **model_args
         )
-        # trainer = joblib.load(os.path.join(dir, "trainer.sav"))
-        tabular_model = cls(config=config)
+        # else:
+        #     # Initializing with default values
+        #     model = model_callable.load_from_checkpoint(
+        #         checkpoint_path=os.path.join(dir, "model.ckpt"),
+        #     )
+        # Updating config with custom parameters for experiment tracking
+        if custom_params.get("custom_loss") is not None:
+            model.custom_loss = custom_params["custom_loss"]
+        if custom_params.get("custom_metrics") is not None:
+            model.custom_metrics = custom_params["custom_metrics"]
+        if custom_params.get("custom_optimizer") is not None:
+            model.custom_optimizer = custom_params["custom_optimizer"]
+        if custom_params.get("custom_optimizer_params") is not None:
+            model.custom_optimizer_params = custom_params["custom_optimizer_params"]
+        model._setup_loss()
+        model._setup_metrics()
+        tabular_model = cls(config=config, model_callable=model_callable)
         tabular_model.model = model
+        tabular_model.custom_model = custom_model
         tabular_model.datamodule = datamodule
         tabular_model.callbacks = callbacks
         tabular_model._prepare_trainer()

@@ -5,6 +5,7 @@
 import logging
 from typing import Dict
 
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -15,9 +16,11 @@ from ..base_model import BaseModel
 logger = logging.getLogger(__name__)
 
 
-class TabNetModel(BaseModel):
+class TabNetBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig, **kwargs):
-        super().__init__(config, **kwargs)
+        super().__init__()
+        self.save_hyperparameters(config)
+        self._build_network()
 
     def _build_network(self):
         self.tabnet = TabNet(
@@ -39,18 +42,35 @@ class TabNetModel(BaseModel):
         )
 
     def forward(self, x: Dict):
+        # Returns output and Masked Loss. We only need the output
+        x, _ = self.tabnet(x)
+        return x
+
+
+class TabNetModel(BaseModel):
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
+
+    def _build_network(self):
+        self.backbone = TabNetBackbone(self.hparams)
+
+    def unpack_input(self, x: Dict):
         # unpacking into a tuple
         x = x["categorical"], x["continuous"]
         # eliminating None in case there is no categorical or continuous columns
         x = (item for item in x if len(item) > 0)
         x = torch.cat(tuple(x), dim=1)
-        # Returns output and Masked Loss. We only need the output
-        x, _ = self.tabnet(x)
-        if (
-            (self.hparams.task == "regression")
-            and (self.hparams.target_range is not None)
+        return x
+
+    def forward(self, x: Dict):
+        # unpacking into a tuple
+        x = self.unpack_input(x)
+        # Returns output
+        x = self.backbone(x)
+        if (self.hparams.task == "regression") and (
+            self.hparams.target_range is not None
         ):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]
                 x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
-        return x
+        return {"logits": x}  # No Easy way to access the raw features in TabNet
