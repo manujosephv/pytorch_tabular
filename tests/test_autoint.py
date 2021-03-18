@@ -21,12 +21,11 @@ from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
             "Latitude",
             "Longitude",
         ],
-        [],
     ],
 )
-@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
-@pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
-@pytest.mark.parametrize("normalize_continuous_features", [True, False])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("continuous_feature_transform", [None])
+@pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("target_range", [True, False])
 @pytest.mark.parametrize("deep_layers", [True, False])
 @pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
@@ -70,7 +69,7 @@ def test_regression(
         model_config_params["attention_pooling"] = attention_pooling
         model_config = AutoIntConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -93,12 +92,11 @@ def test_regression(
     "continuous_cols",
     [
         [f"feature_{i}" for i in range(54)],
-        [],
     ],
 )
-@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"], []])
-@pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
-@pytest.mark.parametrize("normalize_continuous_features", [True, False])
+@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
+@pytest.mark.parametrize("continuous_feature_transform", [None])
+@pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("deep_layers", [True, False])
 @pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
 def test_classification(
@@ -126,7 +124,7 @@ def test_classification(
         model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
         model_config = AutoIntConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 

@@ -80,7 +80,7 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -138,7 +138,7 @@ def test_classification(
         model_config_params = dict(task="classification")
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -174,7 +174,7 @@ def test_embedding_transformer(regression_data):
     model_config_params = dict(task="regression")
     model_config = CategoryEmbeddingModelConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
+        max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 

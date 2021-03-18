@@ -54,7 +54,7 @@ def test_regression(
         model_config_params['mdn_config'] = mdn_config
         model_config = variant(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -108,7 +108,7 @@ def test_classification(
         model_config_params['mdn_config'] = mdn_config
         model_config = CategoryEmbeddingMDNConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
         with pytest.raises(AssertionError):

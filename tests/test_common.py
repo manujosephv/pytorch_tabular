@@ -70,7 +70,7 @@ def test_save_load(
     model_config_params = dict(task="regression")
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+        max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 
@@ -133,7 +133,7 @@ def test_feature_extractor(
     model_config_params = dict(task="regression")
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=0
+        max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 
