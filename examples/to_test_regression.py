@@ -116,18 +116,24 @@ tabular_model.fit(
     optimizer=torch.optim.Adagrad,
     optimizer_params={},
 )
-tabular_model.save_model("examples/sample")
-result = tabular_model.evaluate(test)
-print(result)
-# # print(result[0]['train_loss'])
-new_mdl = TabularModel.load_from_checkpoint("examples/sample")
-# TODO test none no test loader
-result = new_mdl.evaluate(test)
-print(result)
-tabular_model.fit(
-    train=train, test=test, metrics=[fake_metric], target_transform=tr, max_epochs=2
-)
-pred_df = tabular_model.predict(test, quantiles=[0.25], ret_logits=True)
-print(pred_df.head())
+
+from pytorch_tabular.feature_extractor import DeepFeatureExtractor
+
+dt = DeepFeatureExtractor(tabular_model)
+enc_df = dt.fit_transform(test)
+print(enc_df.head())
+# tabular_model.save_model("examples/sample")
+# result = tabular_model.evaluate(test)
+# print(result)
+# # # print(result[0]['train_loss'])
+# new_mdl = TabularModel.load_from_checkpoint("examples/sample")
+# # TODO test none no test loader
+# result = new_mdl.evaluate(test)
+# print(result)
+# tabular_model.fit(
+#     train=train, test=test, metrics=[fake_metric], target_transform=tr, max_epochs=2
+# )
+# pred_df = tabular_model.predict(test, quantiles=[0.25], ret_logits=True)
+# print(pred_df.head())
 
 # pred_df.to_csv("output/temp2.csv")
