@@ -60,6 +60,9 @@ class NODEModel(BaseModel):
         if config.embed_categorical:
             self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
+    
+    def subset(self, x):
+            return x[..., : self.hparams.output_dim].mean(dim=-2)
 
     def _build_network(self):
         if self.hparams.embed_categorical:
@@ -79,10 +82,7 @@ class NODEModel(BaseModel):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
 
-        def subset(x):
-            return x[..., : self.hparams.output_dim].mean(dim=-2)
-
-        self.output_response = utils.Lambda(subset)
+        self.output_response = utils.Lambda(self.subset)
 
     def unpack_input(self, x: Dict):
         if self.hparams.embed_categorical:
