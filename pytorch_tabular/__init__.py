@@ -2,7 +2,7 @@
 
 __author__ = """Manu Joseph"""
 __email__ = "manujosephv@gmail.com"
-__version__ = "1.0.0"
+__version__ = "0.3.0"
 
 from . import models
 from .tabular_datamodule import TabularDatamodule
