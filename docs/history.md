@@ -14,3 +14,11 @@ History
 -   Added feature to use custom sampler in the training dataloader
 -   Updated documentation and added a new tutorial for imbalanced classification
 
+0.3.0 (2021-03-18)
+------------------
+-   Added AutoInt Model
+-   Added Mixture Density Networks
+-   Refactored the classes to separate backbones from the head of the models
+-   Changed the saving and loading model to work for custom parameters that you pass in `fit`
+
+
