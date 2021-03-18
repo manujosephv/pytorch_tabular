@@ -97,8 +97,14 @@ class SparsemaxFunction(Function):
         return tau, support_size
 
 
-sparsemax = lambda input, dim=-1: SparsemaxFunction.apply(input, dim)
-sparsemoid = lambda input: (0.5 * input + 0.5).clamp_(0, 1)
+def sparsemax(input, dim=-1):
+    return SparsemaxFunction.apply(input, dim)
+
+
+def sparsemoid(input):
+    return (0.5 * input + 0.5).clamp_(0, 1)
+# sparsemax = lambda input, dim=-1: SparsemaxFunction.apply(input, dim)
+# sparsemoid = lambda input: (0.5 * input + 0.5).clamp_(0, 1)
 
 
 class Entmax15Function(Function):
@@ -184,7 +190,9 @@ class Entmoid15(Function):
         return grad_input
 
 
-entmax15 = lambda input, dim=-1: Entmax15Function.apply(input, dim)
+def entmax15(input, dim=-1):
+    return Entmax15Function.apply(input, dim)
+# entmax15 = lambda input, dim=-1: Entmax15Function.apply(input, dim)
 entmoid15 = Entmoid15.apply
 
 
