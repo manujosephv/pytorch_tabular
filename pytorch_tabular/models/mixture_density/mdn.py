@@ -378,6 +378,9 @@ class CategoryEmbeddingMDN(BaseMDN):
 class NODEMDN(BaseMDN):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
+    
+    def subset(self, x):
+        return x[..., :].mean(dim=-2)
 
     def _build_network(self):
         self.hparams.node_input_dim = (
@@ -387,10 +390,7 @@ class NODEMDN(BaseMDN):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
 
-        def subset(x):
-            return x[..., :].mean(dim=-2)
-
-        output_response = utils.Lambda(subset)
+        output_response = utils.Lambda(self.subset)
         self.backbone = nn.Sequential(backbone, output_response)
         # Adding the last layer
         self.hparams.mdn_config.input_dim = backbone.output_dim
