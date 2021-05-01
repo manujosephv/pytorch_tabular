@@ -1,7 +1,7 @@
 site_name: PyTorch Tabular
 nav:
     - Getting Started: 
-      - " ": index.md
+      - "PyTorch Tabular": index.md
     - Tutorials:
       - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
       - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
@@ -18,6 +18,8 @@ nav:
       - Experiment Tracking: experiment_tracking.md
     - Tabular Model:
       - TabularModel: tabular_model.md
+    - Other Features:
+      - "Other Features": other_features.md
     # - FAQ: faq.md
     - API: 
       - API: apidocs.md

@@ -25,3 +25,7 @@ History
 -   Refactored the classes to separate backbones from the head of the models
 -   Changed the saving and loading model to work for custom parameters that you pass in `fit`
 
+0.5.0 (2021-03-18)
+------------------
+-   Added more documentation
+-   Added Zenodo citation
