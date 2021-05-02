@@ -22,7 +22,6 @@ It has been built on the shoulders of giants like **PyTorch**(obviously), and **
 - [Available Models](#available-models)
 - [Usage](#usage)
 - [Blogs](#blogs)
-- [Paper] (#paper)
 - [Citation](#citation)
 
 
