@@ -4,6 +4,7 @@
 [![travis](https://img.shields.io/travis/manujosephv/pytorch_tabular.svg)](https://travis-ci.com/manujosephv/pytorch_tabular)
 [![documentation status](https://readthedocs.org/projects/pytorch_tabular/badge/?version=latest)](https://pytorch_tabular.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pytorch_tabular)
+[![DOI](https://zenodo.org/badge/321584367.svg)](https://zenodo.org/badge/latestdoi/321584367)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square)](https://github.com/manujosephv/pytorch_tabular/issues)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/manujosephv/pytorch_tabular/blob/main/docs/tutorials/01-Basic_Usage.ipynb.py)
 
@@ -20,8 +21,9 @@ It has been built on the shoulders of giants like **PyTorch**(obviously), and **
 - [Documentation](#documentation)
 - [Available Models](#available-models)
 - [Usage](#usage)
-- [Blog](#blog)
-- [References and Citations](#references-and-citations)
+- [Blogs](#blogs)
+- [Paper] (#paper)
+- [Citation](#citation)
 
 
 ## Installation
@@ -109,9 +111,11 @@ pred_df = tabular_model.predict(test)
 tabular_model.save_model("examples/basic")
 loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ```
-## Blog
+## Blogs
 
 [PyTorch Tabular – A Framework for Deep Learning for Tabular Data](https://deep-and-shallow.com/2021/01/27/pytorch-tabular-a-framework-for-deep-learning-for-tabular-data/)
+[Neural Oblivious Decision Ensembles(NODE) – A State-of-the-Art Deep Learning Algorithm for Tabular Data](https://deep-and-shallow.com/2021/02/25/neural-oblivious-decision-ensemblesnode-a-state-of-the-art-deep-learning-algorithm-for-tabular-data/)
+[Mixture Density Networks: Probabilistic Regression for Uncertainty Estimation](https://deep-and-shallow.com/2021/03/20/mixture-density-networks-probabilistic-regression-for-uncertainty-estimation/)
 
 ## Future Roadmap(Contributions are Welcome)
 
@@ -123,8 +127,30 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 6. Add Text and Image Modalities for mixed modal problems
 7. Integrate Wide and Deep model
 8. Integrate TabTransformer
-## References and Citations
+## Citation
+If you use PyTorch Tabular for a scientific publication, we would appreciate citations to the published software and the following paper:
 
-[1] Sergei Popov, Stanislav Morozov, Artem Babenko. [*"Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data"*](https://arxiv.org/abs/1909.06312). arXiv:1909.06312 [cs.LG] (2019)
 
-[2] Sercan O. Arik, Tomas Pfister;. [*"TabNet: Attentive Interpretable Tabular Learning"*](https://arxiv.org/abs/1908.07442). 	arXiv:1908.07442 (2019).
+* [arxiv Paper](https://arxiv.org/abs/2104.13638)
+```
+@misc{joseph2021pytorch,
+      title={PyTorch Tabular: A Framework for Deep Learning with Tabular Data}, 
+      author={Manu Joseph},
+      year={2021},
+      eprint={2104.13638},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+* Zenodo Software Citation
+```
+@article{manujosephv_2021, 
+    title={manujosephv/pytorch_tabular: v0.5.0-alpha}, 
+    DOI={10.5281/zenodo.4732773}, 
+    abstractNote={<p>First Alpha Release</p>}, 
+    publisher={Zenodo}, 
+    author={manujosephv}, 
+    year={2021}, 
+    month={May}
+}
+```
