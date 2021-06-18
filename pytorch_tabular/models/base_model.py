@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Optional
 
 import pytorch_lightning as pl
 import torch
+import torchmetrics
 import torch.nn as nn
 from omegaconf import DictConfig
 
@@ -73,13 +74,13 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def _setup_metrics(self):
         if self.custom_metrics is None:
             self.metrics = []
-            task_module = pl.metrics.functional
+            task_module = torchmetrics.functional
             for metric in self.hparams.metrics:
                 try:
                     self.metrics.append(getattr(task_module, metric))
                 except AttributeError as e:
                     logger.error(
-                        f"{metric} is not a valid functional metric defined in the pytorch_lightning.metrics.functional module"
+                        f"{metric} is not a valid functional metric defined in the torchmetrics.functional module"
                     )
                     raise e
         else:
@@ -124,7 +125,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 for i in range(self.hparams.output_dim):
                     if (
                         metric.__name__
-                        == pl.metrics.functional.mean_squared_log_error.__name__
+                        == torchmetrics.functional.mean_squared_log_error.__name__
                     ):
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(

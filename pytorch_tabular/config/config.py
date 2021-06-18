@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """Config"""
 from dataclasses import MISSING, dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 import os
 from omegaconf import OmegaConf
 
@@ -168,9 +168,11 @@ class TrainerConfig:
 
         max_epochs (int): Maximum number of epochs to be run
 
-        min_epochs (int): Minimum number of epochs to be run
+        min_epochs (int): Force training for at least these many epochs. 1 by default
 
-        gpus (int): The index of the GPU to be used. If `None`, will use CPU
+        max_time (Optional[int]): Stop training after this amount of time has passed. Disabled by default (None)
+
+        gpus (int): Number of gpus to train on (int) or which GPUs to train on (list or str). -1 uses all available GPUs. By default uses CPU (None)
 
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
             Trainer also calls optimizer.step() for the last indivisible step number.
@@ -178,7 +180,18 @@ class TrainerConfig:
         auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),
             to find optimal initial learning rate.
 
+        auto_select_gpus (bool): If enabled and `gpus` is an integer, pick available gpus automatically.
+            This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one 
+            process at a time can access them.
+
         check_val_every_n_epoch (int): Check val every n train epochs.
+
+        deterministic (bool): If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility.
+
+        accelerator(str): The accelerator backend to use. Defaults to None. Check this link for detailed documentation about the functionality. 
+            https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#accelerator
+
+        tpu_cores(int): How many TPU cores to train on (1 or 8) / Single TPU to train on [1]. Defaults to None
 
         gradient_clip_val (float): Gradient clipping value
 
@@ -219,17 +232,20 @@ class TrainerConfig:
         default=64, metadata={"help": "Number of samples in each batch of training"}
     )
     fast_dev_run: bool = field(
-        default=False, metadata={"help": "Quick Debug Run of Val"}
+        default=False, metadata={"help": "runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val and test to find any bugs (ie: a sort of unit test)."}
     )
     max_epochs: int = field(
         default=10, metadata={"help": "Maximum number of epochs to be run"}
     )
-    min_epochs: int = field(
-        default=1, metadata={"help": "Minimum number of epochs to be run"}
+    min_epochs: Optional[int] = field(
+        default=1, metadata={"help": "Force training for at least these many epochs. 1 by default"}
     )
-    gpus: Optional[int] = field(
+    max_time: Optional[int] = field(
+        default=None, metadata={"help": "Stop training after this amount of time has passed. Disabled by default (None)"}
+    )
+    gpus: Union[int, list] = field(
         default=None,
-        metadata={"help": "The index of the GPU to be used. If None, will use CPU"},
+        metadata={"help": "Number of gpus to train on (int) or which GPUs to train on (list or str). -1 uses all available GPUs. By default uses CPU (None)"},
     )
     accumulate_grad_batches: int = field(
         default=1,
@@ -243,6 +259,12 @@ class TrainerConfig:
             "help": "Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(), to find optimal initial learning rate."
         },
     )
+    auto_select_gpus: bool = field(
+        default=True,
+        metadata={
+            "help": "If enabled and `gpus` is an integer, pick available gpus automatically. This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one process at a time can access them."
+        },
+    )
     check_val_every_n_epoch: int = field(
         default=1, metadata={"help": "Check val every n train epochs."}
     )
@@ -253,6 +275,25 @@ class TrainerConfig:
         default=0.0,
         metadata={
             "help": "Uses this much data of the training set. If nonzero, will use the same training set for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it. Useful for quickly debugging or trying to overfit on purpose."
+        },
+    )
+    deterministic: bool = field(
+        default=False,
+        metadata={
+            "help": "If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility."
+        },
+    )
+    accelerator: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The accelerator backend to use. Defaults to None. Check this link for detailed documentation about the functionality. https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#accelerator",
+            "choices": [None, "dp", "ddp", "ddp_cpu", "ddp2"],
+        },
+    )
+    tpu_cores: Optional[Union[List[int], str, int]] = field(
+        default=None,
+        metadata={
+            "help": "How many TPU cores to train on (1 or 8) / Single TPU to train on [1]. Defaults to None",
         },
     )
     profiler: Optional[str] = field(
@@ -530,7 +571,7 @@ class ModelConfig:
     metrics: Optional[List[str]] = field(
         default=None,
         metadata={
-            "help": "the list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in PyTorch Lightning. By default, it is accuracy if classification and MeanSquaredLogError for regression"
+            "help": "the list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in ``torchmetrics``. By default, it is accuracy if classification and mean_squared_error for regression"
         },
     )
     metrics_params: Optional[List] = field(
