@@ -20,27 +20,28 @@ logger = logging.getLogger(__name__)
 #TODO dont use embedding_dims
 class AutoIntBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig):
-        self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
+        # self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         # self.hparams = config
         super().__init__()
         self.save_hyperparameters(config)
         self._build_network()
 
     def _build_network(self):
-        # Category Embedding layers
-        self.cat_embedding_layers = nn.ModuleList(
-            [
-                nn.Embedding(cardinality, self.hparams.embedding_dim)
-                for cardinality in self.hparams.categorical_cardinality
-            ]
-        )
+        if len(self.hparams.categorical_cols)>0:
+            # Category Embedding layers
+            self.cat_embedding_layers = nn.ModuleList(
+                [
+                    nn.Embedding(cardinality, self.hparams.embedding_dim)
+                    for cardinality in self.hparams.categorical_cardinality
+                ]
+            )
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
         # Continuous Embedding Layer
         self.cont_embedding_layer = nn.Embedding(
             self.hparams.continuous_dim, self.hparams.embedding_dim
         )
-        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols)>0:
             self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
@@ -91,7 +92,7 @@ class AutoIntBackbone(pl.LightningModule):
         # (B, N)
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         x = None
-        if self.embedding_cat_dim != 0:
+        if len(self.hparams.categorical_cols) > 0:
             x_cat = [
                 embedding_layer(categorical_data[:, i]).unsqueeze(1)
                 for i, embedding_layer in enumerate(self.cat_embedding_layers)
@@ -112,7 +113,7 @@ class AutoIntBackbone(pl.LightningModule):
             )
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
-        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols) > 0:
             x = self.embed_dropout(x)
         if self.hparams.deep_layers:
             x = self.linear_layers(x)
@@ -140,7 +141,7 @@ class AutoIntBackbone(pl.LightningModule):
 class AutoIntModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         # The concatenated output dim of the embedding layer
-        self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
+        # self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):
