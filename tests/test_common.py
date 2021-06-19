@@ -72,7 +72,7 @@ def test_save_load(
     model_config_params['task']="regression"
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+        max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 
@@ -92,7 +92,9 @@ def test_save_load(
     )
 
     result_1 = tabular_model.evaluate(test)
-    sv_dir = tmpdir.mkdir("save_model")
+    # sv_dir = tmpdir/"save_model"
+    # sv_dir.mkdir(exist_ok=True, parents=True)
+    sv_dir = tmpdir.mkdir("saved_model")
     tabular_model.save_model(str(sv_dir))
     new_mdl = TabularModel.load_from_checkpoint(str(sv_dir))
     result_2 = new_mdl.evaluate(test)
@@ -135,7 +137,7 @@ def test_feature_extractor(
     model_config_params = dict(task="regression")
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+        max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 
@@ -183,10 +185,11 @@ def test_feature_extractor(
 #     train = data[~data.index.isin(test_idx)]
 #     return (train, test, ["target"])
 
-
+# from tests.conftest import load_regression_data, load_classification_data
+# from pathlib import Path
 # test_save_load(
-#     regression_data(),
-#     model_config_class=CategoryEmbeddingModelConfig,
+#     load_regression_data(),
+#     model_config_class=MODEL_CONFIG_SAVE_TEST[0],
 #     continuous_cols=[
 #         "AveRooms",
 #         "AveBedrms",

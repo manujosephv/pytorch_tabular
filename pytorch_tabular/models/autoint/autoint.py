@@ -17,7 +17,7 @@ from ..base_model import BaseModel
 
 logger = logging.getLogger(__name__)
 
-
+#TODO dont use embedding_dims
 class AutoIntBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig):
         self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])

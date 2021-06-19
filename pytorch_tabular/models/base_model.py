@@ -146,7 +146,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
-                avg_metric = metric(y_hat.squeeze(), y.squeeze(), **metric_params)
+                y_hat = nn.Softmax(dim=-1)(y_hat.squeeze())
+                avg_metric = metric(y_hat, y.squeeze(), **metric_params)
             metrics.append(avg_metric)
             self.log(
                 f"{tag}_{metric_str}",
@@ -266,7 +267,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def validation_epoch_end(self, outputs) -> None:
         do_log_logits = (
-            self.hparams.log_logits
+            hasattr(self.hparams, "log_logits")
+            and self.hparams.log_logits
             and self.hparams.log_target == "wandb"
             and WANDB_INSTALLED
         )

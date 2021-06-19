@@ -80,7 +80,7 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -102,7 +102,10 @@ def test_regression(
 
         result = tabular_model.evaluate(test)
         # print(result[0]["valid_loss"])
-        assert "valid_loss" in result[0].keys()
+        if custom_metrics is None:
+            assert "test_mean_squared_error" in result[0].keys()
+        else:
+            assert "test_fake_metric" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -138,7 +141,7 @@ def test_classification(
         model_config_params = dict(task="classification")
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -152,7 +155,7 @@ def test_classification(
 
         result = tabular_model.evaluate(test)
         # print(result[0]["valid_loss"])
-        assert "valid_loss" in result[0].keys()
+        assert "test_accuracy" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -174,7 +177,7 @@ def test_embedding_transformer(regression_data):
     model_config_params = dict(task="regression")
     model_config = CategoryEmbeddingModelConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 

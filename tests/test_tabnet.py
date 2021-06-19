@@ -58,7 +58,7 @@ def test_regression(
                 )
             model_config_params["target_range"] = _target_range
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True)
+        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -70,7 +70,7 @@ def test_regression(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert "valid_loss" in result[0].keys()
+        assert "test_mean_squared_error" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -102,9 +102,9 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression")
+        model_config_params = dict(task="classification")
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True)
+        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -116,7 +116,7 @@ def test_classification(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert "valid_loss" in result[0].keys()
+        assert "test_accuracy" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -167,7 +167,10 @@ def test_classification(
 #     )
 
 
+# from tests.conftest import regression_data, classification_data
+
 # test_regression(
+#     regression_data(),
 #     multi_target=False,
 #     continuous_cols=[
 #         "AveRooms",
@@ -183,4 +186,11 @@ def test_classification(
 #     target_range=True,
 # )
 
-# classification_data()
+# test_classification(
+#     classification_data(),
+#     continuous_cols=[f"feature_{i}" for i in range(54)],
+#     categorical_cols=["feature_0_cat"],
+#     continuous_feature_transform="yeo-johnson",
+#     normalize_continuous_features=True,
+# )
+

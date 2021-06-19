@@ -108,7 +108,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 int(self.train[col].fillna("NA").nunique()) + 1
                 for col in self.config.categorical_cols
             ]
-            if self.config.embedding_dims is None:
+            if hasattr(self.config, "embedding_dims") and self.config.embedding_dims is None:
                 self.config.embedding_dims = [
                     (x, min(50, (x + 1) // 2))
                     for x in self.config.categorical_cardinality

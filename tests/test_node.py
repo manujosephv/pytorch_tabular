@@ -66,7 +66,7 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -79,7 +79,7 @@ def test_regression(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert "valid_loss" in result[0].keys()
+        assert "test_mean_squared_error" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -121,7 +121,7 @@ def test_classification(
         )
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -134,7 +134,7 @@ def test_classification(
         tabular_model.fit(train=train, test=test)
 
         result = tabular_model.evaluate(test)
-        assert "valid_loss" in result[0].keys()
+        assert "test_accuracy" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -158,7 +158,7 @@ def test_embedding_transformer(regression_data):
     )
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
 

@@ -164,12 +164,6 @@ class NodeConfig(ModelConfig):
             "help": "Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder"
         },
     )
-    embedding_dims: Optional[List[int]] = field(
-        default=None,
-        metadata={
-            "help": "The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule min(50, (x + 1) // 2)"
-        },
-    )
     embedding_dropout: float = field(
         default=0.0,
         metadata={"help": "probability of an embedding element to be zeroed."},

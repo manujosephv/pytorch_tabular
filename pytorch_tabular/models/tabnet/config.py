@@ -64,12 +64,6 @@ class TabNetModelConfig(ModelConfig):
             "help": "Float above 1, scaling factor for attention updates (usually betwenn 1.0 to 2.0)"
         },
     )
-    embedding_dims: Optional[List[int]] = field(
-        default=None,
-        metadata={
-            "help": "The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule min(50, (x + 1) // 2)"
-        },
-    )
     n_independent: int = field(
         default=2,
         metadata={

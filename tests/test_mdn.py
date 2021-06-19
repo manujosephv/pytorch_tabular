@@ -54,7 +54,7 @@ def test_regression(
         model_config_params['mdn_config'] = mdn_config
         model_config = variant(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 
@@ -68,7 +68,7 @@ def test_regression(
 
         result = tabular_model.evaluate(test)
         # print(result[0]["valid_loss"])
-        assert "valid_loss" in result[0].keys()
+        assert "test_mean_squared_error" in result[0].keys()
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
@@ -108,7 +108,7 @@ def test_classification(
         model_config_params['mdn_config'] = mdn_config
         model_config = CategoryEmbeddingMDNConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=0, fast_dev_run=True
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
         with pytest.raises(AssertionError):

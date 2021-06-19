@@ -97,7 +97,7 @@ model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1"
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-trainer_config = TrainerConfig(gpus=1, fast_dev_run=False, max_epochs=5, batch_size=1024)
+trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=1024)
 experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
                                      run_name="node_forest_cov", 
                                      exp_watch="gradients", 

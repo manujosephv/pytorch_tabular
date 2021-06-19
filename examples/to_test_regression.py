@@ -67,14 +67,14 @@ data_config = DataConfig(
 #     mdn_config = mdn_config
 # )
 # # model_config.validate()
-# model_config = CategoryEmbeddingModelConfig(task="regression")
-model_config = AutoIntConfig(
-    task="regression",
-    deep_layers=True,
-    embedding_dropout=0.2,
-    batch_norm_continuous_input=True,
-    attention_pooling=True,
-)
+model_config = CategoryEmbeddingModelConfig(task="regression")
+# model_config = AutoIntConfig(
+#     task="regression",
+#     deep_layers=True,
+#     embedding_dropout=0.2,
+#     batch_norm_continuous_input=True,
+#     attention_pooling=True,
+# )
 trainer_config = TrainerConfig(
     checkpoints=None,
     max_epochs=2,
@@ -119,12 +119,12 @@ tabular_model.fit(
 
 from pytorch_tabular.feature_extractor import DeepFeatureExtractor
 
-dt = DeepFeatureExtractor(tabular_model)
-enc_df = dt.fit_transform(test)
-print(enc_df.head())
+# dt = DeepFeatureExtractor(tabular_model)
+# enc_df = dt.fit_transform(test)
+# print(enc_df.head())
 # tabular_model.save_model("examples/sample")
-# result = tabular_model.evaluate(test)
-# print(result)
+result = tabular_model.evaluate(test)
+print(result)
 # # # print(result[0]['train_loss'])
 # new_mdl = TabularModel.load_from_checkpoint("examples/sample")
 # # TODO test none no test loader

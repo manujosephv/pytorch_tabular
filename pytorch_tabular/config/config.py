@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """Config"""
 from dataclasses import MISSING, dataclass, field
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional
 import os
 from omegaconf import OmegaConf
 
@@ -61,10 +61,10 @@ class DataConfig:
 
         encode_date_columns (bool): Whether or not to encode the derived variables from date
 
-        validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
+        validation_split (Optional[float, NoneType]): Percentage of Training rows to keep aside as validation.
             Used only if Validation Data is not given separately
 
-        continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
+        continuous_feature_transform (Optional[str, NoneType]): Whether or not to transform the features before modelling.
             By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
 
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
@@ -74,7 +74,7 @@ class DataConfig:
             Please note that this transformation does NOT apply gaussian noise to the resulting data,
             the noise is only applied for QuantileTransformer
 
-        num_workers (Union[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
+        num_workers (Optional[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
     """
 
     target: List[str] = field(
@@ -188,18 +188,13 @@ class TrainerConfig:
 
         deterministic (bool): If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility.
 
-        accelerator(str): The accelerator backend to use. Defaults to None. Check this link for detailed documentation about the functionality. 
-            https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#accelerator
-
-        tpu_cores(int): How many TPU cores to train on (1 or 8) / Single TPU to train on [1]. Defaults to None
-
         gradient_clip_val (float): Gradient clipping value
 
         overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same training set
             for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it.
             Useful for quickly debugging or trying to overfit on purpose.
 
-        profiler (Union[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks.
+        profiler (Optional[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks.
             Choices are: 'None' 'simple' 'advanced'
 
         early_stopping (str): The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping
@@ -243,9 +238,9 @@ class TrainerConfig:
     max_time: Optional[int] = field(
         default=None, metadata={"help": "Stop training after this amount of time has passed. Disabled by default (None)"}
     )
-    gpus: Union[int, list] = field(
+    gpus: Optional[int] = field(
         default=None,
-        metadata={"help": "Number of gpus to train on (int) or which GPUs to train on (list or str). -1 uses all available GPUs. By default uses CPU (None)"},
+        metadata={"help": "Number of gpus to train on (int). -1 uses all available GPUs. By default uses CPU (None)"},
     )
     accumulate_grad_batches: int = field(
         default=1,
@@ -281,19 +276,6 @@ class TrainerConfig:
         default=False,
         metadata={
             "help": "If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility."
-        },
-    )
-    accelerator: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "The accelerator backend to use. Defaults to None. Check this link for detailed documentation about the functionality. https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#accelerator",
-            "choices": [None, "dp", "ddp", "ddp_cpu", "ddp2"],
-        },
-    )
-    tpu_cores: Optional[Union[List[int], str, int]] = field(
-        default=None,
-        metadata={
-            "help": "How many TPU cores to train on (1 or 8) / Single TPU to train on [1]. Defaults to None",
         },
     )
     profiler: Optional[str] = field(
@@ -375,10 +357,10 @@ class ExperimentConfig:
                 For Tensorboard this defines the folder under which the logs will be saved and
                 for W&B it defines the project name.
 
-            run_name (Union[str, NoneType]): The name of the run; a specific identifier to
+            run_name (Optional[str, NoneType]): The name of the run; a specific identifier to
                 recognize the run. If left blank, will be assigned a auto-generated name
 
-            exp_watch (Union[str, NoneType]): The level of logging required.
+            exp_watch (Optional[str, NoneType]): The level of logging required.
                 Can be `gradients`, `parameters`, `all` or `None`. Defaults to None
 
             log_target (str): Determines where logging happens - Tensorboard or W&BChoices are: wandb tensorboard
@@ -448,12 +430,12 @@ class OptimizerConfig:
 
         optimizer_params (dict): The parameters for the optimizer. If left blank, will use default parameters.
 
-        lr_scheduler (Union[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). 
+        lr_scheduler (Optional[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). 
             If None, will not use any scheduler. Defaults to `None`
 
-        lr_scheduler_params (Union[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
+        lr_scheduler_params (Optional[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
 
-        lr_scheduler_monitor_metric (Union[str, NoneType]): Used with `ReduceLROnPlateau`, where the plateau is decided based on this metric
+        lr_scheduler_monitor_metric (Optional[str, NoneType]): Used with `ReduceLROnPlateau`, where the plateau is decided based on this metric
     """
 
     optimizer: str = field(
@@ -533,19 +515,23 @@ class ModelConfig:
     Args:
         task (str): Specify whether the problem is regression of classification.Choices are: regression classification
 
+        embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
+            as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
+            using the rule min(50, (x + 1) // 2). Will only be used if the model uses categorical embedding.
+
         learning_rate (float): The learning rate of the model
 
-        loss (Union[str, NoneType]): The loss function to be applied.
+        loss (Optional[str, NoneType]): The loss function to be applied.
             By Default it is MSELoss for regression and CrossEntropyLoss for classification.
             Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
 
-        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training.
+        metrics (Optional[List[str], NoneType]): the list of metrics you need to track during training.
             The metrics should be one of the metrics implemented in PyTorch Lightning.
             By default, it is accuracy if classification and mean_squared_error for regression
 
-        metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function
+        metrics_params (Optional[List, NoneType]): The parameters to be passed to the metrics function
 
-        target_range (Union[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
+        target_range (Optional[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
             Typically used for Regression problems. If left empty, will not apply any restrictions
 
     Raises:
@@ -558,6 +544,12 @@ class ModelConfig:
             "help": "Specify whether the problem is regression of classification.",
             "choices": ["regression", "classification"],
         }
+    )
+    embedding_dims: Optional[List[int]] = field(
+        default=None,
+        metadata={
+            "help": "The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule min(50, (x + 1) // 2)"
+        },
     )
     learning_rate: float = field(
         default=1e-3, metadata={"help": "The learning rate of the model"}

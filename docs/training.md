@@ -8,7 +8,7 @@ The parameters that you would set most frequently are:
 
 -   `batch_size`: int: Number of samples in each batch of training. Defaults to `64`
 -   `max_epochs`: int: Maximum number of epochs to be run. The maximum is in case of Early Stopping where this becomes the maximum and without Early Stopping, this is the number of epochs that will be run Defaults to `10`
--   `gpus`: int: The index of the GPU to be used. If zero, will use CPU. Defaults to `0`
+-   `gpus`: int: The index of the GPU to be used. -1 will make use of all available GPUs If None, will use CPU. Defaults to `None`
 -   `load_best`: int: Flag to load the best model saved during training. This will be ignored if checkpoint saving is turned off. Defaults to True
 
 ### Usage Example

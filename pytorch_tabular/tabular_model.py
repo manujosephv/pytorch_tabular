@@ -8,6 +8,7 @@ import os
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
+import inspect
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -115,8 +116,8 @@ class TabularModel:
                 )
         else:
             self.config = config
-            if not hasattr(config, "log_target") and (config.log_target is not None):
-                experiment_config = OmegaConf.structured(experiment_config)
+            if hasattr(config, "log_target") and (config.log_target is not None):
+                # experiment_config = OmegaConf.structured(experiment_config)
                 self.track_experiment = True
             else:
                 logger.info("Experiment Tracking is turned off")
@@ -191,9 +192,9 @@ class TabularModel:
         Returns:
             tuple[str, int]: Returns the name and version number
         """
-        if self.config.run_name is not None:
+        if hasattr(self.config, "run_name") and self.config.run_name is not None:
             name = self.config.run_name
-        elif self.config.checkpoints_name is not None:
+        elif hasattr(self.config, "checkpoints_name") and self.config.checkpoints_name is not None:
             name = self.config.checkpoints_name
         else:
             name = self.config.task
@@ -322,7 +323,8 @@ class TabularModel:
         if min_epochs is not None:
             self.config.min_epochs = min_epochs
         # TODO get Trainer Arguments from the init signature
-        trainer_args = vars(pl.Trainer()).keys()
+        trainer_sig = inspect.signature(pl.Trainer.__init__)
+        trainer_args = [p for p in trainer_sig.parameters.keys() if p!="self"]
         trainer_args_config = {
             k: v for k, v in self.config.items() if k in trainer_args
         }

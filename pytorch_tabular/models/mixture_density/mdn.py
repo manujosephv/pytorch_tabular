@@ -246,7 +246,8 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
 
     def validation_epoch_end(self, outputs) -> None:
         do_log_logits = (
-            self.hparams.log_logits
+            hasattr(self.hparams, "log_logits")
+            and self.hparams.log_logits
             and self.hparams.log_target == "wandb"
             and WANDB_INSTALLED
         )
