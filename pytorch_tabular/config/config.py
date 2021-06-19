@@ -81,7 +81,7 @@ class DataConfig:
         default=MISSING,
         metadata={"help": "A list of strings with the names of the target column(s)"},
     )
-    continuous_cols: List[str] = field(
+    continuous_cols: List = field(
         default_factory=list,
         metadata={"help": "Column names of the numeric fields. Defaults to []"},
     )
