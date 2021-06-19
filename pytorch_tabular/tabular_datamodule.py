@@ -433,7 +433,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             df.insert(3, prefix + "Week", week)
             added_features.append(prefix + "Week")
-        # Not adding Elapsed by default. Need to route it through config
+        #TODO Not adding Elapsed by default. Need to route it through config
         # mask = ~field.isna()
         # df[prefix + "Elapsed"] = np.where(
         #     mask, field.values.astype(np.int64) // 10 ** 9, None
@@ -443,10 +443,10 @@ class TabularDatamodule(pl.LightningDataModule):
             df.drop(field_name, axis=1, inplace=True)
 
         # Removing features woth zero variations
-        for col in added_features:
-            if len(df[col].unique()) == 1:
-                df.drop(columns=col, inplace=True)
-                added_features.remove(col)
+        # for col in added_features:
+        #     if len(df[col].unique()) == 1:
+        #         df.drop(columns=col, inplace=True)
+        #         added_features.remove(col)
         return df, added_features
 
     def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
