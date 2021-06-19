@@ -158,6 +158,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 prog_bar=True,
             )
         return metrics
+    
+    def data_aware_initialization(self, datamodule):
+        pass
 
     @abstractmethod
     def forward(self, x: Dict):

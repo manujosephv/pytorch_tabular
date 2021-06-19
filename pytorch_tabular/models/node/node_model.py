@@ -64,6 +64,23 @@ class NODEModel(BaseModel):
     def subset(self, x):
             return x[..., : self.hparams.output_dim].mean(dim=-2)
 
+    def data_aware_initialization(self, datamodule):
+        """Performs data-aware initialization for NODE"""
+        logger.info("Data Aware Initialization....")
+        # Need a big batch to initialize properly
+        alt_loader = datamodule.train_dataloader(batch_size=2000)
+        batch = next(iter(alt_loader))
+        for k, v in batch.items():
+            if isinstance(v, list) and (len(v) == 0):
+                # Skipping empty list
+                continue
+            # batch[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
+            batch[k] = v.to(self.device)
+
+        # single forward pass to initialize the ODST
+        with torch.no_grad():
+            self(batch)
+ 
     def _build_network(self):
         if self.hparams.embed_categorical:
             self.embedding_layers = nn.ModuleList(

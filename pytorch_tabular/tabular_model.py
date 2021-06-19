@@ -79,16 +79,6 @@ class TabularModel:
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
-            # # Re-routing to Categorical embedding Model if embed_categorical is true for NODE
-            # if (
-            #     hasattr(model_config, "_model_name")
-            #     and (model_config._model_name == "NODEModel")
-            #     and (model_config.embed_categorical)
-            #     and ("CategoryEmbedding" not in model_config._model_name)
-            # ):
-            #     model_config._model_name = (
-            #         "CategoryEmbedding" + model_config._model_name
-            #     )
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
             optimizer_config = self._read_parse_config(
                 optimizer_config, OptimizerConfig
@@ -255,23 +245,6 @@ class TabularModel:
         logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
-    def data_aware_initialization(self):
-        """Performs data-aware initialization for NODE"""
-        logger.info("Data Aware Initialization....")
-        # Need a big batch to initialize properly
-        alt_loader = self.datamodule.train_dataloader(batch_size=2000)
-        batch = next(iter(alt_loader))
-        for k, v in batch.items():
-            if isinstance(v, list) and (len(v) == 0):
-                # Skipping empty list
-                continue
-            # batch[k] = v.to("cpu" if self.config.gpu == 0 else "cuda")
-            batch[k] = v.to(self.model.device)
-
-        # single forward pass to initialize the ODST
-        with torch.no_grad():
-            self.model(batch)
-
     def _prepare_dataloader(
         self, train, validation, test, target_transform=None, train_sampler=None
     ):
@@ -312,9 +285,9 @@ class TabularModel:
                 custom_optimizer=optimizer,
                 custom_optimizer_params=optimizer_params,
             )
-            # Data Aware Initialization (NODE)
-            if self.config._model_name in ["NODEModel"]:
-                self.data_aware_initialization()
+            # Data Aware Initialization(for the models that need it)
+            self.model.data_aware_initialization(self.datamodule)
+            
 
     def _prepare_trainer(self, max_epochs=None, min_epochs=None):
         logger.info("Preparing the Trainer...")
@@ -459,9 +432,8 @@ class TabularModel:
         self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             self.trainer.tune(self.model, train_loader, val_loader)
-            # Parameters in NODE needs to be initialized again
-            if self.config._model_name in ["CategoryEmbeddingNODEModel", "NODEModel"]:
-                self.data_aware_initialization()
+            # Parameters in models needs to be initialized again after LR find
+            self.model.data_aware_initialization(self.datamodule)
         self.model.train()
         self.trainer.fit(self.model, train_loader, val_loader)
         logger.info("Training the model completed...")

@@ -128,6 +128,8 @@ There are two methods that need to be defined in any class that inherits the Bas
 
 While this is the bare minimum, you can redefine or use any of the Pytorch Lightning standard methods to tweak your model and training to your liking.
 
+If your model needs to use custom data-aware initialization techniques(like NODE), you can override `data_aware_initialization(self, datamodule)` in the model. In here you have access to the datamodule and the dataloaders for initialization.
+
 In addition to the model, you will also need to define a config. Configs are python dataclasses and should inherit `ModelConfig` and will have all the parameters of the ModelConfig. by default. Any additional parameter should be defined in the dataclass. 
 
 
