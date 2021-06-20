@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """Tabular Model"""
 from collections import defaultdict
+from pytorch_lightning.utilities.seed import seed_everything
 import logging
 import os
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -19,6 +20,7 @@ from pytorch_lightning.utilities.cloud_io import load as pl_load
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
+from pytorch_tabular import config
 
 import pytorch_tabular.models as models
 from pytorch_tabular.config import (
@@ -342,7 +344,7 @@ class TabularModel:
         target_transform: Optional[Union[TransformerMixin, Tuple]],
         max_epochs: int,
         min_epochs: int,
-        reset: bool,
+        reset: bool
     ):
         """Prepares the dataloaders, trainer, and model for the fit process"""
         if target_transform is not None:
@@ -388,6 +390,7 @@ class TabularModel:
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
         reset: bool = False,
+        seed: Optional[int] = None,
     ) -> None:
         """The fit method which takes in the data and triggers the training
 
@@ -421,7 +424,10 @@ class TabularModel:
             min_epochs (Optional[int]): Overwrite minimum number of epochs to be run
 
             reset: (bool): Flag to reset the model and train again from scratch
+
+            seed: (int): If you have to override the default seed set as part of of ModelConfig
         """
+        seed_everything(seed if seed is not None else self.config.seed)
         train_loader, val_loader = self._pre_fit(
             train,
             validation,

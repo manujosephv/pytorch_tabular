@@ -29,3 +29,12 @@ History
 ------------------
 -   Added more documentation
 -   Added Zenodo citation
+
+0.6.0 (2021-06-21)
+------------------
+-   Upgraded versions of PyTorch Lightning to 1.3.6
+-   Changed the way `gpus` parameter is handled to avoid confusion. `None` is CPU, `-1` is all GPUs, `int` is number of GPUs
+-   Added a few more Trainer Params like `deterministic`, `auto_select_gpus`
+-   Some bug fixes and changes to docs
+-   Added `seed_everything` to the fit method to ensure reproducibility
+-   Refactored data_aware_initialization to be part of the BaseModel. Inherited Models can override the method to implement data aware initialization techniques
