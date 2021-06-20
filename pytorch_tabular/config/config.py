@@ -576,6 +576,12 @@ class ModelConfig:
             "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
         },
     )
+    seed: int = field(
+        default=42,
+        metadata={
+            "help": "The seed for reproducibility. Defaults to 42"
+        },
+    )
 
     def __post_init__(self):
         if self.task == "regression":
