@@ -48,10 +48,10 @@ class TabTransformerConfig(ModelConfig):
         NotImplementedError: Raises an error if task is not in ['regression','classification']
     """
 
-    transformer_embed_dim: int = field(
+    input_embed_dim: int = field(
         default=32,
         metadata={
-            "help": "The number of hidden units in the Multi-Headed Attention layers. Defaults to 32"
+            "help": "The embedding dimension for the input categorical features. Defaults to 32"
         },
     )
     num_heads: int = field(
@@ -66,37 +66,80 @@ class TabTransformerConfig(ModelConfig):
             "help": "The number of layers of stacked Multi-Headed Attention layers. Defaults to 6"
         },
     )
-    attn_dropouts: float = field(
+    transformer_head_dim: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "The number of hidden units in the Multi-Headed Attention layers. Defaults to None and will be same as input_dim."
+        },
+    )
+    embedding_dropout: float = field(
         default=0.1,
         metadata={
-            "help": "Dropout between layers of Multi-Headed Attention Layers. Defaults to 0.1"
+            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
         },
     )
-    ff_dropouts: float = field(
+    attn_dropout: float = field(
         default=0.1,
         metadata={
-            "help": "Dropout after FF layers. Defaults to 0.1"
+            "help": "Dropout to be applied after Multi headed Attention. Defaults to 0.1"
         },
     )
-    ff_hidden_multipliers: tuple = field(
-        default=(4,2),
+    add_norm_dropout: float = field(
+        default=0.1,
         metadata={
-            "help": "Multiples by which the layers scale from Transformer output to logits. Defaults to (4,2)"
+            "help": "Dropout to be applied in the AddNorm Layer. Defaults to 0.1"
         },
     )
-    mlp_activation: str = field(
-        default="ReLU",
+    ff_dropout: float = field(
+        default=0.1,
         metadata={
-            "help": "The activation type in the final FF layer. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
+            "help": "Dropout to be applied in the Positionwise FeedForward Network. Defaults to 0.1"
         },
     )
+    ff_hidden_multiplier: int = field(
+        default=4,
+        metadata={
+            "help": "Multiple by which the Positionwise FF layer scales the input. Defaults to 4"
+        },
+    )
+    #TODO improve documentation
     transformer_activation: str = field(
         default="GEGLU",
         metadata={
-            "help": "The activation type in the transformer feed forward layers. In addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GatedGLUs are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU"
+            "help": "The activation type in the transformer feed forward layers. In addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU, ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU",
         },
     )
-    initialization: str = field(
+    out_ff_layers: str = field(
+        default="128-64-32",
+        metadata={
+            "help": "Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
+        },
+    )
+    out_ff_activation: str = field(
+        default="ReLU",
+        metadata={
+            "help": "The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
+        },
+    )
+    out_ff_dropout: float = field(
+        default=0.0,
+        metadata={
+            "help": "probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
+        },
+    )
+    use_batch_norm: bool = field(
+        default=False,
+        metadata={
+            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
+        },
+    )
+    batch_norm_continuous_input: bool = field(
+        default=False,
+        metadata={
+            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. Defaults to Fasle"
+        },
+    )
+    out_ff_initialization: str = field(
         default="kaiming",
         metadata={
             "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",

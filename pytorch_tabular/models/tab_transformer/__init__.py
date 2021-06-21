@@ -1,4 +1,4 @@
-from .autoint import AutoIntBackbone, AutoIntModel
-from .config import AutoIntConfig
+from .tab_transformer import TabTransformerBackbone, TabTransformerModel
+from .config import TabTransformerConfig
 
-__all__ = ["AutoIntModel", "AutoIntBackbone", "AutoIntConfig"]
+__all__ = ["TabTransformerBackbone", "TabTransformerModel", "TabTransformerConfig"]

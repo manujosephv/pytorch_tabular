@@ -4,87 +4,73 @@
 # Inspired by https://github.com/lucidrains/tab-transformer-pytorch/blob/main/tab_transformer_pytorch/tab_transformer_pytorch.py
 """TabTransformer Model"""
 import logging
-from typing import Dict
+from typing import Dict, OrderedDict
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from einops import rearrange
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
+from .components import TransformerEncoderBlock
 
 from ..base_model import BaseModel
 
 logger = logging.getLogger(__name__)
 
-#TODO dont use embedding_dims
 class TabTransformerBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig):
         super().__init__()
         self.save_hyperparameters(config)
         self._build_network()
+        #TODO Add output_dim
 
     def _build_network(self):
-        if len(self.hparams.categorical_cols)>0:
+        if len(self.hparams.categorical_cols) > 0:
             # Category Embedding layers
+            # self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
             self.cat_embedding_layers = nn.ModuleList(
                 [
-                    nn.Embedding(cardinality, self.hparams.embedding_dim)
+                    nn.Embedding(cardinality, self.hparams.input_embed_dim)
                     for cardinality in self.hparams.categorical_cardinality
                 ]
             )
+            if self.hparams.embedding_dropout != 0:
+                self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
+        self.transformer_blocks = OrderedDict()
+        for i in range(self.hparams.num_attn_blocks):
+            self.transformer_blocks[f"mha_block_{i}"] = TransformerEncoderBlock(
+                input_embed_dim=self.hparams.input_embed_dim,
+                num_heads=self.hparams.num_heads,
+                ff_hidden_multiplier=self.hparams.ff_hidden_multiplier,
+                ff_activation = self.hparams.transformer_activation,
+                attn_dropout=self.hparams.attn_dropout,
+                ff_dropout=self.hparams.ff_dropout,
+                add_norm_dropout=self.hparams.add_norm_dropout,
+            )
+        self.transformer_blocks = nn.Sequential(self.transformer_blocks)
+
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
-        # Continuous Embedding Layer
-        self.cont_embedding_layer = nn.Embedding(
-            self.hparams.continuous_dim, self.hparams.embedding_dim
-        )
-        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols)>0:
-            self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
-        # Deep Layers
-        _curr_units = self.hparams.embedding_dim
-        if self.hparams.deep_layers:
-            activation = getattr(nn, self.hparams.activation)
-            # Linear Layers
-            layers = []
-            for units in self.hparams.layers.split("-"):
-                layers.extend(
-                    _linear_dropout_bn(
-                        self.hparams,
-                        _curr_units,
-                        int(units),
-                        activation,
-                        self.hparams.dropout,
-                    )
+        # Final MLP Layers
+        _curr_units = self.hparams.input_embed_dim*len(self.hparams.categorical_cols) + self.hparams.continuous_dim
+        # Linear Layers
+        layers = []
+        for units in self.hparams.out_ff_layers.split("-"):
+            layers.extend(
+                _linear_dropout_bn(
+                    self.hparams.out_ff_activation,
+                    self.hparams.out_ff_initialization,
+                    self.hparams.use_batch_norm,
+                    _curr_units,
+                    int(units),
+                    self.hparams.out_ff_dropout,
                 )
-                _curr_units = int(units)
-            self.linear_layers = nn.Sequential(*layers)
-        # Projection to Multi-Headed Attention Dims
-        self.attn_proj = nn.Linear(_curr_units, self.hparams.attn_embed_dim)
-        _initialize_layers(self.hparams, self.attn_proj)
-        # Multi-Headed Attention Layers
-        self.self_attns = nn.ModuleList(
-            [
-                nn.MultiheadAttention(
-                    self.hparams.attn_embed_dim,
-                    self.hparams.num_heads,
-                    dropout=self.hparams.attn_dropouts,
-                )
-                for _ in range(self.hparams.num_attn_blocks)
-            ]
-        )
-        if self.hparams.has_residuals:
-            self.V_res_embedding = torch.nn.Linear(
-                _curr_units,
-                self.hparams.attn_embed_dim * self.hparams.num_attn_blocks
-                if self.hparams.attention_pooling
-                else self.hparams.attn_embed_dim,
             )
-        self.output_dim = (
-            self.hparams.continuous_dim + self.hparams.categorical_dim
-        ) * self.hparams.attn_embed_dim
-        if self.hparams.attention_pooling:
-            self.output_dim = self.output_dim * self.hparams.num_attn_blocks
+            _curr_units = int(units)
+        self.linear_layers = nn.Sequential(*layers)
+        self.output_dim = _curr_units
 
     def forward(self, x: Dict):
         # (B, N)
@@ -97,44 +83,21 @@ class TabTransformerBackbone(pl.LightningModule):
             ]
             # (B, N, E)
             x = torch.cat(x_cat, 1)
+            if self.hparams.embedding_dropout != 0:
+                x = self.embed_dropout(x)
+            for i, block in enumerate(self.transformer_blocks):
+                x = block(x)
+            #Flatten (Batch, N_Categorical, Hidden) --> (Batch, N_CategoricalxHidden)
+            x = rearrange(x, "b n h -> b (n h)")
         if self.hparams.continuous_dim > 0:
-            cont_idx = (
-                torch.arange(self.hparams.continuous_dim)
-                .expand(continuous_data.size(0), -1)
-                .to(self.device)
-            )
             if self.hparams.batch_norm_continuous_input:
-                continuous_data = self.normalizing_batch_norm(continuous_data)
-            x_cont = torch.mul(
-                continuous_data.unsqueeze(2),
-                self.cont_embedding_layer(cont_idx),
-            )
+                x_cont = self.normalizing_batch_norm(continuous_data)
+            else:
+                x_cont = continuous_data
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
-        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols) > 0:
-            x = self.embed_dropout(x)
-        if self.hparams.deep_layers:
-            x = self.linear_layers(x)
-        # (N, B, E*) --> E* is the Attn Dimention
-        cross_term = self.attn_proj(x).transpose(0, 1)
-        if self.hparams.attention_pooling:
-            attention_ops = []
-        for self_attn in self.self_attns:
-            cross_term, _ = self_attn(cross_term, cross_term, cross_term)
-            if self.hparams.attention_pooling:
-                attention_ops.append(cross_term)
-        if self.hparams.attention_pooling:
-            cross_term = torch.cat(attention_ops, dim=-1)
-        # (B, N, E*)
-        cross_term = cross_term.transpose(0, 1)
-        if self.hparams.has_residuals:
-            # (B, N, E*) --> Projecting Embedded input to Attention sub-space
-            V_res = self.V_res_embedding(x)
-            cross_term = cross_term + V_res
-        # (B, NxE*)
-        cross_term = nn.ReLU()(cross_term).reshape(-1, self.output_dim)
-        return cross_term
-
+        x = self.linear_layers(x)
+        return x
 
 class TabTransformerModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
@@ -143,12 +106,12 @@ class TabTransformerModel(BaseModel):
     def _build_network(self):
         # Backbone
         self.backbone = TabTransformerBackbone(self.hparams)
-        self.dropout = nn.Dropout(self.hparams.dropout)
+        self.dropout = nn.Dropout(self.hparams.out_ff_dropout)
         # Adding the last layer
         self.output_layer = nn.Linear(
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
-        _initialize_layers(self.hparams, self.output_layer)
+        _initialize_layers(self.hparams.out_ff_activation, self.hparams.out_ff_initialization, self.output_layer)
 
     def forward(self, x: Dict):
         x = self.backbone(x)

@@ -1,119 +1,113 @@
+from typing import Optional
 import torch
 import torch.nn.functional as F
 from torch import nn, einsum
-
+from pytorch_tabular.models import common #import PositionWiseFeedForward, GEGLU, ReGLU, SwiGLU
 from einops import rearrange
 
 
-class Residual(nn.Module):
-    def __init__(self, fn):
-        super().__init__()
-        self.fn = fn
+class AddNorm(nn.Module):
+    def __init__(self, input_dim: int, dropout: float):
+        super(AddNorm, self).__init__()
+        self.dropout = nn.Dropout(dropout)
+        self.ln = nn.LayerNorm(input_dim)
 
-    def forward(self, x, **kwargs):
-        return self.fn(x, **kwargs) + x
+    def forward(self, X: torch.Tensor, Y: torch.Tensor) -> torch.Tensor:
+        return self.ln(self.dropout(Y) + X)
 
-class PreNorm(nn.Module):
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.norm = nn.LayerNorm(dim)
-        self.fn = fn
 
-    def forward(self, x, **kwargs):
-        return self.fn(self.norm(x), **kwargs)
-
-# attention
-
-class GEGLU(nn.Module):
-    def forward(self, x):
-        x, gates = x.chunk(2, dim = -1)
-        return x * F.gelu(gates)
-
-class FeedForward(nn.Module):
-    def __init__(self, dim, mult = 4, dropout = 0.):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, dim * mult * 2),
-            GEGLU(),
-            nn.Dropout(dropout),
-            nn.Linear(dim * mult, dim)
-        )
-
-    def forward(self, x, **kwargs):
-        return self.net(x)
-
-class Attention(nn.Module):
+class MultiHeadedAttention(nn.Module):
     def __init__(
-        self,
-        dim,
-        heads = 8,
-        dim_head = 16,
-        dropout = 0.
+        self, input_dim: int, num_heads: int = 8, head_dim: int = 16, dropout: int = 0.1
     ):
         super().__init__()
-        inner_dim = dim_head * heads
-        self.heads = heads
-        self.scale = dim_head ** -0.5
+        assert input_dim % num_heads == 0, "'input_dim' must be multiples of 'num_heads'"
+        inner_dim = head_dim * num_heads
+        self.n_heads = num_heads
+        self.scale = head_dim ** -0.5
 
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_out = nn.Linear(inner_dim, dim)
+        self.to_qkv = nn.Linear(input_dim, inner_dim * 3, bias=False)
+        self.to_out = nn.Linear(inner_dim, input_dim)
 
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        h = self.heads
-        q, k, v = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
-        sim = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        h = self.n_heads
+        q, k, v = self.to_qkv(x).chunk(3, dim=-1)
+        q, k, v = map(lambda t: rearrange(t, "b n (h d) -> b h n d", h=h), (q, k, v))
+        sim = einsum("b h i d, b h j d -> b h i j", q, k) * self.scale
 
-        attn = sim.softmax(dim = -1)
+        attn = sim.softmax(dim=-1)
         attn = self.dropout(attn)
 
-        out = einsum('b h i j, b h j d -> b h i d', attn, v)
-        out = rearrange(out, 'b h n d -> b n (h d)', h = h)
+        out = einsum("b h i j, b h j d -> b h i d", attn, v)
+        out = rearrange(out, "b h n d -> b n (h d)", h=h)
         return self.to_out(out)
+
 
 # transformer
 
-class Transformer(nn.Module):
-    def __init__(self, num_tokens, dim, depth, heads, dim_head, attn_dropout, ff_dropout):
-        super().__init__()
-        self.embeds = nn.Embedding(num_tokens, dim)
-        self.layers = nn.ModuleList([])
 
-        for _ in range(depth):
-            self.layers.append(nn.ModuleList([
-                Residual(PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = attn_dropout))),
-                Residual(PreNorm(dim, FeedForward(dim, dropout = ff_dropout))),
-            ]))
+class TransformerEncoderBlock(nn.Module):
+    def __init__(
+        self,
+        input_embed_dim: int,
+        num_heads: int = 8,
+        ff_hidden_multiplier: int = 4,
+        ff_activation: str = "GEGLU",
+        attn_dropout: float = 0.1,
+        ff_dropout: float = 0.1,
+        add_norm_dropout: float = 0.1,
+        transformer_head_dim: Optional[int] = None,
+    ):
+        super().__init__()
+        self.mha = MultiHeadedAttention(
+            input_embed_dim,
+            num_heads,
+            head_dim=input_embed_dim
+            if transformer_head_dim is None
+            else transformer_head_dim,
+            dropout=attn_dropout,
+        )
+        
+        try:
+            self.pos_wise_ff = getattr(common, ff_activation)(d_model=input_embed_dim,
+            d_ff=input_embed_dim * ff_hidden_multiplier,
+            dropout=ff_dropout)
+        except AttributeError:
+            self.pos_wise_ff = getattr(common, "PositionWiseFeedForward")(
+                d_model=input_embed_dim,
+                d_ff=input_embed_dim * ff_hidden_multiplier,
+                dropout=ff_dropout,
+                activation = getattr(nn, self.hparams.ff_activation)
+            )
+        self.attn_add_norm = AddNorm(input_embed_dim, add_norm_dropout)
+        self.ff_add_norm = AddNorm(input_embed_dim, add_norm_dropout)
 
     def forward(self, x):
-        x = self.embeds(x)
+        y = self.mha(x)
+        x = self.attn_add_norm(x, y)
+        y = self.pos_wise_ff(y)
+        return self.ff_add_norm(x, y)
 
-        for attn, ff in self.layers:
-            x = attn(x)
-            x = ff(x)
 
-        return x
-# mlp
+# class MLP(nn.Module):
+#     def __init__(self, dims, act=None):
+#         super().__init__()
+#         dims_pairs = list(zip(dims[:-1], dims[1:]))
+#         layers = []
+#         for ind, (dim_in, dim_out) in enumerate(dims_pairs):
+#             is_last = ind >= (len(dims) - 1)
+#             linear = nn.Linear(dim_in, dim_out)
+#             layers.append(linear)
 
-class MLP(nn.Module):
-    def __init__(self, dims, act = None):
-        super().__init__()
-        dims_pairs = list(zip(dims[:-1], dims[1:]))
-        layers = []
-        for ind, (dim_in, dim_out) in enumerate(dims_pairs):
-            is_last = ind >= (len(dims) - 1)
-            linear = nn.Linear(dim_in, dim_out)
-            layers.append(linear)
+#             if is_last:
+#                 continue
 
-            if is_last:
-                continue
+#             act = default(act, nn.ReLU())
+#             layers.append(act)
 
-            act = default(act, nn.ReLU())
-            layers.append(act)
+#         self.mlp = nn.Sequential(*layers)
 
-        self.mlp = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.mlp(x)
+#     def forward(self, x):
+#         return self.mlp(x)
