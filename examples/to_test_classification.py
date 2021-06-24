@@ -90,19 +90,22 @@ data_config = DataConfig(
     normalize_continuous_features=False,
 )
 # model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
-model_config = NodeConfig(
-    task="classification",
-    depth=4,
-    num_trees=1024,
-    input_dropout=0.0,
-    metrics=["f1", "accuracy"],
-    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
-)
-# model_config = TabTransformerConfig(
+# model_config = NodeConfig(
 #     task="classification",
+#     depth=4,
+#     num_trees=1024,
+#     input_dropout=0.0,
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
+model_config = TabTransformerConfig(
+    task="classification",
+    metrics=["f1", "accuracy"],
+    share_embedding = True,
+    share_embedding_strategy="fraction",
+    shared_embedding_fraction=0.25,
+    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+)
 trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
                                      run_name="node_forest_cov", 

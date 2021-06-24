@@ -44,9 +44,37 @@ class MultiHeadedAttention(nn.Module):
         out = rearrange(out, "b h n d -> b n (h d)", h=h)
         return self.to_out(out)
 
+#Shamelessly copied with slight adaptation from https://github.com/jrzaurin/pytorch-widedeep/blob/b487b06721c5abe56ac68c8a38580b95e0897fd4/pytorch_widedeep/models/tab_transformer.py
+class SharedEmbeddings(nn.Module):
+    def __init__(
+        self,
+        num_embed: int,
+        embed_dim: int,
+        add_shared_embed: bool = False,
+        frac_shared_embed: float=0.25,
+    ):
+        super(SharedEmbeddings, self).__init__()
+        assert (
+            frac_shared_embed < 1
+        ), "'frac_shared_embed' must be less than 1"
 
-# transformer
+        self.add_shared_embed = add_shared_embed
+        self.embed = nn.Embedding(num_embed, embed_dim, padding_idx=0)
+        self.embed.weight.data.clamp_(-2, 2)
+        if add_shared_embed:
+            col_embed_dim = embed_dim
+        else:
+            col_embed_dim = int(embed_dim * frac_shared_embed)
+        self.shared_embed = nn.Parameter(torch.empty(1, col_embed_dim).uniform_(-1, 1))
 
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        out = self.embed(X)
+        shared_embed = self.shared_embed.expand(out.shape[0], -1)
+        if self.add_shared_embed:
+            out += shared_embed
+        else:
+            out[:, : shared_embed.shape[1]] = shared_embed
+        return out
 
 class TransformerEncoderBlock(nn.Module):
     def __init__(

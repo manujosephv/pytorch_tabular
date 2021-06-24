@@ -54,6 +54,31 @@ class TabTransformerConfig(ModelConfig):
             "help": "The embedding dimension for the input categorical features. Defaults to 32"
         },
     )
+    embedding_dropout: float = field(
+        default=0.1,
+        metadata={
+            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
+        },
+    )
+    share_embedding: bool = field(
+        default=False,
+        metadata={
+            "help": "The flag turns on shared embeddings in the input embedding process. The key idea here is to have an embedding for the feature as a whole along with embeddings of each unique values of that column. For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
+        }
+    )
+    share_embedding_strategy: Optional[str] = field(
+        default="fraction",
+        metadata={
+            "help": "There are two strategies in adding shared embeddings. 1. `add` - A separate embedding for the feature is added to the embedding of the unique values of the feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of the feature. Defaults to fraction.",
+            "choices": ["add","fraction"]
+        }
+    )
+    shared_embedding_fraction: float = field(
+        default=0.25,
+        metadata={
+            "help": "Fraction of the input_embed_dim to be reserved by the shared embedding. Should be less than one. Defaults to 0.25"
+        },
+    )
     num_heads: int = field(
         default=8,
         metadata={
@@ -70,12 +95,6 @@ class TabTransformerConfig(ModelConfig):
         default=None,
         metadata={
             "help": "The number of hidden units in the Multi-Headed Attention layers. Defaults to None and will be same as input_dim."
-        },
-    )
-    embedding_dropout: float = field(
-        default=0.1,
-        metadata={
-            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
         },
     )
     attn_dropout: float = field(

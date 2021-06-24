@@ -142,3 +142,10 @@ class NODEModel(BaseModel):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return {"logits": y_hat, "backbone_features": x}
+
+    def extract_embedding(self):
+        if self.hparams.embed_categorical:
+            if self.embedding_cat_dim != 0:
+                return self.embedding_layers
+        else:
+            raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")
