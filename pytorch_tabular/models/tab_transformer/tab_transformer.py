@@ -1,15 +1,15 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-# Inspired by implementations 
+# Inspired by implementations
 # 1. lucidrains - https://github.com/lucidrains/tab-transformer-pytorch/
 # If you are interested in Transformers, you should definitely check out his repositories.
-# 2. PyTorch Wide and Deep - https://github.com/jrzaurin/pytorch-widedeep/ 
-# It is another library for tabular data, which supports multi modal problems. 
+# 2. PyTorch Wide and Deep - https://github.com/jrzaurin/pytorch-widedeep/
+# It is another library for tabular data, which supports multi modal problems.
 # Check out the library if you haven't already.
 # 3. AutoGluon - https://github.com/awslabs/autogluon
 # AutoGluon is an AuttoML library which supports Tabular data as well. it is from Amazon Research and is in MXNet
-# 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from 
+# 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
 """TabTransformer Model"""
 import logging
@@ -18,13 +18,13 @@ from typing import Dict, OrderedDict
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from omegaconf import DictConfig
 from einops import rearrange
+from omegaconf import DictConfig
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
-from .components import TransformerEncoderBlock, SharedEmbeddings
 
 from ..base_model import BaseModel
+from .components import SharedEmbeddings, TransformerEncoderBlock
 
 logger = logging.getLogger(__name__)
 
@@ -163,4 +163,6 @@ class TabTransformerModel(BaseModel):
         if len(self.hparams.categorical_cols) > 0:
             return self.cat_embedding_layers
         else:
-            raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")
+            raise ValueError(
+                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+            )
