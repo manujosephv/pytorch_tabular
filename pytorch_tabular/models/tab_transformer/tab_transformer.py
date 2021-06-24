@@ -161,7 +161,7 @@ class TabTransformerModel(BaseModel):
 
     def extract_embedding(self):
         if len(self.hparams.categorical_cols) > 0:
-            return self.cat_embedding_layers
+            return self.backbone.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
