@@ -46,16 +46,16 @@ class AutoIntBackbone(pl.LightningModule):
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
         if self.hparams.deep_layers:
-            activation = getattr(nn, self.hparams.activation)
             # Linear Layers
             layers = []
             for units in self.hparams.layers.split("-"):
                 layers.extend(
                     _linear_dropout_bn(
-                        self.hparams,
+                        self.hparams.activation,
+                        self.hparams.initialization,
+                        self.hparams.use_batch_norm,
                         _curr_units,
                         int(units),
-                        activation,
                         self.hparams.dropout,
                     )
                 )
@@ -63,7 +63,7 @@ class AutoIntBackbone(pl.LightningModule):
             self.linear_layers = nn.Sequential(*layers)
         # Projection to Multi-Headed Attention Dims
         self.attn_proj = nn.Linear(_curr_units, self.hparams.attn_embed_dim)
-        _initialize_layers(self.hparams, self.attn_proj)
+        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.attn_proj)
         # Multi-Headed Attention Layers
         self.self_attns = nn.ModuleList(
             [
@@ -152,7 +152,7 @@ class AutoIntModel(BaseModel):
         self.output_layer = nn.Linear(
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
-        _initialize_layers(self.hparams, self.output_layer)
+        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
 
     def forward(self, x: Dict):
         x = self.backbone(x)
@@ -165,3 +165,9 @@ class AutoIntModel(BaseModel):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return {"logits": y_hat, "backbone_features": x}
+    
+    def extract_embedding(self):
+        if len(self.hparams.categorical_cols) > 0:
+            return self.backbone.cat_embedding_layers
+        else:
+            raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")

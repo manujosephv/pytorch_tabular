@@ -1,3 +1,4 @@
+from pytorch_tabular.models.tab_transformer.config import TabTransformerConfig
 import torch
 import numpy as np
 from torch.functional import norm
@@ -88,7 +89,7 @@ data_config = DataConfig(
     continuous_feature_transform=None,#"quantile_normal",
     normalize_continuous_features=False,
 )
-model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
+# model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
 # model_config = NodeConfig(
 #     task="classification",
 #     depth=4,
@@ -97,7 +98,15 @@ model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1"
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=1024)
+model_config = TabTransformerConfig(
+    task="classification",
+    metrics=["f1", "accuracy"],
+    share_embedding = True,
+    share_embedding_strategy="fraction",
+    shared_embedding_fraction=0.25,
+    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+)
+trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
                                      run_name="node_forest_cov", 
                                      exp_watch="gradients", 
@@ -130,8 +139,10 @@ tabular_model.fit(
 result = tabular_model.evaluate(test)
 print(result)
 # test.drop(columns=target_name, inplace=True)
-# pred_df = tabular_model.predict(test)
+pred_df = tabular_model.predict(test)
+print(pred_df.head())
 # pred_df.to_csv("output/temp2.csv")
-# tabular_model.save_model("test_save")
-# new_model = TabularModel.load_from_checkpoint("test_save")
-# result = new_model.evaluate(test)
+tabular_model.save_model("test_save")
+new_model = TabularModel.load_from_checkpoint("test_save")
+result = new_model.evaluate(test)
+print(result)
