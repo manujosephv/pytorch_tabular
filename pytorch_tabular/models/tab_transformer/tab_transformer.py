@@ -13,7 +13,8 @@
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
 """TabTransformer Model"""
 import logging
-from typing import Dict, OrderedDict
+from collections import OrderedDict
+from typing import Dict
 
 import pytorch_lightning as pl
 import torch
