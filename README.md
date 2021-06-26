@@ -69,7 +69,7 @@ For complete Documentation with tutorials visit []
 * [TabNet: Attentive Interpretable Tabular Learning](https://arxiv.org/abs/1908.07442) is another model coming out of Google Research which uses Sparse Attention in multiple steps of decision making to model the output.
 * [Mixture Density Networks](https://publications.aston.ac.uk/id/eprint/373/1/NCRG_94_004.pdf) is a regression model which uses gaussian components to approximate the target function and  provide a probabilistic prediction out of the box.
 * [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/abs/1810.11921) is a model which tries to learn interactions between the features in an automated way and create a better representation and then use this representation in downstream task
-* [TabTransformer] (https://arxiv.org/abs/2012.06678) is an adaptation of the Transformer model for Tabular Data which creates contextual representations for categorical features.
+* [TabTransformer](https://arxiv.org/abs/2012.06678) is an adaptation of the Transformer model for Tabular Data which creates contextual representations for categorical features.
 
 To implement new models, see the [How to implement new models tutorial](https://github.com/manujosephv/pytorch_tabular/blob/main/docs/04-Implementing%20New%20Architectures.ipynb). It covers basic as well as advanced architectures.
 
@@ -127,7 +127,9 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 6. Add Text and Image Modalities for mixed modal problems
 7. Add Variable Importance
 8. Integrate SHAP for interpretability
-** DL Models**
+        
+**DL Models**
+     
 9. [DNF-Net: A Neural Architecture for Tabular Data](https://www.semanticscholar.org/paper/DNF-Net%3A-A-Neural-Architecture-for-Tabular-Data-Abutbul-Elidan/99c49f3a917815eed2144bfb5d064623ff09ade5)
 10. [Attention augmented differentiable forest for tabular data](https://www.semanticscholar.org/paper/Attention-augmented-differentiable-forest-for-data-Chen/57990b40affc5f34f4029dab39bc78e44e7d3b10)
 11. [XBNet : An Extremely Boosted Neural Network](https://arxiv.org/abs/2106.05239v2)
