@@ -1,4 +1,5 @@
 from pytorch_tabular.models.tab_transformer.config import TabTransformerConfig
+from pytorch_tabular.models.ft_transformer.config import FTTransformerConfig
 import torch
 import numpy as np
 from torch.functional import norm
@@ -98,9 +99,19 @@ data_config = DataConfig(
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-model_config = TabTransformerConfig(
+# model_config = TabTransformerConfig(
+#     task="classification",
+#     metrics=["f1", "accuracy"],
+#     share_embedding = True,
+#     share_embedding_strategy="fraction",
+#     shared_embedding_fraction=0.25,
+#     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+# )
+model_config = FTTransformerConfig(
     task="classification",
     metrics=["f1", "accuracy"],
+    # embedding_initialization=None,
+    embedding_bias=False,
     share_embedding = True,
     share_embedding_strategy="fraction",
     shared_embedding_fraction=0.25,
@@ -139,10 +150,10 @@ tabular_model.fit(
 result = tabular_model.evaluate(test)
 print(result)
 # test.drop(columns=target_name, inplace=True)
-pred_df = tabular_model.predict(test)
-print(pred_df.head())
+# pred_df = tabular_model.predict(test)
+# print(pred_df.head())
 # pred_df.to_csv("output/temp2.csv")
-tabular_model.save_model("test_save")
-new_model = TabularModel.load_from_checkpoint("test_save")
-result = new_model.evaluate(test)
-print(result)
+# tabular_model.save_model("test_save")
+# new_model = TabularModel.load_from_checkpoint("test_save")
+# result = new_model.evaluate(test)
+# print(result)

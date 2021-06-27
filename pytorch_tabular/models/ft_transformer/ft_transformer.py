@@ -1,19 +1,10 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-# Inspired by implementations
-# 1. lucidrains - https://github.com/lucidrains/tab-transformer-pytorch/
-# If you are interested in Transformers, you should definitely check out his repositories.
-# 2. PyTorch Wide and Deep - https://github.com/jrzaurin/pytorch-widedeep/
-# It is another library for tabular data, which supports multi modal problems.
-# Check out the library if you haven't already.
-# 3. AutoGluon - https://github.com/awslabs/autogluon
-# AutoGluon is an AuttoML library which supports Tabular data as well. it is from Amazon Research and is in MXNet
-# 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from
-# https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
-"""TabTransformer Model"""
+"""Feature Tokenizer Transformer Model"""
 import logging
 from collections import OrderedDict
+import math
 from typing import Dict
 
 import pytorch_lightning as pl
@@ -30,7 +21,34 @@ from ..common import SharedEmbeddings, TransformerEncoderBlock
 logger = logging.getLogger(__name__)
 
 
-class TabTransformerBackbone(pl.LightningModule):
+def _initialize_kaiming(x, initialization, d_sqrt_inv):
+    if initialization == "kaiming_uniform":
+        nn.init.uniform_(x, a=-d_sqrt_inv, b=d_sqrt_inv)
+    elif initialization == "kaiming_normal":
+        nn.init.normal_(x, std=d_sqrt_inv)
+    elif initialization is None:
+        pass
+    else:
+        raise NotImplementedError(f"initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
+
+
+class AppendCLSToken(nn.Module):
+    """Appends the [CLS] token for BERT-like inference."""
+
+    def __init__(self, d_token: int, initialization: str) -> None:
+        """Initialize self."""
+        super().__init__()
+        self.weight = nn.Parameter(torch.Tensor(d_token))
+        d_sqrt_inv = 1 / math.sqrt(d_token)
+        _initialize_kaiming(self.weight, initialization, d_sqrt_inv)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform the forward pass."""
+        assert x.ndim == 3
+        return torch.cat([x, self.weight.view(1, 1, -1).repeat(len(x), 1, 1)], dim=1)
+
+
+class FTTransformerBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig):
         super().__init__()
         assert config.share_embedding_strategy in [
@@ -41,6 +59,7 @@ class TabTransformerBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
+        d_sqrt_inv = 1 / math.sqrt(self.hparams.input_embed_dim)
         if len(self.hparams.categorical_cols) > 0:
             # Category Embedding layers
             if self.hparams.share_embedding:
@@ -56,6 +75,7 @@ class TabTransformerBackbone(pl.LightningModule):
                         for cardinality in self.hparams.categorical_cardinality
                     ]
                 )
+
             else:
                 self.cat_embedding_layers = nn.ModuleList(
                     [
@@ -63,8 +83,31 @@ class TabTransformerBackbone(pl.LightningModule):
                         for cardinality in self.hparams.categorical_cardinality
                     ]
                 )
+            if self.hparams.embedding_bias:
+                self.cat_embedding_bias = nn.Parameter(
+                        torch.Tensor(
+                            self.hparams.categorical_dim, self.hparams.input_embed_dim
+                        )
+                    )
+                _initialize_kaiming(self.cat_embedding_bias, self.hparams.embedding_initialization, d_sqrt_inv)
+            # Continuous Embedding Layer
+            self.cont_embedding_layer = nn.Embedding(
+                self.hparams.continuous_dim, self.hparams.input_embed_dim
+            )
+            _initialize_kaiming(self.cont_embedding_layer.weight, self.hparams.embedding_initialization, d_sqrt_inv)
+            if self.hparams.embedding_bias:
+                self.cont_embedding_bias = nn.Parameter(
+                        torch.Tensor(
+                            self.hparams.continuous_dim, self.hparams.input_embed_dim
+                        )
+                    )
+                _initialize_kaiming(self.cont_embedding_bias, self.hparams.embedding_initialization, d_sqrt_inv)
             if self.hparams.embedding_dropout != 0:
                 self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
+            self.add_cls = AppendCLSToken(
+                d_token=self.hparams.input_embed_dim,
+                initialization=self.hparams.embedding_initialization,
+            )
         self.transformer_blocks = OrderedDict()
         for i in range(self.hparams.num_attn_blocks):
             self.transformer_blocks[f"mha_block_{i}"] = TransformerEncoderBlock(
@@ -81,10 +124,7 @@ class TabTransformerBackbone(pl.LightningModule):
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
         # Final MLP Layers
-        _curr_units = (
-            self.hparams.input_embed_dim * len(self.hparams.categorical_cols)
-            + self.hparams.continuous_dim
-        )
+        _curr_units = self.hparams.input_embed_dim
         # Linear Layers
         layers = []
         for units in self.hparams.out_ff_layers.split("-"):
@@ -113,30 +153,44 @@ class TabTransformerBackbone(pl.LightningModule):
             ]
             # (B, N, E)
             x = torch.cat(x_cat, 1)
+            if self.hparams.embedding_bias:
+                x = x+self.cat_embedding_bias
             if self.hparams.embedding_dropout != 0:
                 x = self.embed_dropout(x)
-            for i, block in enumerate(self.transformer_blocks):
-                x = block(x)
-            # Flatten (Batch, N_Categorical, Hidden) --> (Batch, N_CategoricalxHidden)
-            x = rearrange(x, "b n h -> b (n h)")
         if self.hparams.continuous_dim > 0:
+            cont_idx = (
+                torch.arange(self.hparams.continuous_dim)
+                .expand(continuous_data.size(0), -1)
+                .to(self.device)
+            )
             if self.hparams.batch_norm_continuous_input:
-                x_cont = self.normalizing_batch_norm(continuous_data)
-            else:
-                x_cont = continuous_data
+                continuous_data = self.normalizing_batch_norm(continuous_data)
+            x_cont = torch.mul(
+                continuous_data.unsqueeze(2),
+                self.cont_embedding_layer(cont_idx),
+            )
+            if self.hparams.embedding_bias:
+                x_cont = x_cont+self.cont_embedding_bias
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
-        x = self.linear_layers(x)
+
+        x = self.add_cls(x)
+        for i, block in enumerate(self.transformer_blocks):
+            x = block(x)
+        # Flatten (Batch, N_Categorical, Hidden) --> (Batch, N_CategoricalxHidden)
+        # x = rearrange(x, "b n h -> b (n h)")
+        # Taking only CLS token for the prediction head
+        x = self.linear_layers(x[:, -1])
         return x
 
 
-class TabTransformerModel(BaseModel):
+class FTTransformerModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
 
     def _build_network(self):
         # Backbone
-        self.backbone = TabTransformerBackbone(self.hparams)
+        self.backbone = FTTransformerBackbone(self.hparams)
         self.dropout = nn.Dropout(self.hparams.out_ff_dropout)
         # Adding the last layer
         self.output_layer = nn.Linear(
