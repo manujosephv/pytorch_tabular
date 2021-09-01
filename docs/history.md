@@ -38,3 +38,10 @@ History
 -   Some bug fixes and changes to docs
 -   Added `seed_everything` to the fit method to ensure reproducibility
 -   Refactored data_aware_initialization to be part of the BaseModel. Inherited Models can override the method to implement data aware initialization techniques
+
+0.7.0 (2021-09-01)
+------------------
+-   Implemented TabTransformer and FTTransformer models
+-   Included capability to save a model using GPU an load in CPU
+-   Made the temp folder pytorch tabular specific to avoid conflicts with other tmp folders.
+-   Some bug fixes and changes to docs
