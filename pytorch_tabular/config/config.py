@@ -479,14 +479,14 @@ class OptimizerConfig:
 class ExperimentRunManager:
     def __init__(
         self,
-        exp_version_manager: str = ".tmp/exp_version_manager.yml",
+        exp_version_manager: str = ".pt_tmp/exp_version_manager.yml",
     ) -> None:
         """The manages the versions of the experiments based on the name. It is a simple dictionary(yaml) based lookup.
         Primary purpose is to avoid overwriting of saved models while runing the training without changing the experiment name.
 
         Args:
             exp_version_manager (str, optional): The path of the yml file which acts as version control.
-            Defaults to ".tmp/exp_version_manager.yml".
+            Defaults to ".pt_tmp/exp_version_manager.yml".
         """
         super().__init__()
         self._exp_version_manager = exp_version_manager
@@ -494,7 +494,7 @@ class ExperimentRunManager:
             self.exp_version_manager = OmegaConf.load(exp_version_manager)
         else:
             self.exp_version_manager = OmegaConf.create({})
-            os.makedirs(".tmp", exist_ok=True)
+            os.makedirs(".pt_tmp", exist_ok=True)
             with open(self._exp_version_manager, "w") as file:
                 OmegaConf.save(config=self.exp_version_manager, f=file)
 
