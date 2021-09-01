@@ -60,7 +60,7 @@ python setup.py install
 
 ## Documentation
 
-For complete Documentation with tutorials visit []
+For complete Documentation with tutorials visit [ReadTheDocs](https://pytorch-tabular.readthedocs.io/en/latest/ )
 
 ## Available Models
 
@@ -70,6 +70,7 @@ For complete Documentation with tutorials visit []
 * [Mixture Density Networks](https://publications.aston.ac.uk/id/eprint/373/1/NCRG_94_004.pdf) is a regression model which uses gaussian components to approximate the target function and  provide a probabilistic prediction out of the box.
 * [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/abs/1810.11921) is a model which tries to learn interactions between the features in an automated way and create a better representation and then use this representation in downstream task
 * [TabTransformer](https://arxiv.org/abs/2012.06678) is an adaptation of the Transformer model for Tabular Data which creates contextual representations for categorical features.
+* FT Transformer from [Revisiting Deep Learning Models for Tabular Data](https://arxiv.org/abs/2106.11959)
 
 To implement new models, see the [How to implement new models tutorial](https://github.com/manujosephv/pytorch_tabular/blob/main/docs/tutorials/04-Implementing%20New%20Architectures.ipynb). It covers basic as well as advanced architectures.
 
@@ -133,7 +134,6 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 9. [DNF-Net: A Neural Architecture for Tabular Data](https://www.semanticscholar.org/paper/DNF-Net%3A-A-Neural-Architecture-for-Tabular-Data-Abutbul-Elidan/99c49f3a917815eed2144bfb5d064623ff09ade5)
 10. [Attention augmented differentiable forest for tabular data](https://www.semanticscholar.org/paper/Attention-augmented-differentiable-forest-for-data-Chen/57990b40affc5f34f4029dab39bc78e44e7d3b10)
 11. [XBNet : An Extremely Boosted Neural Network](https://arxiv.org/abs/2106.05239v2)
-12. [Revisiting Deep Learning Models for Tabular Data](https://arxiv.org/abs/2106.11959)
 ## Citation
 If you use PyTorch Tabular for a scientific publication, we would appreciate citations to the published software and the following paper:
 
