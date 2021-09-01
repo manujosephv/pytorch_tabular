@@ -710,11 +710,16 @@ class TabularModel:
             )
 
     @classmethod
-    def load_from_checkpoint(cls, dir: str):
+    def load_from_checkpoint(cls, dir: str, map_location = None, strict=True):
         """Loads a saved model from the directory
 
         Args:
             dir (str): The directory where the model wa saved, along with the checkpoints
+            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint 
+                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map 
+                to the new setup. The behaviour is the same as in torch.load()
+            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys 
+                returned by this module’s state dict. Default: True.
 
         Returns:
             TabularModel: The saved TabularModel
@@ -755,7 +760,7 @@ class TabularModel:
 
         # Initializing with default metrics, losses, and optimizers. Will revert once initialized
         model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt"), **model_args
+            checkpoint_path=os.path.join(dir, "model.ckpt"),map_location=map_location, strict=strict, **model_args
         )
         # else:
         #     # Initializing with default values
