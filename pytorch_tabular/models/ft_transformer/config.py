@@ -128,6 +128,12 @@ class FTTransformerConfig(ModelConfig):
             "help": "Fraction of the input_embed_dim to be reserved by the shared embedding. Should be less than one. Defaults to 0.25"
         },
     )
+    attn_feature_importance: bool = field(
+        default = True,
+        metadata={
+            "help": "If you are facing memory issues, you can turn off feature importance which will not save the attention weights. Defaults to True"
+        },
+    )
     num_heads: int = field(
         default=8,
         metadata={

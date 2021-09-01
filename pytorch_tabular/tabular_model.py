@@ -184,7 +184,10 @@ class TabularModel:
         """
         if hasattr(self.config, "run_name") and self.config.run_name is not None:
             name = self.config.run_name
-        elif hasattr(self.config, "checkpoints_name") and self.config.checkpoints_name is not None:
+        elif (
+            hasattr(self.config, "checkpoints_name")
+            and self.config.checkpoints_name is not None
+        ):
             name = self.config.checkpoints_name
         else:
             name = self.config.task
@@ -287,7 +290,6 @@ class TabularModel:
             )
             # Data Aware Initialization(for the models that need it)
             self.model.data_aware_initialization(self.datamodule)
-            
 
     def _prepare_trainer(self, max_epochs=None, min_epochs=None):
         logger.info("Preparing the Trainer...")
@@ -297,7 +299,7 @@ class TabularModel:
             self.config.min_epochs = min_epochs
         # TODO get Trainer Arguments from the init signature
         trainer_sig = inspect.signature(pl.Trainer.__init__)
-        trainer_args = [p for p in trainer_sig.parameters.keys() if p!="self"]
+        trainer_args = [p for p in trainer_sig.parameters.keys() if p != "self"]
         trainer_args_config = {
             k: v for k, v in self.config.items() if k in trainer_args
         }
@@ -314,9 +316,14 @@ class TabularModel:
         if self.trainer.checkpoint_callback is not None:
             logger.info("Loading the best model...")
             ckpt_path = self.trainer.checkpoint_callback.best_model_path
-            logger.debug(f"Model Checkpoint: {ckpt_path}")
-            ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
-            self.model.load_state_dict(ckpt["state_dict"])
+            if ckpt_path != "":
+                logger.debug(f"Model Checkpoint: {ckpt_path}")
+                ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
+                self.model.load_state_dict(ckpt["state_dict"])
+            else:
+                logger.info(
+                    "No best model available to load. Did you run it more than 1 epoch?..."
+                )
         else:
             logger.info(
                 "No best model available to load. Did you run it more than 1 epoch?..."
@@ -737,19 +744,18 @@ class TabularModel:
         custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
         model_args = {}
         if custom_params.get("custom_loss") is not None:
-            model_args['loss'] = "MSELoss"
+            model_args["loss"] = "MSELoss"
         if custom_params.get("custom_metrics") is not None:
-            model_args['metrics'] = ["mean_squared_error"]
-            model_args['metric_params'] = [{}]
+            model_args["metrics"] = ["mean_squared_error"]
+            model_args["metric_params"] = [{}]
         if custom_params.get("custom_optimizer") is not None:
-            model_args['optimizer'] = "Adam"
+            model_args["optimizer"] = "Adam"
         if custom_params.get("custom_optimizer_params") is not None:
-            model_args['optimizer_params'] = {}
-        
+            model_args["optimizer_params"] = {}
+
         # Initializing with default metrics, losses, and optimizers. Will revert once initialized
         model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt"),
-            **model_args
+            checkpoint_path=os.path.join(dir, "model.ckpt"), **model_args
         )
         # else:
         #     # Initializing with default values

@@ -150,7 +150,7 @@ class MultiHeadedAttention(nn.Module):
     Multi Headed Attention Block in Transformers
     """
     def __init__(
-        self, input_dim: int, num_heads: int = 8, head_dim: int = 16, dropout: int = 0.1
+        self, input_dim: int, num_heads: int = 8, head_dim: int = 16, dropout: int = 0.1, keep_attn: bool = True
     ):
         super().__init__()
         assert (
@@ -159,6 +159,7 @@ class MultiHeadedAttention(nn.Module):
         inner_dim = head_dim * num_heads
         self.n_heads = num_heads
         self.scale = head_dim ** -0.5
+        self.keep_attn = keep_attn
 
         self.to_qkv = nn.Linear(input_dim, inner_dim * 3, bias=False)
         self.to_out = nn.Linear(inner_dim, input_dim)
@@ -173,7 +174,8 @@ class MultiHeadedAttention(nn.Module):
 
         attn = sim.softmax(dim=-1)
         attn = self.dropout(attn)
-
+        if self.keep_attn:
+            self.attn_weights = attn
         out = einsum("b h i j, b h j d -> b h i d", attn, v)
         out = rearrange(out, "b h n d -> b n (h d)", h=h)
         return self.to_out(out)
@@ -211,7 +213,15 @@ class SharedEmbeddings(nn.Module):
         else:
             out[:, : shared_embed.shape[1]] = shared_embed
         return out
-
+    
+    @property
+    def weight(self):
+        w = self.embed.weight.detach()
+        if self.add_shared_embed:
+            w += self.shared_embed
+        else:
+            w[:, : self.shared_embed.shape[1]] = self.shared_embed
+        return w
 
 class TransformerEncoderBlock(nn.Module):
     """A single Transformer Encoder Block
@@ -223,6 +233,7 @@ class TransformerEncoderBlock(nn.Module):
         ff_hidden_multiplier: int = 4,
         ff_activation: str = "GEGLU",
         attn_dropout: float = 0.1,
+        keep_attn: bool = True,
         ff_dropout: float = 0.1,
         add_norm_dropout: float = 0.1,
         transformer_head_dim: Optional[int] = None,
@@ -235,6 +246,7 @@ class TransformerEncoderBlock(nn.Module):
             if transformer_head_dim is None
             else transformer_head_dim,
             dropout=attn_dropout,
+            keep_attn = keep_attn
         )
 
         try:

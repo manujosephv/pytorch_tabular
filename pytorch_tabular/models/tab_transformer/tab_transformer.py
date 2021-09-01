@@ -75,6 +75,7 @@ class TabTransformerBackbone(pl.LightningModule):
                 attn_dropout=self.hparams.attn_dropout,
                 ff_dropout=self.hparams.ff_dropout,
                 add_norm_dropout=self.hparams.add_norm_dropout,
+                keep_attn = False # No easy way to convert TabTransformer Attn Weights to Feature Importance 
             )
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
         self.attention_weights = [None] * self.hparams.num_attn_blocks

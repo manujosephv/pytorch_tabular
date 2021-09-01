@@ -99,25 +99,25 @@ data_config = DataConfig(
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-# model_config = TabTransformerConfig(
+model_config = TabTransformerConfig(
+    task="classification",
+    metrics=["f1", "accuracy"],
+    share_embedding = True,
+    share_embedding_strategy="add",
+    shared_embedding_fraction=0.25,
+    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+)
+# model_config = FTTransformerConfig(
 #     task="classification",
 #     metrics=["f1", "accuracy"],
+#     # embedding_initialization=None,
+#     embedding_bias=True,
 #     share_embedding = True,
 #     share_embedding_strategy="fraction",
 #     shared_embedding_fraction=0.25,
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-model_config = FTTransformerConfig(
-    task="classification",
-    metrics=["f1", "accuracy"],
-    # embedding_initialization=None,
-    embedding_bias=False,
-    share_embedding = True,
-    share_embedding_strategy="fraction",
-    shared_embedding_fraction=0.25,
-    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
-)
-trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
+trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=True, max_epochs=5, batch_size=512)
 experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
                                      run_name="node_forest_cov", 
                                      exp_watch="gradients", 
@@ -147,9 +147,14 @@ tabular_model.fit(
     # loss=cust_loss,
     train_sampler=sampler)
 
-result = tabular_model.evaluate(test)
-print(result)
-# test.drop(columns=target_name, inplace=True)
+from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
+transformer = CategoricalEmbeddingTransformer(tabular_model)
+train_transform = transformer.fit_transform(train)
+# test_transform = transformer.transform(test)
+# ft = tabular_model.model.feature_importance()
+# result = tabular_model.evaluate(test)
+# print(result)
+# test.drop(columns=ta6rget_name, inplace=True)
 # pred_df = tabular_model.predict(test)
 # print(pred_df.head())
 # pred_df.to_csv("output/temp2.csv")

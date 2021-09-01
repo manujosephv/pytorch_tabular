@@ -3,10 +3,11 @@
 # For license information, see LICENSE.TXT
 """Feature Tokenizer Transformer Model"""
 import logging
-from collections import OrderedDict
 import math
+from collections import OrderedDict
 from typing import Dict
 
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -118,9 +119,11 @@ class FTTransformerBackbone(pl.LightningModule):
                 attn_dropout=self.hparams.attn_dropout,
                 ff_dropout=self.hparams.ff_dropout,
                 add_norm_dropout=self.hparams.add_norm_dropout,
+                keep_attn=self.hparams.attn_feature_importance #Can use Attn Weights to derive feature importance
             )
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
-        self.attention_weights = [None] * self.hparams.num_attn_blocks
+        if self.hparams.attn_feature_importance:
+            self.attention_weights_ = [None] * self.hparams.num_attn_blocks
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
         # Final MLP Layers
@@ -177,11 +180,31 @@ class FTTransformerBackbone(pl.LightningModule):
         x = self.add_cls(x)
         for i, block in enumerate(self.transformer_blocks):
             x = block(x)
+            if self.hparams.attn_feature_importance:
+                self.attention_weights_[i] = block.mha.attn_weights
+                # self.feature_importance_+=block.mha.attn_weights[:,:,:,-1].sum(dim=1)
+                # self._calculate_feature_importance(block.mha.attn_weights)
+        if self.hparams.attn_feature_importance:
+            self._calculate_feature_importance()
         # Flatten (Batch, N_Categorical, Hidden) --> (Batch, N_CategoricalxHidden)
         # x = rearrange(x, "b n h -> b (n h)")
         # Taking only CLS token for the prediction head
         x = self.linear_layers(x[:, -1])
         return x
+    
+    #Not Tested Properly
+    def _calculate_feature_importance(self):
+        # if self.feature_importance_.device != self.device:
+        #     self.feature_importance_ = self.feature_importance_.to(self.device)
+
+        n, h, f, _ = self.attention_weights_[0].shape
+        L = len(self.attention_weights_)
+        self.local_feature_importance = torch.zeros((n,f), device=self.device)
+        for attn_weights in self.attention_weights_:
+            self.local_feature_importance+=attn_weights[:,:,:,-1].sum(dim=1)
+        self.local_feature_importance = (1/(h*L))*self.local_feature_importance[:,:-1]
+        self.feature_importance_ = self.local_feature_importance.mean(dim=0)
+        # self.feature_importance_count_+=attn_weights.shape[0]
 
 
 class FTTransformerModel(BaseModel):
@@ -221,3 +244,10 @@ class FTTransformerModel(BaseModel):
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
             )
+    
+    def feature_importance(self):
+        if self.hparams.attn_feature_importance:
+            importance_df = pd.DataFrame({"Features": self.hparams.categorical_cols+self.hparams.continuous_cols, "importance": self.backbone.feature_importance_.detach().cpu().numpy()})
+            return importance_df
+        else:
+            raise ValueError("If you want Feature Importance, `attn_feature_weights` should be `True`.")
