@@ -152,7 +152,7 @@ def test_classification(
 
 # test_regression(
 #     regression_data(),
-#     multi_target=True,
+#     multi_target=False,
 #     continuous_cols=[
 #         "AveRooms",
 #         "AveBedrms",
@@ -161,10 +161,11 @@ def test_classification(
 #         "Latitude",
 #         "Longitude",
 #     ],
-#     categorical_cols=[],
-#     continuous_feature_transform="yeo-johnson",
-#     normalize_continuous_features=False,
-#     target_range=True,
+#     categorical_cols=["HouseAgeBin"],
+#     continuous_feature_transform=None,
+#     normalize_continuous_features=True,
+#     variant=CategoryEmbeddingMDNConfig,
+#     num_gaussian=2
 # )
 # test_embedding_transformer(regression_data())
 
