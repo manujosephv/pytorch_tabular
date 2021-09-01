@@ -494,7 +494,7 @@ class ExperimentRunManager:
             self.exp_version_manager = OmegaConf.load(exp_version_manager)
         else:
             self.exp_version_manager = OmegaConf.create({})
-            os.makedirs(".pt_tmp", exist_ok=True)
+            os.makedirs(os.path.split(exp_version_manager)[0], exist_ok=True)
             with open(self._exp_version_manager, "w") as file:
                 OmegaConf.save(config=self.exp_version_manager, f=file)
 
