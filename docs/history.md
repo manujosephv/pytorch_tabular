@@ -44,4 +44,5 @@ History
 -   Implemented TabTransformer and FTTransformer models
 -   Included capability to save a model using GPU an load in CPU
 -   Made the temp folder pytorch tabular specific to avoid conflicts with other tmp folders.
--   Some bug fixes and changes to docs
+-   Some bug fixes
+-   Edited an error out of Advanced Tutorial in docs
