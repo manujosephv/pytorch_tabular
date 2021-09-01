@@ -24,7 +24,6 @@ class FeedForwardBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        activation = getattr(nn, self.hparams.activation)
         # Linear Layers
         layers = []
         _curr_units = self.embedding_cat_dim + self.hparams.continuous_dim
@@ -33,10 +32,11 @@ class FeedForwardBackbone(pl.LightningModule):
         for units in self.hparams.layers.split("-"):
             layers.extend(
                 _linear_dropout_bn(
-                    self.hparams,
+                    self.hparams.activation,
+                    self.hparams.initialization,
+                    self.hparams.use_batch_norm,
                     _curr_units,
                     int(units),
-                    activation,
                     self.hparams.dropout,
                 )
             )
@@ -69,7 +69,7 @@ class CategoryEmbeddingModel(BaseModel):
         self.output_layer = nn.Linear(
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
-        _initialize_layers(self.hparams, self.output_layer)
+        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
     
     def unpack_input(self, x: Dict):
         continuous_data, categorical_data = x["continuous"], x["categorical"]

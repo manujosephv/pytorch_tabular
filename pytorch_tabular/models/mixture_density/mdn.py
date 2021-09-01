@@ -129,7 +129,7 @@ class MixtureDensityHead(nn.Module):
             y_hat = torch.mean(samples, dim=-1)
         elif self.hparams.central_tendency == "median":
             y_hat = torch.median(samples, dim=-1).values
-        return y_hat
+        return y_hat.unsqueeze(1)
 
 
 class BaseMDN(BaseModel, metaclass=ABCMeta):

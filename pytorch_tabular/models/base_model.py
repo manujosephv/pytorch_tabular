@@ -121,7 +121,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         for metric, metric_str, metric_params in zip(
             self.metrics, self.hparams.metrics, self.hparams.metrics_params
         ):
-            if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
+            if (self.hparams.task == "regression"):
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     if (

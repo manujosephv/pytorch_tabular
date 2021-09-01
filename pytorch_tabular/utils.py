@@ -47,13 +47,13 @@ def get_balanced_sampler(y_train):
     return train_sampler
 
 
-def _initialize_layers(hparams, layer):
-    if hparams.activation == "ReLU":
+def _initialize_layers(activation, initialization, layer):
+    if activation == "ReLU":
         nonlinearity = "relu"
-    elif hparams.activation == "LeakyReLU":
+    elif activation == "LeakyReLU":
         nonlinearity = "leaky_relu"
     else:
-        if hparams.initialization == "kaiming":
+        if initialization == "kaiming":
             logger.warning(
                 "Kaiming initialization is only recommended for ReLU and LeakyReLU."
             )
@@ -61,26 +61,30 @@ def _initialize_layers(hparams, layer):
         else:
             nonlinearity = "relu"
 
-    if hparams.initialization == "kaiming":
+    if initialization == "kaiming":
         nn.init.kaiming_normal_(layer.weight, nonlinearity=nonlinearity)
-    elif hparams.initialization == "xavier":
+    elif initialization == "xavier":
         nn.init.xavier_normal_(
             layer.weight,
             gain=nn.init.calculate_gain(nonlinearity)
-            if hparams.activation in ["ReLU", "LeakyReLU"]
+            if activation in ["ReLU", "LeakyReLU"]
             else 1,
         )
-    elif hparams.initialization == "random":
+    elif initialization == "random":
         nn.init.normal_(layer.weight)
 
 
-def _linear_dropout_bn(hparams, in_units, out_units, activation, dropout):
+def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out_units, dropout):
+    if isinstance(activation, str):
+        _activation = getattr(nn, activation)
+    else:
+        _activation = activation
     layers = []
-    if hparams.use_batch_norm:
+    if use_batch_norm:
         layers.append(nn.BatchNorm1d(num_features=in_units))
     linear = nn.Linear(in_units, out_units)
-    _initialize_layers(hparams, linear)
-    layers.extend([linear, activation()])
+    _initialize_layers(activation, initialization, linear)
+    layers.extend([linear, _activation()])
     if dropout != 0:
         layers.append(nn.Dropout(dropout))
     return layers

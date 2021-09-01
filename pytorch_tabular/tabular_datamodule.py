@@ -232,14 +232,20 @@ class TabularDatamodule(pl.LightningDataModule):
         # Target Transforms
         if all([col in data.columns for col in self.config.target]):
             if self.do_target_transform:
-                target_transforms = []
-                for col in self.config.target:
-                    _target_transform = copy.deepcopy(self.target_transform_template)
-                    data[col] = _target_transform.fit_transform(
-                        data[col].values.reshape(-1, 1)
-                    )
-                    target_transforms.append(_target_transform)
-                self.target_transforms = target_transforms
+                if stage == "fit":
+                    target_transforms = []
+                    for col in self.config.target:
+                        _target_transform = copy.deepcopy(self.target_transform_template)
+                        data[col] = _target_transform.fit_transform(
+                            data[col].values.reshape(-1, 1)
+                        )
+                        target_transforms.append(_target_transform)
+                    self.target_transforms = target_transforms
+                else:
+                    for col, _target_transform in zip(self.config.target, self.target_transforms):
+                        data[col] = _target_transform.transform(
+                            data[col].values.reshape(-1, 1)
+                        )
         return data, added_features
 
     def setup(self, stage: Optional[str] = None) -> None:
