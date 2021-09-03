@@ -6,7 +6,8 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pytorch_tabular)
 [![DOI](https://zenodo.org/badge/321584367.svg)](https://zenodo.org/badge/latestdoi/321584367)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square)](https://github.com/manujosephv/pytorch_tabular/issues)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/manujosephv/pytorch_tabular/blob/main/docs/tutorials/01-Basic_Usage.ipynb.py)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/manujosephv/pytorch_tabular/blob/main/docs/tutorials/01-Basic_Usage.ipynb)
+
 
 PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
 * Low Resistance Useability
@@ -152,9 +153,11 @@ If you use PyTorch Tabular for a scientific publication, we would appreciate cit
 * Zenodo Software Citation
 ```
 @article{manujosephv_2021, 
-    title={manujosephv/pytorch_tabular: v0.5.0-alpha}, 
-    DOI={10.5281/zenodo.4732773}, 
-    abstractNote={<p>First Alpha Release</p>}, 
+    title={manujosephv/pytorch_tabular: v0.7.0-alpha}, 
+    DOI={10.5281/zenodo.5359010}, 
+    abstractNote={<p>Added a few more SOTA models - TabTransformer, FTTransformer
+        Made improvements in the model save and load capability
+        Made installation less restrictive by unfreezing some dependencies.</p>}, 
     publisher={Zenodo}, 
     author={manujosephv}, 
     year={2021}, 
