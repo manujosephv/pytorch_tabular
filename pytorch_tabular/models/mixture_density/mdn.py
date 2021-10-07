@@ -184,7 +184,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
                 )
             if self.hparams.mdn_config.lambda_pi > 0:
                 pi_params = torch.cat([x.view(-1) for x in self.mdn.pi.parameters()])
-                pi_l1_reg = self.hparams.mdn_config.lambda_sigma * torch.norm(
+                pi_l1_reg = self.hparams.mdn_config.lambda_pi * torch.norm(
                     pi_params, self.hparams.mdn_config.weight_regularization
                 )
             if self.hparams.mdn_config.lambda_mu > 0:
