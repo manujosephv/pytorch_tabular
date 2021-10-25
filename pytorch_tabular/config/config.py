@@ -181,7 +181,7 @@ class TrainerConfig:
             to find optimal initial learning rate.
 
         auto_select_gpus (bool): If enabled and `gpus` is an integer, pick available gpus automatically.
-            This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one 
+            This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one
             process at a time can access them.
 
         check_val_every_n_epoch (int): Check val every n train epochs.
@@ -425,12 +425,12 @@ class ExperimentConfig:
 class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
     Args:
-        optimizer (str): Any of the standard optimizers from 
+        optimizer (str): Any of the standard optimizers from
             [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms). Defaults to `Adam`"
 
         optimizer_params (dict): The parameters for the optimizer. If left blank, will use default parameters.
 
-        lr_scheduler (Optional[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). 
+        lr_scheduler (Optional[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate).
             If None, will not use any scheduler. Defaults to `None`
 
         lr_scheduler_params (Optional[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
@@ -543,6 +543,20 @@ class ModelConfig:
         metadata={
             "help": "Specify whether the problem is regression of classification.",
             "choices": ["regression", "classification"],
+        }
+    )
+    ssl_task: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Specify whether the problem is regression of classification.",
+            "choices": ["Denoising", "Contrastive", None],
+        }
+    )
+    aug_task: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Specify whether the problem is regression of classification.",
+            "choices": ["cutmix", "mixup", None],
         }
     )
     embedding_dims: Optional[List[int]] = field(

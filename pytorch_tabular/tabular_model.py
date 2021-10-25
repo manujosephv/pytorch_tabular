@@ -721,10 +721,10 @@ class TabularModel:
 
         Args:
             dir (str): The directory where the model wa saved, along with the checkpoints
-            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint 
-                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map 
+            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint
+                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
                 to the new setup. The behaviour is the same as in torch.load()
-            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys 
+            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys
                 returned by this module’s state dict. Default: True.
 
         Returns:

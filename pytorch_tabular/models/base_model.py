@@ -6,6 +6,11 @@ import logging
 from abc import ABCMeta, abstractmethod
 from typing import Callable, Dict, List, Optional
 
+from torch import Tensor
+
+import pytorch_tabular.augmentations as augmentations
+import pytorch_tabular.ssl as ssl
+
 import pytorch_lightning as pl
 import torch
 import torchmetrics
@@ -159,13 +164,26 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 prog_bar=True,
             )
         return metrics
-    
+
     def data_aware_initialization(self, datamodule):
         pass
 
     @abstractmethod
-    def forward(self, x: Dict):
+    def compute_backbone(self, x: Dict):
         pass
+
+    @abstractmethod
+    def compute_head(self, x: Tensor):
+        pass
+
+    def compute_ssl_head(self, x: Dict):
+        return getattr(ssl, self.hparams.ssl_task)(input_dim=self.hparams.output_dim)(x)
+
+    def forward(self, x: Dict):
+        x = self.compute_backbone(x)
+        if self.hparams.ssl_task:
+            return self.compute_ssl_head(x)
+        return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
         ret_value = self.forward(x)
@@ -176,7 +194,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def training_step(self, batch, batch_idx):
         y = batch["target"]
+
         y_hat = self(batch)["logits"]
+        if self.hparams.aug_task:
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            y_augmented_hat = self(batch_augmented)["logits"]
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss

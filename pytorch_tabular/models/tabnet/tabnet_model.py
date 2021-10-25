@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 from pytorch_tabnet.tab_network import TabNet
+from torch import Tensor
 
 from ..base_model import BaseModel
 
@@ -62,11 +63,14 @@ class TabNetModel(BaseModel):
         x = torch.cat(tuple(x), dim=1)
         return x
 
-    def forward(self, x: Dict):
+    def compute_backbone(self, x: Dict):
         # unpacking into a tuple
         x = self.unpack_input(x)
         # Returns output
         x = self.backbone(x)
+        return x
+
+    def compute_head(self, x: Tensor):
         if (self.hparams.task == "regression") and (
             self.hparams.target_range is not None
         ):
