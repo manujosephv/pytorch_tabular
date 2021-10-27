@@ -193,26 +193,37 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             return ret_value.get("logits")
 
     def training_step(self, batch, batch_idx):
-        y = batch["target"]
-
-        y_hat = self(batch)["logits"]
         if self.hparams.aug_task:
+            y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
-            y_augmented_hat = self(batch_augmented)["logits"]
+            y_hat = self(batch_augmented)["logits"]
+        else:
+            y = batch["target"]
+            y_hat = self(batch)["logits"]
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        y = batch["target"]
-        y_hat = self(batch)["logits"]
+        if self.hparams.aug_task:
+            y = self(batch)["logits"]
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            y_hat = self(batch_augmented)["logits"]
+        else:
+            y = batch["target"]
+            y_hat = self(batch)["logits"]
         _ = self.calculate_loss(y, y_hat, tag="valid")
         _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
-        y = batch["target"]
-        y_hat = self(batch)["logits"]
+        if self.hparams.aug_task:
+            y = self(batch)["logits"]
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            y_hat = self(batch_augmented)["logits"]
+        else:
+            y = batch["target"]
+            y_hat = self(batch)["logits"]
         _ = self.calculate_loss(y, y_hat, tag="test")
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y

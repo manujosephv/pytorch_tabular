@@ -605,13 +605,20 @@ class ModelConfig:
             )
             self.metrics_params = [{}]
         elif self.task == "classification":
-            self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
-            self.metrics = ["accuracy"] if self.metrics is None else self.metrics
-            self.metrics_params = (
-                [{} for _ in self.metrics]
-                if self.metrics_params is None
-                else self.metrics_params
-            )
+            if self.aug_task is not None and self.ssl_task is not None:
+                self.loss = "MSELoss" if self.loss is None else self.loss
+                self.metrics = (
+                    ["mean_squared_error"] if self.metrics is None else self.metrics
+                )
+                self.metrics_params = [{}]
+            else:
+                self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
+                self.metrics = ["accuracy"] if self.metrics is None else self.metrics
+                self.metrics_params = (
+                    [{} for _ in self.metrics]
+                    if self.metrics_params is None
+                    else self.metrics_params
+                )
         else:
             raise NotImplementedError(
                 f"{self.task} is not a valid task. Should be one of {self.__dataclass_fields__['task'].metadata['choices']}"
