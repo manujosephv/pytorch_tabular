@@ -64,8 +64,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def _build_network(self):
         pass
 
+    @staticmethod
+    def loss_contrastive(y_hat, y):
+        return - nn.functional.cosine_similarity(y_hat, y).add_(-1).sum()
+
     def _setup_loss(self):
         if self.custom_loss is None:
+            if self.hparams.ssl_task == "Contrastive":
+                self.loss = self.loss_contrastive
             try:
                 self.loss = getattr(nn, self.hparams.loss)()
             except AttributeError as e:
