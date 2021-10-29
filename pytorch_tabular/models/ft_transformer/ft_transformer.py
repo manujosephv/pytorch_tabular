@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 from omegaconf import DictConfig
+from torch import Tensor
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
@@ -191,7 +192,7 @@ class FTTransformerBackbone(pl.LightningModule):
         # Taking only CLS token for the prediction head
         x = self.linear_layers(x[:, -1])
         return x
-    
+
     #Not Tested Properly
     def _calculate_feature_importance(self):
         # if self.feature_importance_.device != self.device:
@@ -225,8 +226,10 @@ class FTTransformerModel(BaseModel):
             self.output_layer,
         )
 
-    def forward(self, x: Dict):
-        x = self.backbone(x)
+    def compute_backbone(self, x: Dict):
+        return self.backbone(x)
+
+    def compute_head(self, x: Tensor):
         x = self.dropout(x)
         y_hat = self.output_layer(x)
         if (self.hparams.task == "regression") and (
@@ -244,7 +247,7 @@ class FTTransformerModel(BaseModel):
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
             )
-    
+
     def feature_importance(self):
         if self.hparams.attn_feature_importance:
             importance_df = pd.DataFrame({"Features": self.hparams.categorical_cols+self.hparams.continuous_cols, "importance": self.backbone.feature_importance_.detach().cpu().numpy()})
