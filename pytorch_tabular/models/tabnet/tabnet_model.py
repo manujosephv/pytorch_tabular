@@ -54,6 +54,7 @@ class TabNetModel(BaseModel):
 
     def _build_network(self):
         self.backbone = TabNetBackbone(self.hparams)
+        setattr(self.backbone, "output_dim", self.hparams.output_dim)
 
     def unpack_input(self, x: Dict):
         # unpacking into a tuple

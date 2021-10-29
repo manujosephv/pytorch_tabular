@@ -183,8 +183,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         pass
 
     def compute_ssl_head(self, x: Dict):
-        input_dim = self.backbone.output_dim if hasattr(self.backbone, 'output_dim') else self.hparams.output_dim
-        return getattr(ssl, self.hparams.ssl_task)(input_dim=input_dim)(x)
+        return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(x)
 
     def forward(self, x: Dict):
         x = self.compute_backbone(x)
