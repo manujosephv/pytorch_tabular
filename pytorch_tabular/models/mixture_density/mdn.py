@@ -10,6 +10,7 @@ from typing import Dict, Optional
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from torch import Tensor
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
@@ -17,6 +18,7 @@ from pytorch_tabular.models.autoint import AutoIntBackbone
 from pytorch_tabular.models.category_embedding import FeedForwardBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
+import pytorch_tabular.augmentations as augmentations
 
 from ..base_model import BaseModel
 
@@ -144,9 +146,12 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
     def unpack_input(self, x: Dict):
         pass
 
-    def forward(self, x: Dict):
+    def compute_backbone(self, x: Dict):
         x = self.unpack_input(x)
         x = self.backbone(x)
+        return x
+
+    def compute_head(self, x: Tensor):
         pi, sigma, mu = self.mdn(x)
         return {"pi": pi, "sigma": sigma, "mu": mu, "backbone_features": x}
 
@@ -206,42 +211,70 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
         return loss
 
     def training_step(self, batch, batch_idx):
-        y = batch["target"]
-        ret_value = self(batch)
-        loss = self.calculate_loss(
-            y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="train"
-        )
-        if self.hparams.mdn_config.speedup_training:
-            pass
-        else:
-            y_hat = self.mdn.generate_point_predictions(
-                ret_value["pi"], ret_value["sigma"], ret_value["mu"]
+        if self.hparams.aug_task:
+            y = self(batch)["logits"]
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            y_hat = self(batch_augmented)["logits"]
+            loss = super().calculate_loss(
+                y, y_hat, tag="train"
             )
             _ = self.calculate_metrics(y, y_hat, tag="train")
+        else:
+            y = batch["target"]
+            ret_value = self(batch)
+            loss = self.calculate_loss(
+                y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="train"
+            )
+            if self.hparams.mdn_config.speedup_training:
+                pass
+            else:
+                y_hat = self.mdn.generate_point_predictions(
+                    ret_value["pi"], ret_value["sigma"], ret_value["mu"]
+                )
+                _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        y = batch["target"]
-        ret_value = self(batch)
-        _ = self.calculate_loss(
-            y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="valid"
-        )
-        y_hat = self.mdn.generate_point_predictions(
-            ret_value["pi"], ret_value["sigma"], ret_value["mu"]
-        )
-        _ = self.calculate_metrics(y, y_hat, tag="valid")
+        if self.hparams.aug_task:
+            y = self(batch)["logits"]
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            ret_value = self(batch_augmented)["logits"]
+            _ = super().calculate_loss(
+                y, ret_value, tag="train"
+            )
+            y_hat = ret_value
+            _ = self.calculate_metrics(y, y_hat, tag="valid")
+        else:
+            y = batch["target"]
+            ret_value = self(batch)
+            _ = self.calculate_loss(
+                y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="valid"
+            )
+            y_hat = self.mdn.generate_point_predictions(
+                ret_value["pi"], ret_value["sigma"], ret_value["mu"]
+            )
+            _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y, ret_value
 
     def test_step(self, batch, batch_idx):
-        y = batch["target"]
-        ret_value = self(batch)
-        _ = self.calculate_loss(
-            y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="test"
-        )
-        y_hat = self.mdn.generate_point_predictions(
-            ret_value["pi"], ret_value["sigma"], ret_value["mu"]
-        )
-        _ = self.calculate_metrics(y, y_hat, tag="test")
+        if self.hparams.aug_task:
+            y = self(batch)["logits"]
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            y_hat = self(batch_augmented)["logits"]
+            _ = super().calculate_loss(
+                y, y_hat, tag="train"
+            )
+            _ = self.calculate_metrics(y, y_hat, tag="test")
+        else:
+            y = batch["target"]
+            ret_value = self(batch)
+            _ = self.calculate_loss(
+                y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="test"
+            )
+            y_hat = self.mdn.generate_point_predictions(
+                ret_value["pi"], ret_value["sigma"], ret_value["mu"]
+            )
+            _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
 
     def validation_epoch_end(self, outputs) -> None:
@@ -251,46 +284,47 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
             and self.hparams.log_target == "wandb"
             and WANDB_INSTALLED
         )
-        pi = [
-            nn.functional.gumbel_softmax(
-                output[2]["pi"], tau=self.hparams.mdn_config.softmax_temperature, dim=-1
-            )
-            for output in outputs
-        ]
-        pi = torch.cat(pi).detach().cpu()
-        for i in range(self.hparams.mdn_config.num_gaussian):
-            self.log(
-                f"mean_pi_{i}",
-                pi[:, i].mean(),
-                on_epoch=True,
-                on_step=False,
-                logger=True,
-                prog_bar=False,
-            )
+        if not self.hparams.aug_task:
+            pi = [
+                nn.functional.gumbel_softmax(
+                    output[2]["pi"], tau=self.hparams.mdn_config.softmax_temperature, dim=-1
+                )
+                for output in outputs
+            ]
+            pi = torch.cat(pi).detach().cpu()
+            for i in range(self.hparams.mdn_config.num_gaussian):
+                self.log(
+                    f"mean_pi_{i}",
+                    pi[:, i].mean(),
+                    on_epoch=True,
+                    on_step=False,
+                    logger=True,
+                    prog_bar=False,
+                )
 
-        mu = [output[2]["mu"] for output in outputs]
-        mu = torch.cat(mu).detach().cpu()
-        for i in range(self.hparams.mdn_config.num_gaussian):
-            self.log(
-                f"mean_mu_{i}",
-                mu[:, i].mean(),
-                on_epoch=True,
-                on_step=False,
-                logger=True,
-                prog_bar=False,
-            )
+            mu = [output[2]["mu"] for output in outputs]
+            mu = torch.cat(mu).detach().cpu()
+            for i in range(self.hparams.mdn_config.num_gaussian):
+                self.log(
+                    f"mean_mu_{i}",
+                    mu[:, i].mean(),
+                    on_epoch=True,
+                    on_step=False,
+                    logger=True,
+                    prog_bar=False,
+                )
 
-        sigma = [output[2]["sigma"] for output in outputs]
-        sigma = torch.cat(sigma).detach().cpu()
-        for i in range(self.hparams.mdn_config.num_gaussian):
-            self.log(
-                f"mean_sigma_{i}",
-                sigma[:, i].mean(),
-                on_epoch=True,
-                on_step=False,
-                logger=True,
-                prog_bar=False,
-            )
+            sigma = [output[2]["sigma"] for output in outputs]
+            sigma = torch.cat(sigma).detach().cpu()
+            for i in range(self.hparams.mdn_config.num_gaussian):
+                self.log(
+                    f"mean_sigma_{i}",
+                    sigma[:, i].mean(),
+                    on_epoch=True,
+                    on_step=False,
+                    logger=True,
+                    prog_bar=False,
+                )
 
         if do_log_logits:
             logits = [output[0] for output in outputs]
@@ -303,7 +337,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
                 },
                 commit=False,
             )
-            if self.hparams.mdn_config.log_debug_plot:
+            if self.hparams.mdn_config.log_debug_plot and not self.hparams.aug_task:
                 fig = self.create_plotly_histogram(
                     pi, "pi", bin_dict=dict(start=0.0, end=1.0, size=0.1)
                 )
@@ -379,7 +413,7 @@ class CategoryEmbeddingMDN(BaseMDN):
 class NODEMDN(BaseMDN):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
-    
+
     def subset(self, x):
         return x[..., :].mean(dim=-2)
 
@@ -395,6 +429,7 @@ class NODEMDN(BaseMDN):
         self.backbone = nn.Sequential(backbone, output_response)
         # Adding the last layer
         self.hparams.mdn_config.input_dim = backbone.output_dim
+        setattr(self.backbone, "output_dim", backbone.output_dim)
         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
 
     def unpack_input(self, x: Dict):
