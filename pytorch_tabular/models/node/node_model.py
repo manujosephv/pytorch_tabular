@@ -9,6 +9,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from torch import Tensor
 
 from pytorch_tabular.utils import _initialize_layers
 
@@ -60,7 +61,7 @@ class NODEModel(BaseModel):
         if config.embed_categorical:
             self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
-    
+
     def subset(self, x):
             return x[..., : self.hparams.output_dim].mean(dim=-2)
 
@@ -80,7 +81,7 @@ class NODEModel(BaseModel):
         # single forward pass to initialize the ODST
         with torch.no_grad():
             self(batch)
- 
+
     def _build_network(self):
         if self.hparams.embed_categorical:
             self.embedding_layers = nn.ModuleList(
@@ -128,12 +129,15 @@ class NODEModel(BaseModel):
             x = torch.cat(tuple(x), dim=1)
         return x
 
-    def forward(self, x: Dict):
+    def compute_backbone(self, x: Dict):
         x = self.unpack_input(x)
         if self.hparams.embed_categorical:
             if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
                 x = self.embedding_dropout(x)
         x = self.backbone(x)
+        return x
+
+    def compute_head(self, x: Tensor):
         y_hat = self.output_response(x)
         if (self.hparams.task == "regression") and (
             self.hparams.target_range is not None
