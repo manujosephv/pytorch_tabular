@@ -10,6 +10,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from torch import Tensor
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
@@ -154,8 +155,10 @@ class AutoIntModel(BaseModel):
         )  # output_dim auto-calculated from other config
         _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
 
-    def forward(self, x: Dict):
-        x = self.backbone(x)
+    def compute_backbone(self, x: Dict):
+        return self.backbone(x)
+
+    def compute_head(self, x: Tensor):
         x = self.dropout(x)
         y_hat = self.output_layer(x)
         if (self.hparams.task == "regression") and (
@@ -165,7 +168,7 @@ class AutoIntModel(BaseModel):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return {"logits": y_hat, "backbone_features": x}
-    
+
     def extract_embedding(self):
         if len(self.hparams.categorical_cols) > 0:
             return self.backbone.cat_embedding_layers

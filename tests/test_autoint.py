@@ -142,6 +142,86 @@ def test_classification(
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
+
+@pytest.mark.parametrize("multi_target", [True, False])
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [
+            "AveRooms",
+            "AveBedrms",
+            "Population",
+            "AveOccup",
+            "Latitude",
+            "Longitude",
+        ],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("continuous_feature_transform", [None])
+@pytest.mark.parametrize("normalize_continuous_features", [True])
+@pytest.mark.parametrize("target_range", [True, False])
+@pytest.mark.parametrize("deep_layers", [True, False])
+@pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
+@pytest.mark.parametrize("attention_pooling", [True, False])
+def test_ssl_regression(
+    regression_data,
+    multi_target,
+    continuous_cols,
+    categorical_cols,
+    continuous_feature_transform,
+    normalize_continuous_features,
+    target_range,
+    deep_layers,
+    batch_norm_continuous_input,
+    attention_pooling
+):
+    (train, test, target) = regression_data
+    if len(continuous_cols) + len(categorical_cols) == 0:
+        assert True
+    else:
+        data_config = DataConfig(
+            target=target + ["MedInc"] if multi_target else target,
+            continuous_cols=continuous_cols,
+            categorical_cols=categorical_cols,
+            continuous_feature_transform=continuous_feature_transform,
+            normalize_continuous_features=normalize_continuous_features,
+        )
+        model_config_params = dict(task="regression",
+                                   ssl_task="Denoising",
+                                   aug_task="cutmix")
+        if target_range:
+            _target_range = []
+            for target in data_config.target:
+                _target_range.append(
+                    (
+                        train[target].min().item(),
+                        train[target].max().item(),
+                    )
+                )
+            model_config_params["target_range"] = _target_range
+        model_config_params["deep_layers"] = deep_layers
+        model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
+        model_config_params["attention_pooling"] = attention_pooling
+        model_config = AutoIntConfig(**model_config_params)
+        trainer_config = TrainerConfig(
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        )
+        optimizer_config = OptimizerConfig()
+
+        tabular_model = TabularModel(
+            data_config=data_config,
+            model_config=model_config,
+            optimizer_config=optimizer_config,
+            trainer_config=trainer_config,
+        )
+        tabular_model.fit(train=train, test=test)
+
+        result = tabular_model.evaluate(test)
+        # print(result[0]["valid_loss"])
+        assert "test_mean_squared_error" in result[0].keys()
+
+
 # import numpy as np
 # import pandas as pd
 # from sklearn.datasets import fetch_california_housing, fetch_covtype
