@@ -602,6 +602,6 @@ class TabularDataset(Dataset):
         """
         return {
             "target": self.y[idx],
-            "continuous": self.continuous_X[idx] if self.continuous_cols else [],
-            "categorical": self.categorical_X[idx] if self.categorical_cols else [],
+            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
+            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
         }

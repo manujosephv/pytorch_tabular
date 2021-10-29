@@ -9,6 +9,8 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from torch import Tensor
+
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 from ..base_model import BaseModel
@@ -70,7 +72,7 @@ class CategoryEmbeddingModel(BaseModel):
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
         _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
-    
+
     def unpack_input(self, x: Dict):
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         if self.embedding_cat_dim != 0:
@@ -93,9 +95,11 @@ class CategoryEmbeddingModel(BaseModel):
                 x = continuous_data
         return x
 
-    def forward(self, x: Dict):
+    def compute_backbone(self, x: Dict):
         x = self.unpack_input(x)
-        x = self.backbone(x)
+        return self.backbone(x)
+
+    def compute_head(self, x: Tensor):
         y_hat = self.output_layer(x)
         if (self.hparams.task == "regression") and (
             self.hparams.target_range is not None
@@ -104,3 +108,4 @@ class CategoryEmbeddingModel(BaseModel):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return {"logits": y_hat, "backbone_features": x}
+

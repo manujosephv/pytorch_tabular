@@ -205,6 +205,96 @@ def test_embedding_transformer(regression_data):
     )
 
 
+@pytest.mark.parametrize("multi_target", [True, False])
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [
+            "AveRooms",
+            "AveBedrms",
+            "Population",
+            "AveOccup",
+            "Latitude",
+            "Longitude",
+        ],
+        [],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
+@pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
+@pytest.mark.parametrize("normalize_continuous_features", [True, False])
+@pytest.mark.parametrize("target_range", [True, False])
+@pytest.mark.parametrize(
+    "target_transform",
+    [None, PowerTransformer(), (lambda x: np.power(x,2), lambda x: np.sqrt(x))],
+)
+@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
+@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+def test_ssl_regression(
+    regression_data,
+    multi_target,
+    continuous_cols,
+    categorical_cols,
+    continuous_feature_transform,
+    normalize_continuous_features,
+    target_range,
+    target_transform,
+    custom_metrics,
+    custom_loss,
+    custom_optimizer,
+):
+    (train, test, target) = regression_data
+    if len(continuous_cols) + len(categorical_cols) == 0:
+        assert True
+    else:
+        data_config = DataConfig(
+            target=target + ["MedInc"] if multi_target else target,
+            continuous_cols=continuous_cols,
+            categorical_cols=categorical_cols,
+            continuous_feature_transform=continuous_feature_transform,
+            normalize_continuous_features=normalize_continuous_features,
+        )
+        model_config_params = dict(task="regression",
+                                   ssl_task="Denoising",
+                                   aug_task="cutmix")
+        if target_range:
+            _target_range = []
+            for target in data_config.target:
+                _target_range.append(
+                    (
+                        train[target].min().item(),
+                        train[target].max().item(),
+                    )
+                )
+            model_config_params["target_range"] = _target_range
+        model_config = CategoryEmbeddingModelConfig(**model_config_params)
+        trainer_config = TrainerConfig(
+            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        )
+        optimizer_config = OptimizerConfig()
+
+        tabular_model = TabularModel(
+            data_config=data_config,
+            model_config=model_config,
+            optimizer_config=optimizer_config,
+            trainer_config=trainer_config,
+        )
+        tabular_model.fit(
+            train=train,
+            test=test,
+            metrics=custom_metrics,
+            target_transform=target_transform,
+            loss=custom_loss,
+            optimizer=custom_optimizer,
+            optimizer_params=None if custom_optimizer is None else {},
+        )
+
+        result = tabular_model.evaluate(test)
+        if custom_metrics is None:
+            assert "test_mean_squared_error" in result[0].keys()
+        else:
+            assert "test_fake_metric" in result[0].keys()
 # import numpy as np
 # import pandas as pd
 # from sklearn.datasets import fetch_california_housing, fetch_covtype
