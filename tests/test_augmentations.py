@@ -12,19 +12,20 @@ def test_get_random_index():
 
 
 def test_mixup():
-    x = torch.Tensor([[1, 1], [2, 2], [3, 3]])
-    lam = 0.5
-    random_index = torch.from_numpy(np.array([2, 0, 1]))
-    expected = torch.Tensor([[2.0, 2.0], [1.5, 1.5], [2.5, 2.5]]).numpy()
-    actual = mixup(x=x, random_index=random_index, lam=lam).numpy()
-    np.testing.assert_array_equal(actual, expected)
-
-
-def test_cutmix():
+    torch.manual_seed(0)
     np.random.seed(0)
     x = torch.Tensor([[1, 1], [2, 2], [3, 3]])
     lam = 0.5
-    random_index = torch.from_numpy(np.array([2, 0, 1]))
+    expected = torch.Tensor([[2.0, 2.0], [1.5, 1.5], [2.5, 2.5]]).numpy()
+    actual = mixup(batch={"x": x}, lam=lam)
+    np.testing.assert_array_equal(actual["x"].numpy(), expected)
+
+
+def test_cutmix():
+    torch.manual_seed(0)
+    np.random.seed(0)
+    x = torch.Tensor([[1, 1], [2, 2], [3, 3]])
+    lam = 0.5
     expected = torch.Tensor([[1.0, 1.0], [2.0, 2.0], [2.0, 3.0]]).numpy()
-    actual = cutmix(x=x, random_index=random_index, lam=lam).numpy()
-    np.testing.assert_array_equal(actual, expected)
+    actual = cutmix(batch={"x": x}, lam=lam)
+    np.testing.assert_array_equal(actual["x"].numpy(), expected)
