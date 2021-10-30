@@ -194,12 +194,13 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-def test_ssl_classification(
+def test_ssl(
     classification_data,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
     normalize_continuous_features,
+    tmpdir,
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -213,7 +214,7 @@ def test_ssl_classification(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(
-            task="classification",
+            task="ssl",
             input_embed_dim=8,
             num_attn_blocks=1,
             num_heads=2,

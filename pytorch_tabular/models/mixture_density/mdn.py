@@ -136,8 +136,9 @@ class MixtureDensityHead(nn.Module):
 
 class BaseMDN(BaseModel, metaclass=ABCMeta):
     def __init__(self, config: DictConfig, **kwargs):
-        assert config.task == "regression", "MDN is only implemented for Regression"
-        assert config.output_dim == 1, "MDN is not implemented for multi-targets"
+        assert config.task in ["regression", "ssl"], "MDN is only implemented for Regression"
+        if config.task != "ssl":
+            assert config.output_dim == 1, "MDN is not implemented for multi-targets"
         if config.target_range is not None:
             logger.warning("MDN does not use target range. Ignoring it.")
         super().__init__(config, **kwargs)
@@ -211,7 +212,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
         return loss
 
     def training_step(self, batch, batch_idx):
-        if self.hparams.aug_task:
+        if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
             y_hat = self(batch_augmented)["logits"]
@@ -235,7 +236,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        if self.hparams.aug_task:
+        if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
             ret_value = self(batch_augmented)["logits"]
@@ -257,7 +258,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
         return y_hat, y, ret_value
 
     def test_step(self, batch, batch_idx):
-        if self.hparams.aug_task:
+        if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
             y_hat = self(batch_augmented)["logits"]
@@ -284,7 +285,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
             and self.hparams.log_target == "wandb"
             and WANDB_INSTALLED
         )
-        if not self.hparams.aug_task:
+        if not self.hparams.task == "ssl":
             pi = [
                 nn.functional.gumbel_softmax(
                     output[2]["pi"], tau=self.hparams.mdn_config.softmax_temperature, dim=-1
@@ -337,7 +338,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
                 },
                 commit=False,
             )
-            if self.hparams.mdn_config.log_debug_plot and not self.hparams.aug_task:
+            if self.hparams.mdn_config.log_debug_plot and not self.hparams.task == "ssl":
                 fig = self.create_plotly_histogram(
                     pi, "pi", bin_dict=dict(start=0.0, end=1.0, size=0.1)
                 )

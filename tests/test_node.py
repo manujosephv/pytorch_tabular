@@ -196,7 +196,7 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("embed_categorical", [True, False])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-def test_ssl_classification(
+def test_ssl(
     classification_data,
     continuous_cols,
     categorical_cols,
@@ -216,7 +216,7 @@ def test_ssl_classification(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(
-            task="classification",
+            task="ssl",
             depth=2,
             num_trees=50,
             embed_categorical=embed_categorical,

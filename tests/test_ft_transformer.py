@@ -203,7 +203,7 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("target_range", [True, False])
-def test_ssl_regression(
+def test_ssl(
     regression_data,
     multi_target,
     continuous_cols,
@@ -224,7 +224,7 @@ def test_ssl_regression(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(
-            task="regression",
+            task="ssl",
             input_embed_dim=8,
             num_attn_blocks=1,
             num_heads=2,

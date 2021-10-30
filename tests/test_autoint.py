@@ -164,7 +164,7 @@ def test_classification(
 @pytest.mark.parametrize("deep_layers", [True, False])
 @pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
 @pytest.mark.parametrize("attention_pooling", [True, False])
-def test_ssl_regression(
+def test_ssl(
     regression_data,
     multi_target,
     continuous_cols,
@@ -187,7 +187,7 @@ def test_ssl_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression",
+        model_config_params = dict(task="ssl",
                                    ssl_task="Denoising",
                                    aug_task="cutmix")
         if target_range:

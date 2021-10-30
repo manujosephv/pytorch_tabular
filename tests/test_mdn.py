@@ -140,7 +140,7 @@ def test_classification(
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("variant", [CategoryEmbeddingMDNConfig, NODEMDNConfig, AutoIntMDNConfig])
 @pytest.mark.parametrize("num_gaussian", [1, 2])
-def test_ssl_regression(
+def test_ssl(
     regression_data,
     multi_target,
     continuous_cols,
@@ -161,7 +161,7 @@ def test_ssl_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression",
+        model_config_params = dict(task="ssl",
                                    ssl_task="Denoising",
                                    aug_task="cutmix")
         mdn_config = MixtureDensityHeadConfig(num_gaussian=num_gaussian)

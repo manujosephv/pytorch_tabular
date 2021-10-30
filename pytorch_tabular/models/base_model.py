@@ -187,7 +187,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def forward(self, x: Dict):
         x = self.compute_backbone(x)
-        if self.hparams.ssl_task:
+        if self.hparams.task == "ssl":
             return self.compute_ssl_head(x)
         return self.compute_head(x)
 
@@ -199,7 +199,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             return ret_value.get("logits")
 
     def training_step(self, batch, batch_idx):
-        if self.hparams.aug_task:
+        if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
             y_hat = self(batch_augmented)["logits"]
@@ -211,7 +211,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        if self.hparams.aug_task:
+        if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
             y_hat = self(batch_augmented)["logits"]
@@ -223,7 +223,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
-        if self.hparams.aug_task:
+        if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
             y_hat = self(batch_augmented)["logits"]

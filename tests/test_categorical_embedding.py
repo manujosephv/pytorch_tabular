@@ -231,7 +231,7 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
-def test_ssl_regression(
+def test_ssl(
     regression_data,
     multi_target,
     continuous_cols,
