@@ -140,6 +140,8 @@ def test_classification(
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("variant", [CategoryEmbeddingMDNConfig, NODEMDNConfig, AutoIntMDNConfig])
 @pytest.mark.parametrize("num_gaussian", [1, 2])
+@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
+@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     regression_data,
     multi_target,
@@ -148,7 +150,9 @@ def test_ssl(
     continuous_feature_transform,
     normalize_continuous_features,
     variant,
-    num_gaussian
+    num_gaussian,
+    ssl_task,
+    aug_task
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -162,8 +166,8 @@ def test_ssl(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(task="ssl",
-                                   ssl_task="Denoising",
-                                   aug_task="cutmix")
+                                   ssl_task=ssl_task,
+                                   aug_task=aug_task)
         mdn_config = MixtureDensityHeadConfig(num_gaussian=num_gaussian)
         model_config_params['mdn_config'] = mdn_config
         model_config = variant(**model_config_params)

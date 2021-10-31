@@ -164,6 +164,8 @@ def test_classification(
 @pytest.mark.parametrize("deep_layers", [True, False])
 @pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
 @pytest.mark.parametrize("attention_pooling", [True, False])
+@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
+@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     regression_data,
     multi_target,
@@ -174,7 +176,9 @@ def test_ssl(
     target_range,
     deep_layers,
     batch_norm_continuous_input,
-    attention_pooling
+    attention_pooling,
+    ssl_task,
+    aug_task
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -188,8 +192,8 @@ def test_ssl(
             normalize_continuous_features=normalize_continuous_features,
         )
         model_config_params = dict(task="ssl",
-                                   ssl_task="Denoising",
-                                   aug_task="cutmix")
+                                   ssl_task=ssl_task,
+                                   aug_task=aug_task)
         if target_range:
             _target_range = []
             for target in data_config.target:

@@ -562,7 +562,9 @@ class ModelConfig:
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
-            "help": "The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule min(50, (x + 1) // 2)"
+            "help": "The dimensions of the embedding for each categorical column as a list of tuples "
+                    "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
+                    "categorical column using the rule min(50, (x + 1) // 2)"
         },
     )
     learning_rate: float = field(
@@ -571,13 +573,17 @@ class ModelConfig:
     loss: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
+            "help": "The loss function to be applied. By Default it is MSELoss for regression "
+                    "and CrossEntropyLoss for classification. Unless you are sure what you are doing, "
+                    "leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
         },
     )
     metrics: Optional[List[str]] = field(
         default=None,
         metadata={
-            "help": "the list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in ``torchmetrics``. By default, it is accuracy if classification and mean_squared_error for regression"
+            "help": "the list of metrics you need to track during training. The metrics should be one "
+                    "of the functional metrics implemented in ``torchmetrics``. By default, "
+                    "it is accuracy if classification and mean_squared_error for regression"
         },
     )
     metrics_params: Optional[List] = field(
@@ -587,7 +593,9 @@ class ModelConfig:
     target_range: Optional[List] = field(
         default=None,
         metadata={
-            "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
+            "help": "The range in which we should limit the output variable. "
+                    "Currently ignored for multi-target regression. Typically used for Regression problems. "
+                    "If left empty, will not apply any restrictions"
         },
     )
     seed: int = field(
@@ -613,43 +621,22 @@ class ModelConfig:
                 else self.metrics_params
             )
         elif self.task == "ssl":
-            self.loss = "MSELoss" if self.loss is None else self.loss
+            assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
+            assert self.aug_task, "if task is ssl, aug_task cannot be None"
+            if self.ssl_task == "Contrastive":
+                self.loss = "ContrastiveLoss" if self.loss is None else self.loss
+            else:
+                self.loss = "MSELoss" if self.loss is None else self.loss
             self.metrics = (
                 ["mean_squared_error"] if self.metrics is None else self.metrics
             )
             self.metrics_params = [{}]
         else:
             raise NotImplementedError(
-                f"{self.task} is not a valid task. Should be one of {self.__dataclass_fields__['task'].metadata['choices']}"
+                f"{self.task} is not a valid task. Should be one of "
+                f"{self.__dataclass_fields__['task'].metadata['choices']}"
             )
         assert len(self.metrics) == len(
             self.metrics_params
         ), "metrics and metric_params should have same length"
         _validate_choices(self)
-
-
-# conf = OmegaConf.structured(ModelConfig(task='regression', loss="custom"))
-# print(OmegaConf.to_yaml(conf))
-# cls = ModelConfig
-# desc = "Configuration for Data."
-# doc_str = f"{desc}\nArgs:"
-# for key in cls.__dataclass_fields__.keys():
-#     atr = cls.__dataclass_fields__[key]
-#     if atr.init:
-#         type = str(atr.type).replace("<class '","").replace("'>","").replace("typing.","")
-#         help_str = atr.metadata["help"]
-#         if "choices" in atr.metadata.keys():
-#             help_str += f'Choices are: {" ".join([str(ch) for ch in atr.metadata["choices"]])}'
-#         doc_str+=f'\n\t\t{key} ({type}): {help_str}'
-
-# print(doc_str)
-
-# config = Config()
-# config.parse_args(["--overfit-batches","10"])
-# config.generate_yaml_config()
-# print(config.overfit_batches)
-# config = Config.read_from_yaml("run_config.yml")
-# print(config.overfit_batches)
-# print(config.profiler)
-# parser = ArgumentParser(config)
-# parser.parse_args(["--overfit-batches","10"])

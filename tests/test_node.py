@@ -196,6 +196,8 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("embed_categorical", [True, False])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
+@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
+@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     classification_data,
     continuous_cols,
@@ -203,6 +205,8 @@ def test_ssl(
     embed_categorical,
     continuous_feature_transform,
     normalize_continuous_features,
+    ssl_task,
+    aug_task
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -220,8 +224,8 @@ def test_ssl(
             depth=2,
             num_trees=50,
             embed_categorical=embed_categorical,
-            ssl_task="Denoising",
-            aug_task="cutmix"
+            ssl_task=ssl_task,
+            aug_task=aug_task
         )
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(

@@ -194,13 +194,16 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
+@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
+@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     classification_data,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
     normalize_continuous_features,
-    tmpdir,
+    ssl_task,
+    aug_task
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -218,8 +221,8 @@ def test_ssl(
             input_embed_dim=8,
             num_attn_blocks=1,
             num_heads=2,
-            ssl_task="Denoising",
-            aug_task="cutmix"
+            ssl_task=ssl_task,
+            aug_task=aug_task
         )
         model_config = TabTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(

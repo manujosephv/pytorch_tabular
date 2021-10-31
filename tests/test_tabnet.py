@@ -130,12 +130,16 @@ def test_classification(
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
+@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
+@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     classification_data,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
     normalize_continuous_features,
+    ssl_task,
+    aug_task,
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -148,7 +152,7 @@ def test_ssl(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = {"task": "ssl", "ssl_task": "Denoising", "aug_task": "cutmix"}
+        model_config_params = {"task": "ssl", "ssl_task": ssl_task, "aug_task": aug_task}
         model_config = TabNetModelConfig(**model_config_params)
         trainer_config = TrainerConfig(max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
         optimizer_config = OptimizerConfig()

@@ -15,6 +15,7 @@ def mixup(batch: Dict, lam: float = 0.5) -> Dict:
     for key, value in batch.items():
         random_index = get_random_index(value)
         result[key] = lam * value + (1 - lam) * value[random_index, :]
+        result[key] = result[key].to(dtype=value.dtype)
     return result
 
 

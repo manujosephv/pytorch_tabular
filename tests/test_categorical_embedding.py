@@ -231,6 +231,8 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
+@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     regression_data,
     multi_target,
@@ -243,6 +245,8 @@ def test_ssl(
     custom_metrics,
     custom_loss,
     custom_optimizer,
+    ssl_task,
+    aug_task
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -255,9 +259,9 @@ def test_ssl(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression",
-                                   ssl_task="Denoising",
-                                   aug_task="cutmix")
+        model_config_params = dict(task="ssl",
+                                   ssl_task=ssl_task,
+                                   aug_task=aug_task)
         if target_range:
             _target_range = []
             for target in data_config.target:

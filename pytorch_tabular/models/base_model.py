@@ -17,6 +17,8 @@ import torchmetrics
 import torch.nn as nn
 from omegaconf import DictConfig
 
+from pytorch_tabular.utils import loss_contrastive
+
 try:
     import wandb
     import plotly.graph_objects as go
@@ -64,21 +66,18 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def _build_network(self):
         pass
 
-    @staticmethod
-    def loss_contrastive(y_hat, y):
-        return - nn.functional.cosine_similarity(y_hat, y).add_(-1).sum()
-
     def _setup_loss(self):
         if self.custom_loss is None:
             if self.hparams.ssl_task == "Contrastive":
-                self.loss = self.loss_contrastive
-            try:
-                self.loss = getattr(nn, self.hparams.loss)()
-            except AttributeError as e:
-                logger.error(
-                    f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
-                )
-                raise e
+                self.loss = loss_contrastive
+            else:
+                try:
+                    self.loss = getattr(nn, self.hparams.loss)()
+                except AttributeError as e:
+                    logger.error(
+                        f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
+                    )
+                    raise e
         else:
             self.loss = self.custom_loss
 
@@ -132,7 +131,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         for metric, metric_str, metric_params in zip(
             self.metrics, self.hparams.metrics, self.hparams.metrics_params
         ):
-            if (self.hparams.task == "regression"):
+            if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     if (
