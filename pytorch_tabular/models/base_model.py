@@ -201,6 +201,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
+        assert self.hparams.task != "ssl", "It's not allowed to use the method predict in case of ssl task"
         ret_value = self.forward(x)
         if ret_model_output:
             return ret_value.get("logits"), ret_value

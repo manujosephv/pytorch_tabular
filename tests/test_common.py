@@ -226,8 +226,9 @@ def test_pretrained_backbone(
         optimizer=custom_optimizer,
         optimizer_params=None if custom_optimizer is None else {},
     )
-
     result_1 = tabular_model.evaluate(test)
+    with pytest.raises(AssertionError):
+        tabular_model.predict(test)
     assert "test_mean_squared_error" in result_1[0].keys()
     sv_dir = tmpdir.mkdir("saved_model")
     tabular_model.save_model(str(sv_dir))
