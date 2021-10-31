@@ -18,6 +18,7 @@ from ..base_model import BaseModel
 
 logger = logging.getLogger(__name__)
 
+
 #TODO dont use embedding_dims
 class AutoIntBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig):
@@ -148,26 +149,10 @@ class AutoIntModel(BaseModel):
     def _build_network(self):
         # Backbone
         self.backbone = AutoIntBackbone(self.hparams)
-        self.dropout = nn.Dropout(self.hparams.dropout)
-        # Adding the last layer
-        self.output_layer = nn.Linear(
-            self.backbone.output_dim, self.hparams.output_dim
-        )  # output_dim auto-calculated from other config
-        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
-
-    def compute_backbone(self, x: Dict):
-        return self.backbone(x)
-
-    def compute_head(self, x: Tensor):
-        x = self.dropout(x)
-        y_hat = self.output_layer(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
-        return {"logits": y_hat, "backbone_features": x}
+        # Head
+        self.head = nn.Sequential(nn.Dropout(self.hparams.dropout),
+                                  nn.Linear(self.backbone.output_dim, self.hparams.output_dim))
+        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.head)
 
     def extract_embedding(self):
         if len(self.hparams.categorical_cols) > 0:

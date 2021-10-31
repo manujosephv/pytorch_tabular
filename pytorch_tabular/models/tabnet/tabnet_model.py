@@ -42,7 +42,17 @@ class TabNetBackbone(pl.LightningModule):
             mask_type=self.hparams.mask_type,
         )
 
+    def unpack_input(self, x: Dict):
+        # unpacking into a tuple
+        x = x["categorical"], x["continuous"]
+        # eliminating None in case there is no categorical or continuous columns
+        x = (item for item in x if len(item) > 0)
+        x = torch.cat(tuple(x), dim=1)
+        return x
+
     def forward(self, x: Dict):
+        # unpacking into a tuple
+        x = self.unpack_input(x)
         # Returns output and Masked Loss. We only need the output
         x, _ = self.tabnet(x)
         return x
@@ -55,27 +65,4 @@ class TabNetModel(BaseModel):
     def _build_network(self):
         self.backbone = TabNetBackbone(self.hparams)
         setattr(self.backbone, "output_dim", self.hparams.output_dim)
-
-    def unpack_input(self, x: Dict):
-        # unpacking into a tuple
-        x = x["categorical"], x["continuous"]
-        # eliminating None in case there is no categorical or continuous columns
-        x = (item for item in x if len(item) > 0)
-        x = torch.cat(tuple(x), dim=1)
-        return x
-
-    def compute_backbone(self, x: Dict):
-        # unpacking into a tuple
-        x = self.unpack_input(x)
-        # Returns output
-        x = self.backbone(x)
-        return x
-
-    def compute_head(self, x: Tensor):
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
-        return {"logits": x}  # No Easy way to access the raw features in TabNet
+        self.head = nn.Identity()

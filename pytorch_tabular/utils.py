@@ -48,30 +48,35 @@ def get_balanced_sampler(y_train):
 
 
 def _initialize_layers(activation, initialization, layer):
-    if activation == "ReLU":
-        nonlinearity = "relu"
-    elif activation == "LeakyReLU":
-        nonlinearity = "leaky_relu"
+    if type(layer) == nn.Sequential:
+        for l in layer:
+            if hasattr(l, "weight"):
+                _initialize_layers(activation, initialization, l)
     else:
-        if initialization == "kaiming":
-            logger.warning(
-                "Kaiming initialization is only recommended for ReLU and LeakyReLU."
-            )
+        if activation == "ReLU":
+            nonlinearity = "relu"
+        elif activation == "LeakyReLU":
             nonlinearity = "leaky_relu"
         else:
-            nonlinearity = "relu"
+            if initialization == "kaiming":
+                logger.warning(
+                    "Kaiming initialization is only recommended for ReLU and LeakyReLU."
+                )
+                nonlinearity = "leaky_relu"
+            else:
+                nonlinearity = "relu"
 
-    if initialization == "kaiming":
-        nn.init.kaiming_normal_(layer.weight, nonlinearity=nonlinearity)
-    elif initialization == "xavier":
-        nn.init.xavier_normal_(
-            layer.weight,
-            gain=nn.init.calculate_gain(nonlinearity)
-            if activation in ["ReLU", "LeakyReLU"]
-            else 1,
-        )
-    elif initialization == "random":
-        nn.init.normal_(layer.weight)
+        if initialization == "kaiming":
+            nn.init.kaiming_normal_(layer.weight, nonlinearity=nonlinearity)
+        elif initialization == "xavier":
+            nn.init.xavier_normal_(
+                layer.weight,
+                gain=nn.init.calculate_gain(nonlinearity)
+                if activation in ["ReLU", "LeakyReLU"]
+                else 1,
+            )
+        elif initialization == "random":
+            nn.init.normal_(layer.weight)
 
 
 def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out_units, dropout):

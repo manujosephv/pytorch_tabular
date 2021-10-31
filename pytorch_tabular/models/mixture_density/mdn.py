@@ -143,10 +143,6 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
             logger.warning("MDN does not use target range. Ignoring it.")
         super().__init__(config, **kwargs)
 
-    def compute_backbone(self, x: Dict):
-        x = self.backbone(x)
-        return x
-
     def compute_head(self, x: Tensor):
         pi, sigma, mu = self.mdn(x)
         return {"pi": pi, "sigma": sigma, "mu": mu, "backbone_features": x}

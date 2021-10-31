@@ -716,7 +716,7 @@ class TabularModel:
             )
 
     @classmethod
-    def load_from_checkpoint(cls, dir: str, map_location = None, strict=True):
+    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
         """Loads a saved model from the directory
 
         Args:
@@ -782,6 +782,7 @@ class TabularModel:
             model.custom_optimizer = custom_params["custom_optimizer"]
         if custom_params.get("custom_optimizer_params") is not None:
             model.custom_optimizer_params = custom_params["custom_optimizer_params"]
+        model.hparams.update(config)
         model._setup_loss()
         model._setup_metrics()
         tabular_model = cls(config=config, model_callable=model_callable)

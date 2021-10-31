@@ -174,13 +174,23 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def data_aware_initialization(self, datamodule):
         pass
 
-    @abstractmethod
     def compute_backbone(self, x: Dict):
-        pass
+        # Returns output
+        x = self.backbone(x)
+        return x
 
-    @abstractmethod
     def compute_head(self, x: Tensor):
-        pass
+        y_hat = self.head(x)
+        if (self.hparams.task == "regression") and (
+            self.hparams.target_range is not None
+        ):
+            for i in range(self.hparams.output_dim):
+                y_min, y_max = self.hparams.target_range[i]
+                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
+        if type(self.head) == nn.Identity:
+            return {"logits": y_hat}
+        else:
+            return {"logits": y_hat, "backbone_features": x}
 
     def compute_ssl_head(self, x: Dict):
         return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(x)

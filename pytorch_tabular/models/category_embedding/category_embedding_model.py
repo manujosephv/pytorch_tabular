@@ -88,21 +88,7 @@ class CategoryEmbeddingModel(BaseModel):
         # Backbone
         self.backbone = CategoryEmbeddingBackbone(self.hparams)
         # Adding the last layer
-        self.output_layer = nn.Linear(
+        self.head = nn.Linear(
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
         _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
-
-    def compute_backbone(self, x: Dict):
-        return self.backbone(x)
-
-    def compute_head(self, x: Tensor):
-        y_hat = self.output_layer(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
-        return {"logits": y_hat, "backbone_features": x}
-

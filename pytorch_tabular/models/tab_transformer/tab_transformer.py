@@ -141,29 +141,13 @@ class TabTransformerModel(BaseModel):
         self.backbone = TabTransformerBackbone(self.hparams)
         self.dropout = nn.Dropout(self.hparams.out_ff_dropout)
         # Adding the last layer
-        self.output_layer = nn.Linear(
-            self.backbone.output_dim, self.hparams.output_dim
-        )  # output_dim auto-calculated from other config
+        self.head = nn.Sequential(nn.Dropout(self.hparams.out_ff_dropout),
+                                  nn.Linear(self.backbone.output_dim, self.hparams.output_dim))
         _initialize_layers(
             self.hparams.out_ff_activation,
             self.hparams.out_ff_initialization,
-            self.output_layer,
+            self.head,
         )
-
-    def compute_backbone(self, x: Dict):
-        x = self.backbone(x)
-        return x
-
-    def compute_head(self, x: Tensor):
-        x = self.dropout(x)
-        y_hat = self.output_layer(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
-        return {"logits": y_hat, "backbone_features": x}
 
     def extract_embedding(self):
         if len(self.hparams.categorical_cols) > 0:

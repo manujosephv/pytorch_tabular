@@ -131,21 +131,7 @@ class NODEModel(BaseModel):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
 
-        self.output_response = utils.Lambda(self.subset)
-
-    def compute_backbone(self, x: Dict):
-        x = self.backbone(x)
-        return x
-
-    def compute_head(self, x: Tensor):
-        y_hat = self.output_response(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
-        return {"logits": y_hat, "backbone_features": x}
+        self.head = utils.Lambda(self.subset)
 
     def extract_embedding(self):
         if self.hparams.embed_categorical:
