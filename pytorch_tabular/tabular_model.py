@@ -20,7 +20,6 @@ from pytorch_lightning.utilities.cloud_io import load as pl_load
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
-from pytorch_tabular import config
 
 import pytorch_tabular.models as models
 from pytorch_tabular.config import (
@@ -686,7 +685,7 @@ class TabularModel:
             point_predictions = nn.Softmax(dim=-1)(point_predictions).numpy()
             for i, class_ in enumerate(self.datamodule.label_encoder.classes_):
                 pred_df[f"{class_}_probability"] = point_predictions[:, i]
-            pred_df[f"prediction"] = self.datamodule.label_encoder.inverse_transform(
+            pred_df["prediction"] = self.datamodule.label_encoder.inverse_transform(
                 np.argmax(point_predictions, axis=1)
             )
         if ret_logits:

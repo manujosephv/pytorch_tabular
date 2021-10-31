@@ -229,7 +229,8 @@ def test_ssl(
         )
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1, checkpoints=None, early_stopping=None,
+            gpus=None, fast_dev_run=True
         )
         optimizer_config = OptimizerConfig()
 

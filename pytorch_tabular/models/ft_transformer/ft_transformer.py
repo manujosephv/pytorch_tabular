@@ -11,9 +11,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from einops import rearrange
 from omegaconf import DictConfig
-from torch import Tensor
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
@@ -120,7 +118,7 @@ class FTTransformerBackbone(pl.LightningModule):
                 attn_dropout=self.hparams.attn_dropout,
                 ff_dropout=self.hparams.ff_dropout,
                 add_norm_dropout=self.hparams.add_norm_dropout,
-                keep_attn=self.hparams.attn_feature_importance #Can use Attn Weights to derive feature importance
+                keep_attn=self.hparams.attn_feature_importance # Can use Attn Weights to derive feature importance
             )
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
         if self.hparams.attn_feature_importance:
@@ -195,9 +193,6 @@ class FTTransformerBackbone(pl.LightningModule):
 
     #Not Tested Properly
     def _calculate_feature_importance(self):
-        # if self.feature_importance_.device != self.device:
-        #     self.feature_importance_ = self.feature_importance_.to(self.device)
-
         n, h, f, _ = self.attention_weights_[0].shape
         L = len(self.attention_weights_)
         self.local_feature_importance = torch.zeros((n,f), device=self.device)

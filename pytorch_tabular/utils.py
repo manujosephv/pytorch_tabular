@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -47,11 +46,11 @@ def get_balanced_sampler(y_train):
     return train_sampler
 
 
-def _initialize_layers(activation, initialization, layer):
-    if type(layer) == nn.Sequential:
-        for l in layer:
-            if hasattr(l, "weight"):
-                _initialize_layers(activation, initialization, l)
+def _initialize_layers(activation, initialization, layers):
+    if type(layers) == nn.Sequential:
+        for layer in layers:
+            if hasattr(layer, "weight"):
+                _initialize_layers(activation, initialization, layer)
     else:
         if activation == "ReLU":
             nonlinearity = "relu"

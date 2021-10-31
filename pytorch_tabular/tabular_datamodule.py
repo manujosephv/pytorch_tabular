@@ -4,7 +4,7 @@
 """Tabular Data Module"""
 import logging
 import re
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
 import numpy as np

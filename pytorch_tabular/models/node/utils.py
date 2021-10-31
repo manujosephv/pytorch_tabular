@@ -192,7 +192,8 @@ class Entmoid15(Function):
 
 def entmax15(input, dim=-1):
     return Entmax15Function.apply(input, dim)
-# entmax15 = lambda input, dim=-1: Entmax15Function.apply(input, dim)
+
+
 entmoid15 = Entmoid15.apply
 
 

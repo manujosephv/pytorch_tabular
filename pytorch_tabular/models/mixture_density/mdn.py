@@ -4,7 +4,7 @@
 """Mixture Density Models"""
 import logging
 import math
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from typing import Dict, Optional
 
 import torch

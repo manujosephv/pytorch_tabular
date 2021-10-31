@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 """Tabnet Model Config"""
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from pytorch_tabular.config import ModelConfig
 

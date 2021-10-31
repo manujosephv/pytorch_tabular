@@ -9,9 +9,6 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from torch import Tensor
-
-from pytorch_tabular.utils import _initialize_layers
 
 from ..base_model import BaseModel
 from . import utils as utils
@@ -107,7 +104,7 @@ class NODEModel(BaseModel):
         super().__init__(config, **kwargs)
 
     def subset(self, x):
-            return x[..., : self.hparams.output_dim].mean(dim=-2)
+        return x[..., : self.hparams.output_dim].mean(dim=-2)
 
     def data_aware_initialization(self, datamodule):
         """Performs data-aware initialization for NODE"""

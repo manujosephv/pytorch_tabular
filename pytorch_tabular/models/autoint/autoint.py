@@ -10,7 +10,6 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from torch import Tensor
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
@@ -29,7 +28,7 @@ class AutoIntBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        if len(self.hparams.categorical_cols)>0:
+        if len(self.hparams.categorical_cols) > 0:
             # Category Embedding layers
             self.cat_embedding_layers = nn.ModuleList(
                 [
@@ -43,7 +42,7 @@ class AutoIntBackbone(pl.LightningModule):
         self.cont_embedding_layer = nn.Embedding(
             self.hparams.continuous_dim, self.hparams.embedding_dim
         )
-        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols)>0:
+        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols) > 0:
             self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
