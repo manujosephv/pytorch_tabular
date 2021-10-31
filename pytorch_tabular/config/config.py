@@ -549,14 +549,14 @@ class ModelConfig:
         default=None,
         metadata={
             "help": "Specify whether the problem is regression of classification.",
-            "choices": ["Denoising", "Contrastive"],
+            "choices": ["Denoising", "Contrastive", None],
         }
     )
     aug_task: Optional[str] = field(
         default=None,
         metadata={
             "help": "Specify whether the problem is regression of classification.",
-            "choices": ["cutmix", "mixup"],
+            "choices": ["cutmix", "mixup", None],
         }
     )
     embedding_dims: Optional[List[int]] = field(
