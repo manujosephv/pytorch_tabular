@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+import os
 
 import pytest
 import torch
@@ -12,11 +13,12 @@ from pytorch_tabular.models import (
     CategoryEmbeddingModelConfig,
     NodeConfig,
     TabNetModelConfig,
+    TabTransformerConfig
 )
 
 MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, dict(layers="10-20")),
-    (AutoIntConfig, dict(num_heads=1,num_attn_blocks=1,)),
+    (AutoIntConfig, dict(num_heads=1, num_attn_blocks=1,)),
     (NodeConfig, dict(num_trees=100, depth=2)),
     (TabNetModelConfig, dict(n_a=2, n_d=2)),
 ]
@@ -154,3 +156,103 @@ def test_feature_extractor(
     dt = DeepFeatureExtractor(tabular_model)
     enc_df = dt.fit_transform(test)
     assert any([col for col in enc_df.columns if "backbone" in col])
+
+
+MODEL_CONFIG_SAVE_TEST_SSL = [
+    (TabTransformerConfig, dict(input_embed_dim=8,
+                                num_attn_blocks=1,
+                                num_heads=2)),
+]
+
+
+@pytest.mark.parametrize(
+    "model_config_class",
+    MODEL_CONFIG_SAVE_TEST_SSL,
+)
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [
+            "AveRooms",
+            "AveBedrms",
+            "Population",
+            "AveOccup",
+            "Latitude",
+            "Longitude",
+        ],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("custom_metrics", [None])
+@pytest.mark.parametrize("custom_loss", [None])
+@pytest.mark.parametrize("custom_optimizer", [None])
+def test_pretrained_backbone(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    custom_metrics,
+    custom_loss,
+    custom_optimizer,
+    tmpdir,
+):
+    (train, test, target) = regression_data
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+    )
+    model_config_class, model_config_params = model_config_class
+    model_config_params['task'] = "ssl"
+    model_config_params['ssl_task'] = "Denoising"
+    model_config_params['aug_task'] = "cutmix"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+        test=test,
+        metrics=custom_metrics,
+        loss=custom_loss,
+        optimizer=custom_optimizer,
+        optimizer_params=None if custom_optimizer is None else {},
+    )
+
+    result_1 = tabular_model.evaluate(test)
+    assert "test_mean_squared_error" in result_1[0].keys()
+    sv_dir = tmpdir.mkdir("saved_model")
+    tabular_model.save_model(str(sv_dir))
+    old_mdl = TabularModel.load_from_checkpoint(str(sv_dir))
+    model_config_params['task'] = "regression"
+    model_config_params['ssl_task'] = None
+    model_config_params['aug_task'] = None
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+    )
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+        test=test,
+        metrics=custom_metrics,
+        loss=custom_loss,
+        optimizer=custom_optimizer,
+        optimizer_params=None if custom_optimizer is None else {},
+        trained_backbone=old_mdl.model.backbone
+    )
+    result_2 = tabular_model.evaluate(test)
+    assert "test_mean_squared_error" in result_2[0].keys()

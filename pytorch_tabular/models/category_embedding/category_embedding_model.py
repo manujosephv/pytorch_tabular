@@ -91,4 +91,4 @@ class CategoryEmbeddingModel(BaseModel):
         self.head = nn.Linear(
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
-        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.output_layer)
+        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.head)
