@@ -66,16 +66,16 @@ def _initialize_layers(activation, initialization, layers):
                 nonlinearity = "relu"
 
         if initialization == "kaiming":
-            nn.init.kaiming_normal_(layer.weight, nonlinearity=nonlinearity)
+            nn.init.kaiming_normal_(layers.weight, nonlinearity=nonlinearity)
         elif initialization == "xavier":
             nn.init.xavier_normal_(
-                layer.weight,
+                layers.weight,
                 gain=nn.init.calculate_gain(nonlinearity)
                 if activation in ["ReLU", "LeakyReLU"]
                 else 1,
             )
         elif initialization == "random":
-            nn.init.normal_(layer.weight)
+            nn.init.normal_(layers.weight)
 
 
 def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out_units, dropout):

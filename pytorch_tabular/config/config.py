@@ -513,7 +513,11 @@ class ExperimentRunManager:
 class ModelConfig:
     """Base Model configuration
     Args:
-        task (str): Specify whether the problem is regression of classification.Choices are: regression classification
+        task (str): Specify whether the problem is regression of classification.Choices are: regression classification ssl
+
+        ssl_task (str): Specify the kind of self supervised algorithm to use. Choices are: Denoising, Contrastive, None
+
+        aug_task (str): Specify the kind of augmentations algorithm to use for ssl. Choices are: cutmix, mixup, None
 
         embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
             as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
