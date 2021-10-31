@@ -208,7 +208,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             return ret_value.get("logits")
 
-    def training_step(self, batch, batch_idx):
+    def shared_step(self, batch):
         if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
@@ -216,30 +216,22 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             y = batch["target"]
             y_hat = self(batch)["logits"]
+        return y, y_hat
+
+    def training_step(self, batch, batch_idx):
+        y, y_hat = self.shared_step(batch)
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        if self.hparams.task == "ssl":
-            y = self(batch)["logits"]
-            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
-            y_hat = self(batch_augmented)["logits"]
-        else:
-            y = batch["target"]
-            y_hat = self(batch)["logits"]
+        y, y_hat = self.shared_step(batch)
         _ = self.calculate_loss(y, y_hat, tag="valid")
         _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
-        if self.hparams.task == "ssl":
-            y = self(batch)["logits"]
-            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
-            y_hat = self(batch_augmented)["logits"]
-        else:
-            y = batch["target"]
-            y_hat = self(batch)["logits"]
+        y, y_hat = self.shared_step(batch)
         _ = self.calculate_loss(y, y_hat, tag="test")
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
