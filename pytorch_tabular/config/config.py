@@ -2,12 +2,13 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Config"""
+import logging
 from dataclasses import MISSING, dataclass, field
 from typing import List, Optional
 import os
 from omegaconf import OmegaConf
 
-# from omegaconf.dictconfig import DictConfig
+logger = logging.getLogger(__name__)
 
 
 def _read_yaml(filename):
@@ -628,6 +629,10 @@ class ModelConfig:
             assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
             assert self.aug_task, "if task is ssl, aug_task cannot be None"
             if self.ssl_task == "Contrastive":
+                if self.loss:
+                    logger.warning(
+                        "In case of Contrastive the loss cannot be specified and will be ignored"
+                    )
                 self.loss = "ContrastiveLoss" if self.loss is None else self.loss
             else:
                 self.loss = "MSELoss" if self.loss is None else self.loss

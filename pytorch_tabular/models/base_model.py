@@ -186,6 +186,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
+        # if self.head is the Identity function it means that we cannot extract backbone features,
+        # because the model cannot be divide in backbone and head (i.e. TabNet)
         if type(self.head) == nn.Identity:
             return {"logits": y_hat}
         else:
@@ -208,7 +210,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             return ret_value.get("logits")
 
-    def shared_step(self, batch):
+    def forward_pass(self, batch):
         if self.hparams.task == "ssl":
             y = self(batch)["logits"]
             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
@@ -219,19 +221,19 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return y, y_hat
 
     def training_step(self, batch, batch_idx):
-        y, y_hat = self.shared_step(batch)
+        y, y_hat = self.forward_pass(batch)
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        y, y_hat = self.shared_step(batch)
+        y, y_hat = self.forward_pass(batch)
         _ = self.calculate_loss(y, y_hat, tag="valid")
         _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
-        y, y_hat = self.shared_step(batch)
+        y, y_hat = self.forward_pass(batch)
         _ = self.calculate_loss(y, y_hat, tag="test")
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
