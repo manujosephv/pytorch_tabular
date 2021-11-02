@@ -136,9 +136,8 @@ class MixtureDensityHead(nn.Module):
 
 class BaseMDN(BaseModel, metaclass=ABCMeta):
     def __init__(self, config: DictConfig, **kwargs):
-        assert config.task in ["regression", "ssl"], "MDN is only implemented for Regression"
-        if config.task != "ssl":
-            assert config.output_dim == 1, "MDN is not implemented for multi-targets"
+        assert config.task == "regression", "MDN is only implemented for Regression"
+        assert config.output_dim == 1, "MDN is not implemented for multi-targets"
         if config.target_range is not None:
             logger.warning("MDN does not use target range. Ignoring it.")
         super().__init__(config, **kwargs)

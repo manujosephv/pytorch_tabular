@@ -513,7 +513,7 @@ class ExperimentRunManager:
 class ModelConfig:
     """Base Model configuration
     Args:
-        task (str): Specify whether the problem is regression of classification.Choices are: regression classification ssl
+        task (str): Specify whether the problem is regression, classification, or self supervised learning. Choices are: regression classification ssl
 
         ssl_task (str): Specify the kind of self supervised algorithm to use. Choices are: Denoising, Contrastive, None
 
@@ -552,14 +552,14 @@ class ModelConfig:
     ssl_task: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Specify whether the problem is regression of classification.",
+            "help": "Specify the kind of self supervised algorithm to use.",
             "choices": ["Denoising", "Contrastive", None],
         }
     )
     aug_task: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Specify whether the problem is regression of classification.",
+            "help": "Specify the kind of augmentations algorithm to use for ssl..",
             "choices": ["cutmix", "mixup", None],
         }
     )

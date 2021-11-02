@@ -157,13 +157,11 @@ def test_ssl(
         trainer_config = TrainerConfig(max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
         optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
-
-        result = tabular_model.evaluate(test)
-        assert "test_mean_squared_error" in result[0].keys()
+        with pytest.raises(AssertionError):
+            tabular_model = TabularModel(
+                data_config=data_config,
+                model_config=model_config,
+                optimizer_config=optimizer_config,
+                trainer_config=trainer_config,
+            )
+            tabular_model.fit(train=train, test=test)

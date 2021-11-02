@@ -10,7 +10,6 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 from pytorch_tabnet.tab_network import TabNet
-from torch import Tensor
 
 from ..base_model import BaseModel
 
@@ -60,6 +59,7 @@ class TabNetBackbone(pl.LightningModule):
 
 class TabNetModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
+        assert config.task in ["regression", "classification"], "TabNet is only implemented for Regression and Classification"
         super().__init__(config, **kwargs)
 
     def _build_network(self):
