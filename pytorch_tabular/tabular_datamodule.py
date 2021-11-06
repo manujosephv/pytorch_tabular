@@ -104,7 +104,7 @@ class TabularDatamodule(pl.LightningDataModule):
         elif self.config.task == "classification":
             self.config.output_dim = len(self.train[self.config.target[0]].unique())
         elif self.config.task == "ssl":
-            self.config.output_dim = self.train.shape[1]
+            self.config.output_dim = len(self.config.categorical_cols) + len(self.config.continuous_cols)
         if not self.do_leave_one_out_encoder():
             self.config.categorical_cardinality = [
                 int(self.train[col].fillna("NA").nunique()) + 1

@@ -560,7 +560,7 @@ class ModelConfig:
     aug_task: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Specify the kind of augmentations algorithm to use for ssl..",
+            "help": "Specify the kind of augmentations algorithm to use for ssl.",
             "choices": ["cutmix", "mixup", None],
         }
     )
