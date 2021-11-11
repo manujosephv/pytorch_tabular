@@ -202,7 +202,7 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-@pytest.mark.parametrize("target_range", [True, False])
+@pytest.mark.parametrize("target_range", [True])
 @pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
 @pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(

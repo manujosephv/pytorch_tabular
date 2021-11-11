@@ -130,8 +130,8 @@ def test_classification(
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-@pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
-@pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
+@pytest.mark.parametrize("ssl_task", ["Denoising"])
+@pytest.mark.parametrize("aug_task", ["cutmix"])
 def test_ssl(
     classification_data,
     continuous_cols,

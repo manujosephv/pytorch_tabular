@@ -6,8 +6,6 @@ import pytest
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import AutoIntConfig
 from pytorch_tabular import TabularModel
-from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
-
 
 @pytest.mark.parametrize("multi_target", [True, False])
 @pytest.mark.parametrize(
@@ -160,10 +158,10 @@ def test_classification(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-@pytest.mark.parametrize("target_range", [True, False])
-@pytest.mark.parametrize("deep_layers", [True, False])
-@pytest.mark.parametrize("batch_norm_continuous_input", [True, False])
-@pytest.mark.parametrize("attention_pooling", [True, False])
+@pytest.mark.parametrize("target_range", [True])
+@pytest.mark.parametrize("deep_layers", [True])
+@pytest.mark.parametrize("batch_norm_continuous_input", [True])
+@pytest.mark.parametrize("attention_pooling", [True])
 @pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
 @pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(

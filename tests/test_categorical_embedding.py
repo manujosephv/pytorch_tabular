@@ -216,21 +216,20 @@ def test_embedding_transformer(regression_data):
             "AveOccup",
             "Latitude",
             "Longitude",
-        ],
-        [],
+        ]
     ],
 )
-@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
 @pytest.mark.parametrize("normalize_continuous_features", [True, False])
-@pytest.mark.parametrize("target_range", [True, False])
+@pytest.mark.parametrize("target_range", [True])
 @pytest.mark.parametrize(
     "target_transform",
-    [None, PowerTransformer(), (lambda x: np.power(x,2), lambda x: np.sqrt(x))],
+    [None],
 )
-@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
-@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("custom_metrics", [None])
+@pytest.mark.parametrize("custom_loss", [None])
+@pytest.mark.parametrize("custom_optimizer", [None])
 @pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
 @pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
