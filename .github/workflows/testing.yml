@@ -22,7 +22,7 @@ jobs:
 
       - name: Install main package
         run: |
-          python setup.py develop
+          pip install -e .[test]
       - name: Run test-suite
         run: |
           python -m pytest
