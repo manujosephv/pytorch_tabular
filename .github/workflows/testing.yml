@@ -20,9 +20,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install package dependencies
+        run: |
+          pip install -r requirements.txt
+
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements_testing.txt
+  
       - name: Install main package
         run: |
-          python setup.py develop
+          pip install -e .
+
       - name: Run test-suite
         run: |
-          python setup.py test
+          python -m pytest
