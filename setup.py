@@ -56,7 +56,7 @@ setup(
     packages=find_packages(include=["pytorch_tabular", "pytorch_tabular.*"]),
     # setup_requires=setup_requirements,
     test_suite="tests",
-    tests_require=test_requirements,
+    tests_require={"test": test_requirements},
     url="https://github.com/manujosephv/pytorch_tabular",
     version="0.7.0",
     zip_safe=False,
