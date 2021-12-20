@@ -1,0 +1,38 @@
+name: Testing
+
+on: [push, pull_request]
+
+jobs:
+
+  pytest:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.8, 3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package dependencies
+        run: |
+          pip install -r requirements.txt
+
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements_testing.txt
+  
+      - name: Install main package
+        run: |
+          pip install -e .
+
+      - name: Run test-suite
+        run: |
+          python -m pytest
