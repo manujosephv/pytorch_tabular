@@ -202,7 +202,7 @@ def test_pretrained_backbone(
         continuous_cols=continuous_cols,
         categorical_cols=categorical_cols,
     )
-    
+
     model_config_class, model_config_params = model_config_class
     model_config_params['task'] = "ssl"
     model_config_params['ssl_task'] = "Denoising"

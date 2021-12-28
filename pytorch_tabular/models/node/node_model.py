@@ -132,7 +132,7 @@ class NODEModel(BaseModel):
 
     def extract_embedding(self):
         if self.hparams.embed_categorical:
-            if self.embedding_cat_dim != 0:
-                return self.embedding_layers
+            if self.backbone.embedding_cat_dim != 0:
+                return self.backbone.embedding_layers
         else:
             raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")

@@ -92,3 +92,6 @@ class CategoryEmbeddingModel(BaseModel):
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
         _initialize_layers(self.hparams.activation, self.hparams.initialization, self.head)
+
+    def extract_embedding(self):
+        return self.backbone.embedding_layers
