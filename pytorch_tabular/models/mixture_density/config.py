@@ -2,7 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Mixture Density Head Config"""
-from dataclasses import MISSING, dataclass, field
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 from pytorch_tabular.models.autoint import AutoIntConfig
@@ -27,7 +27,7 @@ class MixtureDensityHeadConfig:
         lambda_sigma (Optional[float]): The regularization constant for weight regularization of sigma layer. Defaults to 0.1
         lambda_pi (Optional[float]): The regularization constant for weight regularization of pi layer. Defaults to 0.1
         lambda_mu (Optional[float]): The regularization constant for weight regularization of mu layer. Defaults to 0.1
-        softmax_temperature (Optional[float]): The temperature to be used in the gumbel softmax of the mixing coefficients. 
+        softmax_temperature (Optional[float]): The temperature to be used in the gumbel softmax of the mixing coefficients.
             Values less than one leads to sharper transition between the multiple components. Defaults to 1
         speedup_training (bool): Turning on this parameter does away with sampling during training which speeds up training,
             but also doesn't give you visibility on train metrics. Defaults to False

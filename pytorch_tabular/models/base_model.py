@@ -6,11 +6,18 @@ import logging
 from abc import ABCMeta, abstractmethod
 from typing import Callable, Dict, List, Optional
 
+from torch import Tensor
+
+import pytorch_tabular.augmentations as augmentations
+import pytorch_tabular.ssl as ssl
+
 import pytorch_lightning as pl
 import torch
 import torchmetrics
 import torch.nn as nn
 from omegaconf import DictConfig
+
+from pytorch_tabular.utils import loss_contrastive
 
 try:
     import wandb
@@ -61,13 +68,16 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def _setup_loss(self):
         if self.custom_loss is None:
-            try:
-                self.loss = getattr(nn, self.hparams.loss)()
-            except AttributeError as e:
-                logger.error(
-                    f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
-                )
-                raise e
+            if self.hparams.ssl_task == "Contrastive":
+                self.loss = loss_contrastive
+            else:
+                try:
+                    self.loss = getattr(nn, self.hparams.loss)()
+                except AttributeError as e:
+                    logger.error(
+                        f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
+                    )
+                    raise e
         else:
             self.loss = self.custom_loss
 
@@ -121,7 +131,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         for metric, metric_str, metric_params in zip(
             self.metrics, self.hparams.metrics, self.hparams.metrics_params
         ):
-            if (self.hparams.task == "regression"):
+            if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
                     if (
@@ -159,38 +169,71 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 prog_bar=True,
             )
         return metrics
-    
+
     def data_aware_initialization(self, datamodule):
         pass
 
-    @abstractmethod
+    def compute_backbone(self, x: Dict):
+        # Returns output
+        x = self.backbone(x)
+        return x
+
+    def compute_head(self, x: Tensor):
+        y_hat = self.head(x)
+        if (self.hparams.task == "regression") and (
+            self.hparams.target_range is not None
+        ):
+            for i in range(self.hparams.output_dim):
+                y_min, y_max = self.hparams.target_range[i]
+                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
+        # if self.head is the Identity function it means that we cannot extract backbone features,
+        # because the model cannot be divide in backbone and head (i.e. TabNet)
+        if type(self.head) == nn.Identity:
+            return {"logits": y_hat}
+        else:
+            return {"logits": y_hat, "backbone_features": x}
+
+    def compute_ssl_head(self, x: Dict):
+        return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(x)
+
     def forward(self, x: Dict):
-        pass
+        x = self.compute_backbone(x)
+        if self.hparams.task == "ssl":
+            return self.compute_ssl_head(x)
+        return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
+        assert self.hparams.task != "ssl", "It's not allowed to use the method predict in case of ssl task"
         ret_value = self.forward(x)
         if ret_model_output:
             return ret_value.get("logits"), ret_value
         else:
             return ret_value.get("logits")
 
+    def forward_pass(self, batch):
+        if self.hparams.task == "ssl":
+            y = self(batch)["logits"]
+            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+            y_hat = self(batch_augmented)["logits"]
+        else:
+            y = batch["target"]
+            y_hat = self(batch)["logits"]
+        return y, y_hat
+
     def training_step(self, batch, batch_idx):
-        y = batch["target"]
-        y_hat = self(batch)["logits"]
+        y, y_hat = self.forward_pass(batch)
         loss = self.calculate_loss(y, y_hat, tag="train")
         _ = self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        y = batch["target"]
-        y_hat = self(batch)["logits"]
+        y, y_hat = self.forward_pass(batch)
         _ = self.calculate_loss(y, y_hat, tag="valid")
         _ = self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
-        y = batch["target"]
-        y_hat = self(batch)["logits"]
+        y, y_hat = self.forward_pass(batch)
         _ = self.calculate_loss(y, y_hat, tag="test")
         _ = self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y

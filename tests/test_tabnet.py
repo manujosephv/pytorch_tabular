@@ -120,77 +120,48 @@ def test_classification(
         pred_df = tabular_model.predict(test)
         assert pred_df.shape[0] == test.shape[0]
 
-# Feature not developed
-# Commented out
-# def test_embedding_transformer(regression_data):
-#     (train, test, target) = regression_data
-#     data_config = DataConfig(
-#         target=target,
-#         continuous_cols=[
-#             "AveRooms",
-#             "AveBedrms",
-#             "Population",
-#             "AveOccup",
-#             "Latitude",
-#             "Longitude",
-#         ],
-#         categorical_cols=["HouseAgeBin"],
-#     )
-#     model_config_params = dict(task="regression")
-#     model_config = TabNetModelConfig(**model_config_params)
-#     trainer_config = TrainerConfig(
-#         max_epochs=1, checkpoints=None, early_stopping=None, gpus=0
-#     )
-#     optimizer_config = OptimizerConfig()
 
-#     tabular_model = TabularModel(
-#         data_config=data_config,
-#         model_config=model_config,
-#         optimizer_config=optimizer_config,
-#         trainer_config=trainer_config,
-#     )
-#     tabular_model.fit(train=train, test=test)
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [f"feature_{i}" for i in range(54)],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
+@pytest.mark.parametrize("continuous_feature_transform", [None])
+@pytest.mark.parametrize("normalize_continuous_features", [True])
+@pytest.mark.parametrize("ssl_task", ["Denoising"])
+@pytest.mark.parametrize("aug_task", ["cutmix"])
+def test_ssl(
+    classification_data,
+    continuous_cols,
+    categorical_cols,
+    continuous_feature_transform,
+    normalize_continuous_features,
+    ssl_task,
+    aug_task,
+):
+    (train, test, target) = classification_data
+    if len(continuous_cols) + len(categorical_cols) == 0:
+        assert True
+    else:
+        data_config = DataConfig(
+            target=target,
+            continuous_cols=continuous_cols,
+            categorical_cols=categorical_cols,
+            continuous_feature_transform=continuous_feature_transform,
+            normalize_continuous_features=normalize_continuous_features,
+        )
+        model_config_params = {"task": "ssl", "ssl_task": ssl_task, "aug_task": aug_task}
+        model_config = TabNetModelConfig(**model_config_params)
+        trainer_config = TrainerConfig(max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
+        optimizer_config = OptimizerConfig()
 
-#     transformer = CategoricalEmbeddingTransformer(tabular_model)
-#     train_transform = transformer.fit_transform(train)
-#     embed_cols = [
-#         col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col
-#     ]
-#     assert len(train["HouseAgeBin"].unique()) + 1 == len(
-#         transformer._mapping["HouseAgeBin"].keys()
-#     )
-#     assert all(
-#         [
-#             val.shape[0] == len(embed_cols)
-#             for val in transformer._mapping["HouseAgeBin"].values()
-#         ]
-#     )
-
-
-# from tests.conftest import regression_data, classification_data
-
-# test_regression(
-#     regression_data(),
-#     multi_target=False,
-#     continuous_cols=[
-#         "AveRooms",
-#         "AveBedrms",
-#         "Population",
-#         "AveOccup",
-#         "Latitude",
-#         "Longitude",
-#     ],
-#     categorical_cols=["HouseAgeBin"],
-#     continuous_feature_transform="yeo-johnson",
-#     normalize_continuous_features=True,
-#     target_range=True,
-# )
-
-# test_classification(
-#     classification_data(),
-#     continuous_cols=[f"feature_{i}" for i in range(54)],
-#     categorical_cols=["feature_0_cat"],
-#     continuous_feature_transform="yeo-johnson",
-#     normalize_continuous_features=True,
-# )
-
+        with pytest.raises(AssertionError):
+            tabular_model = TabularModel(
+                data_config=data_config,
+                model_config=model_config,
+                optimizer_config=optimizer_config,
+                trainer_config=trainer_config,
+            )
+            tabular_model.fit(train=train, test=test)

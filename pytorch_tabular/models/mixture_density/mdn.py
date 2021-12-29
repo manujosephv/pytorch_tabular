@@ -4,19 +4,21 @@
 """Mixture Density Models"""
 import logging
 import math
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from torch import Tensor
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
 from pytorch_tabular.models.autoint import AutoIntBackbone
-from pytorch_tabular.models.category_embedding import FeedForwardBackbone
+from pytorch_tabular.models.category_embedding import CategoryEmbeddingBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
+import pytorch_tabular.augmentations as augmentations
 
 from ..base_model import BaseModel
 
@@ -140,13 +142,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
             logger.warning("MDN does not use target range. Ignoring it.")
         super().__init__(config, **kwargs)
 
-    @abstractmethod
-    def unpack_input(self, x: Dict):
-        pass
-
-    def forward(self, x: Dict):
-        x = self.unpack_input(x)
-        x = self.backbone(x)
+    def compute_head(self, x: Tensor):
         pi, sigma, mu = self.mdn(x)
         return {"pi": pi, "sigma": sigma, "mu": mu, "backbone_features": x}
 
@@ -291,7 +287,6 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
                 logger=True,
                 prog_bar=False,
             )
-
         if do_log_logits:
             logits = [output[0] for output in outputs]
             logits = torch.cat(logits).detach().cpu()
@@ -340,46 +335,17 @@ class CategoryEmbeddingMDN(BaseMDN):
         super().__init__(config, **kwargs)
 
     def _build_network(self):
-        # Embedding layers
-        self.embedding_layers = nn.ModuleList(
-            [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
-        )
-        # Continuous Layers
-        if self.hparams.batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
         # Backbone
-        self.backbone = FeedForwardBackbone(self.hparams)
+        self.backbone = CategoryEmbeddingBackbone(self.hparams)
         # Adding the last layer
         self.hparams.mdn_config.input_dim = self.backbone.output_dim
         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
-
-    def unpack_input(self, x: Dict):
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
-        if self.embedding_cat_dim != 0:
-            x = []
-            # for i, embedding_layer in enumerate(self.embedding_layers):
-            #     x.append(embedding_layer(categorical_data[:, i]))
-            x = [
-                embedding_layer(categorical_data[:, i])
-                for i, embedding_layer in enumerate(self.embedding_layers)
-            ]
-            x = torch.cat(x, 1)
-
-        if self.hparams.continuous_dim != 0:
-            if self.hparams.batch_norm_continuous_input:
-                continuous_data = self.normalizing_batch_norm(continuous_data)
-
-            if self.embedding_cat_dim != 0:
-                x = torch.cat([x, continuous_data], 1)
-            else:
-                x = continuous_data
-        return x
 
 
 class NODEMDN(BaseMDN):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
-    
+
     def subset(self, x):
         return x[..., :].mean(dim=-2)
 
@@ -395,15 +361,8 @@ class NODEMDN(BaseMDN):
         self.backbone = nn.Sequential(backbone, output_response)
         # Adding the last layer
         self.hparams.mdn_config.input_dim = backbone.output_dim
+        setattr(self.backbone, "output_dim", backbone.output_dim)
         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
-
-    def unpack_input(self, x: Dict):
-        # unpacking into a tuple
-        x = x["categorical"], x["continuous"]
-        # eliminating None in case there is no categorical or continuous columns
-        x = (item for item in x if len(item) > 0)
-        x = torch.cat(tuple(x), dim=1)
-        return x
 
 
 class AutoIntMDN(BaseMDN):
@@ -416,7 +375,3 @@ class AutoIntMDN(BaseMDN):
         # Adding the last layer
         self.hparams.mdn_config.input_dim = self.backbone.output_dim
         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
-
-    def unpack_input(self, x: Dict):
-        # Returning the dict because autoInt backbone expects the dict output
-        return x

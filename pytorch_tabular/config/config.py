@@ -2,12 +2,13 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Config"""
+import logging
 from dataclasses import MISSING, dataclass, field
 from typing import List, Optional
 import os
 from omegaconf import OmegaConf
 
-# from omegaconf.dictconfig import DictConfig
+logger = logging.getLogger(__name__)
 
 
 def _read_yaml(filename):
@@ -181,7 +182,7 @@ class TrainerConfig:
             to find optimal initial learning rate.
 
         auto_select_gpus (bool): If enabled and `gpus` is an integer, pick available gpus automatically.
-            This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one 
+            This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one
             process at a time can access them.
 
         check_val_every_n_epoch (int): Check val every n train epochs.
@@ -425,12 +426,12 @@ class ExperimentConfig:
 class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
     Args:
-        optimizer (str): Any of the standard optimizers from 
+        optimizer (str): Any of the standard optimizers from
             [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms). Defaults to `Adam`"
 
         optimizer_params (dict): The parameters for the optimizer. If left blank, will use default parameters.
 
-        lr_scheduler (Optional[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). 
+        lr_scheduler (Optional[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate).
             If None, will not use any scheduler. Defaults to `None`
 
         lr_scheduler_params (Optional[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
@@ -513,7 +514,11 @@ class ExperimentRunManager:
 class ModelConfig:
     """Base Model configuration
     Args:
-        task (str): Specify whether the problem is regression of classification.Choices are: regression classification
+        task (str): Specify whether the problem is regression, classification, or self supervised learning. Choices are: regression classification ssl
+
+        ssl_task (str): Specify the kind of self supervised algorithm to use. Choices are: Denoising, Contrastive, None
+
+        aug_task (str): Specify the kind of augmentations algorithm to use for ssl. Choices are: cutmix, mixup, None
 
         embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
             as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
@@ -542,13 +547,29 @@ class ModelConfig:
         # default="regression",
         metadata={
             "help": "Specify whether the problem is regression of classification.",
-            "choices": ["regression", "classification"],
+            "choices": ["regression", "classification", "ssl"],
+        }
+    )
+    ssl_task: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Specify the kind of self supervised algorithm to use.",
+            "choices": ["Denoising", "Contrastive", None],
+        }
+    )
+    aug_task: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Specify the kind of augmentations algorithm to use for ssl.",
+            "choices": ["cutmix", "mixup", None],
         }
     )
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
-            "help": "The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule min(50, (x + 1) // 2)"
+            "help": "The dimensions of the embedding for each categorical column as a list of tuples "
+                    "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
+                    "categorical column using the rule min(50, (x + 1) // 2)"
         },
     )
     learning_rate: float = field(
@@ -557,13 +578,17 @@ class ModelConfig:
     loss: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
+            "help": "The loss function to be applied. By Default it is MSELoss for regression "
+                    "and CrossEntropyLoss for classification. Unless you are sure what you are doing, "
+                    "leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
         },
     )
     metrics: Optional[List[str]] = field(
         default=None,
         metadata={
-            "help": "the list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in ``torchmetrics``. By default, it is accuracy if classification and mean_squared_error for regression"
+            "help": "the list of metrics you need to track during training. The metrics should be one "
+                    "of the functional metrics implemented in ``torchmetrics``. By default, "
+                    "it is accuracy if classification and mean_squared_error for regression"
         },
     )
     metrics_params: Optional[List] = field(
@@ -573,7 +598,9 @@ class ModelConfig:
     target_range: Optional[List] = field(
         default=None,
         metadata={
-            "help": "The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions"
+            "help": "The range in which we should limit the output variable. "
+                    "Currently ignored for multi-target regression. Typically used for Regression problems. "
+                    "If left empty, will not apply any restrictions"
         },
     )
     seed: int = field(
@@ -598,38 +625,27 @@ class ModelConfig:
                 if self.metrics_params is None
                 else self.metrics_params
             )
+        elif self.task == "ssl":
+            assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
+            assert self.aug_task, "if task is ssl, aug_task cannot be None"
+            if self.ssl_task == "Contrastive":
+                if self.loss:
+                    logger.warning(
+                        "In case of Contrastive the loss cannot be specified and will be ignored"
+                    )
+                self.loss = "ContrastiveLoss" if self.loss is None else self.loss
+            else:
+                self.loss = "MSELoss" if self.loss is None else self.loss
+            self.metrics = (
+                ["mean_squared_error"] if self.metrics is None else self.metrics
+            )
+            self.metrics_params = [{}]
         else:
             raise NotImplementedError(
-                f"{self.task} is not a valid task. Should be one of {self.__dataclass_fields__['task'].metadata['choices']}"
+                f"{self.task} is not a valid task. Should be one of "
+                f"{self.__dataclass_fields__['task'].metadata['choices']}"
             )
         assert len(self.metrics) == len(
             self.metrics_params
         ), "metrics and metric_params should have same length"
         _validate_choices(self)
-
-
-# conf = OmegaConf.structured(ModelConfig(task='regression', loss="custom"))
-# print(OmegaConf.to_yaml(conf))
-# cls = ModelConfig
-# desc = "Configuration for Data."
-# doc_str = f"{desc}\nArgs:"
-# for key in cls.__dataclass_fields__.keys():
-#     atr = cls.__dataclass_fields__[key]
-#     if atr.init:
-#         type = str(atr.type).replace("<class '","").replace("'>","").replace("typing.","")
-#         help_str = atr.metadata["help"]
-#         if "choices" in atr.metadata.keys():
-#             help_str += f'Choices are: {" ".join([str(ch) for ch in atr.metadata["choices"]])}'
-#         doc_str+=f'\n\t\t{key} ({type}): {help_str}'
-
-# print(doc_str)
-
-# config = Config()
-# config.parse_args(["--overfit-batches","10"])
-# config.generate_yaml_config()
-# print(config.overfit_batches)
-# config = Config.read_from_yaml("run_config.yml")
-# print(config.overfit_batches)
-# print(config.profiler)
-# parser = ArgumentParser(config)
-# parser.parse_args(["--overfit-batches","10"])

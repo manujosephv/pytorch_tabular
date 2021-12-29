@@ -4,7 +4,6 @@
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
 """Category Encoders"""
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import List
 
 try:
     import cPickle as pickle

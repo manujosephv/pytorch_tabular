@@ -11,7 +11,6 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from einops import rearrange
 from omegaconf import DictConfig
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
@@ -119,7 +118,7 @@ class FTTransformerBackbone(pl.LightningModule):
                 attn_dropout=self.hparams.attn_dropout,
                 ff_dropout=self.hparams.ff_dropout,
                 add_norm_dropout=self.hparams.add_norm_dropout,
-                keep_attn=self.hparams.attn_feature_importance #Can use Attn Weights to derive feature importance
+                keep_attn=self.hparams.attn_feature_importance # Can use Attn Weights to derive feature importance
             )
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
         if self.hparams.attn_feature_importance:
@@ -191,12 +190,9 @@ class FTTransformerBackbone(pl.LightningModule):
         # Taking only CLS token for the prediction head
         x = self.linear_layers(x[:, -1])
         return x
-    
+
     #Not Tested Properly
     def _calculate_feature_importance(self):
-        # if self.feature_importance_.device != self.device:
-        #     self.feature_importance_ = self.feature_importance_.to(self.device)
-
         n, h, f, _ = self.attention_weights_[0].shape
         L = len(self.attention_weights_)
         self.local_feature_importance = torch.zeros((n,f), device=self.device)
@@ -214,28 +210,14 @@ class FTTransformerModel(BaseModel):
     def _build_network(self):
         # Backbone
         self.backbone = FTTransformerBackbone(self.hparams)
-        self.dropout = nn.Dropout(self.hparams.out_ff_dropout)
         # Adding the last layer
-        self.output_layer = nn.Linear(
-            self.backbone.output_dim, self.hparams.output_dim
-        )  # output_dim auto-calculated from other config
+        self.head = nn.Sequential(nn.Dropout(self.hparams.out_ff_dropout),
+                                  nn.Linear(self.backbone.output_dim, self.hparams.output_dim))
         _initialize_layers(
             self.hparams.out_ff_activation,
             self.hparams.out_ff_initialization,
-            self.output_layer,
+            self.head,
         )
-
-    def forward(self, x: Dict):
-        x = self.backbone(x)
-        x = self.dropout(x)
-        y_hat = self.output_layer(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
-        return {"logits": y_hat, "backbone_features": x}
 
     def extract_embedding(self):
         if len(self.hparams.categorical_cols) > 0:
@@ -244,7 +226,7 @@ class FTTransformerModel(BaseModel):
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
             )
-    
+
     def feature_importance(self):
         if self.hparams.attn_feature_importance:
             importance_df = pd.DataFrame({"Features": self.hparams.categorical_cols+self.hparams.continuous_cols, "importance": self.backbone.feature_importance_.detach().cpu().numpy()})

@@ -4,7 +4,7 @@
 """Tabular Data Module"""
 import logging
 import re
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
 import numpy as np
@@ -103,6 +103,8 @@ class TabularDatamodule(pl.LightningDataModule):
             self.config.output_dim = len(self.config.target)
         elif self.config.task == "classification":
             self.config.output_dim = len(self.train[self.config.target[0]].unique())
+        elif self.config.task == "ssl":
+            self.config.output_dim = len(self.config.categorical_cols) + len(self.config.continuous_cols)
         if not self.do_leave_one_out_encoder():
             self.config.categorical_cardinality = [
                 int(self.train[col].fillna("NA").nunique()) + 1
@@ -602,6 +604,6 @@ class TabularDataset(Dataset):
         """
         return {
             "target": self.y[idx],
-            "continuous": self.continuous_X[idx] if self.continuous_cols else [],
-            "categorical": self.categorical_X[idx] if self.categorical_cols else [],
+            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
+            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
         }

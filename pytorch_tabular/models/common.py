@@ -1,7 +1,6 @@
 from typing import Optional
 
 import torch
-import torch.nn.functional as F
 from einops import rearrange
 from torch import einsum, nn
 
@@ -99,7 +98,7 @@ class GEGLU(nn.Module):
                  dropout: float = 0.1):
         super().__init__()
         self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.GELU(), True, False, False, False)
-    
+
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
 
@@ -108,7 +107,7 @@ class ReGLU(nn.Module):
                  dropout: float = 0.1):
         super().__init__()
         self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.ReLU(), True, False, False, False)
-    
+
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
 
@@ -117,7 +116,7 @@ class SwiGLU(nn.Module):
                  dropout: float = 0.1):
         super().__init__()
         self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.SiLU(), True, False, False, False)
-    
+
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
 
@@ -213,7 +212,7 @@ class SharedEmbeddings(nn.Module):
         else:
             out[:, : shared_embed.shape[1]] = shared_embed
         return out
-    
+
     @property
     def weight(self):
         w = self.embed.weight.detach()
@@ -222,6 +221,7 @@ class SharedEmbeddings(nn.Module):
         else:
             w[:, : self.shared_embed.shape[1]] = self.shared_embed
         return w
+
 
 class TransformerEncoderBlock(nn.Module):
     """A single Transformer Encoder Block
@@ -246,7 +246,7 @@ class TransformerEncoderBlock(nn.Module):
             if transformer_head_dim is None
             else transformer_head_dim,
             dropout=attn_dropout,
-            keep_attn = keep_attn
+            keep_attn=keep_attn
         )
 
         try:

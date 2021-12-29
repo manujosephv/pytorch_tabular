@@ -41,19 +41,6 @@ class TabNetBackbone(pl.LightningModule):
             mask_type=self.hparams.mask_type,
         )
 
-    def forward(self, x: Dict):
-        # Returns output and Masked Loss. We only need the output
-        x, _ = self.tabnet(x)
-        return x
-
-
-class TabNetModel(BaseModel):
-    def __init__(self, config: DictConfig, **kwargs):
-        super().__init__(config, **kwargs)
-
-    def _build_network(self):
-        self.backbone = TabNetBackbone(self.hparams)
-
     def unpack_input(self, x: Dict):
         # unpacking into a tuple
         x = x["categorical"], x["continuous"]
@@ -65,12 +52,17 @@ class TabNetModel(BaseModel):
     def forward(self, x: Dict):
         # unpacking into a tuple
         x = self.unpack_input(x)
-        # Returns output
-        x = self.backbone(x)
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
-            for i in range(self.hparams.output_dim):
-                y_min, y_max = self.hparams.target_range[i]
-                x[:, i] = y_min + nn.Sigmoid()(x[:, i]) * (y_max - y_min)
-        return {"logits": x}  # No Easy way to access the raw features in TabNet
+        # Returns output and Masked Loss. We only need the output
+        x, _ = self.tabnet(x)
+        return x
+
+
+class TabNetModel(BaseModel):
+    def __init__(self, config: DictConfig, **kwargs):
+        assert config.task in ["regression", "classification"], "TabNet is only implemented for Regression and Classification"
+        super().__init__(config, **kwargs)
+
+    def _build_network(self):
+        self.backbone = TabNetBackbone(self.hparams)
+        setattr(self.backbone, "output_dim", self.hparams.output_dim)
+        self.head = nn.Identity()
