@@ -60,7 +60,7 @@ class FTTransformerBackbone(pl.LightningModule):
 
     def _build_network(self):
         d_sqrt_inv = 1 / math.sqrt(self.hparams.input_embed_dim)
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             # Category Embedding layers
             if self.hparams.share_embedding:
                 self.cat_embedding_layers = nn.ModuleList(
@@ -91,6 +91,7 @@ class FTTransformerBackbone(pl.LightningModule):
                     )
                 _initialize_kaiming(self.cat_embedding_bias, self.hparams.embedding_initialization, d_sqrt_inv)
             # Continuous Embedding Layer
+        if self.hparams.continuous_dim > 0:
             self.cont_embedding_layer = nn.Embedding(
                 self.hparams.continuous_dim, self.hparams.input_embed_dim
             )
@@ -104,10 +105,10 @@ class FTTransformerBackbone(pl.LightningModule):
                 _initialize_kaiming(self.cont_embedding_bias, self.hparams.embedding_initialization, d_sqrt_inv)
             if self.hparams.embedding_dropout != 0:
                 self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
-            self.add_cls = AppendCLSToken(
-                d_token=self.hparams.input_embed_dim,
-                initialization=self.hparams.embedding_initialization,
-            )
+        self.add_cls = AppendCLSToken(
+            d_token=self.hparams.input_embed_dim,
+            initialization=self.hparams.embedding_initialization,
+        )
         self.transformer_blocks = OrderedDict()
         for i in range(self.hparams.num_attn_blocks):
             self.transformer_blocks[f"mha_block_{i}"] = TransformerEncoderBlock(
@@ -148,7 +149,7 @@ class FTTransformerBackbone(pl.LightningModule):
         # (B, N)
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         x = None
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             x_cat = [
                 embedding_layer(categorical_data[:, i]).unsqueeze(1)
                 for i, embedding_layer in enumerate(self.cat_embedding_layers)
@@ -220,7 +221,7 @@ class FTTransformerModel(BaseModel):
         )
 
     def extract_embedding(self):
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             return self.backbone.cat_embedding_layers
         else:
             raise ValueError(
