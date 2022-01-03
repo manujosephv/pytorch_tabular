@@ -28,7 +28,7 @@ class AutoIntBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             # Category Embedding layers
             self.cat_embedding_layers = nn.ModuleList(
                 [
@@ -42,7 +42,7 @@ class AutoIntBackbone(pl.LightningModule):
         self.cont_embedding_layer = nn.Embedding(
             self.hparams.continuous_dim, self.hparams.embedding_dim
         )
-        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols) > 0:
+        if self.hparams.embedding_dropout != 0 and self.hparams.categorical_dim> 0:
             self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
@@ -93,7 +93,7 @@ class AutoIntBackbone(pl.LightningModule):
         # (B, N)
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         x = None
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim> 0:
             x_cat = [
                 embedding_layer(categorical_data[:, i]).unsqueeze(1)
                 for i, embedding_layer in enumerate(self.cat_embedding_layers)
@@ -114,7 +114,7 @@ class AutoIntBackbone(pl.LightningModule):
             )
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
-        if self.hparams.embedding_dropout != 0 and len(self.hparams.categorical_cols) > 0:
+        if self.hparams.embedding_dropout != 0 and self.hparams.categorical_dim > 0:
             x = self.embed_dropout(x)
         if self.hparams.deep_layers:
             x = self.linear_layers(x)
@@ -154,7 +154,7 @@ class AutoIntModel(BaseModel):
         _initialize_layers(self.hparams.activation, self.hparams.initialization, self.head)
 
     def extract_embedding(self):
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             return self.backbone.cat_embedding_layers
         else:
             raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")

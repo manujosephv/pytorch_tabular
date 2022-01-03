@@ -22,7 +22,7 @@ from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
         ],
     ],
 )
-@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("target_range", [True, False])

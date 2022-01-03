@@ -41,7 +41,7 @@ class TabTransformerBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             # Category Embedding layers
             if self.hparams.share_embedding:
                 self.cat_embedding_layers = nn.ModuleList(
@@ -83,7 +83,7 @@ class TabTransformerBackbone(pl.LightningModule):
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
         # Final MLP Layers
         _curr_units = (
-            self.hparams.input_embed_dim * len(self.hparams.categorical_cols)
+            self.hparams.input_embed_dim * self.hparams.categorical_dim
             + self.hparams.continuous_dim
         )
         # Linear Layers
@@ -107,7 +107,7 @@ class TabTransformerBackbone(pl.LightningModule):
         # (B, N)
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         x = None
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim > 0:
             x_cat = [
                 embedding_layer(categorical_data[:, i]).unsqueeze(1)
                 for i, embedding_layer in enumerate(self.cat_embedding_layers)
@@ -149,7 +149,7 @@ class TabTransformerModel(BaseModel):
         )
 
     def extract_embedding(self):
-        if len(self.hparams.categorical_cols) > 0:
+        if self.hparams.categorical_dim> 0:
             return self.backbone.cat_embedding_layers
         else:
             raise ValueError(
