@@ -746,6 +746,14 @@ class TabularModel:
                 self.model_callable, os.path.join(dir, "custom_model_callable.sav")
             )
 
+    def save_weights(self, path: Union[str, Path]):
+        """Saves the model weights in the specified directory
+
+        Args:
+            path (str): The path to the directory to save the model
+        """
+        torch.save(self.model.state_dict(), path)
+
     # TODO Need to test ONNX export
     def save_model_for_inference(
         self,
