@@ -415,7 +415,7 @@ class ExperimentConfig:
         _validate_choices(self)
         if self.log_target == "wandb":
             try:
-                import wandb
+                import wandb  # noqa: F401
             except ImportError:
                 raise ImportError(
                     "No W&B installation detected. `pip install wandb` to install W&B if you set log_target as `wandb`"
