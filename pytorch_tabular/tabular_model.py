@@ -6,8 +6,9 @@ import inspect
 import logging
 import os
 from collections import defaultdict
+from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
-from pytorch_lightning.utilities.model_summary import summarize
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -15,9 +16,10 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.utilities.cloud_io import load as pl_load
-from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
+from pytorch_lightning.utilities.cloud_io import load as pl_load
+from pytorch_lightning.utilities.model_summary import summarize
+from pytorch_lightning.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
@@ -314,9 +316,7 @@ class TabularModel:
         # For some weird reason, checkpoint_callback is not appearing in the Trainer vars
         trainer_args_config["checkpoint_callback"] = self.config.checkpoint_callback
         # turn off progress bar if progress_bar=='none'
-        trainer_args_config["enable_progress_bar"] = (
-            self.config.progress_bar != "none"
-        )
+        trainer_args_config["enable_progress_bar"] = self.config.progress_bar != "none"
         self.trainer = pl.Trainer(
             logger=self.logger,
             callbacks=self.callbacks,
@@ -745,6 +745,42 @@ class TabularModel:
             joblib.dump(
                 self.model_callable, os.path.join(dir, "custom_model_callable.sav")
             )
+
+    # TODO Need to test ONNX export
+    def save_model_for_inference(
+        self,
+        path: Union[str, Path],
+        kind: str = "pytorch",
+        onnx_export_params: Dict = {},
+    ):
+        """Saves the model for inference
+        path (Union[str, Path]): path to save the model
+        kind (str): "pytorch" or "onnx" (Experimental)
+        onnx_export_params (Dict): parameters for onnx export to be
+            passed to torch.onnx.export
+        """
+        if kind == "pytorch":
+            torch.save(self.model, path)
+        elif kind == "onnx":
+            # Export the model
+            onnx_export_params["input_names"] = onnx_export_params.get(
+                "input_names", ["input"]
+            )
+            onnx_export_params["output_names"] = onnx_export_params.get(
+                "output_names", ["output"]
+            )
+            onnx_export_params["dynamic_axes"] = {
+                onnx_export_params["input_names"][0]: {0: "batch_size"},
+                onnx_export_params["output_names"][0]: {0: "batch_size"},
+            }
+            x = torch.randn(
+                self.config.batch_size,
+                len(self.config.categorical_cols) + len(self.config.continuous_cols),
+                requires_grad=True,
+            )
+            torch.onnx.export(self.model, x, path, **onnx_export_params)
+        else:
+            raise ValueError("`kind` must be either pytorch or onnx")
 
     @classmethod
     def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
