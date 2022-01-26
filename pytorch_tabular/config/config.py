@@ -78,6 +78,8 @@ class DataConfig:
             the noise is only applied for QuantileTransformer
 
         num_workers (Optional[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
+
+        pin_memory (Optional[bool, NoneType]): Whether or not to use pin_memory for data loading.
     """
 
     target: List[str] = field(
@@ -162,6 +164,9 @@ class DataConfig:
             len(self.continuous_cols) if self.continuous_cols is not None else 0
         )
         _validate_choices(self)
+        if os.name == "nt" and self.num_workers != 0:
+            print("Windows does not support num_workers > 0. Setting num_workers to 0")
+            self.num_workers = 0
 
 
 @dataclass
@@ -359,6 +364,12 @@ class TrainerConfig:
         default=-1,
         metadata={
             "help": "Track and Log Gradient Norms in the logger. -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc."
+        },
+    )
+    progress_bar: str = field(
+        default="rich",
+        metadata={
+            "help": "Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`."
         },
     )
 

@@ -17,6 +17,7 @@ from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities.seed import seed_everything
+from pytorch_lightning.callbacks import RichProgressBar
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
@@ -246,6 +247,8 @@ class TabularModel:
             self.config.checkpoint_callback = True
         else:
             self.config.checkpoint_callback = False
+        if self.config.progress_bar == "rich":
+            callbacks.append(RichProgressBar())
         logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
@@ -302,7 +305,7 @@ class TabularModel:
             self.config.max_epochs = max_epochs
         if min_epochs is not None:
             self.config.min_epochs = min_epochs
-        # TODO get Trainer Arguments from the init signature
+        # Getting Trainer Arguments from the init signature
         trainer_sig = inspect.signature(pl.Trainer.__init__)
         trainer_args = [p for p in trainer_sig.parameters.keys() if p != "self"]
         trainer_args_config = {
@@ -310,6 +313,10 @@ class TabularModel:
         }
         # For some weird reason, checkpoint_callback is not appearing in the Trainer vars
         trainer_args_config["checkpoint_callback"] = self.config.checkpoint_callback
+        # turn off progress bar if progress_bar=='none'
+        trainer_args_config["enable_progress_bar"] = (
+            self.config.progress_bar != "none"
+        )
         self.trainer = pl.Trainer(
             logger=self.logger,
             callbacks=self.callbacks,
