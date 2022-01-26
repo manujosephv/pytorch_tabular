@@ -2,14 +2,13 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model"""
-from collections import defaultdict
-from pytorch_lightning.utilities.seed import seed_everything
+import inspect
 import logging
 import os
+from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
-import inspect
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -17,6 +16,7 @@ import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.utilities.cloud_io import load as pl_load
+from pytorch_lightning.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
@@ -274,7 +274,9 @@ class TabularModel:
         val_loader = self.datamodule.val_dataloader()
         return train_loader, val_loader
 
-    def _prepare_model(self, loss, metrics, optimizer, optimizer_params, reset, trained_backbone):
+    def _prepare_model(
+        self, loss, metrics, optimizer, optimizer_params, reset, trained_backbone
+    ):
         logger.info(f"Preparing the Model: {self.config._model_name}...")
         # Fetching the config as some data specific configs have been added in the datamodule
         self.config = self.datamodule.config
@@ -369,7 +371,9 @@ class TabularModel:
         train_loader, val_loader = self._prepare_dataloader(
             train, validation, test, target_transform, train_sampler
         )
-        self._prepare_model(loss, metrics, optimizer, optimizer_params, reset, trained_backbone)
+        self._prepare_model(
+            loss, metrics, optimizer, optimizer_params, reset, trained_backbone
+        )
 
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(
@@ -480,7 +484,7 @@ class TabularModel:
         early_stop_threshold: float = 4.0,
         plot=True,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
-        trained_backbone=None
+        trained_backbone=None,
     ) -> None:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
 
@@ -538,7 +542,7 @@ class TabularModel:
             min_epochs=None,
             reset=True,
             trained_backbone=trained_backbone,
-            train_sampler=train_sampler
+            train_sampler=train_sampler,
         )
         lr_finder = self.trainer.tuner.lr_find(
             self.model,
@@ -786,7 +790,10 @@ class TabularModel:
 
         # Initializing with default metrics, losses, and optimizers. Will revert once initialized
         model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt"),map_location=map_location, strict=strict, **model_args
+            checkpoint_path=os.path.join(dir, "model.ckpt"),
+            map_location=map_location,
+            strict=strict,
+            **model_args,
         )
         # Updating config with custom parameters for experiment tracking
         if custom_params.get("custom_loss") is not None:

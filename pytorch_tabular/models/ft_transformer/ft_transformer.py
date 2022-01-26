@@ -29,7 +29,9 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
     elif initialization is None:
         pass
     else:
-        raise NotImplementedError(f"initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
+        raise NotImplementedError(
+            "initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`"
+        )
 
 
 class AppendCLSToken(nn.Module):
@@ -85,24 +87,36 @@ class FTTransformerBackbone(pl.LightningModule):
                 )
             if self.hparams.embedding_bias:
                 self.cat_embedding_bias = nn.Parameter(
-                        torch.Tensor(
-                            self.hparams.categorical_dim, self.hparams.input_embed_dim
-                        )
+                    torch.Tensor(
+                        self.hparams.categorical_dim, self.hparams.input_embed_dim
                     )
-                _initialize_kaiming(self.cat_embedding_bias, self.hparams.embedding_initialization, d_sqrt_inv)
+                )
+                _initialize_kaiming(
+                    self.cat_embedding_bias,
+                    self.hparams.embedding_initialization,
+                    d_sqrt_inv,
+                )
             # Continuous Embedding Layer
         if self.hparams.continuous_dim > 0:
             self.cont_embedding_layer = nn.Embedding(
                 self.hparams.continuous_dim, self.hparams.input_embed_dim
             )
-            _initialize_kaiming(self.cont_embedding_layer.weight, self.hparams.embedding_initialization, d_sqrt_inv)
+            _initialize_kaiming(
+                self.cont_embedding_layer.weight,
+                self.hparams.embedding_initialization,
+                d_sqrt_inv,
+            )
             if self.hparams.embedding_bias:
                 self.cont_embedding_bias = nn.Parameter(
-                        torch.Tensor(
-                            self.hparams.continuous_dim, self.hparams.input_embed_dim
-                        )
+                    torch.Tensor(
+                        self.hparams.continuous_dim, self.hparams.input_embed_dim
                     )
-                _initialize_kaiming(self.cont_embedding_bias, self.hparams.embedding_initialization, d_sqrt_inv)
+                )
+                _initialize_kaiming(
+                    self.cont_embedding_bias,
+                    self.hparams.embedding_initialization,
+                    d_sqrt_inv,
+                )
             if self.hparams.embedding_dropout != 0:
                 self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         self.add_cls = AppendCLSToken(
@@ -119,7 +133,7 @@ class FTTransformerBackbone(pl.LightningModule):
                 attn_dropout=self.hparams.attn_dropout,
                 ff_dropout=self.hparams.ff_dropout,
                 add_norm_dropout=self.hparams.add_norm_dropout,
-                keep_attn=self.hparams.attn_feature_importance # Can use Attn Weights to derive feature importance
+                keep_attn=self.hparams.attn_feature_importance,  # Can use Attn Weights to derive feature importance
             )
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
         if self.hparams.attn_feature_importance:
@@ -157,7 +171,7 @@ class FTTransformerBackbone(pl.LightningModule):
             # (B, N, E)
             x = torch.cat(x_cat, 1)
             if self.hparams.embedding_bias:
-                x = x+self.cat_embedding_bias
+                x = x + self.cat_embedding_bias
             if self.hparams.embedding_dropout != 0:
                 x = self.embed_dropout(x)
         if self.hparams.continuous_dim > 0:
@@ -173,7 +187,7 @@ class FTTransformerBackbone(pl.LightningModule):
                 self.cont_embedding_layer(cont_idx),
             )
             if self.hparams.embedding_bias:
-                x_cont = x_cont+self.cont_embedding_bias
+                x_cont = x_cont + self.cont_embedding_bias
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
 
@@ -192,14 +206,16 @@ class FTTransformerBackbone(pl.LightningModule):
         x = self.linear_layers(x[:, -1])
         return x
 
-    #Not Tested Properly
+    # Not Tested Properly
     def _calculate_feature_importance(self):
         n, h, f, _ = self.attention_weights_[0].shape
         L = len(self.attention_weights_)
-        self.local_feature_importance = torch.zeros((n,f), device=self.device)
+        self.local_feature_importance = torch.zeros((n, f), device=self.device)
         for attn_weights in self.attention_weights_:
-            self.local_feature_importance+=attn_weights[:,:,:,-1].sum(dim=1)
-        self.local_feature_importance = (1/(h*L))*self.local_feature_importance[:,:-1]
+            self.local_feature_importance += attn_weights[:, :, :, -1].sum(dim=1)
+        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[
+            :, :-1
+        ]
         self.feature_importance_ = self.local_feature_importance.mean(dim=0)
         # self.feature_importance_count_+=attn_weights.shape[0]
 
@@ -212,8 +228,10 @@ class FTTransformerModel(BaseModel):
         # Backbone
         self.backbone = FTTransformerBackbone(self.hparams)
         # Adding the last layer
-        self.head = nn.Sequential(nn.Dropout(self.hparams.out_ff_dropout),
-                                  nn.Linear(self.backbone.output_dim, self.hparams.output_dim))
+        self.head = nn.Sequential(
+            nn.Dropout(self.hparams.out_ff_dropout),
+            nn.Linear(self.backbone.output_dim, self.hparams.output_dim),
+        )
         _initialize_layers(
             self.hparams.out_ff_activation,
             self.hparams.out_ff_initialization,
@@ -230,7 +248,17 @@ class FTTransformerModel(BaseModel):
 
     def feature_importance(self):
         if self.hparams.attn_feature_importance:
-            importance_df = pd.DataFrame({"Features": self.hparams.categorical_cols+self.hparams.continuous_cols, "importance": self.backbone.feature_importance_.detach().cpu().numpy()})
+            importance_df = pd.DataFrame(
+                {
+                    "Features": self.hparams.categorical_cols
+                    + self.hparams.continuous_cols,
+                    "importance": self.backbone.feature_importance_.detach()
+                    .cpu()
+                    .numpy(),
+                }
+            )
             return importance_df
         else:
-            raise ValueError("If you want Feature Importance, `attn_feature_weights` should be `True`.")
+            raise ValueError(
+                "If you want Feature Importance, `attn_feature_weights` should be `True`."
+            )

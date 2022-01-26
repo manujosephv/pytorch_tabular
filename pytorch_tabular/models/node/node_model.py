@@ -135,4 +135,6 @@ class NODEModel(BaseModel):
             if self.backbone.embedding_cat_dim != 0:
                 return self.backbone.embedding_layers
         else:
-            raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")
+            raise ValueError(
+                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+            )

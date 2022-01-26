@@ -104,13 +104,18 @@ class TabularDatamodule(pl.LightningDataModule):
         elif self.config.task == "classification":
             self.config.output_dim = len(self.train[self.config.target[0]].unique())
         elif self.config.task == "ssl":
-            self.config.output_dim = len(self.config.categorical_cols) + len(self.config.continuous_cols)
+            self.config.output_dim = len(self.config.categorical_cols) + len(
+                self.config.continuous_cols
+            )
         if not self.do_leave_one_out_encoder():
             self.config.categorical_cardinality = [
                 int(self.train[col].fillna("NA").nunique()) + 1
                 for col in self.config.categorical_cols
             ]
-            if hasattr(self.config, "embedding_dims") and self.config.embedding_dims is None:
+            if (
+                hasattr(self.config, "embedding_dims")
+                and self.config.embedding_dims is None
+            ):
                 self.config.embedding_dims = [
                     (x, min(50, (x + 1) // 2))
                     for x in self.config.categorical_cardinality
@@ -237,14 +242,18 @@ class TabularDatamodule(pl.LightningDataModule):
                 if stage == "fit":
                     target_transforms = []
                     for col in self.config.target:
-                        _target_transform = copy.deepcopy(self.target_transform_template)
+                        _target_transform = copy.deepcopy(
+                            self.target_transform_template
+                        )
                         data[col] = _target_transform.fit_transform(
                             data[col].values.reshape(-1, 1)
                         )
                         target_transforms.append(_target_transform)
                     self.target_transforms = target_transforms
                 else:
-                    for col, _target_transform in zip(self.config.target, self.target_transforms):
+                    for col, _target_transform in zip(
+                        self.config.target, self.target_transforms
+                    ):
                         data[col] = _target_transform.transform(
                             data[col].values.reshape(-1, 1)
                         )
@@ -441,7 +450,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             df.insert(3, prefix + "Week", week)
             added_features.append(prefix + "Week")
-        #TODO Not adding Elapsed by default. Need to route it through config
+        # TODO Not adding Elapsed by default. Need to route it through config
         # mask = ~field.isna()
         # df[prefix + "Elapsed"] = np.where(
         #     mask, field.values.astype(np.int64) // 10 ** 9, None
@@ -458,7 +467,7 @@ class TabularDatamodule(pl.LightningDataModule):
         return df, added_features
 
     def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
-        """ Function that loads the train set. """
+        """Function that loads the train set."""
         dataset = TabularDataset(
             task=self.config.task,
             data=self.train,
@@ -476,7 +485,7 @@ class TabularDatamodule(pl.LightningDataModule):
         )
 
     def val_dataloader(self) -> DataLoader:
-        """ Function that loads the validation set. """
+        """Function that loads the validation set."""
         dataset = TabularDataset(
             task=self.config.task,
             data=self.validation,
@@ -490,7 +499,7 @@ class TabularDatamodule(pl.LightningDataModule):
         )
 
     def test_dataloader(self) -> DataLoader:
-        """ Function that loads the validation set. """
+        """Function that loads the validation set."""
         if self.test is not None:
             dataset = TabularDataset(
                 task=self.config.task,
@@ -604,6 +613,10 @@ class TabularDataset(Dataset):
         """
         return {
             "target": self.y[idx],
-            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
-            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
+            "continuous": self.continuous_X[idx]
+            if self.continuous_cols
+            else torch.Tensor(),
+            "categorical": self.categorical_X[idx]
+            if self.categorical_cols
+            else torch.Tensor(),
         }

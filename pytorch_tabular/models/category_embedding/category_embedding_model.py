@@ -9,7 +9,6 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from torch import Tensor
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
@@ -91,7 +90,9 @@ class CategoryEmbeddingModel(BaseModel):
         self.head = nn.Linear(
             self.backbone.output_dim, self.hparams.output_dim
         )  # output_dim auto-calculated from other config
-        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.head)
+        _initialize_layers(
+            self.hparams.activation, self.hparams.initialization, self.head
+        )
 
     def extract_embedding(self):
         return self.backbone.embedding_layers

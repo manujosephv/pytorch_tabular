@@ -18,11 +18,8 @@ from ..base_model import BaseModel
 logger = logging.getLogger(__name__)
 
 
-#TODO dont use embedding_dims
 class AutoIntBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig):
-        # self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
-        # self.hparams = config
         super().__init__()
         self.save_hyperparameters(config)
         self._build_network()
@@ -42,7 +39,7 @@ class AutoIntBackbone(pl.LightningModule):
         self.cont_embedding_layer = nn.Embedding(
             self.hparams.continuous_dim, self.hparams.embedding_dim
         )
-        if self.hparams.embedding_dropout != 0 and self.hparams.categorical_dim> 0:
+        if self.hparams.embedding_dropout != 0 and self.hparams.categorical_dim > 0:
             self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
@@ -64,7 +61,9 @@ class AutoIntBackbone(pl.LightningModule):
             self.linear_layers = nn.Sequential(*layers)
         # Projection to Multi-Headed Attention Dims
         self.attn_proj = nn.Linear(_curr_units, self.hparams.attn_embed_dim)
-        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.attn_proj)
+        _initialize_layers(
+            self.hparams.activation, self.hparams.initialization, self.attn_proj
+        )
         # Multi-Headed Attention Layers
         self.self_attns = nn.ModuleList(
             [
@@ -93,7 +92,7 @@ class AutoIntBackbone(pl.LightningModule):
         # (B, N)
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         x = None
-        if self.hparams.categorical_dim> 0:
+        if self.hparams.categorical_dim > 0:
             x_cat = [
                 embedding_layer(categorical_data[:, i]).unsqueeze(1)
                 for i, embedding_layer in enumerate(self.cat_embedding_layers)
@@ -149,12 +148,18 @@ class AutoIntModel(BaseModel):
         # Backbone
         self.backbone = AutoIntBackbone(self.hparams)
         # Head
-        self.head = nn.Sequential(nn.Dropout(self.hparams.dropout),
-                                  nn.Linear(self.backbone.output_dim, self.hparams.output_dim))
-        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.head)
+        self.head = nn.Sequential(
+            nn.Dropout(self.hparams.dropout),
+            nn.Linear(self.backbone.output_dim, self.hparams.output_dim),
+        )
+        _initialize_layers(
+            self.hparams.activation, self.hparams.initialization, self.head
+        )
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
             return self.backbone.cat_embedding_layers
         else:
-            raise ValueError("Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder")
+            raise ValueError(
+                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+            )

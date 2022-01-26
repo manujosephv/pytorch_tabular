@@ -75,7 +75,7 @@ class TabTransformerBackbone(pl.LightningModule):
                 attn_dropout=self.hparams.attn_dropout,
                 ff_dropout=self.hparams.ff_dropout,
                 add_norm_dropout=self.hparams.add_norm_dropout,
-                keep_attn=False # No easy way to convert TabTransformer Attn Weights to Feature Importance
+                keep_attn=False,  # No easy way to convert TabTransformer Attn Weights to Feature Importance
             )
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
         self.attention_weights = [None] * self.hparams.num_attn_blocks
@@ -140,8 +140,10 @@ class TabTransformerModel(BaseModel):
         self.backbone = TabTransformerBackbone(self.hparams)
         self.dropout = nn.Dropout(self.hparams.out_ff_dropout)
         # Adding the last layer
-        self.head = nn.Sequential(nn.Dropout(self.hparams.out_ff_dropout),
-                                  nn.Linear(self.backbone.output_dim, self.hparams.output_dim))
+        self.head = nn.Sequential(
+            nn.Dropout(self.hparams.out_ff_dropout),
+            nn.Linear(self.backbone.output_dim, self.hparams.output_dim),
+        )
         _initialize_layers(
             self.hparams.out_ff_activation,
             self.hparams.out_ff_initialization,
@@ -149,7 +151,7 @@ class TabTransformerModel(BaseModel):
         )
 
     def extract_embedding(self):
-        if self.hparams.categorical_dim> 0:
+        if self.hparams.categorical_dim > 0:
             return self.backbone.cat_embedding_layers
         else:
             raise ValueError(

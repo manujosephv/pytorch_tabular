@@ -18,7 +18,6 @@ from pytorch_tabular.models.autoint import AutoIntBackbone
 from pytorch_tabular.models.category_embedding import CategoryEmbeddingBackbone
 from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.node import utils as utils
-import pytorch_tabular.augmentations as augmentations
 
 from ..base_model import BaseModel
 

@@ -1,3 +1,4 @@
+# noqa W605
 from typing import Optional
 
 import torch
@@ -92,6 +93,7 @@ class PositionWiseFeedForward(nn.Module):
         # depending on whether it is gated
         return self.layer2(x)
 
+
 # GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
 class GEGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int,
@@ -102,6 +104,7 @@ class GEGLU(nn.Module):
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
 
+
 class ReGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int,
                  dropout: float = 0.1):
@@ -110,6 +113,7 @@ class ReGLU(nn.Module):
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
+
 
 class SwiGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int,
@@ -130,6 +134,7 @@ class SwiGLU(nn.Module):
 # AutoGluon is an AuttoML library which supports Tabular data as well. it is from Amazon Research and is in MXNet
 # 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
+
 
 class AddNorm(nn.Module):
     """

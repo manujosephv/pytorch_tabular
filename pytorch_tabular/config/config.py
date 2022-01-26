@@ -3,17 +3,19 @@
 # For license information, see LICENSE.TXT
 """Config"""
 import logging
+import os
 from dataclasses import MISSING, dataclass, field
 from typing import List, Optional
-import os
+
 from omegaconf import OmegaConf
 
 logger = logging.getLogger(__name__)
 
 
 def _read_yaml(filename):
-    import yaml
     import re
+
+    import yaml
 
     loader = yaml.SafeLoader
     loader.add_implicit_resolver(
@@ -228,20 +230,31 @@ class TrainerConfig:
         default=64, metadata={"help": "Number of samples in each batch of training"}
     )
     fast_dev_run: bool = field(
-        default=False, metadata={"help": "runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val and test to find any bugs (ie: a sort of unit test)."}
+        default=False,
+        metadata={
+            "help": "runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val and test to find any bugs (ie: a sort of unit test)."
+        },
     )
     max_epochs: int = field(
         default=10, metadata={"help": "Maximum number of epochs to be run"}
     )
     min_epochs: Optional[int] = field(
-        default=1, metadata={"help": "Force training for at least these many epochs. 1 by default"}
+        default=1,
+        metadata={
+            "help": "Force training for at least these many epochs. 1 by default"
+        },
     )
     max_time: Optional[int] = field(
-        default=None, metadata={"help": "Stop training after this amount of time has passed. Disabled by default (None)"}
+        default=None,
+        metadata={
+            "help": "Stop training after this amount of time has passed. Disabled by default (None)"
+        },
     )
     gpus: Optional[int] = field(
         default=None,
-        metadata={"help": "Number of gpus to train on (int). -1 uses all available GPUs. By default uses CPU (None)"},
+        metadata={
+            "help": "Number of gpus to train on (int). -1 uses all available GPUs. By default uses CPU (None)"
+        },
     )
     accumulate_grad_batches: int = field(
         default=1,
@@ -325,7 +338,7 @@ class TrainerConfig:
         default=None,
         metadata={
             "help": "The name under which the models will be saved. If left blank, first it will look for `run_name` in experiment_config and if that is also None then it will use a generic name like task_version."
-        }
+        },
     )
     checkpoints_mode: str = field(
         default="min",
@@ -441,7 +454,9 @@ class OptimizerConfig:
 
     optimizer: str = field(
         default="Adam",
-        metadata={"help": "Any of the standard optimizers from [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."},
+        metadata={
+            "help": "Any of the standard optimizers from [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."
+        },
     )
     optimizer_params: dict = field(
         default_factory=lambda: {"weight_decay": 0, "amsgrad": False},
@@ -555,21 +570,21 @@ class ModelConfig:
         metadata={
             "help": "Specify the kind of self supervised algorithm to use.",
             "choices": ["Denoising", "Contrastive", None],
-        }
+        },
     )
     aug_task: Optional[str] = field(
         default=None,
         metadata={
             "help": "Specify the kind of augmentations algorithm to use for ssl.",
             "choices": ["cutmix", "mixup", None],
-        }
+        },
     )
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
             "help": "The dimensions of the embedding for each categorical column as a list of tuples "
-                    "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
-                    "categorical column using the rule min(50, (x + 1) // 2)"
+            "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
+            "categorical column using the rule min(50, (x + 1) // 2)"
         },
     )
     learning_rate: float = field(
@@ -579,16 +594,16 @@ class ModelConfig:
         default=None,
         metadata={
             "help": "The loss function to be applied. By Default it is MSELoss for regression "
-                    "and CrossEntropyLoss for classification. Unless you are sure what you are doing, "
-                    "leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
+            "and CrossEntropyLoss for classification. Unless you are sure what you are doing, "
+            "leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
         },
     )
     metrics: Optional[List[str]] = field(
         default=None,
         metadata={
             "help": "the list of metrics you need to track during training. The metrics should be one "
-                    "of the functional metrics implemented in ``torchmetrics``. By default, "
-                    "it is accuracy if classification and mean_squared_error for regression"
+            "of the functional metrics implemented in ``torchmetrics``. By default, "
+            "it is accuracy if classification and mean_squared_error for regression"
         },
     )
     metrics_params: Optional[List] = field(
@@ -599,15 +614,13 @@ class ModelConfig:
         default=None,
         metadata={
             "help": "The range in which we should limit the output variable. "
-                    "Currently ignored for multi-target regression. Typically used for Regression problems. "
-                    "If left empty, will not apply any restrictions"
+            "Currently ignored for multi-target regression. Typically used for Regression problems. "
+            "If left empty, will not apply any restrictions"
         },
     )
     seed: int = field(
         default=42,
-        metadata={
-            "help": "The seed for reproducibility. Defaults to 42"
-        },
+        metadata={"help": "The seed for reproducibility. Defaults to 42"},
     )
 
     def __post_init__(self):

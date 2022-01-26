@@ -6,22 +6,21 @@ import logging
 from abc import ABCMeta, abstractmethod
 from typing import Callable, Dict, List, Optional
 
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+import torchmetrics
+from omegaconf import DictConfig
 from torch import Tensor
 
 import pytorch_tabular.augmentations as augmentations
 import pytorch_tabular.ssl as ssl
-
-import pytorch_lightning as pl
-import torch
-import torchmetrics
-import torch.nn as nn
-from omegaconf import DictConfig
-
 from pytorch_tabular.utils import loss_contrastive
 
 try:
-    import wandb
     import plotly.graph_objects as go
+
+    import wandb
 
     WANDB_INSTALLED = True
 except ImportError:
@@ -39,14 +38,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_metrics: Optional[List[Callable]] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
         custom_optimizer_params: Dict = {},
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.custom_loss = custom_loss
         self.custom_metrics = custom_metrics
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
-        #Updating config with custom parameters for experiment tracking
+        # Updating config with custom parameters for experiment tracking
         if self.custom_loss is not None:
             config.loss = str(self.custom_loss)
         if self.custom_metrics is not None:
@@ -54,7 +53,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             config.metrics_params = [vars(m) for m in self.custom_metrics]
         if self.custom_optimizer is not None:
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
-        if len(self.custom_optimizer_params)>0:
+        if len(self.custom_optimizer_params) > 0:
             config.optimizer_params = self.custom_optimizer_params
         self.save_hyperparameters(config)
         # The concatenated output dim of the embedding layer
@@ -113,7 +112,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 )
             computed_loss = torch.stack(losses, dim=0).sum()
         else:
-            #TODO loss fails with batch size of 1
+            # TODO loss fails with batch size of 1
             computed_loss = self.loss(y_hat.squeeze(), y.squeeze())
         self.log(
             f"{tag}_loss",
@@ -194,7 +193,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             return {"logits": y_hat, "backbone_features": x}
 
     def compute_ssl_head(self, x: Dict):
-        return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(x)
+        return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
+            x
+        )
 
     def forward(self, x: Dict):
         x = self.compute_backbone(x)
@@ -203,7 +204,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
-        assert self.hparams.task != "ssl", "It's not allowed to use the method predict in case of ssl task"
+        assert (
+            self.hparams.task != "ssl"
+        ), "It's not allowed to use the method predict in case of ssl task"
         ret_value = self.forward(x)
         if ret_model_output:
             return ret_value.get("logits"), ret_value
