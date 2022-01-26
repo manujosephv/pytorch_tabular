@@ -21,4 +21,4 @@ jobs:
         python -m pip install flake8
     - name: Lint with flake8
       run: |
-        flake8 .
+        flake8 --ignore=W6,E12,W503,E5 pytorch_tabular/ tests/
