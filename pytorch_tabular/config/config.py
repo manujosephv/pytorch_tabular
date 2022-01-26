@@ -140,7 +140,10 @@ class DataConfig:
             "help": "The number of workers used for data loading. For windows always set to 0"
         },
     )
-
+    pin_memory: bool = field(
+        default=True,
+        metadata={"help": "Whether or not to pin memory for data loading."},
+    )
     categorical_dim: int = field(init=False)
     continuous_dim: int = field(init=False)
     # output_dim: int = field(init=False)

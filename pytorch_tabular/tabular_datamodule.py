@@ -482,6 +482,7 @@ class TabularDatamodule(pl.LightningDataModule):
             shuffle=True if self.train_sampler is None else False,
             num_workers=self.config.num_workers,
             sampler=self.train_sampler,
+            pin_memory=self.config.pin_memory,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -495,7 +496,11 @@ class TabularDatamodule(pl.LightningDataModule):
             target=self.target,
         )
         return DataLoader(
-            dataset, self.batch_size, shuffle=False, num_workers=self.config.num_workers
+            dataset,
+            self.batch_size,
+            shuffle=False,
+            num_workers=self.config.num_workers,
+            pin_memory=self.config.pin_memory,
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -514,6 +519,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 self.batch_size,
                 shuffle=False,
                 num_workers=self.config.num_workers,
+                pin_memory=self.config.pin_memory,
             )
 
     def prepare_inference_dataloader(self, df: pd.DataFrame) -> DataLoader:
