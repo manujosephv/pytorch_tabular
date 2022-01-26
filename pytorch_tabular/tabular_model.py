@@ -7,7 +7,7 @@ import logging
 import os
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
-
+from pytorch_lightning.utilities.model_summary import summarize
 import joblib
 import numpy as np
 import pandas as pd
@@ -822,3 +822,9 @@ class TabularModel:
         tabular_model.trainer.model = model
         tabular_model.logger = logger
         return tabular_model
+
+    def summary(self, max_depth=-1):
+        print(summarize(self.model, max_depth=max_depth))
+
+    def __str__(self) -> str:
+        return self.summary()
