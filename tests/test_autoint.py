@@ -3,9 +3,10 @@
 
 import pytest
 
+from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import AutoIntConfig
-from pytorch_tabular import TabularModel
+
 
 @pytest.mark.parametrize("multi_target", [True, False])
 @pytest.mark.parametrize(
@@ -38,7 +39,7 @@ def test_regression(
     target_range,
     deep_layers,
     batch_norm_continuous_input,
-    attention_pooling
+    attention_pooling,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -67,7 +68,11 @@ def test_regression(
         model_config_params["attention_pooling"] = attention_pooling
         model_config = AutoIntConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -104,7 +109,7 @@ def test_classification(
     continuous_feature_transform,
     normalize_continuous_features,
     deep_layers,
-    batch_norm_continuous_input
+    batch_norm_continuous_input,
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -122,7 +127,11 @@ def test_classification(
         model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
         model_config = AutoIntConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -176,7 +185,7 @@ def test_ssl(
     batch_norm_continuous_input,
     attention_pooling,
     ssl_task,
-    aug_task
+    aug_task,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -189,9 +198,7 @@ def test_ssl(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="ssl",
-                                   ssl_task=ssl_task,
-                                   aug_task=aug_task)
+        model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -207,7 +214,11 @@ def test_ssl(
         model_config_params["attention_pooling"] = attention_pooling
         model_config = AutoIntConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 

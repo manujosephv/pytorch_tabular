@@ -2,10 +2,9 @@
 """Tests for `pytorch_tabular` package."""
 import pytest
 
+from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import TabNetModelConfig
-from pytorch_tabular import TabularModel
-from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 
 
 @pytest.mark.parametrize("multi_target", [True, False])
@@ -33,7 +32,7 @@ def test_regression(
     categorical_cols,
     continuous_feature_transform,
     normalize_continuous_features,
-    target_range
+    target_range,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -58,7 +57,13 @@ def test_regression(
                 )
             model_config_params["target_range"] = _target_range
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
+        trainer_config = TrainerConfig(
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
+        )
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -104,7 +109,13 @@ def test_classification(
         )
         model_config_params = dict(task="classification")
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
+        trainer_config = TrainerConfig(
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
+        )
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(
@@ -152,9 +163,19 @@ def test_ssl(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = {"task": "ssl", "ssl_task": ssl_task, "aug_task": aug_task}
+        model_config_params = {
+            "task": "ssl",
+            "ssl_task": ssl_task,
+            "aug_task": aug_task,
+        }
         model_config = TabNetModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True)
+        trainer_config = TrainerConfig(
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
+        )
         optimizer_config = OptimizerConfig()
 
         with pytest.raises(AssertionError):

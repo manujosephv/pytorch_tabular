@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
-import os
-
 import pytest
 import torch
 
@@ -13,12 +11,18 @@ from pytorch_tabular.models import (
     CategoryEmbeddingModelConfig,
     NodeConfig,
     TabNetModelConfig,
-    TabTransformerConfig
+    TabTransformerConfig,
 )
 
 MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, dict(layers="10-20")),
-    (AutoIntConfig, dict(num_heads=1, num_attn_blocks=1,)),
+    (
+        AutoIntConfig,
+        dict(
+            num_heads=1,
+            num_attn_blocks=1,
+        ),
+    ),
     (NodeConfig, dict(num_trees=100, depth=2)),
     (TabNetModelConfig, dict(n_a=2, n_d=2)),
 ]
@@ -71,10 +75,14 @@ def test_save_load(
         categorical_cols=categorical_cols,
     )
     model_config_class, model_config_params = model_config_class
-    model_config_params['task']="regression"
+    model_config_params["task"] = "regression"
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -139,7 +147,11 @@ def test_feature_extractor(
     model_config_params = dict(task="regression")
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -159,9 +171,7 @@ def test_feature_extractor(
 
 
 MODEL_CONFIG_SAVE_TEST_SSL = [
-    (TabTransformerConfig, dict(input_embed_dim=8,
-                                num_attn_blocks=1,
-                                num_heads=2)),
+    (TabTransformerConfig, dict(input_embed_dim=8, num_attn_blocks=1, num_heads=2)),
 ]
 
 
@@ -204,12 +214,16 @@ def test_pretrained_backbone(
     )
 
     model_config_class, model_config_params = model_config_class
-    model_config_params['task'] = "ssl"
-    model_config_params['ssl_task'] = "Denoising"
-    model_config_params['aug_task'] = "cutmix"
+    model_config_params["task"] = "ssl"
+    model_config_params["ssl_task"] = "Denoising"
+    model_config_params["aug_task"] = "cutmix"
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -234,12 +248,16 @@ def test_pretrained_backbone(
     sv_dir = tmpdir.mkdir("saved_model")
     tabular_model.save_model(str(sv_dir))
     old_mdl = TabularModel.load_from_checkpoint(str(sv_dir))
-    model_config_params['task'] = "regression"
-    model_config_params['ssl_task'] = None
-    model_config_params['aug_task'] = None
+    model_config_params["task"] = "regression"
+    model_config_params["ssl_task"] = None
+    model_config_params["aug_task"] = None
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     tabular_model = TabularModel(
         data_config=data_config,
@@ -254,7 +272,7 @@ def test_pretrained_backbone(
         loss=custom_loss,
         optimizer=custom_optimizer,
         optimizer_params=None if custom_optimizer is None else {},
-        trained_backbone=old_mdl.model.backbone
+        trained_backbone=old_mdl.model.backbone,
     )
     result_2 = tabular_model.evaluate(test)
     assert "test_mean_squared_error" in result_2[0].keys()

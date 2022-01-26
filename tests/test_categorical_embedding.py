@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
 
-import pytest
 import numpy as np
+import pytest
 import torch
 from sklearn.preprocessing import PowerTransformer
-from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
-from pytorch_tabular.models import CategoryEmbeddingModelConfig
+
 from pytorch_tabular import TabularModel
 from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
+from pytorch_tabular.models import CategoryEmbeddingModelConfig
 
 # TODO Tests for custom parameters and saving with custom_params
 
@@ -38,7 +39,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("target_range", [True, False])
 @pytest.mark.parametrize(
     "target_transform",
-    [None, PowerTransformer(), (lambda x: np.power(x,2), lambda x: np.sqrt(x))],
+    [None, PowerTransformer(), (lambda x: np.power(x, 2), lambda x: np.sqrt(x))],
 )
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
@@ -80,7 +81,11 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -141,7 +146,11 @@ def test_classification(
         model_config_params = dict(task="classification")
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -177,7 +186,11 @@ def test_embedding_transformer(regression_data):
     model_config_params = dict(task="regression")
     model_config = CategoryEmbeddingModelConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -245,7 +258,7 @@ def test_ssl(
     custom_loss,
     custom_optimizer,
     ssl_task,
-    aug_task
+    aug_task,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -258,9 +271,7 @@ def test_ssl(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="ssl",
-                                   ssl_task=ssl_task,
-                                   aug_task=aug_task)
+        model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -273,7 +284,11 @@ def test_ssl(
             model_config_params["target_range"] = _target_range
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=3, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=3,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 

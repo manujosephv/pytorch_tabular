@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
-import pytest
-import math
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import QuantileTransformer, PowerTransformer
-
 import numpy as np
+import pytest
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import PowerTransformer
+
+from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
-from pytorch_tabular import TabularModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 
 
