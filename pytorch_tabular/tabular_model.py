@@ -216,13 +216,13 @@ class TabularModel:
                 f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]"
             )
 
-    def _prepare_callbacks(self) -> List:
+    def _prepare_callbacks(self, callbacks=None) -> List:
         """Prepares the necesary callbacks to the Trainer based on the configuration
 
         Returns:
             List: A list of callbacks
         """
-        callbacks = []
+        callbacks = [] if callbacks is None else callbacks
         if self.config.early_stopping is not None:
             early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
                 monitor=self.config.early_stopping,
@@ -346,7 +346,8 @@ class TabularModel:
         max_epochs: int,
         min_epochs: int,
         reset: bool,
-        trained_backbone: Optional[pl.LightningModule]
+        trained_backbone: Optional[pl.LightningModule],
+        callbacks: Optional[List[pl.Callback]],
     ):
         """Prepares the dataloaders, trainer, and model for the fit process"""
         if target_transform is not None:
@@ -374,7 +375,7 @@ class TabularModel:
             self.logger.watch(
                 self.model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
             )
-        self.callbacks = self._prepare_callbacks()
+        self.callbacks = self._prepare_callbacks(callbacks)
         self._prepare_trainer(max_epochs, min_epochs)
         return train_loader, val_loader
 
@@ -393,7 +394,8 @@ class TabularModel:
         min_epochs: Optional[int] = None,
         reset: bool = False,
         seed: Optional[int] = None,
-        trained_backbone: Optional[pl.LightningModule] = None
+        trained_backbone: Optional[pl.LightningModule] = None,
+        callbacks: Optional[List[pl.Callback]] = None,
     ) -> None:
         """The fit method which takes in the data and triggers the training
 
@@ -431,6 +433,8 @@ class TabularModel:
             seed: (int): If you have to override the default seed set as part of of ModelConfig
 
             trained_backbone (pl.LightningModule): this module contains the weights for a pretrained backbone
+
+            callbacks (Optional[List[pl.Callback]], optional): Custom callbacks to be used during training.
         """
         seed_everything(seed if seed is not None else self.config.seed)
         train_loader, val_loader = self._pre_fit(
@@ -446,7 +450,8 @@ class TabularModel:
             max_epochs,
             min_epochs,
             reset,
-            trained_backbone
+            trained_backbone,
+            callbacks,
         )
         self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
