@@ -54,7 +54,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             config.metrics_params = [vars(m) for m in self.custom_metrics]
         if self.custom_optimizer is not None:
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
-        if self.custom_optimizer_params is not None:
+        if len(self.custom_optimizer_params)>0:
             config.optimizer_params = self.custom_optimizer_params
         self.save_hyperparameters(config)
         # The concatenated output dim of the embedding layer
