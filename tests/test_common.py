@@ -2,6 +2,7 @@
 """Tests for `pytorch_tabular` package."""
 import pytest
 import torch
+import os
 
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
@@ -98,7 +99,7 @@ def test_save_load(
         metrics=custom_metrics,
         loss=custom_loss,
         optimizer=custom_optimizer,
-        optimizer_params=None if custom_optimizer is None else {},
+        optimizer_params={},
     )
 
     result_1 = tabular_model.evaluate(test)
@@ -239,7 +240,7 @@ def test_pretrained_backbone(
         metrics=custom_metrics,
         loss=custom_loss,
         optimizer=custom_optimizer,
-        optimizer_params=None if custom_optimizer is None else {},
+        optimizer_params={},
     )
     result_1 = tabular_model.evaluate(test)
     with pytest.raises(AssertionError):
@@ -271,8 +272,84 @@ def test_pretrained_backbone(
         metrics=custom_metrics,
         loss=custom_loss,
         optimizer=custom_optimizer,
-        optimizer_params=None if custom_optimizer is None else {},
+        optimizer_params={},
         trained_backbone=old_mdl.model.backbone,
     )
     result_2 = tabular_model.evaluate(test)
     assert "test_mean_squared_error" in result_2[0].keys()
+
+
+@pytest.mark.parametrize(
+    "model_config_class",
+    MODEL_CONFIG_SAVE_TEST,
+)
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [
+            "AveRooms",
+            "AveBedrms",
+            "Population",
+            "AveOccup",
+            "Latitude",
+            "Longitude",
+        ],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
+@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("save_type", ["pytorch", "onnx"])
+def test_save_for_inference(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    custom_metrics,
+    custom_loss,
+    custom_optimizer,
+    save_type,
+    tmpdir,
+):
+    (train, test, target) = regression_data
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+    )
+    model_config_class, model_config_params = model_config_class
+    model_config_params["task"] = "regression"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+        test=test,
+        metrics=custom_metrics,
+        loss=custom_loss,
+        optimizer=custom_optimizer,
+        optimizer_params={},
+    )
+    sv_dir = tmpdir.mkdir("saved_model")
+
+    tabular_model.save_model_for_inference(
+        sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx",
+        kind=save_type,
+    )
+    assert os.path.exists(
+        sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx"
+    )

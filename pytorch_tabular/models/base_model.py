@@ -112,12 +112,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 )
             computed_loss = torch.stack(losses, dim=0).sum()
         else:
-            # TODO loss fails with batch size of 1
+            # TODO loss fails with batch size of 1?
             computed_loss = self.loss(y_hat.squeeze(), y.squeeze())
         self.log(
             f"{tag}_loss",
             computed_loss,
-            on_epoch=(tag == "valid"),
+            on_epoch=(tag == "valid") or (tag == "test"),
             on_step=(tag == "train"),
             # on_step=False,
             logger=True,

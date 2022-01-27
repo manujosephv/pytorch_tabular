@@ -51,8 +51,8 @@ def test_regression(
             for target in data_config.target:
                 _target_range.append(
                     (
-                        train[target].min().item(),
-                        train[target].max().item(),
+                        train[target].min(),
+                        train[target].max(),
                     )
                 )
             model_config_params["target_range"] = _target_range

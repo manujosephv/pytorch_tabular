@@ -15,4 +15,4 @@ ipywidgets
 # Use dataclasses backport for Python 3.6.
 dataclasses;python_version=='3.6'
 einops==0.3.0
-rich>=10.16.2
+rich>= 10.2.2

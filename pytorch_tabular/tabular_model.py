@@ -17,6 +17,9 @@ import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
+from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
+    GradientAccumulationScheduler,
+)
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities.model_summary import summarize
 from pytorch_lightning.utilities.seed import seed_everything
@@ -588,8 +591,9 @@ class TabularModel:
         else:
             return {}
         result = self.trainer.test(
+            model=self.model,
             test_dataloaders=test_loader,
-            ckpt_path="best" if self.config.checkpoints else None,
+            ckpt_path=None,
         )
         return result
 
@@ -768,12 +772,11 @@ class TabularModel:
             passed to torch.onnx.export
         """
         if kind == "pytorch":
-            torch.save(self.model, path)
+            torch.save(self.model, str(path))
+            return True
         elif kind == "onnx":
             # Export the model
-            onnx_export_params["input_names"] = onnx_export_params.get(
-                "input_names", ["input"]
-            )
+            onnx_export_params["input_names"] = ["categorical", "continuous"]
             onnx_export_params["output_names"] = onnx_export_params.get(
                 "output_names", ["output"]
             )
@@ -781,12 +784,19 @@ class TabularModel:
                 onnx_export_params["input_names"][0]: {0: "batch_size"},
                 onnx_export_params["output_names"][0]: {0: "batch_size"},
             }
-            x = torch.randn(
+            cat = torch.zeros(
                 self.config.batch_size,
-                len(self.config.categorical_cols) + len(self.config.continuous_cols),
+                len(self.config.categorical_cols),
+                dtype=torch.int
+            )
+            cont = torch.randn(
+                self.config.batch_size,
+                len(self.config.continuous_cols),
                 requires_grad=True,
             )
-            torch.onnx.export(self.model, x, path, **onnx_export_params)
+            x = dict(continuous=cont, categorical=cat)
+            torch.onnx.export(self.model, x, str(path), **onnx_export_params)
+            return True
         else:
             raise ValueError("`kind` must be either pytorch or onnx")
 
@@ -817,6 +827,11 @@ class TabularModel:
             logger = None
         if os.path.exists(os.path.join(dir, "callbacks.sav")):
             callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
+            # Excluding Gradient Accumulation Scheduler Callback as we are creating
+            # a new one in trainer
+            callbacks = [
+                c for c in callbacks if not isinstance(c, GradientAccumulationScheduler)
+            ]
         else:
             callbacks = []
         if os.path.exists(os.path.join(dir, "custom_model_callable.sav")):
@@ -830,14 +845,16 @@ class TabularModel:
         custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
         model_args = {}
         if custom_params.get("custom_loss") is not None:
-            model_args["loss"] = "MSELoss"
+            model_args["loss"] = "MSELoss"  # For compatibility. Not Used
         if custom_params.get("custom_metrics") is not None:
-            model_args["metrics"] = ["mean_squared_error"]
-            model_args["metric_params"] = [{}]
+            model_args["metrics"] = [
+                "mean_squared_error"
+            ]  # For compatibility. Not Used
+            model_args["metric_params"] = [{}]  # For compatibility. Not Used
         if custom_params.get("custom_optimizer") is not None:
-            model_args["optimizer"] = "Adam"
+            model_args["optimizer"] = "Adam"  # For compatibility. Not Used
         if custom_params.get("custom_optimizer_params") is not None:
-            model_args["optimizer_params"] = {}
+            model_args["optimizer_params"] = {}  # For compatibility. Not Used
 
         # Initializing with default metrics, losses, and optimizers. Will revert once initialized
         model = model_callable.load_from_checkpoint(

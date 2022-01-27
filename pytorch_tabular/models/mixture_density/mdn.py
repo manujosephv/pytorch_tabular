@@ -192,7 +192,7 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
         self.log(
             f"{tag}_loss",
             loss,
-            on_epoch=(tag == "valid"),
+            on_epoch=(tag == "valid") or (tag=="test"),
             on_step=(tag == "train"),
             # on_step=False,
             logger=True,

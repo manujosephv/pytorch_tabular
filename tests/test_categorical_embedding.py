@@ -74,8 +74,8 @@ def test_regression(
             for target in data_config.target:
                 _target_range.append(
                     (
-                        train[target].min().item(),
-                        train[target].max().item(),
+                        train[target].min(),
+                        train[target].max(),
                     )
                 )
             model_config_params["target_range"] = _target_range
@@ -102,7 +102,7 @@ def test_regression(
             target_transform=target_transform,
             loss=custom_loss,
             optimizer=custom_optimizer,
-            optimizer_params=None if custom_optimizer is None else {},
+            optimizer_params={},
         )
 
         result = tabular_model.evaluate(test)
@@ -218,7 +218,6 @@ def test_embedding_transformer(regression_data):
     )
 
 
-@pytest.mark.parametrize("multi_target", [True, False])
 @pytest.mark.parametrize(
     "continuous_cols",
     [
@@ -247,7 +246,6 @@ def test_embedding_transformer(regression_data):
 @pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
 def test_ssl(
     regression_data,
-    multi_target,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
@@ -265,7 +263,7 @@ def test_ssl(
         assert True
     else:
         data_config = DataConfig(
-            target=target + ["MedInc"] if multi_target else target,
+            target=target,
             continuous_cols=continuous_cols,
             categorical_cols=categorical_cols,
             continuous_feature_transform=continuous_feature_transform,
@@ -277,8 +275,8 @@ def test_ssl(
             for target in data_config.target:
                 _target_range.append(
                     (
-                        train[target].min().item(),
-                        train[target].max().item(),
+                        train[target].min(),
+                        train[target].max(),
                     )
                 )
             model_config_params["target_range"] = _target_range
@@ -305,7 +303,7 @@ def test_ssl(
             target_transform=target_transform,
             loss=custom_loss,
             optimizer=custom_optimizer,
-            optimizer_params=None if custom_optimizer is None else {},
+            optimizer_params={},
         )
 
         result = tabular_model.evaluate(test)
