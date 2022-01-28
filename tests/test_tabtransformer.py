@@ -57,14 +57,18 @@ def test_regression(
             for target in data_config.target:
                 _target_range.append(
                     (
-                        train[target].min(),
-                        train[target].max(),
+                        float(train[target].min()),
+                        float(train[target].max()),
                     )
                 )
             model_config_params["target_range"] = _target_range
         model_config = TabTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -117,7 +121,11 @@ def test_classification(
         )
         model_config = TabTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -150,14 +158,18 @@ def test_embedding_transformer(regression_data):
         categorical_cols=["HouseAgeBin"],
     )
     model_config_params = dict(
-            task="regression",
-            input_embed_dim=8,
-            num_attn_blocks=1,
-            num_heads=2,
-        )
+        task="regression",
+        input_embed_dim=8,
+        num_attn_blocks=1,
+        num_heads=2,
+    )
     model_config = TabTransformerConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -203,7 +215,7 @@ def test_ssl(
     continuous_feature_transform,
     normalize_continuous_features,
     ssl_task,
-    aug_task
+    aug_task,
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -222,11 +234,15 @@ def test_ssl(
             num_attn_blocks=1,
             num_heads=2,
             ssl_task=ssl_task,
-            aug_task=aug_task
+            aug_task=aug_task,
         )
         model_config = TabTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 

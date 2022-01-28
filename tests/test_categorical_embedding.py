@@ -74,8 +74,8 @@ def test_regression(
             for target in data_config.target:
                 _target_range.append(
                     (
-                        train[target].min(),
-                        train[target].max(),
+                        float(train[target].min()),
+                        float(train[target].max()),
                     )
                 )
             model_config_params["target_range"] = _target_range
@@ -275,8 +275,8 @@ def test_ssl(
             for target in data_config.target:
                 _target_range.append(
                     (
-                        train[target].min(),
-                        train[target].max(),
+                        float(train[target].min()),
+                        float(train[target].max()),
                     )
                 )
             model_config_params["target_range"] = _target_range
