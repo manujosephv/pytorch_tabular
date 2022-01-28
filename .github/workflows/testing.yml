@@ -35,4 +35,4 @@ jobs:
 
       - name: Run test-suite
         run: |
-          python -m pytest
+          python -m pytest tests/test_categorical_embedding.py
