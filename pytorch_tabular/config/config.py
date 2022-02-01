@@ -5,7 +5,7 @@
 import logging
 import os
 from dataclasses import MISSING, dataclass, field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from omegaconf import OmegaConf
 
@@ -232,6 +232,18 @@ class TrainerConfig:
 
         track_grad_norm (int): Track and Log Gradient Norms in the logger.
             -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
+
+        progress_bar (str): Progress bar type. Can be one of: `none`, `simple`,
+            `rich`. Defaults to `rich`.
+
+        precision (int): Lightning supports either double precision (64), full
+            precision (32), or half precision (16) training. Half precision, or
+            mixed precision, is the combined use of 32 and 16 bit floating points
+            to reduce memory footprint during model training. This can result in
+            improved performance, achieving +3X speedups on modern GPUs.
+
+        trainer_kwargs (dict[str, Any]): Additional kwargs to be passed to PyTorch Lightning Trainer.
+            See https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer
     """
 
     batch_size: int = field(
@@ -370,6 +382,23 @@ class TrainerConfig:
         default="rich",
         metadata={
             "help": "Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`."
+        },
+    )
+    precision: int = field(
+        default=32,
+        metadata={
+            "help": "Precision of the model. Can be one of: `32`, `16`, `64`. Defaults to `32`.",
+            "choices": [32, 16, 64],
+        },
+    )
+    seed: int = field(
+        default=42,
+        metadata={"help": "Seed for random number generators. Defaults to 42"},
+    )
+    trainer_kwargs: Dict[str, Any] = field(
+        default_factory=dict,
+        metadata={
+            "help": "Additional kwargs to be passed to PyTorch Lightning Trainer. See https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer"
         },
     )
 

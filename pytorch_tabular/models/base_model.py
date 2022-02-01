@@ -360,72 +360,72 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             )
 
 
-class SSLBaseModel(BaseModel):
-    def __init__(
-        self,
-        config: DictConfig,
-        custom_loss: Optional[torch.nn.Module] = None,
-        custom_metrics: Optional[List[Callable]] = None,
-        custom_optimizer: Optional[torch.optim.Optimizer] = None,
-        custom_optimizer_params: Dict = {},
-        **kwargs,
-    ):
-        super().__init__(
-            config,
-            custom_loss=custom_loss,
-            custom_metrics=custom_metrics,
-            custom_optimizer=custom_optimizer,
-            custom_optimizer_params=custom_optimizer_params,
-            **kwargs,
-        )
+# class SSLBaseModel(BaseModel):
+#     def __init__(
+#         self,
+#         config: DictConfig,
+#         custom_loss: Optional[torch.nn.Module] = None,
+#         custom_metrics: Optional[List[Callable]] = None,
+#         custom_optimizer: Optional[torch.optim.Optimizer] = None,
+#         custom_optimizer_params: Dict = {},
+#         **kwargs,
+#     ):
+#         super().__init__(
+#             config,
+#             custom_loss=custom_loss,
+#             custom_metrics=custom_metrics,
+#             custom_optimizer=custom_optimizer,
+#             custom_optimizer_params=custom_optimizer_params,
+#             **kwargs,
+#         )
 
-    def _setup_loss(self):
-        if self.custom_loss is None:
-            if self.hparams.ssl_task == "Contrastive":
-                self.loss = loss_contrastive
-        else:
-            super()._setup_loss()
+#     def _setup_loss(self):
+#         if self.custom_loss is None:
+#             if self.hparams.ssl_task == "Contrastive":
+#                 self.loss = loss_contrastive
+#         else:
+#             super()._setup_loss()
 
-    def calculate_loss(self, y, y_hat, tag):
-        if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
-            losses = []
-            for i in range(self.hparams.output_dim):
-                _loss = self.loss(y_hat[:, i], y[:, i])
-                losses.append(_loss)
-                self.log(
-                    f"{tag}_loss_{i}",
-                    _loss,
-                    on_epoch=True,
-                    on_step=False,
-                    logger=True,
-                    prog_bar=False,
-                )
-            computed_loss = torch.stack(losses, dim=0).sum()
-        else:
-            # TODO loss fails with batch size of 1?
-            computed_loss = self.loss(y_hat.squeeze(), y.squeeze())
-        self.log(
-            f"{tag}_loss",
-            computed_loss,
-            on_epoch=(tag == "valid") or (tag == "test"),
-            on_step=(tag == "train"),
-            # on_step=False,
-            logger=True,
-            prog_bar=True,
-        )
-        return computed_loss
+#     def calculate_loss(self, y, y_hat, tag):
+#         if (self.hparams.task == "regression") and (self.hparams.output_dim > 1):
+#             losses = []
+#             for i in range(self.hparams.output_dim):
+#                 _loss = self.loss(y_hat[:, i], y[:, i])
+#                 losses.append(_loss)
+#                 self.log(
+#                     f"{tag}_loss_{i}",
+#                     _loss,
+#                     on_epoch=True,
+#                     on_step=False,
+#                     logger=True,
+#                     prog_bar=False,
+#                 )
+#             computed_loss = torch.stack(losses, dim=0).sum()
+#         else:
+#             # TODO loss fails with batch size of 1?
+#             computed_loss = self.loss(y_hat.squeeze(), y.squeeze())
+#         self.log(
+#             f"{tag}_loss",
+#             computed_loss,
+#             on_epoch=(tag == "valid") or (tag == "test"),
+#             on_step=(tag == "train"),
+#             # on_step=False,
+#             logger=True,
+#             prog_bar=True,
+#         )
+#         return computed_loss
 
-    def compute_head(self, x: Dict):
-        return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
-            x
-        )
+#     def compute_head(self, x: Dict):
+#         return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
+#             x
+#         )
 
-    def forward_pass(self, batch):
-        if self.hparams.task == "ssl":
-            y = self(batch)["logits"]
-            batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
-            y_hat = self(batch_augmented)["logits"]
-        else:
-            y = batch["target"]
-            y_hat = self(batch)["logits"]
-        return y, y_hat
+#     def forward_pass(self, batch):
+#         if self.hparams.task == "ssl":
+#             y = self(batch)["logits"]
+#             batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+#             y_hat = self(batch_augmented)["logits"]
+#         else:
+#             y = batch["target"]
+#             y_hat = self(batch)["logits"]
+#         return y, y_hat
