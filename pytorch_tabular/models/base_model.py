@@ -4,7 +4,7 @@
 """Base Model"""
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import pytorch_lightning as pl
 import torch
@@ -189,20 +189,29 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         x = self.backbone(x)
         return x
 
-    def compute_head(self, x: Tensor):
-        y_hat = self.head(x)
+    def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor):
         if (self.hparams.task == "regression") and (
             self.hparams.target_range is not None
         ):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
+        return y_hat
+
+    def pack_output(
+        self, y_hat: torch.Tensor, backbone_features: torch.tensor
+    ) -> Dict[str, Any]:
         # if self.head is the Identity function it means that we cannot extract backbone features,
         # because the model cannot be divide in backbone and head (i.e. TabNet)
         if type(self.head) == nn.Identity:
             return {"logits": y_hat}
         else:
-            return {"logits": y_hat, "backbone_features": x}
+            return {"logits": y_hat, "backbone_features": backbone_features}
+
+    def compute_head(self, backbone_features: Tensor):
+        y_hat = self.head(backbone_features)
+        y_hat = self.apply_output_sigmoid_scaling(y_hat)
+        return self.pack_output(y_hat, backbone_features)
 
     def compute_ssl_head(self, x: Dict):
         return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
