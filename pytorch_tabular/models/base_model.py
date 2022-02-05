@@ -116,7 +116,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 _loss = self.loss(y_hat[:, i], y[:, i])
                 computed_loss += _loss
                 self.log(
-                    f"{tag}_loss_{i}",
+                    f"{tag}_loss_{i}" if self.hparams.output_dim >= 1 else f"{tag}_loss",
                     _loss,
                     on_epoch=True,
                     on_step=False,
