@@ -8,7 +8,7 @@ While there are separate config classes for each model, all of them share a few 
 
 ### Usage Example
 ```python
-model_config = <ModelSpecificConfig>(task="classification)
+model_config = <ModelSpecificConfig>(task="classification")
 ```
 That's it, Thats the most basic necessity. All the rest is intelligently inferred or set to intelligent defaults.
 ## Advanced Usage:
