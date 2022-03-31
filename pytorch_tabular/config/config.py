@@ -243,7 +243,7 @@ class TrainerConfig:
             improved performance, achieving +3X speedups on modern GPUs.
 
         trainer_kwargs (dict[str, Any]): Additional kwargs to be passed to PyTorch Lightning Trainer.
-            See https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer
+            See https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-class-api
     """
 
     batch_size: int = field(
