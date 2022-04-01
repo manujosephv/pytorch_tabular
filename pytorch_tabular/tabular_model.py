@@ -479,6 +479,8 @@ class TabularModel:
         logger.info("Training the model completed...")
         if self.config.load_best:
             self.load_best_model()
+        print("training accomplished")
+        return self.trainer
 
     def find_learning_rate(
         self,
