@@ -247,6 +247,7 @@ class TabularModel:
                 filename=ckpt_name,
                 save_top_k=self.config.checkpoints_save_top_k,
                 mode=self.config.checkpoints_mode,
+                every_n_epochs=self.config.checkpoints_every_n_epochs,
             )
             callbacks.append(model_checkpoint)
             self.config.checkpoint_callback = True
@@ -497,6 +498,7 @@ class TabularModel:
         plot=True,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         trained_backbone=None,
+        callbacks=None,
     ) -> None:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
 
@@ -555,16 +557,17 @@ class TabularModel:
             reset=True,
             trained_backbone=trained_backbone,
             train_sampler=train_sampler,
+            callbacks=callbacks,##
         )
         lr_finder = self.trainer.tuner.lr_find(
-            self.model,
-            train_loader,
-            val_loader,
-            min_lr,
-            max_lr,
-            num_training,
-            mode,
-            early_stop_threshold,
+            model=self.model,
+            train_dataloaders=train_loader,
+            val_dataloaders=None, ##
+            min_lr=min_lr,
+            max_lr=max_lr,
+            num_training=num_training,
+            mode=mode,
+            early_stop_threshold=early_stop_threshold,
         )
         if plot:
             fig = lr_finder.plot(suggest=True)
@@ -594,7 +597,7 @@ class TabularModel:
             return {}
         result = self.trainer.test(
             model=self.model,
-            test_dataloaders=test_loader,
+            dataloaders=test_loader,
             ckpt_path=None,
         )
         return result

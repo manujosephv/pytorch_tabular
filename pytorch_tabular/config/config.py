@@ -143,7 +143,7 @@ class DataConfig:
         },
     )
     pin_memory: bool = field(
-        default=False,
+        default=True,
         metadata={"help": "Whether or not to pin memory for data loading."},
     )
     categorical_dim: int = field(init=False)
@@ -218,7 +218,7 @@ class TrainerConfig:
 
         checkpoints (str): The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints
 
-        checkpoints_path (str): The path where the saved models will be
+        checkpoints_path (str): The path to save checkpoints
 
         checkpoints_name(Optional[str]): The name under which the models will be saved.
             If left blank, first it will look for `run_name` in experiment_config and if that is also None
@@ -315,8 +315,8 @@ class TrainerConfig:
     profiler: Optional[str] = field(
         default=None,
         metadata={
-            "help": "To profile individual steps during training and assist in identifying bottlenecks. None, simple or advanced",
-            "choices": [None, "simple", "advanced"],
+            "help": "To profile individual steps during training and assist in identifying bottlenecks. None, simple or advanced, pytorch",
+            "choices": [None, "simple", "advanced", "pytorch"],
         },
     )
     early_stopping: Optional[str] = field(
@@ -353,6 +353,10 @@ class TrainerConfig:
     checkpoints_path: str = field(
         default="saved_models",
         metadata={"help": "The path where the saved models will be"},
+    )
+    checkpoints_every_n_epochs: int = field(
+        default=1,
+        metadata={"help": "Number of training steps between checkpoints"},
     )
     checkpoints_name: Optional[str] = field(
         default=None,
