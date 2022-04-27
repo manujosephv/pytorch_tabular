@@ -70,7 +70,7 @@ development.
         workon pytorch_tabular
         # Now you can install PyTorch Tabular with:
         cd pytorch_tabular/
-        python setup.py develop
+        pip install -e .[dev]
 
 4.  Create a branch for local development:
 

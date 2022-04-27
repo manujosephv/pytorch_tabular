@@ -5,7 +5,7 @@
 import logging
 import os
 from dataclasses import MISSING, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from omegaconf import OmegaConf
 
@@ -505,7 +505,7 @@ class OptimizerConfig:
             "help": "Any of the standard optimizers from [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."
         },
     )
-    optimizer_params: dict = field(
+    optimizer_params: Dict = field(
         default_factory=lambda: {"weight_decay": 0, "amsgrad": False},
         metadata={
             "help": "The parameters for the optimizer. If left blank, will use default parameters."
@@ -517,7 +517,7 @@ class OptimizerConfig:
             "help": "The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). If None, will not use any scheduler. Defaults to `None`",
         },
     )
-    lr_scheduler_params: Optional[dict] = field(
+    lr_scheduler_params: Optional[Dict] = field(
         default_factory=lambda: {},
         metadata={
             "help": "The parameters for the LearningRateScheduler. If left blank, will use default parameters."
@@ -626,7 +626,7 @@ class ModelConfig:
             "choices": ["cutmix", "mixup", None],
         },
     )
-    embedding_dims: Optional[List[int]] = field(
+    embedding_dims: Optional[List] = field(
         default=None,
         metadata={
             "help": "The dimensions of the embedding for each categorical column as a list of tuples "
