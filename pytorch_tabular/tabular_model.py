@@ -369,6 +369,7 @@ class TabularModel:
         test: Optional[pd.DataFrame] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
+        seed: Optional[int] = 42,
     ):
         """
         Prepares the dataloaders for training and validation.
@@ -389,6 +390,7 @@ class TabularModel:
             test=test,
             target_transform=target_transform,
             train_sampler=train_sampler,
+            seed=seed
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
@@ -436,7 +438,7 @@ class TabularModel:
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
         reset: bool = False,
-        seed: Optional[int] = None,
+        seed: Optional[int] = 42,
         trained_backbone: Optional[pl.LightningModule] = None,
         callbacks: Optional[List[pl.Callback]] = None,
     ) -> None:
@@ -486,6 +488,7 @@ class TabularModel:
             test,
             train_sampler,
             target_transform,
+            seed
         )
         model = self.prepare_model(
             datamodule,

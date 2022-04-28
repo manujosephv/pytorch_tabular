@@ -34,11 +34,11 @@ class TabularDatamodule(pl.LightningDataModule):
     CONTINUOUS_TRANSFORMS = {
         "quantile_uniform": {
             "callable": QuantileTransformer,
-            "params": dict(output_distribution="uniform", random_state=42),
+            "params": dict(output_distribution="uniform", random_state=None),
         },
         "quantile_normal": {
             "callable": QuantileTransformer,
-            "params": dict(output_distribution="normal", random_state=42),
+            "params": dict(output_distribution="normal", random_state=None),
         },
         "box-cox": {
             "callable": PowerTransformer,
@@ -58,6 +58,7 @@ class TabularDatamodule(pl.LightningDataModule):
         test: pd.DataFrame = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
+        seed: Optional[int] = 42,
     ):
         """The Pytorch Lightning Datamodule for Tabular Data
 
@@ -91,6 +92,7 @@ class TabularDatamodule(pl.LightningDataModule):
         self.batch_size = config.batch_size
         self.train_sampler = train_sampler
         self.config = config
+        self.seed = seed
         self._fitted = False
 
     def update_config(self) -> None:
@@ -170,7 +172,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 if self.do_leave_one_out_encoder():
                     logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
                     self.categorical_encoder = ce.LeaveOneOutEncoder(
-                        cols=self.config.categorical_cols, random_state=42
+                        cols=self.config.categorical_cols, random_state=self.seed
                     )
                     # Multi-Target Regression uses the first target to encode the categorical columns
                     if len(self.config.target) > 1:
@@ -197,6 +199,8 @@ class TabularDatamodule(pl.LightningDataModule):
                 transform = self.CONTINUOUS_TRANSFORMS[
                     self.config.continuous_feature_transform
                 ]
+                if "random_state" in transform['params'] and self.seed is not None:
+                    transform['params']['random_state'] = self.seed
                 self.continuous_transform = transform["callable"](**transform["params"])
                 # TODO implement quantile noise
                 data.loc[
@@ -274,7 +278,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 )
                 val_idx = self.train.sample(
                     int(self.config.validation_split * len(self.train)),
-                    random_state=42,  # TODO need to flow seed to here
+                    random_state=self.seed,  # TODO need to flow seed to here
                 ).index
                 self.validation = self.train[self.train.index.isin(val_idx)]
                 self.train = self.train[~self.train.index.isin(val_idx)]
