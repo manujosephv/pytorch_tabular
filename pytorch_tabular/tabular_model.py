@@ -51,6 +51,7 @@ class TabularModel:
         trainer_config: Optional[Union[TrainerConfig, str]] = None,
         experiment_config: Optional[Union[ExperimentConfig, str]] = None,
         model_callable: Optional[Callable] = None,
+        model_state_dict_path: Optional[Union[str, Path]] = None,
     ) -> None:
         """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
 
@@ -74,6 +75,8 @@ class TabularModel:
 
             model_callable (Optional[Callable], optional): If provided, will override the model callable that will be loaded from the config.
                 Typically used when providing Custom Models
+
+            model_state_dict_path (Optional[Union[str, Path]], optional): If provided, will load the state dict after initializing the model from config.
         """
         super().__init__()
         self.exp_manager = ExperimentRunManager()
@@ -135,6 +138,8 @@ class TabularModel:
         else:
             self.model_callable = model_callable
             self.custom_model = True
+        self.model_state_dict_path = model_state_dict_path
+        self._is_config_updated_with_data = False
         self._run_validation()
 
     def _run_validation(self):
@@ -258,42 +263,28 @@ class TabularModel:
         logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
-    def _prepare_dataloader(
-        self, train, validation, test, target_transform=None, train_sampler=None
-    ):
-        logger.info("Preparing the DataLoaders...")
-        if (
-            hasattr(self, "datamodule")
-            and self.datamodule is not None
-            and self.datamodule._fitted
-        ):
-            logger.debug("Data Module is already fitted. Using it to get loaders")
-        else:
-            self.datamodule = TabularDatamodule(
-                train=train,
-                validation=validation,
-                config=self.config,
-                test=test,
-                target_transform=target_transform,
-                train_sampler=train_sampler,
-            )
-            self.datamodule.prepare_data()
-            self.datamodule.setup("fit")
-        train_loader = self.datamodule.train_dataloader()
-        val_loader = self.datamodule.val_dataloader()
-        return train_loader, val_loader
-
-    def _prepare_model(
-        self, loss, metrics, optimizer, optimizer_params, reset, trained_backbone
+    def prepare_model(
+        self,
+        datamodule,
+        updated_config,
+        loss,
+        metrics,
+        optimizer,
+        optimizer_params,
+        reset,
+        trained_backbone,
     ):
         logger.info(f"Preparing the Model: {self.config._model_name}...")
+        assert (
+            hasattr(updated_config, "_updated") and updated_config._updated
+        ), "config has not been updated with data. Please call prepare_datamodule() first"
         # Fetching the config as some data specific configs have been added in the datamodule
-        self.config = self.datamodule.config
+        self.config = updated_config
         if hasattr(self, "model") and self.model is not None and not reset:
             logger.debug("Using the trained model...")
         else:
             logger.debug("Re-initializing the model. Trained weights are ignored.")
-            self.model = self.model_callable(
+            model = self.model_callable(
                 self.config,
                 custom_loss=loss,
                 custom_metrics=metrics,
@@ -301,11 +292,16 @@ class TabularModel:
                 custom_optimizer_params=optimizer_params,
             )
             # Data Aware Initialization(for the models that need it)
-            self.model.data_aware_initialization(self.datamodule)
+            model.data_aware_initialization(datamodule)
             if trained_backbone:
-                self.model.backbone = trained_backbone
+                model.backbone = trained_backbone
+        if self.track_experiment and self.config.log_target == "wandb":
+            self.logger.watch(
+                model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
+            )
+        return model
 
-    def _prepare_trainer(self, max_epochs=None, min_epochs=None):
+    def _prepare_trainer(self, callbacks, max_epochs=None, min_epochs=None):
         logger.info("Preparing the Trainer...")
         if max_epochs is not None:
             self.config.max_epochs = max_epochs
@@ -323,9 +319,9 @@ class TabularModel:
         trainer_args_config["enable_progress_bar"] = self.config.progress_bar != "none"
         # Adding trainer_kwargs from config to trainer_args
         trainer_args_config.update(self.config.trainer_kwargs)
-        self.trainer = pl.Trainer(
+        return pl.Trainer(
             logger=self.logger,
-            callbacks=self.callbacks,
+            callbacks=callbacks,
             **trainer_args_config,
         )
 
@@ -347,24 +343,7 @@ class TabularModel:
                 "No best model available to load. Did you run it more than 1 epoch?..."
             )
 
-    def _pre_fit(
-        self,
-        train: pd.DataFrame,
-        validation: Optional[pd.DataFrame],
-        test: Optional[pd.DataFrame],
-        loss: Optional[torch.nn.Module],
-        metrics: Optional[List[Callable]],
-        optimizer: Optional[torch.optim.Optimizer],
-        optimizer_params: Dict,
-        train_sampler: Optional[torch.utils.data.Sampler],
-        target_transform: Optional[Union[TransformerMixin, Tuple]],
-        max_epochs: int,
-        min_epochs: int,
-        reset: bool,
-        trained_backbone: Optional[pl.LightningModule],
-        callbacks: Optional[List[pl.Callback]],
-    ):
-        """Prepares the dataloaders, trainer, and model for the fit process"""
+    def _check_and_set_target_transform(self, target_transform):
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
                 assert (
@@ -381,20 +360,67 @@ class TabularModel:
                 "For classification task, target transform is not used. Ignoring the parameter"
             )
             target_transform = None
-        train_loader, val_loader = self._prepare_dataloader(
-            train, validation, test, target_transform, train_sampler
-        )
-        self._prepare_model(
-            loss, metrics, optimizer, optimizer_params, reset, trained_backbone
-        )
+        return target_transform
 
-        if self.track_experiment and self.config.log_target == "wandb":
-            self.logger.watch(
-                self.model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
-            )
+    def prepare_dataloader(
+        self,
+        train: pd.DataFrame,
+        validation: Optional[pd.DataFrame] = None,
+        test: Optional[pd.DataFrame] = None,
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
+        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
+    ):
+        """
+        Prepares the dataloaders for training and validation.
+        train (pd.DataFrame): Training data
+        validation (pd.DataFrame): Validation data
+        test (pd.DataFrame): Test data
+        train_sampler (torch.utils.data.Sampler): Sampler for training data
+        target_transform (Union[TransformerMixin, Tuple]): A tuple of forward and backward transforms or an
+            scikit learn transform object. Transforms the target variable
+        """
+        logger.info("Preparing the DataLoaders...")
+        target_transform = self._check_and_set_target_transform(target_transform)
+
+        datamodule = TabularDatamodule(
+            train=train,
+            validation=validation,
+            config=self.config,
+            test=test,
+            target_transform=target_transform,
+            train_sampler=train_sampler,
+        )
+        datamodule.prepare_data()
+        datamodule.setup("fit")
+        return datamodule, datamodule.config
+
+    def _prepare_for_training(
+        self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
+    ):
         self.callbacks = self._prepare_callbacks(callbacks)
-        self._prepare_trainer(max_epochs, min_epochs)
-        return train_loader, val_loader
+        self.trainer = self._prepare_trainer(callbacks, max_epochs, min_epochs)
+        self.model = model
+        self.datamodule = datamodule
+
+    def train(
+        self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
+    ):
+        self._prepare_for_training(model, datamodule, callbacks, max_epochs, min_epochs)
+        train_loader, val_loader = (
+            self.datamodule.train_dataloader(),
+            self.datamodule.val_dataloader(),
+        )
+        self.model.train()
+        if self.config.auto_lr_find and (not self.config.fast_dev_run):
+            self.trainer.tune(self.model, train_loader, val_loader)
+            # Parameters in models needs to be initialized again after LR find
+            self.model.data_aware_initialization(self.datamodule)
+        self.model.train()
+        self.trainer.fit(self.model, train_loader, val_loader)
+        logger.info("Training the model completed...")
+        if self.config.load_best:
+            self.load_best_model()
+        return self.trainer
 
     def fit(
         self,
@@ -454,71 +480,42 @@ class TabularModel:
             callbacks (Optional[List[pl.Callback]], optional): Custom callbacks to be used during training.
         """
         seed_everything(seed if seed is not None else self.config.seed)
-        train_loader, val_loader = self._pre_fit(
+        datamodule, updated_config = self.prepare_dataloader(
             train,
             validation,
             test,
+            train_sampler,
+            target_transform,
+        )
+        model = self.prepare_model(
+            datamodule,
+            updated_config,
             loss,
             metrics,
             optimizer,
             optimizer_params,
-            train_sampler,
-            target_transform,
-            max_epochs,
-            min_epochs,
             reset,
             trained_backbone,
-            callbacks,
-        )
-        self.model.train()
-        if self.config.auto_lr_find and (not self.config.fast_dev_run):
-            self.trainer.tune(self.model, train_loader, val_loader)
-            # Parameters in models needs to be initialized again after LR find
-            self.model.data_aware_initialization(self.datamodule)
-        self.model.train()
-        self.trainer.fit(self.model, train_loader, val_loader)
-        logger.info("Training the model completed...")
-        if self.config.load_best:
-            self.load_best_model()
+        )  # TODO move reset and loading training backbone as additional oprations in fit
+
+        return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
     def find_learning_rate(
         self,
-        train: pd.DataFrame,
-        validation: Optional[pd.DataFrame] = None,
-        test: Optional[pd.DataFrame] = None,
-        loss: Optional[torch.nn.Module] = None,
-        metrics: Optional[List[Callable]] = None,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {},
+        model,
+        datamodule,
         min_lr: float = 1e-8,
         max_lr: float = 1,
         num_training: int = 100,
         mode: str = "exponential",
         early_stop_threshold: float = 4.0,
         plot=True,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        trained_backbone=None,
         callbacks=None,
     ) -> None:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
 
         Args:
-            train (pd.DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
-
-            test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
-                which you'll be able to check performance after the model is trained. Defaults to None.
-
-            loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
-
-            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the signature metric_fn(y_hat, y)
-
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
-                This should be the Class and not the initialized object
-
-            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
             min_lr (Optional[float], optional): minimum learning rate to investigate
 
@@ -542,27 +539,14 @@ class TabularModel:
             train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
 
         """
-
-        train_loader, val_loader = self._pre_fit(
-            train,
-            validation,
-            test,
-            loss,
-            metrics,
-            optimizer,
-            optimizer_params,
-            target_transform=None,
-            max_epochs=None,
-            min_epochs=None,
-            reset=True,
-            trained_backbone=trained_backbone,
-            train_sampler=train_sampler,
-            callbacks=callbacks,##
+        self._prepare_for_training(
+            model, datamodule, callbacks, max_epochs=None, min_epochs=None
         )
+        train_loader, _ = datamodule.train_dataloader(), datamodule.val_dataloader()
         lr_finder = self.trainer.tuner.lr_find(
             model=self.model,
             train_dataloaders=train_loader,
-            val_dataloaders=None, ##
+            val_dataloaders=None,
             min_lr=min_lr,
             max_lr=max_lr,
             num_training=num_training,
@@ -577,6 +561,7 @@ class TabularModel:
         self.model = None
         self.trainer = None
         self.datamodule = None
+        self.callbacks = None
         return new_lr, pd.DataFrame(lr_finder.results)
 
     def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:
@@ -768,7 +753,7 @@ class TabularModel:
         self,
         path: Union[str, Path],
         kind: str = "pytorch",
-        onnx_export_params: Dict = {},
+        onnx_export_params: Dict = dict(opset_version=12),
     ):
         """Saves the model for inference
         path (Union[str, Path]): path to save the model
@@ -792,7 +777,7 @@ class TabularModel:
             cat = torch.zeros(
                 self.config.batch_size,
                 len(self.config.categorical_cols),
-                dtype=torch.int
+                dtype=torch.int,
             )
             cont = torch.randn(
                 self.config.batch_size,
@@ -884,7 +869,7 @@ class TabularModel:
         tabular_model.custom_model = custom_model
         tabular_model.datamodule = datamodule
         tabular_model.callbacks = callbacks
-        tabular_model._prepare_trainer()
+        tabular_model.trainer = tabular_model._prepare_trainer(callbacks=callbacks)
         tabular_model.trainer.model = model
         tabular_model.logger = logger
         return tabular_model

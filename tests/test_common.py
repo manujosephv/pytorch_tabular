@@ -28,6 +28,16 @@ MODEL_CONFIG_SAVE_TEST = [
     (TabNetModelConfig, dict(n_a=2, n_d=2)),
 ]
 
+MODEL_CONFIG_SAVE_ONNX_TEST = [
+    (CategoryEmbeddingModelConfig, dict(layers="10-20")),
+    (
+        AutoIntConfig,
+        dict(
+            num_heads=1,
+            num_attn_blocks=1,
+        ),
+    )
+]
 MODEL_CONFIG_FEATURE_EXT_TEST = [
     CategoryEmbeddingModelConfig,
     AutoIntConfig,
@@ -281,7 +291,7 @@ def test_pretrained_backbone(
 
 @pytest.mark.parametrize(
     "model_config_class",
-    MODEL_CONFIG_SAVE_TEST,
+    MODEL_CONFIG_SAVE_ONNX_TEST,
 )
 @pytest.mark.parametrize(
     "continuous_cols",

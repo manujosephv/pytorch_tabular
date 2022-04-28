@@ -158,6 +158,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 f"Added {added_features} features after encoding the date_columns"
             )
             self.config.categorical_cols += added_features
+            # Update the categorical dimension in config
             self.config.categorical_dim = (
                 len(self.config.categorical_cols)
                 if self.config.categorical_cols is not None
@@ -272,7 +273,8 @@ class TabularDatamodule(pl.LightningDataModule):
                     f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation"
                 )
                 val_idx = self.train.sample(
-                    int(self.config.validation_split * len(self.train)), random_state=42
+                    int(self.config.validation_split * len(self.train)),
+                    random_state=42,  # TODO need to flow seed to here
                 ).index
                 self.validation = self.train[self.train.index.isin(val_idx)]
                 self.train = self.train[~self.train.index.isin(val_idx)]
@@ -287,6 +289,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 self.test, _ = self.preprocess_data(self.test, stage="inference")
             # Calculating the categorical dims and embedding dims etc and updating the config
             self.update_config()
+            self.config._updated = True
             self._fitted = True
 
     # adapted from gluonts
