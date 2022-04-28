@@ -271,8 +271,8 @@ class TabularModel:
         metrics,
         optimizer,
         optimizer_params,
-        reset,
-        trained_backbone,
+        # reset,
+        # trained_backbone,
     ):
         logger.info(f"Preparing the Model: {self.config._model_name}...")
         assert (
@@ -280,21 +280,29 @@ class TabularModel:
         ), "config has not been updated with data. Please call prepare_datamodule() first"
         # Fetching the config as some data specific configs have been added in the datamodule
         self.config = updated_config
-        if hasattr(self, "model") and self.model is not None and not reset:
-            logger.debug("Using the trained model...")
-        else:
-            logger.debug("Re-initializing the model. Trained weights are ignored.")
-            model = self.model_callable(
-                self.config,
-                custom_loss=loss,
-                custom_metrics=metrics,
-                custom_optimizer=optimizer,
-                custom_optimizer_params=optimizer_params,
+        # if hasattr(self, "model") and self.model is not None and not reset:
+        #     logger.debug("Using the trained model...")
+        # else:
+        # logger.debug("Re-initializing the model. Trained weights are ignored.")
+        model = self.model_callable(
+            self.config,
+            custom_loss=loss,
+            custom_metrics=metrics,
+            custom_optimizer=optimizer,
+            custom_optimizer_params=optimizer_params,
+        )
+        # Data Aware Initialization(for the models that need it)
+        model.data_aware_initialization(datamodule)
+        if self.model_state_dict_path is not None:
+            ckpt = pl_load(
+                self.model_state_dict_path, map_location=lambda storage, loc: storage
             )
-            # Data Aware Initialization(for the models that need it)
-            model.data_aware_initialization(datamodule)
-            if trained_backbone:
-                model.backbone = trained_backbone
+            if "state_dict" in ckpt.keys():
+                model.load_state_dict(ckpt["state_dict"])
+            else:
+                model.load_state_dict(ckpt)
+            # if trained_backbone:
+            #     model.backbone = trained_backbone
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(
                 model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
@@ -390,7 +398,7 @@ class TabularModel:
             test=test,
             target_transform=target_transform,
             train_sampler=train_sampler,
-            seed=seed
+            seed=seed,
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
@@ -437,9 +445,9 @@ class TabularModel:
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
-        reset: bool = False,
+        # reset: bool = False,
         seed: Optional[int] = 42,
-        trained_backbone: Optional[pl.LightningModule] = None,
+        # trained_backbone: Optional[pl.LightningModule] = None,
         callbacks: Optional[List[pl.Callback]] = None,
     ) -> None:
         """The fit method which takes in the data and triggers the training
@@ -483,12 +491,7 @@ class TabularModel:
         """
         seed_everything(seed if seed is not None else self.config.seed)
         datamodule, updated_config = self.prepare_dataloader(
-            train,
-            validation,
-            test,
-            train_sampler,
-            target_transform,
-            seed
+            train, validation, test, train_sampler, target_transform, seed
         )
         model = self.prepare_model(
             datamodule,
@@ -497,9 +500,9 @@ class TabularModel:
             metrics,
             optimizer,
             optimizer_params,
-            reset,
-            trained_backbone,
-        )  # TODO move reset and loading training backbone as additional oprations in fit
+            # reset,
+            # trained_backbone,
+        )  # TODO move reset and loading training backbone in separate method fine_tune
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
@@ -567,7 +570,12 @@ class TabularModel:
         self.callbacks = None
         return new_lr, pd.DataFrame(lr_finder.results)
 
-    def evaluate(self, test: Optional[pd.DataFrame]) -> Union[dict, list]:
+    def evaluate(
+        self,
+        test: Optional[pd.DataFrame] = None,
+        test_loader: Optional[torch.utils.data.DataLoader] = None,
+        ckpt_path: Optional[Union[str, Path]] = None,
+    ) -> Union[dict, list]:
         """Evaluates the dataframe using the loss and metrics already set in config
 
         Args:
@@ -577,16 +585,17 @@ class TabularModel:
         Returns:
             Union[dict, list]: The final test result dictionary.
         """
-        if test is not None:
-            test_loader = self.datamodule.prepare_inference_dataloader(test)
-        elif self.test is not None:
-            test_loader = self.datamodule.test_dataloader()
-        else:
-            return {}
+        if test_loader is None:
+            if test is not None:
+                test_loader = self.datamodule.prepare_inference_dataloader(test)
+            elif self.datamodule.test is not None:
+                test_loader = self.datamodule.test_dataloader()
+            else:
+                return {}
         result = self.trainer.test(
             model=self.model,
             dataloaders=test_loader,
-            ckpt_path=None,
+            ckpt_path=ckpt_path,
         )
         return result
 
