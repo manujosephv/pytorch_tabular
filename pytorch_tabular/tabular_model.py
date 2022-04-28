@@ -263,52 +263,6 @@ class TabularModel:
         logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
-    def prepare_model(
-        self,
-        datamodule,
-        updated_config,
-        loss,
-        metrics,
-        optimizer,
-        optimizer_params,
-        # reset,
-        # trained_backbone,
-    ):
-        logger.info(f"Preparing the Model: {self.config._model_name}...")
-        assert (
-            hasattr(updated_config, "_updated") and updated_config._updated
-        ), "config has not been updated with data. Please call prepare_datamodule() first"
-        # Fetching the config as some data specific configs have been added in the datamodule
-        self.config = updated_config
-        # if hasattr(self, "model") and self.model is not None and not reset:
-        #     logger.debug("Using the trained model...")
-        # else:
-        # logger.debug("Re-initializing the model. Trained weights are ignored.")
-        model = self.model_callable(
-            self.config,
-            custom_loss=loss,
-            custom_metrics=metrics,
-            custom_optimizer=optimizer,
-            custom_optimizer_params=optimizer_params,
-        )
-        # Data Aware Initialization(for the models that need it)
-        model.data_aware_initialization(datamodule)
-        if self.model_state_dict_path is not None:
-            ckpt = pl_load(
-                self.model_state_dict_path, map_location=lambda storage, loc: storage
-            )
-            if "state_dict" in ckpt.keys():
-                model.load_state_dict(ckpt["state_dict"])
-            else:
-                model.load_state_dict(ckpt)
-            # if trained_backbone:
-            #     model.backbone = trained_backbone
-        if self.track_experiment and self.config.log_target == "wandb":
-            self.logger.watch(
-                model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
-            )
-        return model
-
     def _prepare_trainer(self, callbacks, max_epochs=None, min_epochs=None):
         logger.info("Preparing the Trainer...")
         if max_epochs is not None:
@@ -333,24 +287,6 @@ class TabularModel:
             **trainer_args_config,
         )
 
-    def load_best_model(self):
-        """Loads the best model after training is done"""
-        if self.trainer.checkpoint_callback is not None:
-            logger.info("Loading the best model...")
-            ckpt_path = self.trainer.checkpoint_callback.best_model_path
-            if ckpt_path != "":
-                logger.debug(f"Model Checkpoint: {ckpt_path}")
-                ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
-                self.model.load_state_dict(ckpt["state_dict"])
-            else:
-                logger.info(
-                    "No best model available to load. Did you run it more than 1 epoch?..."
-                )
-        else:
-            logger.info(
-                "No best model available to load. Did you run it more than 1 epoch?..."
-            )
-
     def _check_and_set_target_transform(self, target_transform):
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
@@ -369,6 +305,111 @@ class TabularModel:
             )
             target_transform = None
         return target_transform
+
+    def _prepare_for_training(
+        self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
+    ):
+        self.callbacks = self._prepare_callbacks(callbacks)
+        self.trainer = self._prepare_trainer(callbacks, max_epochs, min_epochs)
+        self.model = model
+        self.datamodule = datamodule
+
+    @classmethod
+    def _load_weights(cls, model, path: Union[str, Path]):
+        """Loads the model weights in the specified directory
+
+        Args:
+            path (str): The path to the file to load the model from
+        """
+        ckpt = pl_load(path, map_location=lambda storage, loc: storage)
+        if "state_dict" in ckpt.keys():
+            model.load_state_dict(ckpt["state_dict"])
+        else:
+            model.load_state_dict(ckpt)
+
+    @classmethod
+    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
+        """Loads a saved model from the directory
+
+        Args:
+            dir (str): The directory where the model wa saved, along with the checkpoints
+            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint
+                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
+                to the new setup. The behaviour is the same as in torch.load()
+            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys
+                returned by this module’s state dict. Default: True.
+
+        Returns:
+            TabularModel: The saved TabularModel
+        """
+        config = OmegaConf.load(os.path.join(dir, "config.yml"))
+        datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
+        if (
+            hasattr(config, "log_target")
+            and (config.log_target is not None)
+            and os.path.exists(os.path.join(dir, "exp_logger.sav"))
+        ):
+            logger = joblib.load(os.path.join(dir, "exp_logger.sav"))
+        else:
+            logger = None
+        if os.path.exists(os.path.join(dir, "callbacks.sav")):
+            callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
+            # Excluding Gradient Accumulation Scheduler Callback as we are creating
+            # a new one in trainer
+            callbacks = [
+                c for c in callbacks if not isinstance(c, GradientAccumulationScheduler)
+            ]
+        else:
+            callbacks = []
+        if os.path.exists(os.path.join(dir, "custom_model_callable.sav")):
+            model_callable = joblib.load(os.path.join(dir, "custom_model_callable.sav"))
+            custom_model = True
+        else:
+            model_callable = getattr(
+                getattr(models, config._module_src), config._model_name
+            )
+            custom_model = False
+        custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
+        model_args = {}
+        if custom_params.get("custom_loss") is not None:
+            model_args["loss"] = "MSELoss"  # For compatibility. Not Used
+        if custom_params.get("custom_metrics") is not None:
+            model_args["metrics"] = [
+                "mean_squared_error"
+            ]  # For compatibility. Not Used
+            model_args["metric_params"] = [{}]  # For compatibility. Not Used
+        if custom_params.get("custom_optimizer") is not None:
+            model_args["optimizer"] = "Adam"  # For compatibility. Not Used
+        if custom_params.get("custom_optimizer_params") is not None:
+            model_args["optimizer_params"] = {}  # For compatibility. Not Used
+
+        # Initializing with default metrics, losses, and optimizers. Will revert once initialized
+        model = model_callable.load_from_checkpoint(
+            checkpoint_path=os.path.join(dir, "model.ckpt"),
+            map_location=map_location,
+            strict=strict,
+            **model_args,
+        )
+        # Updating config with custom parameters for experiment tracking
+        if custom_params.get("custom_loss") is not None:
+            model.custom_loss = custom_params["custom_loss"]
+        if custom_params.get("custom_metrics") is not None:
+            model.custom_metrics = custom_params["custom_metrics"]
+        if custom_params.get("custom_optimizer") is not None:
+            model.custom_optimizer = custom_params["custom_optimizer"]
+        if custom_params.get("custom_optimizer_params") is not None:
+            model.custom_optimizer_params = custom_params["custom_optimizer_params"]
+        model._setup_loss()
+        model._setup_metrics()
+        tabular_model = cls(config=config, model_callable=model_callable)
+        tabular_model.model = model
+        tabular_model.custom_model = custom_model
+        tabular_model.datamodule = datamodule
+        tabular_model.callbacks = callbacks
+        tabular_model.trainer = tabular_model._prepare_trainer(callbacks=callbacks)
+        tabular_model.trainer.model = model
+        tabular_model.logger = logger
+        return tabular_model
 
     def prepare_dataloader(
         self,
@@ -404,13 +445,45 @@ class TabularModel:
         datamodule.setup("fit")
         return datamodule, datamodule.config
 
-    def _prepare_for_training(
-        self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
+    def prepare_model(
+        self,
+        datamodule,
+        updated_config,
+        loss,
+        metrics,
+        optimizer,
+        optimizer_params,
+        # reset,
+        # trained_backbone,
     ):
-        self.callbacks = self._prepare_callbacks(callbacks)
-        self.trainer = self._prepare_trainer(callbacks, max_epochs, min_epochs)
-        self.model = model
-        self.datamodule = datamodule
+        logger.info(f"Preparing the Model: {self.config._model_name}...")
+        assert (
+            hasattr(updated_config, "_updated") and updated_config._updated
+        ), "config has not been updated with data. Please call prepare_datamodule() first"
+        # Fetching the config as some data specific configs have been added in the datamodule
+        self.config = updated_config
+        # if hasattr(self, "model") and self.model is not None and not reset:
+        #     logger.debug("Using the trained model...")
+        # else:
+        # logger.debug("Re-initializing the model. Trained weights are ignored.")
+        model = self.model_callable(
+            self.config,
+            custom_loss=loss,
+            custom_metrics=metrics,
+            custom_optimizer=optimizer,
+            custom_optimizer_params=optimizer_params,
+        )
+        # Data Aware Initialization(for the models that need it)
+        model.data_aware_initialization(datamodule)
+        if self.model_state_dict_path is not None:
+            self._load_weights(model, self.model_state_dict_path)
+            # if trained_backbone:
+            #     model.backbone = trained_backbone
+        if self.track_experiment and self.config.log_target == "wandb":
+            self.logger.watch(
+                model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
+            )
+        return model
 
     def train(
         self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
@@ -722,6 +795,24 @@ class TabularModel:
                         pred_df[f"{k}"] = v[:, i]
         return pred_df
 
+    def load_best_model(self):
+        """Loads the best model after training is done"""
+        if self.trainer.checkpoint_callback is not None:
+            logger.info("Loading the best model...")
+            ckpt_path = self.trainer.checkpoint_callback.best_model_path
+            if ckpt_path != "":
+                logger.debug(f"Model Checkpoint: {ckpt_path}")
+                ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
+                self.model.load_state_dict(ckpt["state_dict"])
+            else:
+                logger.info(
+                    "No best model available to load. Did you run it more than 1 epoch?..."
+                )
+        else:
+            logger.info(
+                "No best model available to load. Did you run it more than 1 epoch?..."
+            )
+
     def save_model(self, dir: str):
         """Saves the model and checkpoints in the specified directory
 
@@ -756,9 +847,17 @@ class TabularModel:
         """Saves the model weights in the specified directory
 
         Args:
-            path (str): The path to the directory to save the model
+            path (str): The path to the file to save the model
         """
         torch.save(self.model.state_dict(), path)
+
+    def load_weights(self, path: Union[str, Path]):
+        """Loads the model weights in the specified directory
+
+        Args:
+            path (str): The path to the file to load the model from
+        """
+        self._load_weights(self.model, path)
 
     # TODO Need to test ONNX export
     def save_model_for_inference(
@@ -801,90 +900,6 @@ class TabularModel:
             return True
         else:
             raise ValueError("`kind` must be either pytorch or onnx")
-
-    @classmethod
-    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
-        """Loads a saved model from the directory
-
-        Args:
-            dir (str): The directory where the model wa saved, along with the checkpoints
-            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint
-                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
-                to the new setup. The behaviour is the same as in torch.load()
-            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys
-                returned by this module’s state dict. Default: True.
-
-        Returns:
-            TabularModel: The saved TabularModel
-        """
-        config = OmegaConf.load(os.path.join(dir, "config.yml"))
-        datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
-        if (
-            hasattr(config, "log_target")
-            and (config.log_target is not None)
-            and os.path.exists(os.path.join(dir, "exp_logger.sav"))
-        ):
-            logger = joblib.load(os.path.join(dir, "exp_logger.sav"))
-        else:
-            logger = None
-        if os.path.exists(os.path.join(dir, "callbacks.sav")):
-            callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
-            # Excluding Gradient Accumulation Scheduler Callback as we are creating
-            # a new one in trainer
-            callbacks = [
-                c for c in callbacks if not isinstance(c, GradientAccumulationScheduler)
-            ]
-        else:
-            callbacks = []
-        if os.path.exists(os.path.join(dir, "custom_model_callable.sav")):
-            model_callable = joblib.load(os.path.join(dir, "custom_model_callable.sav"))
-            custom_model = True
-        else:
-            model_callable = getattr(
-                getattr(models, config._module_src), config._model_name
-            )
-            custom_model = False
-        custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
-        model_args = {}
-        if custom_params.get("custom_loss") is not None:
-            model_args["loss"] = "MSELoss"  # For compatibility. Not Used
-        if custom_params.get("custom_metrics") is not None:
-            model_args["metrics"] = [
-                "mean_squared_error"
-            ]  # For compatibility. Not Used
-            model_args["metric_params"] = [{}]  # For compatibility. Not Used
-        if custom_params.get("custom_optimizer") is not None:
-            model_args["optimizer"] = "Adam"  # For compatibility. Not Used
-        if custom_params.get("custom_optimizer_params") is not None:
-            model_args["optimizer_params"] = {}  # For compatibility. Not Used
-
-        # Initializing with default metrics, losses, and optimizers. Will revert once initialized
-        model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt"),
-            map_location=map_location,
-            strict=strict,
-            **model_args,
-        )
-        # Updating config with custom parameters for experiment tracking
-        if custom_params.get("custom_loss") is not None:
-            model.custom_loss = custom_params["custom_loss"]
-        if custom_params.get("custom_metrics") is not None:
-            model.custom_metrics = custom_params["custom_metrics"]
-        if custom_params.get("custom_optimizer") is not None:
-            model.custom_optimizer = custom_params["custom_optimizer"]
-        if custom_params.get("custom_optimizer_params") is not None:
-            model.custom_optimizer_params = custom_params["custom_optimizer_params"]
-        model._setup_loss()
-        model._setup_metrics()
-        tabular_model = cls(config=config, model_callable=model_callable)
-        tabular_model.model = model
-        tabular_model.custom_model = custom_model
-        tabular_model.datamodule = datamodule
-        tabular_model.callbacks = callbacks
-        tabular_model.trainer = tabular_model._prepare_trainer(callbacks=callbacks)
-        tabular_model.trainer.model = model
-        tabular_model.logger = logger
-        return tabular_model
 
     def summary(self, max_depth=-1):
         print(summarize(self.model, max_depth=max_depth))
