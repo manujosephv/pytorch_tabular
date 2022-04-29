@@ -420,14 +420,24 @@ class TabularModel:
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
     ):
-        """
-        Prepares the dataloaders for training and validation.
-        train (pd.DataFrame): Training data
-        validation (pd.DataFrame): Validation data
-        test (pd.DataFrame): Test data
-        train_sampler (torch.utils.data.Sampler): Sampler for training data
-        target_transform (Union[TransformerMixin, Tuple]): A tuple of forward and backward transforms or an
-            scikit learn transform object. Transforms the target variable
+        """Prepares the dataloaders for training and validation.
+
+        Args:
+            train (pd.DataFrame): Training Dataframe
+
+            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
+                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+
+            test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
+                which you'll be able to check performance after the model is trained. Defaults to None.
+
+            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
+                and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+                a tuple of callables (transform_func, inverse_transform_func)
+
+            seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
         """
         logger.info("Preparing the DataLoaders...")
         target_transform = self._check_and_set_target_transform(target_transform)
@@ -447,15 +457,31 @@ class TabularModel:
 
     def prepare_model(
         self,
-        datamodule,
-        updated_config,
-        loss,
-        metrics,
-        optimizer,
-        optimizer_params,
-        # reset,
-        # trained_backbone,
+        datamodule: TabularDatamodule,
+        updated_config: DictConfig,
+        loss: Optional[torch.nn.Module] = None,
+        metrics: Optional[List[Callable]] = None,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+        optimizer_params: Dict = {},
     ):
+        """Prepares the model for training.
+
+        Args:
+            datamodule (TabularDatamodule): The datamodule
+
+            updated_config (DictConfig): The config which has been updated from data
+
+            loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
+
+            metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
+                signature metric_fn(y_hat, y) and works on torch tensor inputs
+
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
+                This should be the Class and not the initialized object
+
+            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+
+        """
         logger.info(f"Preparing the Model: {self.config._model_name}...")
         assert (
             hasattr(updated_config, "_updated") and updated_config._updated
@@ -486,8 +512,26 @@ class TabularModel:
         return model
 
     def train(
-        self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
+        self,
+        model: pl.LightningModule,
+        datamodule: TabularDatamodule,
+        callbacks: Optional[List[pl.Callback]] = None,
+        max_epochs: int = None,
+        min_epochs: int = None,
     ):
+        """Trains the model.
+
+        Args:
+            model (pl.LightningModule): The PyTorch Lightning model to be trained.
+
+            datamodule (TabularDatamodule): The datamodule
+
+            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+
+            max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
+
+            min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
+        """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs, min_epochs)
         train_loader, val_loader = (
             self.datamodule.train_dataloader(),
@@ -518,9 +562,7 @@ class TabularModel:
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
-        # reset: bool = False,
         seed: Optional[int] = 42,
-        # trained_backbone: Optional[pl.LightningModule] = None,
         callbacks: Optional[List[pl.Callback]] = None,
     ) -> None:
         """The fit method which takes in the data and triggers the training
@@ -550,17 +592,13 @@ class TabularModel:
                 and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
                 a tuple of callables (transform_func, inverse_transform_func)
 
-            max_epochs (Optional[int]): Overwrite maximum number of epochs to be run
+            max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
-            min_epochs (Optional[int]): Overwrite minimum number of epochs to be run
+            min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
 
-            reset: (bool): Flag to reset the model and train again from scratch
+            seed: (int): Random seed for reproducibility. Defaults to 42.
 
-            seed: (int): If you have to override the default seed set as part of of ModelConfig
-
-            trained_backbone (pl.LightningModule): this module contains the weights for a pretrained backbone
-
-            callbacks (Optional[List[pl.Callback]], optional): Custom callbacks to be used during training.
+            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
         """
         seed_everything(seed if seed is not None else self.config.seed)
         datamodule, updated_config = self.prepare_dataloader(
@@ -573,16 +611,14 @@ class TabularModel:
             metrics,
             optimizer,
             optimizer_params,
-            # reset,
-            # trained_backbone,
         )  # TODO move reset and loading training backbone in separate method fine_tune
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
     def find_learning_rate(
         self,
-        model,
-        datamodule,
+        model: pl.LightningModule,
+        datamodule: TabularDatamodule,
         min_lr: float = 1e-8,
         max_lr: float = 1,
         num_training: int = 100,
@@ -594,7 +630,9 @@ class TabularModel:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
 
         Args:
+            model (pl.LightningModule): The PyTorch Lightning model to be trained.
 
+            datamodule (TabularDatamodule): The datamodule
 
             min_lr (Optional[float], optional): minimum learning rate to investigate
 
@@ -655,6 +693,12 @@ class TabularModel:
             test (Optional[pd.DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
                 test provided during fit. If that was also not provided will return an empty dictionary
 
+            test_loader (Optional[torch.utils.data.DataLoader], optional): The dataloader to be used for evaluation.
+                If provided, will use the dataloader instead of the test dataframe or the test data provided during fit.
+                Defaults to None.
+
+            ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided, will try to use the
+                best checkpoint during training.
         Returns:
             Union[dict, list]: The final test result dictionary.
         """
@@ -672,6 +716,7 @@ class TabularModel:
         )
         return result
 
+    # TODO factor out model specific predict logic to model
     def predict(
         self,
         test: pd.DataFrame,
@@ -902,6 +947,12 @@ class TabularModel:
             raise ValueError("`kind` must be either pytorch or onnx")
 
     def summary(self, max_depth=-1):
+        """Prints a summary of the model
+
+        Args:
+            max_depth (int): The maximum depth to traverse the modules and displayed in the summary.
+                Defaults to -1, which means will display all the modules.
+        """
         print(summarize(self.model, max_depth=max_depth))
 
     def __str__(self) -> str:
