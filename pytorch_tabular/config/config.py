@@ -5,7 +5,7 @@
 import logging
 import os
 from dataclasses import MISSING, dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from omegaconf import OmegaConf
 
@@ -576,11 +576,7 @@ class ExperimentRunManager:
 class ModelConfig:
     """Base Model configuration
     Args:
-        task (str): Specify whether the problem is regression, classification, or self supervised learning. Choices are: regression classification ssl
-
-        ssl_task (str): Specify the kind of self supervised algorithm to use. Choices are: Denoising, Contrastive, None
-
-        aug_task (str): Specify the kind of augmentations algorithm to use for ssl. Choices are: cutmix, mixup, None
+        task (str): Specify whether the problem is regression, classification. Choices are: regression classification
 
         embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
             as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
@@ -609,22 +605,8 @@ class ModelConfig:
         # default="regression",
         metadata={
             "help": "Specify whether the problem is regression of classification.",
-            "choices": ["regression", "classification", "ssl"],
+            "choices": ["regression", "classification"],
         }
-    )
-    ssl_task: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Specify the kind of self supervised algorithm to use.",
-            "choices": ["Denoising", "Contrastive", None],
-        },
-    )
-    aug_task: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Specify the kind of augmentations algorithm to use for ssl.",
-            "choices": ["cutmix", "mixup", None],
-        },
     )
     embedding_dims: Optional[List] = field(
         default=None,
@@ -689,21 +671,6 @@ class ModelConfig:
                 if self.metrics_params is None
                 else self.metrics_params
             )
-        elif self.task == "ssl":
-            assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
-            assert self.aug_task, "if task is ssl, aug_task cannot be None"
-            if self.ssl_task == "Contrastive":
-                if self.loss:
-                    logger.warning(
-                        "In case of Contrastive the loss cannot be specified and will be ignored"
-                    )
-                self.loss = "ContrastiveLoss" if self.loss is None else self.loss
-            else:
-                self.loss = "MSELoss" if self.loss is None else self.loss
-            self.metrics = (
-                ["mean_squared_error"] if self.metrics is None else self.metrics
-            )
-            self.metrics_params = [{}]
         else:
             raise NotImplementedError(
                 f"{self.task} is not a valid task. Should be one of "
@@ -713,3 +680,203 @@ class ModelConfig:
             self.metrics_params
         ), "metrics and metric_params should have same length"
         _validate_choices(self)
+
+
+@dataclass
+class SSLModelConfig:
+    """Base SSL Model configuration
+    Args:
+
+        embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
+            as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
+            using the rule min(50, (x + 1) // 2). Will only be used if the model uses categorical embedding.
+
+        learning_rate (float): The learning rate of the model
+
+        loss (Optional[str, NoneType]): The loss function to be applied.
+
+        metrics (Optional[List[str], NoneType]): the list of metrics you need to track during training.
+            The metrics should be one of the metrics implemented in PyTorch Lightning.
+            By default, it is accuracy if classification and mean_squared_error for regression
+
+        metrics_params (Optional[List, NoneType]): The parameters to be passed to the metrics function
+
+        target_range (Optional[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
+            Typically used for Regression problems. If left empty, will not apply any restrictions
+
+    Raises:
+        NotImplementedError: Raises an error if task is not regression or classification
+    """
+
+    task: str = field(init=False, default="ssl")
+
+    embedding_dims: Optional[List] = field(
+        default=None,
+        metadata={
+            "help": "The dimensions of the embedding for each categorical column as a list of tuples "
+            "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
+            "categorical column using the rule min(50, (x + 1) // 2)"
+        },
+    )
+    learning_rate: float = field(
+        default=1e-3, metadata={"help": "The learning rate of the model"}
+    )
+    loss: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The loss function to be applied. Not relevant if ssl_task is contrastive"
+        },
+    )
+    metrics: Optional[List[str]] = field(
+        default=None,
+        metadata={
+            "help": "The list of metrics you need to track during training. The metrics should be one "
+            "of the functional metrics implemented in ``torchmetrics``. By default, "
+            "it is mean_squared_error for ssl"
+        },
+    )
+    metrics_params: Optional[List] = field(
+        default=None,
+        metadata={"help": "The parameters to be passed to the metrics function"},
+    )
+    seed: int = field(
+        default=42,
+        metadata={"help": "The seed for reproducibility. Defaults to 42"},
+    )
+
+    def __post_init__(self):
+        assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
+        assert self.aug_task, "if task is ssl, aug_task cannot be None"
+        if self.ssl_task == "Contrastive":
+            if self.loss:
+                logger.warning(
+                    "In case of Contrastive the loss cannot be specified and will be ignored"
+                )
+            self.loss = "ContrastiveLoss" if self.loss is None else self.loss
+        else:
+            self.loss = "MSELoss" if self.loss is None else self.loss
+        if self.metrics is None:
+            self.metrics = (
+                ["mean_squared_error"] if self.metrics is None else self.metrics
+            )
+            self.metrics_params = [{}]
+        assert len(self.metrics) == len(
+            self.metrics_params
+        ), "metrics and metric_params should have same length"
+        _validate_choices(self)
+
+
+# @dataclass
+# class SSLModelConfig(ModelConfig):
+#     """Base Self Supervised Model configuration
+#     Args:
+
+#         ssl_task (str): Specify the kind of self supervised algorithm to use. Choices are: Denoising, Contrastive, None
+
+#         aug_task (str): Specify the kind of augmentations algorithm to use for ssl. Choices are: cutmix, mixup, None
+
+#     """
+
+#     task: str = field(init=False, default="ssl")
+
+#     ssl_task: Optional[str] = field(
+#         default=None,
+#         metadata={
+#             "help": "Specify the kind of self supervised algorithm to use.",
+#             "choices": ["Denoising", "Contrastive", None],
+#         },
+#     )
+#     aug_task: Optional[str] = field(
+#         default=None,
+#         metadata={
+#             "help": "Specify the kind of augmentations algorithm to use for ssl.",
+#             "choices": ["cutmix", "mixup", None],
+#         },
+#     )
+#     embedding_dims: Optional[List] = field(
+#         default=None,
+#         metadata={
+#             "help": "The dimensions of the embedding for each categorical column as a list of tuples "
+#             "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
+#             "categorical column using the rule min(50, (x + 1) // 2)"
+#         },
+#     )
+#     learning_rate: float = field(
+#         default=1e-3, metadata={"help": "The learning rate of the model"}
+#     )
+#     loss: Optional[str] = field(
+#         default=None,
+#         metadata={
+#             "help": "The loss function to be applied. By Default it is MSELoss for regression "
+#             "and CrossEntropyLoss for classification. Unless you are sure what you are doing, "
+#             "leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
+#         },
+#     )
+#     metrics: Optional[List[str]] = field(
+#         default=None,
+#         metadata={
+#             "help": "the list of metrics you need to track during training. The metrics should be one "
+#             "of the functional metrics implemented in ``torchmetrics``. By default, "
+#             "it is accuracy if classification and mean_squared_error for regression"
+#         },
+#     )
+#     metrics_params: Optional[List] = field(
+#         default=None,
+#         metadata={"help": "The parameters to be passed to the metrics function"},
+#     )
+#     target_range: Optional[List] = field(
+#         default=None,
+#         metadata={
+#             "help": "The range in which we should limit the output variable. "
+#             "Currently ignored for multi-target regression. Typically used for Regression problems. "
+#             "If left empty, will not apply any restrictions"
+#         },
+#     )
+#     seed: int = field(
+#         default=42,
+#         metadata={"help": "The seed for reproducibility. Defaults to 42"},
+#     )
+
+#     def __post_init__(self):
+#         if self.task == "regression":
+#             self.loss = "MSELoss" if self.loss is None else self.loss
+#             self.metrics = (
+#                 ["mean_squared_error"] if self.metrics is None else self.metrics
+#             )
+#             self.metrics_params = (
+#                 [{} for _ in self.metrics]
+#                 if self.metrics_params is None
+#                 else self.metrics_params
+#             )
+#         elif self.task == "classification":
+#             self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
+#             self.metrics = ["accuracy"] if self.metrics is None else self.metrics
+#             self.metrics_params = (
+#                 [{} for _ in self.metrics]
+#                 if self.metrics_params is None
+#                 else self.metrics_params
+#             )
+#         elif self.task == "ssl":
+#             assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
+#             assert self.aug_task, "if task is ssl, aug_task cannot be None"
+#             if self.ssl_task == "Contrastive":
+#                 if self.loss:
+#                     logger.warning(
+#                         "In case of Contrastive the loss cannot be specified and will be ignored"
+#                     )
+#                 self.loss = "ContrastiveLoss" if self.loss is None else self.loss
+#             else:
+#                 self.loss = "MSELoss" if self.loss is None else self.loss
+#             self.metrics = (
+#                 ["mean_squared_error"] if self.metrics is None else self.metrics
+#             )
+#             self.metrics_params = [{}]
+#         else:
+#             raise NotImplementedError(
+#                 f"{self.task} is not a valid task. Should be one of "
+#                 f"{self.__dataclass_fields__['task'].metadata['choices']}"
+#             )
+#         assert len(self.metrics) == len(
+#             self.metrics_params
+#         ), "metrics and metric_params should have same length"
+#         _validate_choices(self)

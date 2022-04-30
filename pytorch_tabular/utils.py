@@ -78,7 +78,9 @@ def _initialize_layers(activation, initialization, layers):
             nn.init.normal_(layers.weight)
 
 
-def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out_units, dropout):
+def _linear_dropout_bn(
+    activation, initialization, use_batch_norm, in_units, out_units, dropout
+):
     if isinstance(activation, str):
         _activation = getattr(nn, activation)
     else:
@@ -101,7 +103,3 @@ def get_gaussian_centers(y, n_components):
         y = y.reshape(-1, 1)
     cluster = KMeans(n_clusters=n_components, random_state=42).fit(y)
     return cluster.cluster_centers_.ravel().tolist()
-
-
-def loss_contrastive(y_hat, y):
-    return - nn.functional.cosine_similarity(y_hat, y).add_(-1).sum()

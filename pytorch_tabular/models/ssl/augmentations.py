@@ -14,7 +14,7 @@ def mixup(batch: Dict, lam: float = 0.5) -> Dict:
     """
     result = {}
     for key, value in batch.items():
-        random_index = get_random_index(value)
+        random_index = _get_random_index(value)
         result[key] = lam * value + (1 - lam) * value[random_index, :]
         result[key] = result[key].to(dtype=value.dtype)
     return result
@@ -30,7 +30,7 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
     """
     result = {}
     for key, value in batch.items():
-        random_index = get_random_index(value)
+        random_index = _get_random_index(value)
         x_binary_mask = torch.from_numpy(
             np.random.choice(2, size=value.shape, p=[lam, 1 - lam])
         )
@@ -41,7 +41,7 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
     return result
 
 
-def get_random_index(x: torch.Tensor) -> torch.Tensor:
+def _get_random_index(x: torch.Tensor) -> torch.Tensor:
     """Given a tensor it compute random indices between 0 and the number of the first dimension
 
     :param x: Tensor used to get the number of rows

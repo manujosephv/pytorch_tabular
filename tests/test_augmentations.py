@@ -1,4 +1,4 @@
-from pytorch_tabular.augmentations import get_random_index, mixup, cutmix
+from pytorch_tabular.models.ssl.augmentations import _get_random_index, mixup, cutmix
 import numpy as np
 import torch
 
@@ -7,7 +7,7 @@ def test_get_random_index():
     torch.manual_seed(0)
     x = torch.Tensor([1, 2, 3])
     expected = np.array([2, 0, 1])
-    actual = get_random_index(x).numpy()
+    actual = _get_random_index(x).numpy()
     np.testing.assert_array_equal(actual, expected)
 
 
