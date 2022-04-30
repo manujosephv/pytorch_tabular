@@ -11,7 +11,8 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from ..base_model import BaseModel
-from . import utils as utils
+from ..common import activations
+from ..common.layers import Lambda
 from .architecture_blocks import DenseODSTBlock
 
 logger = logging.getLogger(__name__)
@@ -48,8 +49,8 @@ class NODEBackbone(pl.LightningModule):
             max_features=self.hparams.max_features,
             input_dropout=self.hparams.input_dropout,
             depth=self.hparams.depth,
-            choice_function=getattr(utils, self.hparams.choice_function),
-            bin_function=getattr(utils, self.hparams.bin_function),
+            choice_function=getattr(activations, self.hparams.choice_function),
+            bin_function=getattr(activations, self.hparams.bin_function),
             initialize_response_=getattr(
                 nn.init, self.hparams.initialize_response + "_"
             ),
@@ -128,7 +129,7 @@ class NODEModel(BaseModel):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
 
-        self.head = utils.Lambda(self.subset)
+        self.head = Lambda(self.subset)
 
     def extract_embedding(self):
         if self.hparams.embed_categorical:

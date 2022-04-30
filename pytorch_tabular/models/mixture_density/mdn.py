@@ -17,7 +17,7 @@ from torch.distributions import Categorical
 from pytorch_tabular.models.autoint import AutoIntBackbone
 from pytorch_tabular.models.category_embedding import CategoryEmbeddingBackbone
 from pytorch_tabular.models.node import NODEBackbone
-from pytorch_tabular.models.node import utils as utils
+from pytorch_tabular.models.common.layers import Lambda
 
 from ..base_model import BaseModel
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 ONEOVERSQRT2PI = 1.0 / math.sqrt(2 * math.pi)
 LOG2PI = math.log(2 * math.pi)
 
-
+#TODO refactor to make the backbone dynamic
 class MixtureDensityHead(nn.Module):
     def __init__(self, config: DictConfig, **kwargs):
         self.hparams = config
@@ -356,7 +356,7 @@ class NODEMDN(BaseMDN):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
 
-        output_response = utils.Lambda(self.subset)
+        output_response = Lambda(self.subset)
         self.backbone = nn.Sequential(backbone, output_response)
         # Adding the last layer
         self.hparams.mdn_config.input_dim = backbone.output_dim

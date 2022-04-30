@@ -170,6 +170,7 @@ class NodeConfig(ModelConfig):
     )
     _module_src: str = field(default="node")
     _model_name: str = field(default="NODEModel")
+    _backbone_name: str = field(default="NODEBackbone")
     _config_name: str = field(default="NodeConfig")
 
     # def __post_init__(self):

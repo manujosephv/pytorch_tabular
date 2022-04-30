@@ -140,6 +140,7 @@ class AutoIntConfig(ModelConfig):
     )
     _module_src: str = field(default="autoint")
     _model_name: str = field(default="AutoIntModel")
+    _backbone_name: str = field(default="AutoIntBackbone")
     _config_name: str = field(default="AutoIntConfig")
 
 

@@ -14,8 +14,9 @@ from omegaconf import DictConfig
 from torch import Tensor
 
 import pytorch_tabular.models.ssl.augmentations as augmentations
-import pytorch_tabular.models.ssl.ssl_utils as ssl_utils
+# import pytorch_tabular.models.ssl.ssl_utils as ssl_utils
 import pytorch_tabular.models.ssl.ssl_losses as ssl_losses
+
 # from pytorch_tabular.utils import loss_contrastive
 
 try:
@@ -99,7 +100,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         reg_terms = [k for k, v in output.items() if "regularization" in k]
         reg_loss = 0
         for t in reg_terms:
-            #Log only if non-zero
+            # Log only if non-zero
             if output[t] != 0:
                 reg_loss += output[t]
                 self.log(
@@ -222,8 +223,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def forward(self, x: Dict):
         x = self.compute_backbone(x)
-        if self.hparams.task == "ssl":
-            return self.compute_ssl_head(x)
+        # if self.hparams.task == "ssl":
+        #     return self.compute_ssl_head(x)
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
@@ -364,6 +365,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 commit=False,
             )
 
+
 class SSLBaseModel(BaseModel):
     def __init__(
         self,
@@ -387,9 +389,7 @@ class SSLBaseModel(BaseModel):
         if self.custom_loss is None:
             try:
                 if self.hparams.loss.startswith("ssl"):
-                    self._loss = getattr(
-                        ssl_losses, self.hparams.loss
-                    )
+                    self._loss = getattr(ssl_losses, self.hparams.loss)
                 else:
                     self.loss = getattr(nn, self.hparams.loss)()
             except AttributeError as e:
@@ -399,7 +399,6 @@ class SSLBaseModel(BaseModel):
                 raise e
         else:
             self.loss = self.custom_loss
-
 
     # def compute_head(self, x: Dict):
     #     return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(

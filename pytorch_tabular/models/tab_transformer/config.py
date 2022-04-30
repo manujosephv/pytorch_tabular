@@ -203,6 +203,7 @@ class TabTransformerConfig(ModelConfig):
     )
     _module_src: str = field(default="tab_transformer")
     _model_name: str = field(default="TabTransformerModel")
+    _backbone_name: str = field(default="TabTransformerBackbone")
     _config_name: str = field(default="TabTransformerConfig")
 
 

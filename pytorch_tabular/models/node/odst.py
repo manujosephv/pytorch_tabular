@@ -9,7 +9,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .utils import ModuleWithInit, sparsemax, sparsemoid
+from ..common.layers import ModuleWithInit
+from ..common.activations import sparsemax, sparsemoid
 
 
 def check_numpy(x):

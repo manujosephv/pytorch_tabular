@@ -25,7 +25,7 @@ from omegaconf import DictConfig
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 from ..base_model import BaseModel
-from ..common import SharedEmbeddings, TransformerEncoderBlock
+from ..common.layers import SharedEmbeddings, TransformerEncoderBlock
 
 logger = logging.getLogger(__name__)
 
