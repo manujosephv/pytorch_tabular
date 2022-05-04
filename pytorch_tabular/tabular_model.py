@@ -26,6 +26,7 @@ from pytorch_lightning.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
+from pytorch_tabular.config.config import InferredConfig
 
 import pytorch_tabular.models as models
 from pytorch_tabular.config import (
@@ -41,6 +42,7 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 logger = logging.getLogger(__name__)
 
 
+# TODO make config handling more rubust and separate configs etc.
 class TabularModel:
     def __init__(
         self,
@@ -369,8 +371,13 @@ class TabularModel:
                 getattr(models, config._module_src), config._model_name
             )
             custom_model = False
+        inferred_config = datamodule.update_config(config)
+        inferred_config = OmegaConf.structured(inferred_config)
+        model_args = {
+            "config": config,
+            "inferred_config": inferred_config,
+        }
         custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
-        model_args = {}
         if custom_params.get("custom_loss") is not None:
             model_args["loss"] = "MSELoss"  # For compatibility. Not Used
         if custom_params.get("custom_metrics") is not None:
@@ -453,12 +460,11 @@ class TabularModel:
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
-        return datamodule, datamodule.config
+        return datamodule
 
     def prepare_model(
         self,
         datamodule: TabularDatamodule,
-        updated_config: DictConfig,
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
@@ -468,8 +474,6 @@ class TabularModel:
 
         Args:
             datamodule (TabularDatamodule): The datamodule
-
-            updated_config (DictConfig): The config which has been updated from data
 
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
@@ -483,11 +487,10 @@ class TabularModel:
 
         """
         logger.info(f"Preparing the Model: {self.config._model_name}...")
-        assert (
-            hasattr(updated_config, "_updated") and updated_config._updated
-        ), "config has not been updated with data. Please call prepare_datamodule() first"
         # Fetching the config as some data specific configs have been added in the datamodule
-        self.config = updated_config
+        self.inferred_config = self._read_parse_config(
+            datamodule.update_config(self.config), InferredConfig
+        )
         # if hasattr(self, "model") and self.model is not None and not reset:
         #     logger.debug("Using the trained model...")
         # else:
@@ -498,6 +501,7 @@ class TabularModel:
             custom_metrics=metrics,
             custom_optimizer=optimizer,
             custom_optimizer_params=optimizer_params,
+            inferred_config=self.inferred_config,
         )
         # Data Aware Initialization(for the models that need it)
         model.data_aware_initialization(datamodule)
@@ -601,12 +605,11 @@ class TabularModel:
             callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
         """
         seed_everything(seed if seed is not None else self.config.seed)
-        datamodule, updated_config = self.prepare_dataloader(
+        datamodule = self.prepare_dataloader(
             train, validation, test, train_sampler, target_transform, seed
         )
         model = self.prepare_model(
             datamodule,
-            updated_config,
             loss,
             metrics,
             optimizer,

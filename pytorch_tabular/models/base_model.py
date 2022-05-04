@@ -10,18 +10,15 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from torch import Tensor
 
 import pytorch_tabular.models.ssl.augmentations as augmentations
-# import pytorch_tabular.models.ssl.ssl_utils as ssl_utils
-import pytorch_tabular.models.ssl.ssl_losses as ssl_losses
 
-# from pytorch_tabular.utils import loss_contrastive
+import pytorch_tabular.models.ssl.ssl_losses as ssl_losses
 
 try:
     import plotly.graph_objects as go
-
     import wandb
 
     WANDB_INSTALLED = True
@@ -30,6 +27,25 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
+
+
+def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictConfig:
+    """Merge two configurations.
+
+    Args:
+        base_config: The base configuration.
+        custom_config: The custom configuration.
+
+    Returns:
+        The merged configuration.
+    """
+    # using base config values if exist
+    if "embedding_dims" in config.keys() and config.embedding_dims is not None:
+        inferred_config.embedding_dims = config.embedding_dims
+    merged_config = OmegaConf.merge(
+        OmegaConf.to_container(config), OmegaConf.to_container(inferred_config)
+    )
+    return merged_config
 
 
 class BaseModel(pl.LightningModule, metaclass=ABCMeta):
@@ -43,6 +59,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         **kwargs,
     ):
         super().__init__()
+        assert (
+            "inferred_config" in kwargs
+        ), "inferred_config not found in initialization arguments"
+        inferred_config = kwargs["inferred_config"]
+        # Merging the config and inferred config
+        config = safe_merge_config(config, inferred_config)
         self.custom_loss = custom_loss
         self.custom_metrics = custom_metrics
         self.custom_optimizer = custom_optimizer

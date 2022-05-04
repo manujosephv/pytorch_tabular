@@ -86,13 +86,13 @@ def test_dataloader(
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
-        config = datamodule.config
+        inferred_config = datamodule.update_config(config)
         if len(categorical_cols) > 0:
-            assert config.categorical_cardinality[0] == 5
+            assert inferred_config.categorical_cardinality[0] == 5
             if embedding_dims is None:
-                assert config.embedding_dims[0][-1] == 3
+                assert inferred_config.embedding_dims[0][-1] == 3
             else:
-                assert config.embedding_dims[0][-1] == embedding_dims[0][-1]
+                assert inferred_config.embedding_dims[0][-1] == embedding_dims[0][-1]
         if normalize_continuous_features and len(continuous_cols) > 0:
             assert round(datamodule.train[config.continuous_cols[0]].mean()) == 0
             assert round(datamodule.train[config.continuous_cols[0]].std()) == 1

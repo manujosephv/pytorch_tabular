@@ -140,8 +140,6 @@ class AutoIntBackbone(pl.LightningModule):
 
 class AutoIntModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
-        # The concatenated output dim of the embedding layer
-        # self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):

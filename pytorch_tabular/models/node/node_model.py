@@ -21,8 +21,6 @@ logger = logging.getLogger(__name__)
 class NODEBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__()
-        if config.embed_categorical:
-            self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         self.save_hyperparameters(config)
         self._build_network()
 
@@ -31,10 +29,10 @@ class NODEBackbone(pl.LightningModule):
             self.embedding_layers = nn.ModuleList(
                 [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
             )
-            if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
                 self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
             self.hparams.node_input_dim = (
-                self.hparams.continuous_dim + self.embedding_cat_dim
+                self.hparams.continuous_dim + self.hparams.embedded_cat_dim
             )
         else:
             self.hparams.node_input_dim = (
@@ -68,7 +66,7 @@ class NODEBackbone(pl.LightningModule):
         if self.hparams.embed_categorical:
             # unpacking into a tuple
             continuous_data, categorical_data = x["continuous"], x["categorical"]
-            if self.embedding_cat_dim != 0:
+            if self.hparams.embedded_cat_dim != 0:
                 # x = []
                 # for i, embedding_layer in enumerate(self.embedding_layers):
                 #     x.append(embedding_layer(categorical_data[:, i]))
@@ -79,7 +77,7 @@ class NODEBackbone(pl.LightningModule):
                 x = torch.cat(x, 1)
 
             if self.hparams.continuous_dim != 0:
-                if self.embedding_cat_dim != 0:
+                if self.hparams.embedded_cat_dim != 0:
                     x = torch.cat([x, continuous_data], 1)
                 else:
                     x = continuous_data
@@ -94,7 +92,7 @@ class NODEBackbone(pl.LightningModule):
     def forward(self, x):
         x = self.unpack_input(x)
         if self.hparams.embed_categorical:
-            if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
                 x = self.embedding_dropout(x)
         x = self.dense_block(x)
         return x
@@ -133,7 +131,7 @@ class NODEModel(BaseModel):
 
     def extract_embedding(self):
         if self.hparams.embed_categorical:
-            if self.backbone.embedding_cat_dim != 0:
+            if self.hparams.embedded_cat_dim != 0:
                 return self.backbone.embedding_layers
         else:
             raise ValueError(

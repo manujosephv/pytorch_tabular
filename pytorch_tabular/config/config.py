@@ -5,7 +5,7 @@
 import logging
 import os
 from dataclasses import MISSING, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from omegaconf import OmegaConf
 
@@ -146,8 +146,8 @@ class DataConfig:
         default=True,
         metadata={"help": "Whether or not to pin memory for data loading."},
     )
-    categorical_dim: int = field(init=False)
-    continuous_dim: int = field(init=False)
+    # categorical_dim: int = field(init=False)
+    # continuous_dim: int = field(init=False)
     # output_dim: int = field(init=False)
 
     def __post_init__(self):
@@ -157,16 +157,59 @@ class DataConfig:
             + len(self.date_columns)
             > 0
         ), "There should be at-least one feature defined in categorical, continuous, or date columns"
-        self.categorical_dim = (
-            len(self.categorical_cols) if self.categorical_cols is not None else 0
-        )
-        self.continuous_dim = (
-            len(self.continuous_cols) if self.continuous_cols is not None else 0
-        )
+        # self.categorical_dim = (
+        #     len(self.categorical_cols) if self.categorical_cols is not None else 0
+        # )
+        # self.continuous_dim = (
+        #     len(self.continuous_cols) if self.continuous_cols is not None else 0
+        # )
         _validate_choices(self)
         if os.name == "nt" and self.num_workers != 0:
             print("Windows does not support num_workers > 0. Setting num_workers to 0")
             self.num_workers = 0
+
+
+@dataclass
+class InferredConfig:
+
+    categorical_dim: int = field(
+        metadata={"help": "The number of categorical features"},
+    )
+    continuous_dim: int = field(
+        metadata={"help": "The number of continuous features"},
+    )
+    output_dim: Optional[int] = field(
+        default=None,
+        metadata={"help": "The number of output targets"},
+    )
+    categorical_cardinality: Optional[List[int]] = field(
+        default=None,
+        metadata={"help": "The number of unique values in categorical features"},
+    )
+    embedding_dims: Optional[
+        List
+    ] = field(  # TODO need to check if embedding_dims would be duplicated from model_config and inferred_config
+        default=None,
+        metadata={
+            "help": "The dimensions of the embedding for each categorical column as a list of tuples "
+            "(cardinality, embedding_dim)."
+        },
+    )
+    embedded_cat_dim: int = field(
+        init=False,
+        metadata={
+            "help": "The number of features or dimensions of the embedded categorical features"
+        },
+    )
+
+    def __post_init__(self):
+        if self.embedding_dims is not None:
+            assert all(
+                [(isinstance(t, Iterable) and len(t) == 2) for t in self.embedding_dims]
+            ), "embedding_dims must be a list of tuples (cardinality, embedding_dim)"
+            self.embedded_cat_dim = sum([t[1] for t in self.embedding_dims])
+        else:
+            self.embedded_cat_dim = 0
 
 
 @dataclass

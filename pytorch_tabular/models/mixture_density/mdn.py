@@ -16,8 +16,8 @@ from torch.distributions import Categorical
 
 from pytorch_tabular.models.autoint import AutoIntBackbone
 from pytorch_tabular.models.category_embedding import CategoryEmbeddingBackbone
-from pytorch_tabular.models.node import NODEBackbone
 from pytorch_tabular.models.common.layers import Lambda
+from pytorch_tabular.models.node import NODEBackbone
 
 from ..base_model import BaseModel
 
@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 ONEOVERSQRT2PI = 1.0 / math.sqrt(2 * math.pi)
 LOG2PI = math.log(2 * math.pi)
 
-#TODO refactor to make the backbone dynamic
+
+# TODO refactor to make the backbone dynamic
 class MixtureDensityHead(nn.Module):
     def __init__(self, config: DictConfig, **kwargs):
         self.hparams = config
@@ -136,10 +137,10 @@ class MixtureDensityHead(nn.Module):
 class BaseMDN(BaseModel, metaclass=ABCMeta):
     def __init__(self, config: DictConfig, **kwargs):
         assert config.task == "regression", "MDN is only implemented for Regression"
-        assert config.output_dim == 1, "MDN is not implemented for multi-targets"
+        super().__init__(config, **kwargs)
+        assert self.hparams.output_dim == 1, "MDN is not implemented for multi-targets"
         if config.target_range is not None:
             logger.warning("MDN does not use target range. Ignoring it.")
-        super().__init__(config, **kwargs)
 
     def compute_head(self, x: Tensor):
         pi, sigma, mu = self.mdn(x)
@@ -330,7 +331,6 @@ class BaseMDN(BaseModel, metaclass=ABCMeta):
 
 class CategoryEmbeddingMDN(BaseMDN):
     def __init__(self, config: DictConfig, **kwargs):
-        self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):

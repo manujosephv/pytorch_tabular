@@ -36,7 +36,7 @@ MODEL_CONFIG_SAVE_ONNX_TEST = [
             num_heads=1,
             num_attn_blocks=1,
         ),
-    )
+    ),
 ]
 MODEL_CONFIG_FEATURE_EXT_TEST = [
     CategoryEmbeddingModelConfig,
@@ -180,6 +180,7 @@ def test_feature_extractor(
     enc_df = dt.fit_transform(test)
     assert any([col for col in enc_df.columns if "backbone" in col])
 
+
 @pytest.mark.parametrize(
     "model_config_class",
     MODEL_CONFIG_SAVE_TEST,
@@ -248,20 +249,17 @@ def test_save_load_statedict(
     # sv_dir = tmpdir/"save_model"
     # sv_dir.mkdir(exist_ok=True, parents=True)
     sv_dir = tmpdir.mkdir("saved_model")
-    tabular_model.save_weights(str(sv_dir/"weights.pt"))
+    tabular_model.save_weights(str(sv_dir / "weights.pt"))
     new_mdl = TabularModel(
         data_config=data_config,
         model_config=model_config,
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
-        model_state_dict_path=str(sv_dir/"weights.pt")
+        model_state_dict_path=str(sv_dir / "weights.pt"),
     )
-    datamodule, updated_config = new_mdl.prepare_dataloader(
-        train, test=test
-    )
+    datamodule = new_mdl.prepare_dataloader(train, test=test)
     model = new_mdl.prepare_model(
         datamodule,
-        updated_config,
         metrics=custom_metrics,
         loss=custom_loss,
         optimizer=custom_optimizer,

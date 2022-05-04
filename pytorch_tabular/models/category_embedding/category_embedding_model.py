@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 class CategoryEmbeddingBackbone(pl.LightningModule):
     def __init__(self, config: DictConfig, **kwargs):
-        self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__()
         self.save_hyperparameters(config)
         self._build_network()
@@ -27,8 +26,8 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
     def _build_network(self):
         # Linear Layers
         layers = []
-        _curr_units = self.embedding_cat_dim + self.hparams.continuous_dim
-        if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+        _curr_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
+        if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
             layers.append(nn.Dropout(self.hparams.embedding_dropout))
         for units in self.hparams.layers.split("-"):
             layers.extend(
@@ -54,7 +53,7 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
 
     def unpack_input(self, x: Dict):
         continuous_data, categorical_data = x["continuous"], x["categorical"]
-        if self.embedding_cat_dim != 0:
+        if self.hparams.embedded_cat_dim != 0:
             x = [
                 embedding_layer(categorical_data[:, i])
                 for i, embedding_layer in enumerate(self.embedding_layers)
@@ -65,7 +64,7 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
             if self.hparams.batch_norm_continuous_input:
                 continuous_data = self.normalizing_batch_norm(continuous_data)
 
-            if self.embedding_cat_dim != 0:
+            if self.hparams.embedded_cat_dim != 0:
                 x = torch.cat([x, continuous_data], 1)
             else:
                 x = continuous_data
@@ -79,8 +78,6 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
 
 class CategoryEmbeddingModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
-        # The concatenated output dim of the embedding layer
-        self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):

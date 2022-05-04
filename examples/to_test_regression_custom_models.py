@@ -161,8 +161,6 @@ class MultiStageModelConfig(ModelConfig):
 from pytorch_tabular.models import BaseModel
 class MultiStageModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
-        if config.embed_categorical:
-            self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):
@@ -170,9 +168,9 @@ class MultiStageModel(BaseModel):
             self.embedding_layers = nn.ModuleList(
                 [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
             )
-            if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
                 self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.embedding_cat_dim
+            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.embedded_cat_dim
         else:
             self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
         self.backbone = NODEBackbone(self.hparams)
@@ -191,7 +189,7 @@ class MultiStageModel(BaseModel):
     
     def unpack_input(self, x: Dict):
         continuous_data, categorical_data = x["continuous"], x["categorical"]
-        if self.embedding_cat_dim != 0:
+        if self.hparams.embedded_cat_dim != 0:
             x = []
             # for i, embedding_layer in enumerate(self.embedding_layers):
             #     x.append(embedding_layer(categorical_data[:, i]))
@@ -205,7 +203,7 @@ class MultiStageModel(BaseModel):
             if self.hparams.batch_norm_continuous_input:
                 continuous_data = self.normalizing_batch_norm(continuous_data)
 
-            if self.embedding_cat_dim != 0:
+            if self.hparams.embedded_cat_dim != 0:
                 x = torch.cat([x, continuous_data], 1)
             else:
                 x = continuous_data
@@ -214,7 +212,7 @@ class MultiStageModel(BaseModel):
     def forward(self, x: Dict):
         x = self.unpack_input(x)
         if self.hparams.embed_categorical:
-            if self.hparams.embedding_dropout != 0 and self.embedding_cat_dim != 0:
+            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
                 x = self.embedding_dropout(x)
         x = self.backbone(x)
         clf_logits = self.clf_out(x)
