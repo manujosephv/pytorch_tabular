@@ -168,7 +168,7 @@ class NodeConfig(ModelConfig):
         default=0.0,
         metadata={"help": "probability of an embedding element to be zeroed."},
     )
-    _module_src: str = field(default="node")
+    _module_src: str = field(default="models.node")
     _model_name: str = field(default="NODEModel")
     _backbone_name: str = field(default="NODEBackbone")
     _config_name: str = field(default="NodeConfig")

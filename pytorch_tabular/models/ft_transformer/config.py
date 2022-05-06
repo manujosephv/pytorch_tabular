@@ -220,7 +220,7 @@ class FTTransformerConfig(ModelConfig):
             "choices": ["kaiming", "xavier", "random"],
         },
     )
-    _module_src: str = field(default="ft_transformer")
+    _module_src: str = field(default="models.ft_transformer")
     _model_name: str = field(default="FTTransformerModel")
     _backbone_name: str = field(default="FTTransformerBackbone")
     _config_name: str = field(default="FTTransformerConfig")

@@ -79,7 +79,7 @@ class CategoryEmbeddingModelConfig(ModelConfig):
             "choices": ["kaiming", "xavier", "random"],
         },
     )
-    _module_src: str = field(default="category_embedding")
+    _module_src: str = field(default="models.category_embedding")
     _model_name: str = field(default="CategoryEmbeddingModel")
     _backbone_name: str = field(default="CategoryEmbeddingBackbone")
     _config_name: str = field(default="CategoryEmbeddingModelConfig")

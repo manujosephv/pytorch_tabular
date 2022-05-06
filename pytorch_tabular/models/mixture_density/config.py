@@ -112,7 +112,7 @@ class MixtureDensityHeadConfig:
             "help": "Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits(if log_logits is turned on in experment config). Defaults to False",
         },
     )
-    _module_src: str = field(default="mixture_density")
+    _module_src: str = field(default="models.mixture_density")
     _model_name: str = field(default="MixtureDensityHead")
     _config_name: str = field(default="MixtureDensityHeadConfig")
 
@@ -155,7 +155,7 @@ class CategoryEmbeddingMDNConfig(CategoryEmbeddingModelConfig):
         default=None,
         metadata={"help": "The config for defining the Mixed Density Network Head"},
     )
-    _module_src: str = field(default="mixture_density")
+    _module_src: str = field(default="models.mixture_density")
     _model_name: str = field(default="CategoryEmbeddingMDN")
     _config_name: str = field(default="CategoryEmbeddingMDNConfig")
     _probabilistic: bool = field(default=True)
@@ -228,7 +228,7 @@ class NODEMDNConfig(NodeConfig):
         default=None,
         metadata={"help": "The config for defining the Mixed Density Network Head"},
     )
-    _module_src: str = field(default="mixture_density")
+    _module_src: str = field(default="models.mixture_density")
     _model_name: str = field(default="NODEMDN")
     _config_name: str = field(default="NODEMDNConfig")
     _probabilistic: bool = field(default=True)
@@ -277,7 +277,7 @@ class AutoIntMDNConfig(AutoIntConfig):
         default=None,
         metadata={"help": "The config for defining the Mixed Density Network Head"},
     )
-    _module_src: str = field(default="mixture_density")
+    _module_src: str = field(default="models.mixture_density")
     _model_name: str = field(default="AutoIntMDN")
     _config_name: str = field(default="AutoIntMDNConfig")
     _probabilistic: bool = field(default=True)

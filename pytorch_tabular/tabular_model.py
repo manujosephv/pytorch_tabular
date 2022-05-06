@@ -26,9 +26,8 @@ from pytorch_lightning.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from torch import nn
 from tqdm.autonotebook import tqdm
-from pytorch_tabular.config.config import InferredConfig
 
-import pytorch_tabular.models as models
+import pytorch_tabular as root_module
 from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
@@ -37,9 +36,17 @@ from pytorch_tabular.config import (
     OptimizerConfig,
     TrainerConfig,
 )
+from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 
 logger = logging.getLogger(__name__)
+
+
+def getattr_nested(_module_src, _model_name):
+    module = root_module
+    for m in _module_src.split("."):
+        module = getattr(module, m)
+    return getattr(module, _model_name)
 
 
 # TODO make config handling more rubust and separate configs etc.
@@ -133,8 +140,8 @@ class TabularModel:
 
         self.exp_manager = ExperimentRunManager()
         if model_callable is None:
-            self.model_callable = getattr(
-                getattr(models, self.config._module_src), self.config._model_name
+            self.model_callable = getattr_nested(
+                self.config._module_src, self.config._model_name
             )
             self.custom_model = False
         else:
@@ -174,9 +181,10 @@ class TabularModel:
             if os.path.exists(config):
                 _config = OmegaConf.load(config)
                 if cls == ModelConfig:
-                    cls = getattr(
-                        getattr(models, _config._module_src), _config._config_name
-                    )
+                    cls = getattr_nested(_config._module_src, _config._config_name)
+                    # cls = getattr(
+                    #     getattr(models, _config._module_src), _config._config_name
+                    # )
                 config = cls(
                     **{
                         k: v
@@ -367,9 +375,10 @@ class TabularModel:
             model_callable = joblib.load(os.path.join(dir, "custom_model_callable.sav"))
             custom_model = True
         else:
-            model_callable = getattr(
-                getattr(models, config._module_src), config._model_name
-            )
+            model_callable = getattr_nested(config._module_src, config._model_name)
+            # model_callable = getattr(
+            #     getattr(models, config._module_src), config._model_name
+            # )
             custom_model = False
         inferred_config = datamodule.update_config(config)
         inferred_config = OmegaConf.structured(inferred_config)

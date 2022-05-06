@@ -138,7 +138,7 @@ class AutoIntConfig(ModelConfig):
             "choices": ["kaiming", "xavier", "random"],
         },
     )
-    _module_src: str = field(default="autoint")
+    _module_src: str = field(default="models.autoint")
     _model_name: str = field(default="AutoIntModel")
     _backbone_name: str = field(default="AutoIntBackbone")
     _config_name: str = field(default="AutoIntConfig")
