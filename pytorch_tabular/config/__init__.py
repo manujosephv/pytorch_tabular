@@ -7,6 +7,7 @@ from .config import (
     InferredConfig,
     ExperimentRunManager,
     _validate_choices,
+    LINEAR_HEAD_CONFIG_DEPRECATION_MSG
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "OptimizerConfig",
     "ExperimentRunManager",
     "_validate_choices",
+    "LINEAR_HEAD_CONFIG_DEPRECATION_MSG"
 ]

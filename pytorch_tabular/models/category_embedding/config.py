@@ -3,8 +3,13 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model Config"""
 from dataclasses import dataclass, field
+from typing import Dict, Optional
+import warnings
 
-from pytorch_tabular.config import ModelConfig
+from pytorch_tabular.config import ModelConfig, LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+from pytorch_tabular.models.common import heads
+
+# from pytorch_tabular.models.common.heads.heads import Head
 
 
 @dataclass
@@ -40,10 +45,26 @@ class CategoryEmbeddingModelConfig(ModelConfig):
         NotImplementedError: Raises an error if task is not in ['regression','classification']
     """
 
+    head: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`"
+        },
+    )
+
+    head_config: Optional[Dict] = field(
+        default=None,
+        metadata={
+            "help": "The config as a dict which defines the head. If left empty, will be initialized as default linear head."
+        },
+    )
+
     layers: str = field(
         default="128-64-32",
         metadata={
-            "help": "Hyphen-separated number of layers and units in the classification head. eg. 32-64-32."
+            "help": LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+            + "/n"
+            + "Hyphen-separated number of layers and units in the classification head. eg. 32-64-32."
         },
     )
     batch_norm_continuous_input: bool = field(
@@ -55,7 +76,9 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     activation: str = field(
         default="ReLU",
         metadata={
-            "help": "The activation type in the classification head. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
+            "help": LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+            + "/n"
+            + "The activation type in the classification head. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
         },
     )
     embedding_dropout: float = field(
@@ -64,18 +87,26 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     )
     dropout: float = field(
         default=0.5,
-        metadata={"help": "probability of an classification element to be zeroed."},
+        metadata={
+            "help": LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+            + "/n"
+            + "probability of an classification element to be zeroed."
+        },
     )
     use_batch_norm: bool = field(
         default=False,
         metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut"
+            "help": LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+            + "/n"
+            + "Flag to include a BatchNorm layer after each Linear Layer+DropOut"
         },
     )
     initialization: str = field(
         default="kaiming",
         metadata={
-            "help": "Initialization scheme for the linear layers",
+            "help": LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+            + "/n"
+            + "Initialization scheme for the linear layers",
             "choices": ["kaiming", "xavier", "random"],
         },
     )
@@ -83,6 +114,33 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     _model_name: str = field(default="CategoryEmbeddingModel")
     _backbone_name: str = field(default="CategoryEmbeddingBackbone")
     _config_name: str = field(default="CategoryEmbeddingModelConfig")
+
+    def __post_init__(self):
+        if self.head is None:
+            warnings.warn(LINEAR_HEAD_CONFIG_DEPRECATION_MSG)
+            self.head = "LinearHead"
+            self.head_config = dict(
+                layers=self.layers,
+                activation=self.activation,
+                dropout=self.dropout,
+                use_batch_norm=self.use_batch_norm,
+                initialization=self.initialization,
+            )
+        else:
+            assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
+            _head_callable = getattr(heads.blocks, self.head)
+            ideal_head_config = _head_callable._config_template
+            invalid_keys = set(self.head_config.keys()) - set(
+                ideal_head_config.__dict__.keys()
+            )
+            assert (
+                len(invalid_keys) == 0
+            ), f"`head_config` has some invalid keys: {invalid_keys}"
+            # if `layers` is empty, fill with default value of CategoryEmbedding
+            if issubclass(_head_callable, heads.blocks.LinearHead):
+                if "layers" not in self.head_config:
+                    self.head_config["layers"] = "128-64-32"
+        return super().__post_init__()
 
 
 # cls = CategoryEmbeddingModelConfig

@@ -11,6 +11,8 @@ from omegaconf import OmegaConf
 
 logger = logging.getLogger(__name__)
 
+LINEAR_HEAD_CONFIG_DEPRECATION_MSG = "Defining the parameters of the head individually has been deprecated and will be removed in the next release. Please use the newly introduced `head` and `head_config` parameters."
+
 
 def _read_yaml(filename):
     import re
@@ -923,3 +925,5 @@ class SSLModelConfig:
 #             self.metrics_params
 #         ), "metrics and metric_params should have same length"
 #         _validate_choices(self)
+
+# TODO add separate head config

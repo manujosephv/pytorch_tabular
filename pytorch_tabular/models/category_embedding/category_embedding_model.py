@@ -10,7 +10,8 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
+from pytorch_tabular.utils import _initialize_layers
+from pytorch_tabular.models.common.heads import blocks
 
 from ..base_model import BaseModel
 
@@ -25,24 +26,14 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
 
     def _build_network(self):
         # Linear Layers
-        layers = []
-        _curr_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
+        in_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
         if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
-            layers.append(nn.Dropout(self.hparams.embedding_dropout))
-        for units in self.hparams.layers.split("-"):
-            layers.extend(
-                _linear_dropout_bn(
-                    self.hparams.activation,
-                    self.hparams.initialization,
-                    self.hparams.use_batch_norm,
-                    _curr_units,
-                    int(units),
-                    self.hparams.dropout,
-                )
-            )
-            _curr_units = int(units)
-        self.linear_layers = nn.Sequential(*layers)
-        self.output_dim = _curr_units
+            self.embd_dropout = nn.Dropout(self.hparams.embedding_dropout)
+        _head_callable = getattr(blocks, self.hparams.head)
+        self.linear_layers = _head_callable(
+            in_units, _head_callable._config_template(**self.hparams.head_config)
+        )
+        self.output_dim = self.linear_layers.output_dim
         # Embedding layers
         self.embedding_layers = nn.ModuleList(
             [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
@@ -59,6 +50,8 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
                 for i, embedding_layer in enumerate(self.embedding_layers)
             ]
             x = torch.cat(x, 1)
+            if self.hparams.embedding_dropout > 0:
+                x = self.embd_dropout(x)
 
         if self.hparams.continuous_dim != 0:
             if self.hparams.batch_norm_continuous_input:
