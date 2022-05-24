@@ -11,7 +11,7 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
-from pytorch_tabular.models.common.heads import blocks
+
 
 from ..base_model import BaseModel
 
@@ -91,21 +91,7 @@ class CategoryEmbeddingModel(BaseModel):
     def _build_network(self):
         # Backbone
         self.backbone = CategoryEmbeddingBackbone(self.hparams)
-        # Adding the last layer
-        _head_callable = getattr(blocks, self.hparams.head)
-        self.head = _head_callable(
-            in_units=self.backbone.output_dim,
-            output_dim=self.hparams.output_dim,
-            config=_head_callable._config_template(**self.hparams.head_config),
-        )  # output_dim auto-calculated from other configs
-
-        # self.output_dim = self.linear_layers.output_dim
-        # self.head = nn.Linear(
-        #     self.backbone.output_dim, self.hparams.output_dim
-        # )  # output_dim auto-calculated from other config
-        # _initialize_layers(
-        #     self.hparams.activation, self.hparams.initialization, self.head
-        # )
+        self.head = self._get_head_from_config()
 
     def extract_embedding(self):
         return self.backbone.embedding_layers

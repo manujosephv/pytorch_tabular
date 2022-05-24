@@ -663,7 +663,7 @@ class ModelConfig:
     )
 
     head_config: Dict = field(
-        default_factory= lambda : {},
+        default_factory=lambda: {},
         metadata={
             "help": "The config as a dict which defines the head. If left empty, will be initialized as default linear head."
         },

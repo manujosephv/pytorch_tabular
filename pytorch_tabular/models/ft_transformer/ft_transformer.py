@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
+from pytorch_tabular.utils import _linear_dropout_bn
 
 from ..base_model import BaseModel
 from ..common.layers import SharedEmbeddings, TransformerEncoderBlock
@@ -228,15 +228,7 @@ class FTTransformerModel(BaseModel):
         # Backbone
         self.backbone = FTTransformerBackbone(self.hparams)
         # Adding the last layer
-        self.head = nn.Sequential(
-            nn.Dropout(self.hparams.out_ff_dropout),
-            nn.Linear(self.backbone.output_dim, self.hparams.output_dim),
-        )
-        _initialize_layers(
-            self.hparams.out_ff_activation,
-            self.hparams.out_ff_initialization,
-            self.head,
-        )
+        self.head = self._get_head_from_config()
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:

@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model Config"""
 from dataclasses import dataclass, field
-from typing import Dict, Optional
 import warnings
 
 from pytorch_tabular.config import ModelConfig, LINEAR_HEAD_CONFIG_DEPRECATION_MSG

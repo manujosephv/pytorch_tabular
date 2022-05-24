@@ -14,7 +14,7 @@ from omegaconf import DictConfig, OmegaConf
 from torch import Tensor
 
 import pytorch_tabular.models.ssl.augmentations as augmentations
-
+from pytorch_tabular.models.common.heads import blocks
 import pytorch_tabular.models.ssl.ssl_losses as ssl_losses
 
 try:
@@ -93,6 +93,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def _check_and_verify(self):
         assert hasattr(self, "backbone"), "Model has no attribute called `backbone`"
         assert hasattr(self, "head"), "Model has no attribute called `head`"
+
+    def _get_head_from_config(self):
+        _head_callable = getattr(blocks, self.hparams.head)
+        return _head_callable(
+            in_units=self.backbone.output_dim,
+            output_dim=self.hparams.output_dim,
+            config=_head_callable._config_template(**self.hparams.head_config),
+        )  # output_dim auto-calculated from other configs
 
     def _setup_loss(self):
         if self.custom_loss is None:

@@ -4,6 +4,7 @@
 """Tabular Model"""
 import logging
 from typing import Dict
+import warnings
 
 import pytorch_lightning as pl
 import torch
@@ -126,7 +127,8 @@ class NODEModel(BaseModel):
         self.backbone = NODEBackbone(self.hparams)
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
-
+        # Not using config head because NODE has a specific head
+        warnings.warn("Ignoring head config because NODE has a specific head which subsets the tree outputs")
         self.head = Lambda(self.subset)
 
     def extract_embedding(self):

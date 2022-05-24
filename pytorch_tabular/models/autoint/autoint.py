@@ -146,13 +146,7 @@ class AutoIntModel(BaseModel):
         # Backbone
         self.backbone = AutoIntBackbone(self.hparams)
         # Head
-        self.head = nn.Sequential(
-            nn.Dropout(self.hparams.dropout),
-            nn.Linear(self.backbone.output_dim, self.hparams.output_dim),
-        )
-        _initialize_layers(
-            self.hparams.activation, self.hparams.initialization, self.head
-        )
+        self.head = self._get_head_from_config()
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
