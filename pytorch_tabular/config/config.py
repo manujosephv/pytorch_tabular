@@ -8,6 +8,7 @@ from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
 from omegaconf import OmegaConf
+from pytorch_tabular.models.common import heads
 
 logger = logging.getLogger(__name__)
 
@@ -653,6 +654,20 @@ class ModelConfig:
             "choices": ["regression", "classification"],
         }
     )
+
+    head: Optional[str] = field(
+        default="LinearHead",
+        metadata={
+            "help": "The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead"
+        },
+    )
+
+    head_config: Dict = field(
+        default_factory= lambda : {},
+        metadata={
+            "help": "The config as a dict which defines the head. If left empty, will be initialized as default linear head."
+        },
+    )
     embedding_dims: Optional[List] = field(
         default=None,
         metadata={
@@ -724,6 +739,16 @@ class ModelConfig:
         assert len(self.metrics) == len(
             self.metrics_params
         ), "metrics and metric_params should have same length"
+        if self.head is not None:
+            assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
+            _head_callable = getattr(heads.blocks, self.head)
+            ideal_head_config = _head_callable._config_template
+            invalid_keys = set(self.head_config.keys()) - set(
+                ideal_head_config.__dict__.keys()
+            )
+            assert (
+                len(invalid_keys) == 0
+            ), f"`head_config` has some invalid keys: {invalid_keys}"
         _validate_choices(self)
 
 

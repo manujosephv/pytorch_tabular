@@ -84,10 +84,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         self._build_network()
         self._setup_loss()
         self._setup_metrics()
+        self._check_and_verify()
 
     @abstractmethod
     def _build_network(self):
         pass
+
+    def _check_and_verify(self):
+        assert hasattr(self, "backbone"), "Model has no attribute called `backbone`"
+        assert hasattr(self, "head"), "Model has no attribute called `head`"
 
     def _setup_loss(self):
         if self.custom_loss is None:

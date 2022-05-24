@@ -44,7 +44,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
-@pytest.mark.parametrize("lin_layer_config", [True, False])
+@pytest.mark.parametrize("custom_head_config", [None, "32", "32-32"])
 def test_regression(
     regression_data,
     multi_target,
@@ -57,7 +57,7 @@ def test_regression(
     custom_metrics,
     custom_loss,
     custom_optimizer,
-    lin_layer_config
+    custom_head_config
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -81,9 +81,9 @@ def test_regression(
                     )
                 )
             model_config_params["target_range"] = _target_range
-        if lin_layer_config:
+        if custom_head_config is not None:
             model_config_params["head"] = "LinearHead"
-            model_config_params["head_config"] = dict(layers="32-32")
+            model_config_params["head_config"] = dict(layers=custom_head_config)
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=3,
