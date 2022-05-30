@@ -5,7 +5,7 @@
 import logging
 import os
 from dataclasses import MISSING, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from omegaconf import OmegaConf
 
@@ -143,7 +143,7 @@ class DataConfig:
         },
     )
     pin_memory: bool = field(
-        default=False,
+        default=True,
         metadata={"help": "Whether or not to pin memory for data loading."},
     )
     categorical_dim: int = field(init=False)
@@ -218,7 +218,7 @@ class TrainerConfig:
 
         checkpoints (str): The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints
 
-        checkpoints_path (str): The path where the saved models will be
+        checkpoints_path (str): The path to save checkpoints
 
         checkpoints_name(Optional[str]): The name under which the models will be saved.
             If left blank, first it will look for `run_name` in experiment_config and if that is also None
@@ -315,8 +315,8 @@ class TrainerConfig:
     profiler: Optional[str] = field(
         default=None,
         metadata={
-            "help": "To profile individual steps during training and assist in identifying bottlenecks. None, simple or advanced",
-            "choices": [None, "simple", "advanced"],
+            "help": "To profile individual steps during training and assist in identifying bottlenecks. None, simple or advanced, pytorch",
+            "choices": [None, "simple", "advanced", "pytorch"],
         },
     )
     early_stopping: Optional[str] = field(
@@ -353,6 +353,10 @@ class TrainerConfig:
     checkpoints_path: str = field(
         default="saved_models",
         metadata={"help": "The path where the saved models will be"},
+    )
+    checkpoints_every_n_epochs: int = field(
+        default=1,
+        metadata={"help": "Number of training steps between checkpoints"},
     )
     checkpoints_name: Optional[str] = field(
         default=None,
@@ -501,7 +505,7 @@ class OptimizerConfig:
             "help": "Any of the standard optimizers from [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."
         },
     )
-    optimizer_params: dict = field(
+    optimizer_params: Dict = field(
         default_factory=lambda: {"weight_decay": 0, "amsgrad": False},
         metadata={
             "help": "The parameters for the optimizer. If left blank, will use default parameters."
@@ -513,7 +517,7 @@ class OptimizerConfig:
             "help": "The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). If None, will not use any scheduler. Defaults to `None`",
         },
     )
-    lr_scheduler_params: Optional[dict] = field(
+    lr_scheduler_params: Optional[Dict] = field(
         default_factory=lambda: {},
         metadata={
             "help": "The parameters for the LearningRateScheduler. If left blank, will use default parameters."
@@ -622,7 +626,7 @@ class ModelConfig:
             "choices": ["cutmix", "mixup", None],
         },
     )
-    embedding_dims: Optional[List[int]] = field(
+    embedding_dims: Optional[List] = field(
         default=None,
         metadata={
             "help": "The dimensions of the embedding for each categorical column as a list of tuples "

@@ -115,14 +115,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             for i in range(self.hparams.output_dim):
                 _loss = self.loss(y_hat[:, i], y[:, i])
                 computed_loss += _loss
-                self.log(
-                    f"{tag}_loss_{i}" if self.hparams.output_dim >= 1 else f"{tag}_loss",
-                    _loss,
-                    on_epoch=True,
-                    on_step=False,
-                    logger=True,
-                    prog_bar=False,
-                )
+                if self.hparams.output_dim > 1:
+                    self.log(
+                            f"{tag}_loss_{i}",
+                        _loss,
+                        on_epoch=True,
+                        on_step=False,
+                        logger=True,
+                        prog_bar=False,
+                    )
         else:
             # TODO loss fails with batch size of 1?
             computed_loss = self.loss(y_hat.squeeze(), y.squeeze()) + reg_loss
@@ -157,14 +158,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                         )
                     else:
                         _metric = metric(y_hat[:, i], y[:, i], **metric_params)
-                    self.log(
-                        f"{tag}_{metric_str}_{i}",
-                        _metric,
-                        on_epoch=True,
-                        on_step=False,
-                        logger=True,
-                        prog_bar=False,
-                    )
+                    if self.hparams.output_dim > 1:
+                        self.log(
+                            f"{tag}_{metric_str}_{i}",
+                            _metric,
+                            on_epoch=True,
+                            on_step=False,
+                            logger=True,
+                            prog_bar=False,
+                        )
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
