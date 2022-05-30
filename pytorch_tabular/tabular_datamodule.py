@@ -31,6 +31,7 @@ from .categorical_encoders import OrdinalEncoder
 logger = logging.getLogger(__name__)
 
 
+# TODO Save datamodule with processed data
 class TabularDatamodule(pl.LightningDataModule):
 
     CONTINUOUS_TRANSFORMS = {

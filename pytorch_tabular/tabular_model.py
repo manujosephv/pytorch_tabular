@@ -337,6 +337,7 @@ class TabularModel:
         else:
             model.load_state_dict(ckpt)
 
+    # TODO deprecate and rename to load_model
     @classmethod
     def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
         """Loads a saved model from the directory
