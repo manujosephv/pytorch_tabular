@@ -950,5 +950,3 @@ class SSLModelConfig:
 #             self.metrics_params
 #         ), "metrics and metric_params should have same length"
 #         _validate_choices(self)
-
-# TODO add separate head config

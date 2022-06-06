@@ -8,6 +8,7 @@ import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
+import warnings
 
 import joblib
 import numpy as np
@@ -49,7 +50,6 @@ def getattr_nested(_module_src, _model_name):
     return getattr(module, _model_name)
 
 
-# TODO make config handling more rubust and separate configs etc.
 class TabularModel:
     def __init__(
         self,
@@ -337,9 +337,8 @@ class TabularModel:
         else:
             model.load_state_dict(ckpt)
 
-    # TODO deprecate and rename to load_model
     @classmethod
-    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
+    def load_model(cls, dir: str, map_location=None, strict=True):
         """Loads a saved model from the directory
 
         Args:
@@ -427,6 +426,28 @@ class TabularModel:
         tabular_model.trainer.model = model
         tabular_model.logger = logger
         return tabular_model
+
+    @classmethod
+    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
+        """(Deprecated: Use `load_model` instead) Loads a saved model from the directory
+
+        Args:
+            dir (str): The directory where the model wa saved, along with the checkpoints
+            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint
+                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
+                to the new setup. The behaviour is the same as in torch.load()
+            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys
+                returned by this module’s state dict. Default: True.
+
+        Returns:
+            TabularModel: The saved TabularModel
+        """
+
+        warnings.warn(
+            "`load_from_checkpoint` is deprecated. Use `load_model` instead.",
+            DeprecationWarning,
+        )
+        return cls.load_model(dir, map_location, strict)
 
     def prepare_dataloader(
         self,
@@ -565,9 +586,9 @@ class TabularModel:
 
     def fit(
         self,
-        train: pd.DataFrame,
+        train: Optional[pd.DataFrame],
         validation: Optional[pd.DataFrame] = None,
-        test: Optional[pd.DataFrame] = None,
+        test: Optional[pd.DataFrame] = None,  # TODO Need to deprecate this
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
@@ -578,6 +599,7 @@ class TabularModel:
         min_epochs: Optional[int] = None,
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
+        datamodule: Optional[TabularDatamodule] = None,
     ) -> None:
         """The fit method which takes in the data and triggers the training
 
@@ -613,11 +635,23 @@ class TabularModel:
             seed: (int): Random seed for reproducibility. Defaults to 42.
 
             callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+
+            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
         """
         seed_everything(seed if seed is not None else self.config.seed)
-        datamodule = self.prepare_dataloader(
-            train, validation, test, train_sampler, target_transform, seed
-        )
+        if datamodule is None:
+            datamodule = self.prepare_dataloader(
+                train, validation, test, train_sampler, target_transform, seed
+            )
+        else:
+            if train is not None:
+                warnings.warn(
+                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                )
+            if test is not None:
+                warnings.warn(
+                    "Providing test data in `fit` is deprecated and will be removed in next major release. Plese use `evaluate` for evaluating on test data"
+                )
         model = self.prepare_model(
             datamodule,
             loss,
@@ -871,6 +905,13 @@ class TabularModel:
                 "No best model available to load. Did you run it more than 1 epoch?..."
             )
 
+    def save_datamodule(self, dir: str):
+        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
+
+    def save_config(self, dir: str):
+        with open(os.path.join(dir, "config.yml"), "w") as fp:
+            OmegaConf.save(self.config, fp, resolve=True)
+
     def save_model(self, dir: str):
         """Saves the model and checkpoints in the specified directory
 
@@ -882,9 +923,8 @@ class TabularModel:
             for f in os.listdir(dir):
                 os.remove(os.path.join(dir, f))
         os.makedirs(dir, exist_ok=True)
-        with open(os.path.join(dir, "config.yml"), "w") as fp:
-            OmegaConf.save(self.config, fp, resolve=True)
-        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
+        self.save_config(dir)
+        self.save_datamodule(dir)
         if hasattr(self.config, "log_target") and self.config.log_target is not None:
             joblib.dump(self.logger, os.path.join(dir, "exp_logger.sav"))
         if hasattr(self, "callbacks"):

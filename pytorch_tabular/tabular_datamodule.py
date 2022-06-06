@@ -3,10 +3,12 @@
 # For license information, see LICENSE.TXT
 """Tabular Data Module"""
 import logging
+from pathlib import Path
 import re
 from typing import Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
+import joblib
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -571,6 +573,23 @@ class TabularDatamodule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.num_workers,
         )
+
+    @classmethod
+    def load_datamodule(cls, path: Union[str, Path]):
+        """Loads a datamodule from a path.
+
+        Args:
+            path (Union[str, Path]): Path to the datamodule
+
+        Returns:
+            DataModule: The datamodule loaded from the path
+        """
+        if isinstance(path, str):
+            path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} does not exist.")
+        datamodule = joblib.load(path)
+        return datamodule
 
 
 class TabularDataset(Dataset):
