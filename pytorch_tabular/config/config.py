@@ -582,9 +582,9 @@ class ModelConfig:
 
         aug_task (str): Specify the kind of augmentations algorithm to use for ssl. Choices are: cutmix, mixup, None
 
-        embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
-            as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
-            using the rule min(50, (x + 1) // 2). Will only be used if the model uses categorical embedding.
+        embedding_dims (Optional[List, NoneType]): The dimensions of the embedding for each categorical column
+            as a list of tuples (or a nested list) (cardinality, embedding_dim). If left empty, will infer using the cardinality of the
+            categorical column using the rule min(50, (x + 1) // 2). Will only be used if the model uses categorical embedding.
 
         learning_rate (float): The learning rate of the model
 
