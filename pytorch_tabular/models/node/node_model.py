@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 """Tabular Model"""
 import logging
-from typing import Dict
 import warnings
 
 import pytorch_lightning as pl
@@ -15,6 +14,7 @@ from ..base_model import BaseModel
 from ..common import activations
 from ..common.layers import Lambda
 from .architecture_blocks import DenseODSTBlock
+from pytorch_tabular.models.common.layers import EmbeddingLayer
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +27,12 @@ class NODEBackbone(pl.LightningModule):
 
     def _build_network(self):
         if self.hparams.embed_categorical:
-            self.embedding_layers = nn.ModuleList(
-                [nn.Embedding(x, y) for x, y in self.hparams.embedding_dims]
+            self.embedding = EmbeddingLayer(
+                continuous_dim=self.hparams.continuous_dim,
+                categorical_embedding_dims=self.hparams.embedding_dims,
+                embedding_dropout=self.hparams.cat_embedding_dropout,
+                batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             )
-            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
-                self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
             self.hparams.node_input_dim = (
                 self.hparams.continuous_dim + self.hparams.embedded_cat_dim
             )
@@ -63,38 +64,15 @@ class NODEBackbone(pl.LightningModule):
             self.hparams.output_dim + self.hparams.additional_tree_output_dim
         )
 
-    def unpack_input(self, x: Dict):
+    def forward(self, x):
         if self.hparams.embed_categorical:
-            # unpacking into a tuple
-            continuous_data, categorical_data = x["continuous"], x["categorical"]
-            if self.hparams.embedded_cat_dim != 0:
-                # x = []
-                # for i, embedding_layer in enumerate(self.embedding_layers):
-                #     x.append(embedding_layer(categorical_data[:, i]))
-                x = [
-                    embedding_layer(categorical_data[:, i])
-                    for i, embedding_layer in enumerate(self.embedding_layers)
-                ]
-                x = torch.cat(x, 1)
-
-            if self.hparams.continuous_dim != 0:
-                if self.hparams.embedded_cat_dim != 0:
-                    x = torch.cat([x, continuous_data], 1)
-                else:
-                    x = continuous_data
+            x = self.embedding(x)
         else:
             # unpacking into a tuple
             x = x["categorical"], x["continuous"]
             # eliminating None in case there is no categorical or continuous columns
             x = (item for item in x if len(item) > 0)
             x = torch.cat(tuple(x), dim=1)
-        return x
-
-    def forward(self, x):
-        x = self.unpack_input(x)
-        if self.hparams.embed_categorical:
-            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
-                x = self.embedding_dropout(x)
         x = self.dense_block(x)
         return x
 
@@ -128,13 +106,15 @@ class NODEModel(BaseModel):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
         # Not using config head because NODE has a specific head
-        warnings.warn("Ignoring head config because NODE has a specific head which subsets the tree outputs")
+        warnings.warn(
+            "Ignoring head config because NODE has a specific head which subsets the tree outputs"
+        )
         self.head = Lambda(self.subset)
 
     def extract_embedding(self):
         if self.hparams.embed_categorical:
             if self.hparams.embedded_cat_dim != 0:
-                return self.backbone.embedding_layers
+                return self.backbone.embedding.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
