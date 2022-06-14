@@ -9,7 +9,7 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
-from pytorch_tabular.models.common.layers import EmbeddingLayer
+from pytorch_tabular.models.common.layers import Embedding1dLayer
 
 
 from ..base_model import BaseModel
@@ -24,7 +24,7 @@ class CategoryEmbeddingBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        self.embedding = EmbeddingLayer(
+        self.embedding = Embedding1dLayer(
             continuous_dim=self.hparams.continuous_dim,
             categorical_embedding_dims=self.hparams.embedding_dims,
             embedding_dropout=self.hparams.embedding_dropout,

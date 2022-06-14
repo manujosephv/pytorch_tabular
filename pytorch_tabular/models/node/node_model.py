@@ -14,7 +14,7 @@ from ..base_model import BaseModel
 from ..common import activations
 from ..common.layers import Lambda
 from .architecture_blocks import DenseODSTBlock
-from pytorch_tabular.models.common.layers import EmbeddingLayer
+from pytorch_tabular.models.common.layers import Embedding1dLayer
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class NODEBackbone(pl.LightningModule):
 
     def _build_network(self):
         if self.hparams.embed_categorical:
-            self.embedding = EmbeddingLayer(
+            self.embedding = Embedding1dLayer(
                 continuous_dim=self.hparams.continuous_dim,
                 categorical_embedding_dims=self.hparams.embedding_dims,
                 embedding_dropout=self.hparams.cat_embedding_dropout,

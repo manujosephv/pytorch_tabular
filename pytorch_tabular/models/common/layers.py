@@ -1,5 +1,6 @@
 # noqa W605
-from typing import Any, Dict, Optional, Tuple
+from functools import partial
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 from einops import rearrange
@@ -210,9 +211,22 @@ class SharedEmbeddings(nn.Module):
         return w
 
 
-class EmbeddingLayer(nn.Module):
+def _initialize_kaiming(x, initialization, d_sqrt_inv):
+    if initialization == "kaiming_uniform":
+        nn.init.uniform_(x, a=-d_sqrt_inv, b=d_sqrt_inv)
+    elif initialization == "kaiming_normal":
+        nn.init.normal_(x, std=d_sqrt_inv)
+    elif initialization is None:
+        pass
+    else:
+        raise NotImplementedError(
+            "initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`"
+        )
+
+
+class Embedding1dLayer(nn.Module):
     """
-    Enables different values in a categorical feature to have different embeddings
+    Enables different values in a categorical features to have different embeddings
     """
 
     def __init__(
@@ -222,7 +236,7 @@ class EmbeddingLayer(nn.Module):
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
     ):
-        super(EmbeddingLayer, self).__init__()
+        super(Embedding1dLayer, self).__init__()
         self.continuous_dim = continuous_dim
         self.categorical_embedding_dims = categorical_embedding_dims
         self.batch_norm_continuous_input = batch_norm_continuous_input
@@ -240,12 +254,17 @@ class EmbeddingLayer(nn.Module):
             self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
-        assert "continuous" in x and "categorical" in x, "x must contain continuous and categorical features"
+        assert (
+            "continuous" in x and "categorical" in x
+        ), "x must contain continuous and categorical features"
         # (B, N)
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers
         ), "categorical_data must have same number of columns as categorical embedding layers"
+        assert (
+            continuous_data.shape[1] == self.continuous_dim
+        ), "continuous_data must have same number of columns as continuous dim"
         embed = None
         if continuous_data.shape[1] > 0:
             if self.batch_norm_continuous_input:
@@ -258,9 +277,145 @@ class EmbeddingLayer(nn.Module):
                 [
                     embedding_layer(categorical_data[:, i])
                     for i, embedding_layer in enumerate(self.cat_embedding_layers)
-                ], dim=1
+                ],
+                dim=1,
             )
-        # (B, N, C + C)
+            # (B, N, C + C)
+            if embed is None:
+                embed = categorical_embed
+            else:
+                embed = torch.cat([embed, categorical_embed], dim=1)
+        if self.embd_dropout is not None:
+            embed = self.embd_dropout(embed)
+        return embed
+
+
+class Embedding2dLayer(nn.Module):
+    """
+    Embeds categorical and continuous features into a 2D tensor
+    """
+
+    def __init__(
+        self,
+        continuous_dim: int,
+        categorical_cardinality: List[int],
+        embedding_dim: int,
+        shared_embedding_strategy: Optional[str] = None,
+        frac_shared_embed: float = 0.25,
+        embedding_bias: bool = False,
+        batch_norm_continuous_input: bool = False,
+        embedding_dropout: float = 0.0,
+        initialization: Optional[str] = None,
+        initialization_dim: Optional[float] = None,
+    ):
+        super(Embedding2dLayer, self).__init__()
+        self.continuous_dim = continuous_dim
+        self.categorical_cardinality = categorical_cardinality
+        self.embedding_dim = embedding_dim
+        self.batch_norm_continuous_input = batch_norm_continuous_input
+        self.shared_embedding_strategy = shared_embedding_strategy
+        self.frac_shared_embed = frac_shared_embed
+        self.embedding_bias = embedding_bias
+        self.initialization = initialization
+        self.initialization_dim = initialization_dim
+        if initialization is not None:
+            assert initialization in [
+                "kaiming",
+                "uniform",
+            ], "initialization should be either of `kaiming` or `uniform`"
+            self._do_kaiming_initialization = True
+            self._initialize_kaiming = partial(
+                _initialize_kaiming,
+                initialization=initialization,
+                d_sqrt_inv=initialization_dim,
+            )
+        else:
+            self._do_kaiming_initialization = False
+
+        # cat Embedding layers
+        if self.shared_embedding_strategy is not None:
+            self.cat_embedding_layers = nn.ModuleList(
+                [
+                    SharedEmbeddings(
+                        c,
+                        self.embedding_dim,
+                        add_shared_embed=(self.shared_embedding_strategy == "add"),
+                        frac_shared_embed=self.frac_shared_embed,
+                    )
+                    for c in categorical_cardinality
+                ]
+            )
+            if self._do_kaiming_initialization:
+                for embedding_layer in self.cat_embedding_layers:
+                    self._initialize_kaiming(embedding_layer.embed.weight)
+                    self._initialize_kaiming(embedding_layer.shared_embed)
+        else:
+            self.cat_embedding_layers = nn.ModuleList(
+                [nn.Embedding(c, self.embedding_dim) for c in categorical_cardinality]
+            )
+            if self._do_kaiming_initialization:
+                for embedding_layer in self.cat_embedding_layers:
+                    self._initialize_kaiming(embedding_layer.weight)
+        if embedding_bias:
+            self.cat_embedding_bias = nn.Parameter(
+                torch.Tensor(len(self.categorical_cardinality), self.embedding_dim)
+            )
+            if self._do_kaiming_initialization:
+                self._initialize_kaiming(self.cat_embedding_bias)
+        # Continuous Embedding Layer
+        self.cont_embedding_layer = nn.Embedding(
+            self.continuous_dim, self.embedding_dim
+        )
+        if self._do_kaiming_initialization:
+            self._initialize_kaiming(self.cont_embedding_layer.weight)
+        if embedding_bias:
+            self.cont_embedding_bias = nn.Parameter(
+                torch.Tensor(self.continuous_dim, self.embedding_dim)
+            )
+            if self._do_kaiming_initialization:
+                self._initialize_kaiming(self.cont_embedding_bias)
+        if batch_norm_continuous_input:
+            self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
+        if embedding_dropout > 0:
+            self.embd_dropout = nn.Dropout(embedding_dropout)
+        else:
+            self.embd_dropout = None
+
+    def forward(self, x: Dict[str, Any]) -> torch.Tensor:
+        assert (
+            "continuous" in x and "categorical" in x
+        ), "x must contain continuous and categorical features"
+        # (B, N)
+        continuous_data, categorical_data = x["continuous"], x["categorical"]
+        assert categorical_data.shape[1] == len(
+            self.cat_embedding_layers
+        ), "categorical_data must have same number of columns as categorical embedding layers"
+        assert (
+            continuous_data.shape[1] == self.continuous_dim
+        ), "continuous_data must have same number of columns as continuous dim"
+        embed = None
+        if continuous_data.shape[1] > 0:
+            cont_idx = (
+                torch.arange(self.continuous_dim)
+                .expand(continuous_data.size(0), -1)
+                .to(self.device)
+            )
+            if self.batch_norm_continuous_input:
+                continuous_data = self.normalizing_batch_norm(continuous_data)
+            embed = torch.mul(
+                continuous_data.unsqueeze(2),
+                self.cont_embedding_layer(cont_idx),
+            )
+            # (B, N, C)
+        if categorical_data.shape[1] > 0:
+            categorical_embed = torch.cat(
+                [
+                    embedding_layer(categorical_data[:, i]).unsqueeze(1)
+                    for i, embedding_layer in enumerate(self.cat_embedding_layers)
+                ],
+                dim=1,
+            )
+            # (B, N, C + C)
             if embed is None:
                 embed = categorical_embed
             else:
