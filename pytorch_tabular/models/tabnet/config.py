@@ -86,7 +86,7 @@ class TabNetModelConfig(ModelConfig):
             "choices": ["sparsemax", "entmax"],
         },
     )
-    _module_src: str = field(default="tabnet")
+    _module_src: str = field(default="models.tabnet")
     _model_name: str = field(default="TabNetModel")
     _config_name: str = field(default="TabNetModelConfig")
 

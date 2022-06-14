@@ -10,6 +10,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from pytorch_tabular.models.common.layers import Embedding2dLayer
 
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
@@ -25,22 +26,17 @@ class AutoIntBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        if self.hparams.categorical_dim > 0:
-            # Category Embedding layers
-            self.cat_embedding_layers = nn.ModuleList(
-                [
-                    nn.Embedding(cardinality, self.hparams.embedding_dim)
-                    for cardinality in self.hparams.categorical_cardinality
-                ]
-            )
-        if self.hparams.batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
-        # Continuous Embedding Layer
-        self.cont_embedding_layer = nn.Embedding(
-            self.hparams.continuous_dim, self.hparams.embedding_dim
+        self.embedding_layer = Embedding2dLayer(
+            continuous_dim=self.hparams.continuous_dim,
+            categorical_cardinality=self.hparams.categorical_cardinality,
+            embedding_dim=self.hparams.embedding_dim,
+            shared_embedding_strategy=self.hparams.share_embedding_strategy,
+            frac_shared_embed=self.hparams.shared_embedding_fraction,
+            embedding_bias=self.hparams.embedding_bias,
+            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            embedding_dropout=self.hparams.embedding_dropout,
+            initialization=self.hparams.embedding_initialization,
         )
-        if self.hparams.embedding_dropout != 0 and self.hparams.categorical_dim > 0:
-            self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
         if self.hparams.deep_layers:
@@ -89,32 +85,7 @@ class AutoIntBackbone(pl.LightningModule):
             self.output_dim = self.output_dim * self.hparams.num_attn_blocks
 
     def forward(self, x: Dict):
-        # (B, N)
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
-        x = None
-        if self.hparams.categorical_dim > 0:
-            x_cat = [
-                embedding_layer(categorical_data[:, i]).unsqueeze(1)
-                for i, embedding_layer in enumerate(self.cat_embedding_layers)
-            ]
-            # (B, N, E)
-            x = torch.cat(x_cat, 1)
-        if self.hparams.continuous_dim > 0:
-            cont_idx = (
-                torch.arange(self.hparams.continuous_dim)
-                .expand(continuous_data.size(0), -1)
-                .to(self.device)
-            )
-            if self.hparams.batch_norm_continuous_input:
-                continuous_data = self.normalizing_batch_norm(continuous_data)
-            x_cont = torch.mul(
-                continuous_data.unsqueeze(2),
-                self.cont_embedding_layer(cont_idx),
-            )
-            # (B, N, E)
-            x = x_cont if x is None else torch.cat([x, x_cont], 1)
-        if self.hparams.embedding_dropout != 0 and self.hparams.categorical_dim > 0:
-            x = self.embed_dropout(x)
+        x = self.embedding_layer(x)
         if self.hparams.deep_layers:
             x = self.linear_layers(x)
         # (N, B, E*) --> E* is the Attn Dimention
@@ -140,25 +111,17 @@ class AutoIntBackbone(pl.LightningModule):
 
 class AutoIntModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
-        # The concatenated output dim of the embedding layer
-        # self.embedding_cat_dim = sum([y for x, y in config.embedding_dims])
         super().__init__(config, **kwargs)
 
     def _build_network(self):
         # Backbone
         self.backbone = AutoIntBackbone(self.hparams)
         # Head
-        self.head = nn.Sequential(
-            nn.Dropout(self.hparams.dropout),
-            nn.Linear(self.backbone.output_dim, self.hparams.output_dim),
-        )
-        _initialize_layers(
-            self.hparams.activation, self.hparams.initialization, self.head
-        )
+        self.head = self._get_head_from_config()
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
-            return self.backbone.cat_embedding_layers
+            return self.backbone.embedding_layer.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"

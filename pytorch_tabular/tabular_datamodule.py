@@ -3,10 +3,12 @@
 # For license information, see LICENSE.TXT
 """Tabular Data Module"""
 import logging
+from pathlib import Path
 import re
 from typing import Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
+import joblib
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -24,21 +26,24 @@ from sklearn.preprocessing import (
 )
 from torch.utils.data import DataLoader, Dataset
 
+from pytorch_tabular.config import InferredConfig
+
 from .categorical_encoders import OrdinalEncoder
 
 logger = logging.getLogger(__name__)
 
 
+# TODO Save datamodule with processed data
 class TabularDatamodule(pl.LightningDataModule):
 
     CONTINUOUS_TRANSFORMS = {
         "quantile_uniform": {
             "callable": QuantileTransformer,
-            "params": dict(output_distribution="uniform", random_state=42),
+            "params": dict(output_distribution="uniform", random_state=None),
         },
         "quantile_normal": {
             "callable": QuantileTransformer,
-            "params": dict(output_distribution="normal", random_state=42),
+            "params": dict(output_distribution="normal", random_state=None),
         },
         "box-cox": {
             "callable": PowerTransformer,
@@ -58,6 +63,7 @@ class TabularDatamodule(pl.LightningDataModule):
         test: pd.DataFrame = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
+        seed: Optional[int] = 42,
     ):
         """The Pytorch Lightning Datamodule for Tabular Data
 
@@ -91,35 +97,43 @@ class TabularDatamodule(pl.LightningDataModule):
         self.batch_size = config.batch_size
         self.train_sampler = train_sampler
         self.config = config
+        self.seed = seed
         self._fitted = False
 
-    def update_config(self) -> None:
+    def update_config(self, config) -> None:
         """Calculates and updates a few key information to the config object
 
         Raises:
             NotImplementedError: [description]
         """
-        if self.config.task == "regression":
-            self.config.output_dim = len(self.config.target)
-        elif self.config.task == "classification":
-            self.config.output_dim = len(self.train[self.config.target[0]].unique())
-        elif self.config.task == "ssl":
-            self.config.output_dim = len(self.config.categorical_cols) + len(
-                self.config.continuous_cols
-            )
+        categorical_dim = len(config.categorical_cols)
+        continuous_dim = len(config.continuous_cols)
+        if config.task == "regression":
+            output_dim = len(config.target)
+        elif config.task == "classification":
+            output_dim = len(self.train[config.target[0]].unique())
+        else:
+            output_dim = None
+        categorical_cardinality = None
+        embedding_dims = None
         if not self.do_leave_one_out_encoder():
-            self.config.categorical_cardinality = [
+            categorical_cardinality = [
                 int(self.train[col].fillna("NA").nunique()) + 1
-                for col in self.config.categorical_cols
+                for col in config.categorical_cols
             ]
-            if (
-                hasattr(self.config, "embedding_dims")
-                and self.config.embedding_dims is None
-            ):
-                self.config.embedding_dims = [
-                    (x, min(50, (x + 1) // 2))
-                    for x in self.config.categorical_cardinality
-                ]
+            embedding_dims = [
+                (x, min(50, (x + 1) // 2)) for x in categorical_cardinality
+            ]
+            if hasattr(config, "embedding_dims"):
+                if config.embedding_dims is not None:
+                    embedding_dims = config.embedding_dims
+        return InferredConfig(
+            categorical_dim=categorical_dim,
+            continuous_dim=continuous_dim,
+            output_dim=output_dim,
+            categorical_cardinality=categorical_cardinality,
+            embedding_dims=embedding_dims,
+        )
 
     def do_leave_one_out_encoder(self) -> bool:
         """Checks the special condition for NODE where we use a LeaveOneOutEncoder to encode categorical columns
@@ -158,6 +172,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 f"Added {added_features} features after encoding the date_columns"
             )
             self.config.categorical_cols += added_features
+            # Update the categorical dimension in config
             self.config.categorical_dim = (
                 len(self.config.categorical_cols)
                 if self.config.categorical_cols is not None
@@ -169,7 +184,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 if self.do_leave_one_out_encoder():
                     logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
                     self.categorical_encoder = ce.LeaveOneOutEncoder(
-                        cols=self.config.categorical_cols, random_state=42
+                        cols=self.config.categorical_cols, random_state=self.seed
                     )
                     # Multi-Target Regression uses the first target to encode the categorical columns
                     if len(self.config.target) > 1:
@@ -196,6 +211,8 @@ class TabularDatamodule(pl.LightningDataModule):
                 transform = self.CONTINUOUS_TRANSFORMS[
                     self.config.continuous_feature_transform
                 ]
+                if "random_state" in transform["params"] and self.seed is not None:
+                    transform["params"]["random_state"] = self.seed
                 self.continuous_transform = transform["callable"](**transform["params"])
                 # TODO implement quantile noise
                 data.loc[
@@ -272,7 +289,8 @@ class TabularDatamodule(pl.LightningDataModule):
                     f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation"
                 )
                 val_idx = self.train.sample(
-                    int(self.config.validation_split * len(self.train)), random_state=42
+                    int(self.config.validation_split * len(self.train)),
+                    random_state=self.seed,
                 ).index
                 self.validation = self.train[self.train.index.isin(val_idx)]
                 self.train = self.train[~self.train.index.isin(val_idx)]
@@ -285,8 +303,6 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             if self.test is not None:
                 self.test, _ = self.preprocess_data(self.test, stage="inference")
-            # Calculating the categorical dims and embedding dims etc and updating the config
-            self.update_config()
             self._fitted = True
 
     # adapted from gluonts
@@ -557,6 +573,23 @@ class TabularDatamodule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.num_workers,
         )
+
+    @classmethod
+    def load_datamodule(cls, path: Union[str, Path]):
+        """Loads a datamodule from a path.
+
+        Args:
+            path (Union[str, Path]): Path to the datamodule
+
+        Returns:
+            DataModule: The datamodule loaded from the path
+        """
+        if isinstance(path, str):
+            path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} does not exist.")
+        datamodule = joblib.load(path)
+        return datamodule
 
 
 class TabularDataset(Dataset):

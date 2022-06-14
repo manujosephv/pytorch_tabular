@@ -1,38 +1,45 @@
-# Neural Oblivious Decision Ensembles
-# Author: Sergey Popov, Julian Qian
-# https://github.com/Qwicen/node
-# For license information, see https://github.com/Qwicen/node/blob/master/LICENSE.md
-"""Dense ODST Block"""
+# noqa W605
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 from torch.autograd import Function
 from torch.jit import script
+from .utils import _make_ix_like
+from pytorch_tabular.models.common.layers import PositionWiseFeedForward
 
 
-def to_one_hot(y, depth=None):
-    r"""
-    Takes integer with n dims and converts it to 1-hot representation with n + 1 dims.
-    The n+1'st dimension will have zeros everywhere but at y'th index, where it will be equal to 1.
-    Args:
-        y: input integer (IntTensor, LongTensor or Variable) of any shape
-        depth (int):  the size of the one hot dimension
-    """
-    y_flat = y.to(torch.int64).view(-1, 1)
-    depth = depth if depth is not None else int(torch.max(y_flat)) + 1
-    y_one_hot = torch.zeros(y_flat.size()[0], depth, device=y.device).scatter_(
-        1, y_flat, 1
-    )
-    y_one_hot = y_one_hot.view(*(tuple(y.shape) + (-1,)))
-    return y_one_hot
+# GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
+class GEGLU(nn.Module):
+    def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
+        super().__init__()
+        self.ffn = PositionWiseFeedForward(
+            d_model, d_ff, dropout, nn.GELU(), True, False, False, False
+        )
+
+    def forward(self, x: torch.Tensor):
+        return self.ffn(x)
 
 
-def _make_ix_like(input, dim=0):
-    d = input.size(dim)
-    rho = torch.arange(1, d + 1, device=input.device, dtype=input.dtype)
-    view = [1] * input.dim()
-    view[0] = -1
-    return rho.view(view).transpose(0, dim)
+class ReGLU(nn.Module):
+    def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
+        super().__init__()
+        self.ffn = PositionWiseFeedForward(
+            d_model, d_ff, dropout, nn.ReLU(), True, False, False, False
+        )
+
+    def forward(self, x: torch.Tensor):
+        return self.ffn(x)
+
+
+class SwiGLU(nn.Module):
+    def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
+        super().__init__()
+        self.ffn = PositionWiseFeedForward(
+            d_model, d_ff, dropout, nn.SiLU(), True, False, False, False
+        )
+
+    def forward(self, x: torch.Tensor):
+        return self.ffn(x)
 
 
 class SparsemaxFunction(Function):
@@ -103,6 +110,8 @@ def sparsemax(input, dim=-1):
 
 def sparsemoid(input):
     return (0.5 * input + 0.5).clamp_(0, 1)
+
+
 # sparsemax = lambda input, dim=-1: SparsemaxFunction.apply(input, dim)
 # sparsemoid = lambda input: (0.5 * input + 0.5).clamp_(0, 1)
 
@@ -143,8 +152,8 @@ class Entmax15Function(Function):
 
         rho = _make_ix_like(input, dim)
         mean = Xsrt.cumsum(dim) / rho
-        mean_sq = (Xsrt ** 2).cumsum(dim) / rho
-        ss = rho * (mean_sq - mean ** 2)
+        mean_sq = (Xsrt**2).cumsum(dim) / rho
+        ss = rho * (mean_sq - mean**2)
         delta = (1 - ss) / rho
 
         # NOTE this is not exactly the same as in reference algo
@@ -159,7 +168,7 @@ class Entmax15Function(Function):
 
 
 class Entmoid15(Function):
-    """ A highly optimized equivalent of labda x: Entmax15([x, 0]) """
+    """A highly optimized equivalent of labda x: Entmax15([x, 0])"""
 
     @staticmethod
     def forward(ctx, input):
@@ -171,7 +180,7 @@ class Entmoid15(Function):
     @script
     def _forward(input):
         input, is_pos = abs(input), input >= 0
-        tau = (input + torch.sqrt(F.relu(8 - input ** 2))) / 2
+        tau = (input + torch.sqrt(F.relu(8 - input**2))) / 2
         tau.masked_fill_(tau <= input, 2.0)
         y_neg = 0.25 * F.relu(tau - input, inplace=True) ** 2
         return torch.where(is_pos, 1 - y_neg, y_neg)
@@ -195,40 +204,3 @@ def entmax15(input, dim=-1):
 
 
 entmoid15 = Entmoid15.apply
-
-
-class Lambda(nn.Module):
-    def __init__(self, func):
-        super().__init__()
-        self.func = func
-
-    def forward(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
-
-
-class ModuleWithInit(nn.Module):
-    """ Base class for pytorch module with data-aware initializer on first batch """
-
-    def __init__(self):
-        super().__init__()
-        self._is_initialized_tensor = nn.Parameter(
-            torch.tensor(0, dtype=torch.uint8), requires_grad=False
-        )
-        self._is_initialized_bool = None
-        # Note: this module uses a separate flag self._is_initialized so as to achieve both
-        # * persistence: is_initialized is saved alongside model in state_dict
-        # * speed: model doesn't need to cache
-        # please DO NOT use these flags in child modules
-
-    def initialize(self, *args, **kwargs):
-        """ initialize module tensors using first batch of data """
-        raise NotImplementedError("Please implement ")
-
-    def __call__(self, *args, **kwargs):
-        if self._is_initialized_bool is None:
-            self._is_initialized_bool = bool(self._is_initialized_tensor.item())
-        if not self._is_initialized_bool:
-            self.initialize(*args, **kwargs)
-            self._is_initialized_tensor.data[...] = 1
-            self._is_initialized_bool = True
-        return super().__call__(*args, **kwargs)

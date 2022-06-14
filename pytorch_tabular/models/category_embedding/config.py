@@ -3,8 +3,12 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model Config"""
 from dataclasses import dataclass, field
+import warnings
 
-from pytorch_tabular.config import ModelConfig
+from pytorch_tabular.config import ModelConfig, LINEAR_HEAD_CONFIG_DEPRECATION_MSG
+from pytorch_tabular.models.common import heads
+
+# from pytorch_tabular.models.common.heads.heads import Head
 
 
 @dataclass
@@ -64,7 +68,9 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     )
     dropout: float = field(
         default=0.5,
-        metadata={"help": "probability of an classification element to be zeroed."},
+        metadata={
+            "help": "probability of an classification element to be zeroed."
+        },
     )
     use_batch_norm: bool = field(
         default=False,
@@ -79,9 +85,37 @@ class CategoryEmbeddingModelConfig(ModelConfig):
             "choices": ["kaiming", "xavier", "random"],
         },
     )
-    _module_src: str = field(default="category_embedding")
+    _module_src: str = field(default="models.category_embedding")
     _model_name: str = field(default="CategoryEmbeddingModel")
+    _backbone_name: str = field(default="CategoryEmbeddingBackbone")
     _config_name: str = field(default="CategoryEmbeddingModelConfig")
+
+    def __post_init__(self):
+        if self.head is not None:
+            warnings.warn(LINEAR_HEAD_CONFIG_DEPRECATION_MSG)
+            self.head = "LinearHead"
+            self.head_config = dict(
+                layers=self.layers,
+                activation=self.activation,
+                dropout=self.dropout,
+                use_batch_norm=self.use_batch_norm,
+                initialization=self.initialization,
+            )
+        else:
+            assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
+            _head_callable = getattr(heads.blocks, self.head)
+            ideal_head_config = _head_callable._config_template
+            invalid_keys = set(self.head_config.keys()) - set(
+                ideal_head_config.__dict__.keys()
+            )
+            assert (
+                len(invalid_keys) == 0
+            ), f"`head_config` has some invalid keys: {invalid_keys}"
+            # if `layers` is empty, fill with default value of CategoryEmbedding
+            if issubclass(_head_callable, heads.blocks.LinearHead):
+                if "layers" not in self.head_config:
+                    self.head_config["layers"] = "128-64-32"
+        return super().__post_init__()
 
 
 # cls = CategoryEmbeddingModelConfig

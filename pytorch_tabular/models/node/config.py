@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
+import warnings
 
 from pytorch_tabular.config import ModelConfig
 
@@ -158,26 +159,36 @@ class NodeConfig(ModelConfig):
             """
         },
     )
+    batch_norm_continuous_input: bool = field(
+        default=False,
+        metadata={
+            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer"
+        },
+    )
+    cat_embedding_dropout: float = field(
+        default=0.0,
+        metadata={"help": "probability of an embedding element to be zeroed."},
+    )
+
     embed_categorical: bool = field(
         default=False,
         metadata={
             "help": "Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder"
         },
     )
-    embedding_dropout: float = field(
-        default=0.0,
-        metadata={"help": "probability of an embedding element to be zeroed."},
-    )
-    _module_src: str = field(default="node")
+
+    _module_src: str = field(default="models.node")
     _model_name: str = field(default="NODEModel")
+    _backbone_name: str = field(default="NODEBackbone")
     _config_name: str = field(default="NodeConfig")
 
-    # def __post_init__(self):
-    #     self._model_name = "NODEModel"
-    #     if self.embed_categorical:
-    #         self._model_name = "CategoryEmbedding"+self._model_name
-    # assert self._module_src == "category_embedding", "Do not change attributes starting with _"
-    # assert self._model_name == "CategoryEmbeddingModel", "Do not change attributes starting wtih _"
+    def __post_init__(self):
+        if not self.embed_categorical:
+            # raise deprecation warning
+            warnings.warn(
+                "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features. This is deprecated and will be removed in future versions and categorical columns will be embedded by default."
+            )
+        super().__post_init__()
 
 
 # cls = NodeConfig
