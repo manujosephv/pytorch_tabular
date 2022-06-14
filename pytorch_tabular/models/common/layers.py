@@ -1,5 +1,6 @@
 # noqa W605
 from functools import partial
+import math
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -306,7 +307,6 @@ class Embedding2dLayer(nn.Module):
         batch_norm_continuous_input: bool = False,
         embedding_dropout: float = 0.0,
         initialization: Optional[str] = None,
-        initialization_dim: Optional[float] = None,
     ):
         super(Embedding2dLayer, self).__init__()
         self.continuous_dim = continuous_dim
@@ -317,17 +317,17 @@ class Embedding2dLayer(nn.Module):
         self.frac_shared_embed = frac_shared_embed
         self.embedding_bias = embedding_bias
         self.initialization = initialization
-        self.initialization_dim = initialization_dim
+        d_sqrt_inv = 1 / math.sqrt(embedding_dim)
         if initialization is not None:
             assert initialization in [
-                "kaiming",
-                "uniform",
+                "kaiming_uniform",
+                "kaiming_normal",
             ], "initialization should be either of `kaiming` or `uniform`"
             self._do_kaiming_initialization = True
             self._initialize_kaiming = partial(
                 _initialize_kaiming,
                 initialization=initialization,
-                d_sqrt_inv=initialization_dim,
+                d_sqrt_inv=d_sqrt_inv,
             )
         else:
             self._do_kaiming_initialization = False
@@ -396,9 +396,8 @@ class Embedding2dLayer(nn.Module):
         embed = None
         if continuous_data.shape[1] > 0:
             cont_idx = (
-                torch.arange(self.continuous_dim)
+                torch.arange(self.continuous_dim, device=continuous_data.device)
                 .expand(continuous_data.size(0), -1)
-                .to(self.device)
             )
             if self.batch_norm_continuous_input:
                 continuous_data = self.normalizing_batch_norm(continuous_data)
@@ -406,6 +405,8 @@ class Embedding2dLayer(nn.Module):
                 continuous_data.unsqueeze(2),
                 self.cont_embedding_layer(cont_idx),
             )
+            if self.embedding_bias:
+                embed += self.cont_embedding_bias
             # (B, N, C)
         if categorical_data.shape[1] > 0:
             categorical_embed = torch.cat(
@@ -415,6 +416,8 @@ class Embedding2dLayer(nn.Module):
                 ],
                 dim=1,
             )
+            if self.embedding_bias:
+                categorical_embed += self.cat_embedding_bias
             # (B, N, C + C)
             if embed is None:
                 embed = categorical_embed

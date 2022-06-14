@@ -16,7 +16,7 @@ from omegaconf import DictConfig
 from pytorch_tabular.utils import _linear_dropout_bn
 
 from ..base_model import BaseModel
-from ..common.layers import SharedEmbeddings, TransformerEncoderBlock
+from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
 
 logger = logging.getLogger(__name__)
 
@@ -61,64 +61,19 @@ class FTTransformerBackbone(pl.LightningModule):
         self._build_network()
 
     def _build_network(self):
-        d_sqrt_inv = 1 / math.sqrt(self.hparams.input_embed_dim)
-        if self.hparams.categorical_dim > 0:
-            # Category Embedding layers
-            if self.hparams.share_embedding:
-                self.cat_embedding_layers = nn.ModuleList(
-                    [
-                        SharedEmbeddings(
-                            cardinality,
-                            self.hparams.input_embed_dim,
-                            add_shared_embed=self.hparams.share_embedding_strategy
-                            == "add",
-                            frac_shared_embed=self.hparams.shared_embedding_fraction,
-                        )
-                        for cardinality in self.hparams.categorical_cardinality
-                    ]
-                )
+        # d_sqrt_inv = 1 / math.sqrt(self.hparams.input_embed_dim)
+        self.embedding_layer = Embedding2dLayer(
+            continuous_dim=self.hparams.continuous_dim,
+            categorical_cardinality=self.hparams.categorical_cardinality,
+            embedding_dim=self.hparams.input_embed_dim,
+            shared_embedding_strategy=self.hparams.share_embedding_strategy,
+            frac_shared_embed=self.hparams.shared_embedding_fraction,
+            embedding_bias=self.hparams.embedding_bias,
+            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            embedding_dropout=self.hparams.embedding_dropout,
+            initialization=self.hparams.embedding_initialization,
+        )
 
-            else:
-                self.cat_embedding_layers = nn.ModuleList(
-                    [
-                        nn.Embedding(cardinality, self.hparams.input_embed_dim)
-                        for cardinality in self.hparams.categorical_cardinality
-                    ]
-                )
-            if self.hparams.embedding_bias:
-                self.cat_embedding_bias = nn.Parameter(
-                    torch.Tensor(
-                        self.hparams.categorical_dim, self.hparams.input_embed_dim
-                    )
-                )
-                _initialize_kaiming(
-                    self.cat_embedding_bias,
-                    self.hparams.embedding_initialization,
-                    d_sqrt_inv,
-                )
-            # Continuous Embedding Layer
-        if self.hparams.continuous_dim > 0:
-            self.cont_embedding_layer = nn.Embedding(
-                self.hparams.continuous_dim, self.hparams.input_embed_dim
-            )
-            _initialize_kaiming(
-                self.cont_embedding_layer.weight,
-                self.hparams.embedding_initialization,
-                d_sqrt_inv,
-            )
-            if self.hparams.embedding_bias:
-                self.cont_embedding_bias = nn.Parameter(
-                    torch.Tensor(
-                        self.hparams.continuous_dim, self.hparams.input_embed_dim
-                    )
-                )
-                _initialize_kaiming(
-                    self.cont_embedding_bias,
-                    self.hparams.embedding_initialization,
-                    d_sqrt_inv,
-                )
-            if self.hparams.embedding_dropout != 0:
-                self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         self.add_cls = AppendCLSToken(
             d_token=self.hparams.input_embed_dim,
             initialization=self.hparams.embedding_initialization,
@@ -160,37 +115,7 @@ class FTTransformerBackbone(pl.LightningModule):
         self.output_dim = _curr_units
 
     def forward(self, x: Dict):
-        # (B, N)
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
-        x = None
-        if self.hparams.categorical_dim > 0:
-            x_cat = [
-                embedding_layer(categorical_data[:, i]).unsqueeze(1)
-                for i, embedding_layer in enumerate(self.cat_embedding_layers)
-            ]
-            # (B, N, E)
-            x = torch.cat(x_cat, 1)
-            if self.hparams.embedding_bias:
-                x = x + self.cat_embedding_bias
-            if self.hparams.embedding_dropout != 0:
-                x = self.embed_dropout(x)
-        if self.hparams.continuous_dim > 0:
-            cont_idx = (
-                torch.arange(self.hparams.continuous_dim)
-                .expand(continuous_data.size(0), -1)
-                .to(self.device)
-            )
-            if self.hparams.batch_norm_continuous_input:
-                continuous_data = self.normalizing_batch_norm(continuous_data)
-            x_cont = torch.mul(
-                continuous_data.unsqueeze(2),
-                self.cont_embedding_layer(cont_idx),
-            )
-            if self.hparams.embedding_bias:
-                x_cont = x_cont + self.cont_embedding_bias
-            # (B, N, E)
-            x = x_cont if x is None else torch.cat([x, x_cont], 1)
-
+        x = self.embedding_layer(x)
         x = self.add_cls(x)
         for i, block in enumerate(self.transformer_blocks):
             x = block(x)
@@ -232,7 +157,7 @@ class FTTransformerModel(BaseModel):
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
-            return self.backbone.cat_embedding_layers
+            return self.backbone.embedding_layer.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"

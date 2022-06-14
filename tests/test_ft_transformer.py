@@ -64,7 +64,11 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = FTTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -117,7 +121,11 @@ def test_classification(
         )
         model_config = FTTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -150,14 +158,18 @@ def test_embedding_transformer(regression_data):
         categorical_cols=["HouseAgeBin"],
     )
     model_config_params = dict(
-            task="regression",
-            input_embed_dim=8,
-            num_attn_blocks=1,
-            num_heads=2,
-        )
+        task="regression",
+        input_embed_dim=8,
+        num_attn_blocks=1,
+        num_heads=2,
+    )
     model_config = FTTransformerConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        gpus=None,
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -212,7 +224,7 @@ def test_ssl(
     normalize_continuous_features,
     target_range,
     ssl_task,
-    aug_task
+    aug_task,
 ):
     (train, test, target) = regression_data
     if len(continuous_cols) + len(categorical_cols) == 0:
@@ -231,7 +243,7 @@ def test_ssl(
             num_attn_blocks=1,
             num_heads=2,
             ssl_task=ssl_task,
-            aug_task=aug_task
+            aug_task=aug_task,
         )
         if target_range:
             _target_range = []
@@ -245,7 +257,11 @@ def test_ssl(
             model_config_params["target_range"] = _target_range
         model_config = FTTransformerConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            gpus=None,
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
