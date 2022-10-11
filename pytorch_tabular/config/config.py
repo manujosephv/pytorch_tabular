@@ -791,48 +791,12 @@ class SSLModelConfig:
     learning_rate: float = field(
         default=1e-3, metadata={"help": "The learning rate of the model"}
     )
-    loss: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "The loss function to be applied. Not relevant if ssl_task is contrastive"
-        },
-    )
-    metrics: Optional[List[str]] = field(
-        default=None,
-        metadata={
-            "help": "The list of metrics you need to track during training. The metrics should be one "
-            "of the functional metrics implemented in ``torchmetrics``. By default, "
-            "it is mean_squared_error for ssl"
-        },
-    )
-    metrics_params: Optional[List] = field(
-        default=None,
-        metadata={"help": "The parameters to be passed to the metrics function"},
-    )
     seed: int = field(
         default=42,
         metadata={"help": "The seed for reproducibility. Defaults to 42"},
     )
 
     def __post_init__(self):
-        assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
-        assert self.aug_task, "if task is ssl, aug_task cannot be None"
-        if self.ssl_task == "Contrastive":
-            if self.loss:
-                logger.warning(
-                    "In case of Contrastive the loss cannot be specified and will be ignored"
-                )
-            self.loss = "ContrastiveLoss" if self.loss is None else self.loss
-        else:
-            self.loss = "MSELoss" if self.loss is None else self.loss
-        if self.metrics is None:
-            self.metrics = (
-                ["mean_squared_error"] if self.metrics is None else self.metrics
-            )
-            self.metrics_params = [{}]
-        assert len(self.metrics) == len(
-            self.metrics_params
-        ), "metrics and metric_params should have same length"
         _validate_choices(self)
 
 

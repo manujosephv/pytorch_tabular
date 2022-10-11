@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """DenoisingAutoEncoder Config"""
 from dataclasses import dataclass, field
-from typing import Dict, Union
+from typing import Dict
 
 from pytorch_tabular.config import SSLModelConfig
 
@@ -25,8 +25,10 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
 
     noise_strategy: str = field(
         default="swap",
-        metadata={"help": "Defines what kind of noise we are introducing to samples. `swap` - Swap noise is when we replace values of a feature with random permutations of the same feature. `zero` - Zero noise is when we replace values of a feature with zeros. Defaults to swap",
-        "choices": ["swap", "zero"]},
+        metadata={
+            "help": "Defines what kind of noise we are introducing to samples. `swap` - Swap noise is when we replace values of a feature with random permutations of the same feature. `zero` - Zero noise is when we replace values of a feature with zeros. Defaults to swap",
+            "choices": ["swap", "zero"],
+        },
     )
     # Union not supported currently Union[float, Dict[str, float]]
     noise_probabilities: Dict[str, float] = field(
@@ -45,17 +47,22 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         default=4,
         metadata={
             "help": "Maximum cardinality of one-hot encoded categorical features. Any categorical feature with cardinality>max_onehot_cardinality will be embedded in a learned embedding space and others will be converted to a one hot representation. If set to 0, will use the embedding strategy for all categorical feature. Default is 4"
-        }
+        },
     )
-    
+
     _module_src: str = field(default="dae")
     _model_name: str = field(default="DenoisingAutoEncoderModel")
     _config_name: str = field(default="DenoisingAutoEncoderConfig")
 
     def __post_init__(self):
-        assert hasattr(self.encoder_config, "_backbone_name"), "encoder_config should have a _backbone_name attribute"
-        assert hasattr(self.decoder_config, "_backbone_name"), "decoder_config should have a _backbone_name attribute"
+        assert hasattr(
+            self.encoder_config, "_backbone_name"
+        ), "encoder_config should have a _backbone_name attribute"
+        assert hasattr(
+            self.decoder_config, "_backbone_name"
+        ), "decoder_config should have a _backbone_name attribute"
         super().__post_init__()
+
 
 # cls = TabTransformerConfig
 # desc = "Configuration for Data."

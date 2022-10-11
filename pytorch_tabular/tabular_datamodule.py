@@ -33,7 +33,6 @@ from .categorical_encoders import OrdinalEncoder
 logger = logging.getLogger(__name__)
 
 
-# TODO Save datamodule with processed data
 class TabularDatamodule(pl.LightningDataModule):
 
     CONTINUOUS_TRANSFORMS = {
@@ -573,6 +572,11 @@ class TabularDatamodule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.num_workers,
         )
+
+    def save_dataloader(self, path):
+        if isinstance(path, str):
+            path = Path(path)
+        joblib.dump(self, path)
 
     @classmethod
     def load_datamodule(cls, path: Union[str, Path]):

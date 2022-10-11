@@ -76,6 +76,10 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     @abstractmethod
     def forward(self, x: Dict):
         pass
+    
+    @abstractmethod
+    def featurize(self, x: Dict):
+        pass
 
     def data_aware_initialization(self, datamodule):
         pass
