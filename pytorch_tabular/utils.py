@@ -26,7 +26,7 @@ def _make_smooth_weights_for_balanced_classes(y_train, mu=0.15):
 def get_class_weighted_cross_entropy(y_train, mu=0.15):
     assert y_train.ndim == 1, "Utility function only works for binary classification"
     y_train = LabelEncoder().fit_transform(y_train)
-    weights = _make_smooth_weights_for_balanced_classes(y_train, mu=0.15)
+    weights = _make_smooth_weights_for_balanced_classes(y_train, mu=mu)
     criterion = torch.nn.CrossEntropyLoss(weight=torch.FloatTensor(weights))
     return criterion
 
