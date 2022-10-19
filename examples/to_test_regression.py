@@ -14,11 +14,12 @@ from pytorch_tabular.models.category_embedding.config import (
 )
 from pytorch_tabular.models import AutoIntModel, AutoIntConfig
 
-from pytorch_tabular.models.mixture_density import (
-    CategoryEmbeddingMDNConfig,
-    MixtureDensityHeadConfig,
-    NODEMDNConfig,
-)
+# from pytorch_tabular.models.mixture_density import (
+    # CategoryEmbeddingMDNConfig,
+    # MixtureDensityHeadConfig,
+    # NODEMDNConfig,
+# )
+from pytorch_tabular.models import MDNModel, MDNConfig
 
 # from pytorch_tabular.models.deep_gmm import (
 #     DeepGaussianMixtureModelConfig,
@@ -60,14 +61,15 @@ data_config = DataConfig(
     normalize_continuous_features=True,
 )
 
-# mdn_config = MixtureDensityHeadConfig(num_gaussian=2)
-# model_config = NODEMDNConfig(
-#     task="regression",
-#     # initialization="blah",
-#     mdn_config = mdn_config
-# )
+mdn_config = dict(num_gaussian=2)
+model_config = MDNConfig(
+    task="regression",
+    backbone_config_class = "CategoryEmbeddingModelConfig",
+    backbone_config_params = dict(task="backbone"), #TODO Add backbone task
+    head_config = mdn_config
+)
 # # model_config.validate()
-model_config = CategoryEmbeddingModelConfig(task="regression")
+# model_config = CategoryEmbeddingModelConfig(task="regression")
 # model_config = AutoIntConfig(
 #     task="regression",
 #     deep_layers=True,

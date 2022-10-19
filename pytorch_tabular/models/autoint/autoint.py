@@ -6,12 +6,11 @@
 import logging
 from typing import Dict
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from pytorch_tabular.models.common.layers import Embedding2dLayer
 
+from pytorch_tabular.models.common.layers import Embedding2dLayer
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 from ..base_model import BaseModel
@@ -19,10 +18,10 @@ from ..base_model import BaseModel
 logger = logging.getLogger(__name__)
 
 
-class AutoIntBackbone(pl.LightningModule):
+class AutoIntBackbone(nn.Module):
     def __init__(self, config: DictConfig):
         super().__init__()
-        self.save_hyperparameters(config)
+        self.hparams = config
         self._build_network()
 
     def _build_network(self):

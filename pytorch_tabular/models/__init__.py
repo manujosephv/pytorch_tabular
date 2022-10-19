@@ -1,16 +1,17 @@
 from .category_embedding import CategoryEmbeddingModel, CategoryEmbeddingModelConfig
 from .node import NODEModel, NodeConfig
 from .tabnet import TabNetModel, TabNetModelConfig
-from .mixture_density import (
-    CategoryEmbeddingMDN,
-    CategoryEmbeddingMDNConfig,
-    MixtureDensityHead,
-    MixtureDensityHeadConfig,
-    NODEMDNConfig,
-    NODEMDN,
-    AutoIntMDN,
-    AutoIntMDNConfig
-)
+# from .mixture_density import (
+#     CategoryEmbeddingMDN,
+#     CategoryEmbeddingMDNConfig,
+#     MixtureDensityHead,
+#     MixtureDensityHeadConfig,
+#     NODEMDNConfig,
+#     NODEMDN,
+#     AutoIntMDN,
+#     AutoIntMDNConfig
+# )
+from .mixture_density import MDNModel, MDNConfig
 from .autoint import AutoIntConfig, AutoIntModel
 from .tab_transformer import TabTransformerConfig, TabTransformerModel
 from .ft_transformer import FTTransformerConfig, FTTransformerModel
@@ -27,12 +28,14 @@ __all__ = [
     "BaseModel",
     "CategoryEmbeddingMDN",
     "CategoryEmbeddingMDNConfig",
-    "MixtureDensityHead",
-    "MixtureDensityHeadConfig",
-    "NODEMDNConfig",
-    "NODEMDN",
-    "AutoIntMDN",
-    "AutoIntMDNConfig",
+    "MDNModel",
+    "MDNConfig",
+    # "MixtureDensityHead",
+    # "MixtureDensityHeadConfig",
+    # "NODEMDNConfig",
+    # "NODEMDN",
+    # "AutoIntMDN",
+    # "AutoIntMDNConfig",
     "AutoIntConfig",
     "AutoIntModel",
     "TabTransformerConfig",

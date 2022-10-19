@@ -1,14 +1,13 @@
-from .mdn import MixtureDensityHead, CategoryEmbeddingMDN, NODEMDN, BaseMDN, AutoIntMDN
-from .config import MixtureDensityHeadConfig, CategoryEmbeddingMDNConfig, NODEMDNConfig, AutoIntMDNConfig
-
+from .mdn import MDNModel
+from .config import MDNConfig
 __all__ = [
-    "MixtureDensityHead",
-    "MixtureDensityHeadConfig",
-    "CategoryEmbeddingMDNConfig",
-    "CategoryEmbeddingMDN",
-    "NODEMDN",
-    "BaseMDN",
-    "NODEMDNConfig",
-    "AutoIntMDNConfig",
-    "AutoIntMDN"
+    # "MixtureDensityHead",
+    # "MixtureDensityHeadConfig",
+    # "CategoryEmbeddingMDNConfig",
+    # "CategoryEmbeddingMDN",
+    # "NODEMDN",
+    "MDNModel",
+    "MDNConfig",
+    # "AutoIntMDNConfig",
+    # "AutoIntMDN"
 ]

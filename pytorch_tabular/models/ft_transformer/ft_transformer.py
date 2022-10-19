@@ -8,7 +8,6 @@ from collections import OrderedDict
 from typing import Dict
 
 import pandas as pd
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -50,14 +49,14 @@ class AppendCLSToken(nn.Module):
         return torch.cat([x, self.weight.view(1, 1, -1).repeat(len(x), 1, 1)], dim=1)
 
 
-class FTTransformerBackbone(pl.LightningModule):
+class FTTransformerBackbone(nn.Module):
     def __init__(self, config: DictConfig):
         super().__init__()
         assert config.share_embedding_strategy in [
             "add",
             "fraction",
         ], f"`share_embedding_strategy` should be one of `add` or `fraction`, not {self.hparams.share_embedding_strategy}"
-        self.save_hyperparameters(config)
+        self.hparams = config
         self._build_network()
 
     def _build_network(self):
@@ -134,8 +133,9 @@ class FTTransformerBackbone(pl.LightningModule):
     # Not Tested Properly
     def _calculate_feature_importance(self):
         n, h, f, _ = self.attention_weights_[0].shape
+        device = self.attention_weights_[0].device
         L = len(self.attention_weights_)
-        self.local_feature_importance = torch.zeros((n, f), device=self.device)
+        self.local_feature_importance = torch.zeros((n, f), device=device)
         for attn_weights in self.attention_weights_:
             self.local_feature_importance += attn_weights[:, :, :, -1].sum(dim=1)
         self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[

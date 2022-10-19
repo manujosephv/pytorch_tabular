@@ -5,24 +5,24 @@
 import logging
 import warnings
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+
+from pytorch_tabular.models.common.layers import Embedding1dLayer
 
 from ..base_model import BaseModel
 from ..common import activations
 from ..common.layers import Lambda
 from .architecture_blocks import DenseODSTBlock
-from pytorch_tabular.models.common.layers import Embedding1dLayer
 
 logger = logging.getLogger(__name__)
 
 
-class NODEBackbone(pl.LightningModule):
+class NODEBackbone(nn.Module):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__()
-        self.save_hyperparameters(config)
+        self.hparams = config
         self._build_network()
 
     def _build_network(self):

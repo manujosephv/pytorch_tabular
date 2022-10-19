@@ -4,23 +4,21 @@
 """Category Embedding Model"""
 import logging
 
-import pytorch_lightning as pl
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 from pytorch_tabular.models.common.layers import Embedding1dLayer
-
+from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 from ..base_model import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
-class CategoryEmbeddingBackbone(pl.LightningModule):
+class CategoryEmbeddingBackbone(nn.Module):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__()
-        self.save_hyperparameters(config)
+        self.hparams = config
         self._build_network()
 
     def _build_network(self):

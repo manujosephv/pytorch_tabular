@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import List, Optional
 # from typing import Any, Dict, Iterable, List, Optional
 
 
@@ -48,3 +49,114 @@ class LinearHeadConfig:
             "choices": ["kaiming", "xavier", "random"],
         },
     )
+
+
+@dataclass
+class MixtureDensityHeadConfig:
+    """MixtureDensityHead configuration
+    Args:
+        num_gaussian (int): Number of Gaussian Distributions in the mixture model. Defaults to 1
+        n_samples (int): Number of samples to draw from the posterior to get prediction. Defaults to 100
+        central_tendency (str): Which measure to use to get the point prediction.
+            Choices are 'mean', 'median'. Defaults to `mean`
+        sigma_bias_flag (bool): Whether to have a bias term in the sigma layer. Defaults to False
+        mu_bias_init (Optional[List]): To initialize the bias parameter of the mu layer to predefined cluster centers.
+            Should be a list with the same length as number of gaussians in the mixture model.
+            It is highly recommended to set the parameter to combat mode collapse. Defaults to None
+        weight_regularization (Optional[int]): Whether to apply L1 or L2 Norm to the MDN layers.
+            It is highly recommended to use this to avoid mode collapse. Choices are [1,2]. Defaults to L2
+        lambda_sigma (Optional[float]): The regularization constant for weight regularization of sigma layer. Defaults to 0.1
+        lambda_pi (Optional[float]): The regularization constant for weight regularization of pi layer. Defaults to 0.1
+        lambda_mu (Optional[float]): The regularization constant for weight regularization of mu layer. Defaults to 0.1
+        softmax_temperature (Optional[float]): The temperature to be used in the gumbel softmax of the mixing coefficients.
+            Values less than one leads to sharper transition between the multiple components. Defaults to 1
+        speedup_training (bool): Turning on this parameter does away with sampling during training which speeds up training,
+            but also doesn't give you visibility on train metrics. Defaults to False
+        log_debug_plot (bool): Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits
+            (if log_logits is turned on in experment config). Defaults to False
+
+    """
+
+    num_gaussian: int = field(
+        default=1,
+        metadata={
+            "help": "Number of Gaussian Distributions in the mixture model. Defaults to 1",
+        },
+    )
+    sigma_bias_flag: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to have a bias term in the sigma layer. Defaults to False",
+        },
+    )
+    mu_bias_init: Optional[List] = field(
+        default=None,
+        metadata={
+            "help": "To initialize the bias parameter of the mu layer to predefined cluster centers. Should be a list with the same length as number of gaussians in the mixture model. It is highly recommended to set the parameter to combat mode collapse. Defaults to None",
+        },
+    )
+
+    weight_regularization: Optional[int] = field(
+        default=2,
+        metadata={
+            "help": "Whether to apply L1 or L2 Norm to the MDN layers. Defaults to L2",
+            "choices": [1, 2],
+        },
+    )
+
+    lambda_sigma: Optional[float] = field(
+        default=0.1,
+        metadata={
+            "help": "The regularization constant for weight regularization of sigma layer. Defaults to 0.1",
+        },
+    )
+    lambda_pi: Optional[float] = field(
+        default=0.1,
+        metadata={
+            "help": "The regularization constant for weight regularization of pi layer. Defaults to 0.1",
+        },
+    )
+    lambda_mu: Optional[float] = field(
+        default=0,
+        metadata={
+            "help": "The regularization constant for weight regularization of mu layer. Defaults to 0",
+        },
+    )
+    softmax_temperature: Optional[float] = field(
+        default=1,
+        metadata={
+            "help": "The temperature to be used in the gumbel softmax of the mixing coefficients. Values less than one leads to sharper transition between the multiple components. Defaults to 1",
+        },
+    )
+    n_samples: int = field(
+        default=100,
+        metadata={
+            "help": "Number of samples to draw from the posterior to get prediction. Defaults to 100",
+        },
+    )
+    central_tendency: str = field(
+        default="mean",
+        metadata={
+            "help": "Which measure to use to get the point prediction. Defaults to mean",
+            "choices": ["mean", "median"],
+        },
+    )
+    speedup_training: bool = field(
+        default=False,
+        metadata={
+            "help": "Turning on this parameter does away with sampling during training which speeds up training, but also doesn't give you visibility on train metrics. Defaults to False",
+        },
+    )
+    log_debug_plot: bool = field(
+        default=False,
+        metadata={
+            "help": "Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits(if log_logits is turned on in experment config). Defaults to False",
+        },
+    )
+    input_dim: int = field(
+        default=None,
+        metadata={
+            "help": "The input dimensions to the head. This will be automatically filled in while initializing from the `backbone.output_dim`",
+        }
+    )
+    _probabilistic: bool = field(default=True)

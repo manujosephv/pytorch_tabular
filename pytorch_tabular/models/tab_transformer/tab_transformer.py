@@ -16,7 +16,6 @@ import logging
 from collections import OrderedDict
 from typing import Dict
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from einops import rearrange
@@ -30,14 +29,14 @@ from ..common.layers import SharedEmbeddings, TransformerEncoderBlock
 logger = logging.getLogger(__name__)
 
 
-class TabTransformerBackbone(pl.LightningModule):
+class TabTransformerBackbone(nn.Module):
     def __init__(self, config: DictConfig):
         super().__init__()
         assert config.share_embedding_strategy in [
             "add",
             "fraction",
         ], f"`share_embedding_strategy` should be one of `add` or `fraction`, not {self.hparams.share_embedding_strategy}"
-        self.save_hyperparameters(config)
+        self.hparams = config
         self._build_network()
 
     def _build_network(self):

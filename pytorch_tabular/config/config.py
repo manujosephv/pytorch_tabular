@@ -8,6 +8,7 @@ from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
 from omegaconf import OmegaConf
+
 from pytorch_tabular.models.common import heads
 
 logger = logging.getLogger(__name__)
@@ -622,7 +623,7 @@ class ExperimentRunManager:
 class ModelConfig:
     """Base Model configuration
     Args:
-        task (str): Specify whether the problem is regression, classification. Choices are: regression classification
+        task (str): Specify whether the problem is regression, classification, backbone. Choices are: regression classification backbone
 
         embedding_dims (Optional[List, NoneType]): The dimensions of the embedding for each categorical column
             as a list of tuples (or a nested list) (cardinality, embedding_dim). If left empty, will infer using the cardinality of the
@@ -650,19 +651,20 @@ class ModelConfig:
     task: str = field(
         # default="regression",
         metadata={
-            "help": "Specify whether the problem is regression of classification.",
-            "choices": ["regression", "classification"],
+            "help": "Specify whether the problem is regression or classification. `backbone` is a task which considers the model as a backbone to generate features. Mostly used internally for SSL and related tasks.",
+            "choices": ["regression", "classification", "backbone"],
         }
     )
 
     head: Optional[str] = field(
         default="LinearHead",
         metadata={
-            "help": "The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead"
+            "help": "The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead",
+            "choices": [None, "LinearHead", "MixtureDensityHead"],
         },
     )
 
-    head_config: Dict = field(
+    head_config: Optional[Dict] = field(
         default_factory=lambda: {},
         metadata={
             "help": "The config as a dict which defines the head. If left empty, will be initialized as default linear head."
@@ -731,14 +733,25 @@ class ModelConfig:
                 if self.metrics_params is None
                 else self.metrics_params
             )
+        elif self.task == "backbone":
+            self.loss = None
+            self.metrics = None
+            self.metrics_params = None
+            if self.head is not None:
+                logger.warning(
+                    "`head` is not a valid parameter for backbone task. Making `head=None`"
+                )
+                self.head = None
+                self.head_config = None
         else:
             raise NotImplementedError(
                 f"{self.task} is not a valid task. Should be one of "
                 f"{self.__dataclass_fields__['task'].metadata['choices']}"
             )
-        assert len(self.metrics) == len(
-            self.metrics_params
-        ), "metrics and metric_params should have same length"
+        if self.metrics is not None:
+            assert len(self.metrics) == len(
+                self.metrics_params
+            ), "metrics and metric_params should have same length"
         if self.head is not None:
             assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
             _head_callable = getattr(heads.blocks, self.head)

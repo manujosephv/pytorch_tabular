@@ -8,7 +8,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm.autonotebook import tqdm
 
 from pytorch_tabular.models import NODEModel, TabNetModel
-from pytorch_tabular.models.mixture_density import BaseMDN
+from pytorch_tabular.models.mixture_density import MDNModel
 
 try:
     import cPickle as pickle
@@ -30,7 +30,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
         assert not (
             isinstance(tabular_model.model, NODEModel)
             or isinstance(tabular_model.model, TabNetModel)
-            or isinstance(tabular_model.model, BaseMDN)
+            or isinstance(tabular_model.model, MDNModel)
         ), "FeatureExtractor doesn't work for Mixture Density Networks, NODE Model, & Tabnet Model"
         self.tabular_model = tabular_model
         self.extract_keys = extract_keys
