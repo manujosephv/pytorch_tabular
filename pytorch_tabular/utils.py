@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
+import pytorch_tabular as root_module
 
 logger = logging.getLogger(__name__)
 
@@ -103,3 +104,10 @@ def get_gaussian_centers(y, n_components):
         y = y.reshape(-1, 1)
     cluster = KMeans(n_clusters=n_components, random_state=42).fit(y)
     return cluster.cluster_centers_.ravel().tolist()
+
+
+def getattr_nested(_module_src, _model_name):
+    module = root_module
+    for m in _module_src.split("."):
+        module = getattr(module, m)
+    return getattr(module, _model_name)

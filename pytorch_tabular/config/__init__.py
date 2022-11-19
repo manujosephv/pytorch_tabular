@@ -5,6 +5,7 @@ from .config import (
     ExperimentConfig,
     OptimizerConfig,
     InferredConfig,
+    SSLModelConfig,
     ExperimentRunManager,
     _validate_choices,
     LINEAR_HEAD_CONFIG_DEPRECATION_MSG
@@ -17,6 +18,7 @@ __all__ = [
     "InferredConfig",
     "ExperimentConfig",
     "OptimizerConfig",
+    "SSLModelConfig",
     "ExperimentRunManager",
     "_validate_choices",
     "LINEAR_HEAD_CONFIG_DEPRECATION_MSG"

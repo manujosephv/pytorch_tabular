@@ -7,10 +7,9 @@ import os
 from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 from pytorch_tabular.models.common import heads
-
 logger = logging.getLogger(__name__)
 
 LINEAR_HEAD_CONFIG_DEPRECATION_MSG = "Defining the parameters of the head individually has been deprecated and will be removed in the next release. Please use the newly introduced `head` and `head_config` parameters."
@@ -792,6 +791,20 @@ class SSLModelConfig:
     """
 
     task: str = field(init=False, default="ssl")
+
+    encoder_config: Optional[ModelConfig] = field(
+        default=None,
+        metadata={
+            "help": "The config of the encoder to be used for the model. Should be one of the model configs defined in PyTorch Tabular",
+        },
+    )
+
+    decoder_config: Optional[ModelConfig] = field(
+        default=None,
+        metadata={
+            "help": "The config of decoder to be used for the model. Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity",
+        },
+    )
 
     embedding_dims: Optional[List] = field(
         default=None,

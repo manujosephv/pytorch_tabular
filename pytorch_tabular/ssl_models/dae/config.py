@@ -50,7 +50,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         },
     )
 
-    _module_src: str = field(default="dae")
+    _module_src: str = field(default="ssl_models.dae")
     _model_name: str = field(default="DenoisingAutoEncoderModel")
     _config_name: str = field(default="DenoisingAutoEncoderConfig")
 
@@ -58,9 +58,10 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         assert hasattr(
             self.encoder_config, "_backbone_name"
         ), "encoder_config should have a _backbone_name attribute"
-        assert hasattr(
-            self.decoder_config, "_backbone_name"
-        ), "decoder_config should have a _backbone_name attribute"
+        if self.decoder_config is not None:
+            assert hasattr(
+                self.decoder_config, "_backbone_name"
+            ), "decoder_config should have a _backbone_name attribute"
         super().__post_init__()
 
 

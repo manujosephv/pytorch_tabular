@@ -2,49 +2,63 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """SSL Base Model"""
-from abc import ABCMeta, abstractmethod
 import logging
-from typing import Callable, Dict, List, Optional, Union
 import warnings
+from abc import ABCMeta, abstractmethod
+from typing import Dict, Optional
 
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
-# from pytorch_tabular.models.base_model import BaseModel
-
-# import pytorch_tabular.models.ssl.augmentations as augmentations
-# import pytorch_tabular.models.ssl.ssl_utils as ssl_utils
-# import pytorch_tabular.ssl_models.common.ssl_losses as ssl_losses
-import pytorch_lightning as pl
-
-# from pytorch_tabular.utils import loss_contrastive
+from pytorch_tabular.utils import getattr_nested
 
 logger = logging.getLogger(__name__)
+
+
+def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictConfig:
+    """Merge two configurations.
+
+    Args:
+        base_config: The base configuration.
+        custom_config: The custom configuration.
+
+    Returns:
+        The merged configuration.
+    """
+    # using base config values if exist
+    if "embedding_dims" in config.keys() and config.embedding_dims is not None:
+        inferred_config.embedding_dims = config.embedding_dims
+    merged_config = OmegaConf.merge(
+        OmegaConf.to_container(config), OmegaConf.to_container(inferred_config)
+    )
+    return merged_config
 
 
 class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     def __init__(
         self,
-        encoder: Union[pl.LightningDataModule, nn.Module],
-        decoder: Union[pl.LightningDataModule, nn.Module],
         config: DictConfig,
+        encoder_config: Optional[DictConfig] = None,
+        decoder_config: Optional[DictConfig] = None,
+        encoder: Optional[nn.Module] = None,
+        decoder: Optional[nn.Module] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
-        assert hasattr(
-            encoder, "output_dim"
-        ), "An encoder backbone must have an output_dim attribute"
-        if isinstance(decoder, nn.Identity):
-            decoder.output_dim = encoder.output_dim
-        assert hasattr(
-            decoder, "output_dim"
-        ), "A decoder must have an output_dim attribute"
         super().__init__()
+        assert (
+            "inferred_config" in kwargs
+        ), "inferred_config not found in initialization arguments"
+        inferred_config = kwargs["inferred_config"]
+        # Merging the config and inferred config
+        config = safe_merge_config(config, inferred_config)
 
-        self.encoder = encoder
-        self.decoder = decoder
+        self._setup_encoder_decoder(
+            encoder, config.encoder_config, decoder, config.decoder_config, inferred_config
+        )
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
         # Updating config with custom parameters for experiment tracking
@@ -52,10 +66,55 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
         if len(self.custom_optimizer_params) > 0:
             config.optimizer_params = self.custom_optimizer_params
+        self._check_and_verify()
         self.save_hyperparameters(config)
         self._build_network()
         self._setup_loss()
         self._setup_metrics()
+
+    def _setup_encoder_decoder(
+        self, encoder, encoder_config, decoder, decoder_config, inferred_config
+    ):
+        assert (encoder is not None) or (
+            encoder_config is not None
+        ), "Either encoder or encoder_config must be provided"
+        # assert (decoder is not None) or (decoder_config is not None), "Either decoder or decoder_config must be provided"
+        if encoder is not None:
+            self.encoder = encoder
+            self._custom_decoder = True
+        else:
+            # Since encoder is not provided, we will use the encoder_config
+            model_callable = getattr_nested(
+                encoder_config._module_src, encoder_config._backbone_name
+            )
+            self.encoder = model_callable(
+                safe_merge_config(encoder_config, inferred_config),
+                inferred_config=inferred_config,
+            )
+        if decoder is not None:
+            self.decoder = decoder
+            self._custom_encoder = True
+        elif decoder_config is not None:
+            # Since decoder is not provided, we will use the decoder_config
+            model_callable = getattr_nested(
+                decoder_config._module_src, decoder_config._backbone_name
+            )
+            self.decoder = model_callable(
+                safe_merge_config(decoder_config, inferred_config),
+                inferred_config=inferred_config,
+            )
+        else:
+            self.decoder = nn.Identity()
+
+    def _check_and_verify(self):
+        assert hasattr(
+            self.encoder, "output_dim"
+        ), "An encoder backbone must have an output_dim attribute"
+        if isinstance(self.decoder, nn.Identity):
+            self.decoder.output_dim = self.encoder.output_dim
+        assert hasattr(
+            self.decoder, "output_dim"
+        ), "A decoder must have an output_dim attribute"
 
     @abstractmethod
     def _setup_loss(self):
@@ -76,7 +135,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     @abstractmethod
     def forward(self, x: Dict):
         pass
-    
+
     @abstractmethod
     def featurize(self, x: Dict):
         pass

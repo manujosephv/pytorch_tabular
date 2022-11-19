@@ -6,25 +6,15 @@
 import logging
 from collections import OrderedDict, namedtuple
 from typing import Dict
-import omegaconf
 
-# import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-# from einops import rearrange
 from omegaconf import DictConfig
-import numpy as np
 
-# from pytorch_tabular.models.common.utils import to_one_hot
-
-# from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
-# import pytorch_tabular.models as models
 from ..base_model import SSLBaseModel
-from ..common.utils import OneHot
 from ..common.heads import MultiTaskHead
 from ..common.noise_generators import SwapNoiseCorrupter
+from ..common.utils import OneHot
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +26,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
         super().__init__()
         self.encoder = encoder
         self.config = config
+        self._build_network()
 
     def _get_noise_probability(self, name):
         return self.config.noise_probabilities.get(
@@ -70,20 +61,20 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
             # Embedding layers
             self.embedding_layers = nn.ModuleList(embd_layers)
             self.onehot_layers = nn.ModuleList(one_hot_layers)
-            self._onehot_feat_idx = onehot_feat_idx
-            self._binary_feat_idx = binary_feat_idx
-            self._embedding_feat_idx = embedding_feat_idx
+        self._onehot_feat_idx = onehot_feat_idx
+        self._binary_feat_idx = binary_feat_idx
+        self._embedding_feat_idx = embedding_feat_idx
         self._swap_probabilities = swap_probabilities
         self.swap_noise = SwapNoiseCorrupter(swap_probabilities)
-        self.reconstruction = MultiTaskHead(
-            self.decoder.output_dim,
-            n_binary=len(binary_feat_idx),
-            n_categorical=len(onehot_feat_idx),
-            n_numerical=len(embedding_feat_idx) + len(self.config.continuous_cols),
-        )
-        self.mask_reconstruction = nn.Linear(
-            self.decoder.output_dim, len(swap_probabilities)
-        )
+        # self.reconstruction = MultiTaskHead(
+        #     self.decoder.output_dim,
+        #     n_binary=len(binary_feat_idx),
+        #     n_categorical=len(onehot_feat_idx),
+        #     n_numerical=len(embedding_feat_idx) + len(self.config.continuous_cols),
+        # )
+        # self.mask_reconstruction = nn.Linear(
+        #     self.decoder.output_dim, len(swap_probabilities)
+        # )
 
     def _embed_input(self, x: Dict):
         # (B, N)
@@ -122,15 +113,15 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
             with torch.no_grad():
                 x, mask = self.swap_noise(x)
         # encoder
-        z = self.encoder(x)
+        z = self.encoder(dict(continuous=x)) #TODO Need to separate embedding to resuse backbones
         return self.output_tuple(z, mask)
 
 
 class DenoisingAutoEncoderModel(SSLBaseModel):
     output_tuple = namedtuple("output_tuple", ["original", "reconstructed"])
 
-    def __init__(self, encoder, decoder, config: DictConfig, **kwargs):
-        super().__init__(encoder, decoder, config, **kwargs)
+    def __init__(self, config: DictConfig, **kwargs):
+        super().__init__(config, **kwargs)
 
     def _get_noise_probability(self, name):
         return self.hparams.noise_probabilities.get(
@@ -143,7 +134,8 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             self.decoder.output_dim,
             n_binary=len(self.featurizer._binary_feat_idx),
             n_categorical=len(self.featurizer._onehot_feat_idx),
-            n_numerical=len(self.featurizer._embedding_feat_idx) + len(self.hparams.continuous_cols),
+            n_numerical=len(self.featurizer._embedding_feat_idx)
+            + len(self.hparams.continuous_cols),
         )
         self.mask_reconstruction = nn.Linear(
             self.decoder.output_dim, len(self.featurizer.swap_noise.probas)

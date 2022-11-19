@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model"""
 import logging
+from typing import Dict
 
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -49,7 +50,7 @@ class CategoryEmbeddingBackbone(nn.Module):
         )
         self.output_dim = _curr_units
 
-    def forward(self, x):
+    def forward(self, x: Dict):
         x = self.embedding(x)
         x = self.linear_layers(x)
         return x
