@@ -5,7 +5,6 @@
 import logging
 import math
 from collections import OrderedDict
-from typing import Dict
 
 import pandas as pd
 import torch
@@ -60,19 +59,6 @@ class FTTransformerBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
-        # d_sqrt_inv = 1 / math.sqrt(self.hparams.input_embed_dim)
-        self.embedding_layer = Embedding2dLayer(
-            continuous_dim=self.hparams.continuous_dim,
-            categorical_cardinality=self.hparams.categorical_cardinality,
-            embedding_dim=self.hparams.input_embed_dim,
-            shared_embedding_strategy=self.hparams.share_embedding_strategy,
-            frac_shared_embed=self.hparams.shared_embedding_fraction,
-            embedding_bias=self.hparams.embedding_bias,
-            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-            embedding_dropout=self.hparams.embedding_dropout,
-            initialization=self.hparams.embedding_initialization,
-        )
-
         self.add_cls = AppendCLSToken(
             d_token=self.hparams.input_embed_dim,
             initialization=self.hparams.embedding_initialization,
@@ -113,8 +99,20 @@ class FTTransformerBackbone(nn.Module):
         self.linear_layers = nn.Sequential(*layers)
         self.output_dim = _curr_units
 
-    def forward(self, x: Dict):
-        x = self.embedding_layer(x)
+    def _build_embedding_layer(self):
+        return Embedding2dLayer(
+            continuous_dim=self.hparams.continuous_dim,
+            categorical_cardinality=self.hparams.categorical_cardinality,
+            embedding_dim=self.hparams.input_embed_dim,
+            shared_embedding_strategy=self.hparams.share_embedding_strategy,
+            frac_shared_embed=self.hparams.shared_embedding_fraction,
+            embedding_bias=self.hparams.embedding_bias,
+            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            embedding_dropout=self.hparams.embedding_dropout,
+            initialization=self.hparams.embedding_initialization,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.add_cls(x)
         for i, block in enumerate(self.transformer_blocks):
             x = block(x)
@@ -149,15 +147,29 @@ class FTTransformerModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
         # Backbone
-        self.backbone = FTTransformerBackbone(self.hparams)
-        # Adding the last layer
-        self.head = self._get_head_from_config()
+        self._backbone = FTTransformerBackbone(self.hparams)
+        # Embedding Layer
+        self._embedding_layer = self._backbone._build_embedding_layer()
+        # Head
+        self._head = self._get_head_from_config()
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
-            return self.backbone.embedding_layer.cat_embedding_layers
+            return self.embedding_layer.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"

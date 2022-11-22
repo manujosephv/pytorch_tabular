@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.layers import Embedding1dLayer
+from pytorch_tabular.models.common.layers import Embedding1dLayer, PreEncoded1dLayer
 
 from ..base_model import BaseModel
 from ..common import activations
@@ -27,12 +27,6 @@ class NODEBackbone(nn.Module):
 
     def _build_network(self):
         if self.hparams.embed_categorical:
-            self.embedding = Embedding1dLayer(
-                continuous_dim=self.hparams.continuous_dim,
-                categorical_embedding_dims=self.hparams.embedding_dims,
-                embedding_dropout=self.hparams.cat_embedding_dropout,
-                batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-            )
             self.hparams.node_input_dim = (
                 self.hparams.continuous_dim + self.hparams.embedded_cat_dim
             )
@@ -64,15 +58,32 @@ class NODEBackbone(nn.Module):
             self.hparams.output_dim + self.hparams.additional_tree_output_dim
         )
 
-    def forward(self, x):
+    def _build_embedding_layer(self):
         if self.hparams.embed_categorical:
-            x = self.embedding(x)
+            embedding = Embedding1dLayer(
+                continuous_dim=self.hparams.continuous_dim,
+                categorical_embedding_dims=self.hparams.embedding_dims,
+                embedding_dropout=self.hparams.cat_embedding_dropout,
+                batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            )
         else:
-            # unpacking into a tuple
-            x = x["categorical"], x["continuous"]
-            # eliminating None in case there is no categorical or continuous columns
-            x = (item for item in x if len(item) > 0)
-            x = torch.cat(tuple(x), dim=1)
+            embedding = PreEncoded1dLayer(
+                continuous_dim=self.hparams.continuous_dim,
+                categorical_dim=self.hparams.categorical_dim,
+                batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+                embedding_dropout=self.hparams.cat_embedding_dropout,
+            )
+        return embedding
+
+    def forward(self, x: torch.Tensor):  # TODO factor out target encoding option.
+        # if self.hparams.embed_categorical:  
+        #     x = self.embedding(x)
+        # else:
+        #     # unpacking into a tuple
+        #     x = x["categorical"], x["continuous"]
+        #     # eliminating None in case there is no categorical or continuous columns
+        #     x = (item for item in x if len(item) > 0)
+        #     x = torch.cat(tuple(x), dim=1)
         x = self.dense_block(x)
         return x
 
@@ -101,20 +112,34 @@ class NODEModel(BaseModel):
         with torch.no_grad():
             self(batch)
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
-        self.backbone = NODEBackbone(self.hparams)
+        self._backbone = NODEBackbone(self.hparams)
+        # Embedding Layer
+        self._embedding_layer = self._backbone._build_embedding_layer()
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
         # Not using config head because NODE has a specific head
         warnings.warn(
             "Ignoring head config because NODE has a specific head which subsets the tree outputs"
         )
-        self.head = Lambda(self.subset)
+        self._head = Lambda(self.subset)
 
     def extract_embedding(self):
         if self.hparams.embed_categorical:
             if self.hparams.embedded_cat_dim != 0:
-                return self.backbone.embedding.cat_embedding_layers
+                return self.embedding_layer.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"

@@ -225,6 +225,61 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
         )
 
 
+class PreEncoded1dLayer(nn.Module):
+    """
+    Takes in pre-encoded categorical variables and just concatenates with continuous variables
+    No learnable component
+    """
+
+    def __init__(
+        self,
+        continuous_dim: int,
+        categorical_dim: Tuple[int, int],
+        embedding_dropout: float = 0.0,
+        batch_norm_continuous_input: bool = False,
+    ):
+        super(PreEncoded1dLayer, self).__init__()
+        self.continuous_dim = continuous_dim
+        self.categorical_dim = categorical_dim
+        self.batch_norm_continuous_input = batch_norm_continuous_input
+
+        if embedding_dropout > 0:
+            self.embd_dropout = nn.Dropout(embedding_dropout)
+        else:
+            self.embd_dropout = None
+        # Continuous Layers
+        if batch_norm_continuous_input:
+            self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
+
+    def forward(self, x: Dict[str, Any]) -> torch.Tensor:
+        assert (
+            "continuous" in x or "categorical" in x
+        ), "x must contain either continuous and categorical features"
+        # (B, N)
+        continuous_data, categorical_data = x.get(
+            "continuous", torch.empty(0, 0)
+        ), x.get("categorical", torch.empty(0, 0))
+        assert categorical_data.shape[1] == self.categorical_dim, "categorical_data must have same number of columns as categorical embedding layers"
+        assert (
+            continuous_data.shape[1] == self.continuous_dim
+        ), "continuous_data must have same number of columns as continuous dim"
+        embed = None
+        if continuous_data.shape[1] > 0:
+            if self.batch_norm_continuous_input:
+                embed = self.normalizing_batch_norm(continuous_data)
+            else:
+                embed = continuous_data
+            # (B, N, C)
+        if categorical_data.shape[1] > 0:
+            # (B, N, C)
+            if embed is None:
+                embed = categorical_data
+            else:
+                embed = torch.cat([embed, categorical_data], dim=1)
+        if self.embd_dropout is not None:
+            embed = self.embd_dropout(embed)
+        return embed
+
 class Embedding1dLayer(nn.Module):
     """
     Enables different values in a categorical features to have different embeddings
@@ -256,10 +311,12 @@ class Embedding1dLayer(nn.Module):
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert (
-            "continuous" in x and "categorical" in x
-        ), "x must contain continuous and categorical features"
+            "continuous" in x or "categorical" in x
+        ), "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
+        continuous_data, categorical_data = x.get(
+            "continuous", torch.empty(0, 0)
+        ), x.get("categorical", torch.empty(0, 0))
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers
         ), "categorical_data must have same number of columns as categorical embedding layers"
@@ -383,10 +440,12 @@ class Embedding2dLayer(nn.Module):
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert (
-            "continuous" in x and "categorical" in x
-        ), "x must contain continuous and categorical features"
+            "continuous" in x or "categorical" in x
+        ), "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
+        continuous_data, categorical_data = x.get(
+            "continuous", torch.empty(0, 0)
+        ), x.get("categorical", torch.empty(0, 0))
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers
         ), "categorical_data must have same number of columns as categorical embedding layers"
@@ -395,10 +454,9 @@ class Embedding2dLayer(nn.Module):
         ), "continuous_data must have same number of columns as continuous dim"
         embed = None
         if continuous_data.shape[1] > 0:
-            cont_idx = (
-                torch.arange(self.continuous_dim, device=continuous_data.device)
-                .expand(continuous_data.size(0), -1)
-            )
+            cont_idx = torch.arange(
+                self.continuous_dim, device=continuous_data.device
+            ).expand(continuous_data.size(0), -1)
             if self.batch_norm_continuous_input:
                 continuous_data = self.normalizing_batch_norm(continuous_data)
             embed = torch.mul(

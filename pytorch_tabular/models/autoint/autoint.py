@@ -4,7 +4,6 @@
 # Inspired by https://github.com/rixwew/pytorch-fm/blob/master/torchfm/model/afi.py
 """AutomaticFeatureInteraction Model"""
 import logging
-from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -25,17 +24,6 @@ class AutoIntBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
-        self.embedding_layer = Embedding2dLayer(
-            continuous_dim=self.hparams.continuous_dim,
-            categorical_cardinality=self.hparams.categorical_cardinality,
-            embedding_dim=self.hparams.embedding_dim,
-            shared_embedding_strategy=self.hparams.share_embedding_strategy,
-            frac_shared_embed=self.hparams.shared_embedding_fraction,
-            embedding_bias=self.hparams.embedding_bias,
-            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-            embedding_dropout=self.hparams.embedding_dropout,
-            initialization=self.hparams.embedding_initialization,
-        )
         # Deep Layers
         _curr_units = self.hparams.embedding_dim
         if self.hparams.deep_layers:
@@ -83,8 +71,20 @@ class AutoIntBackbone(nn.Module):
         if self.hparams.attention_pooling:
             self.output_dim = self.output_dim * self.hparams.num_attn_blocks
 
-    def forward(self, x: Dict):
-        x = self.embedding_layer(x)
+    def _build_embedding_layer(self):
+        return Embedding2dLayer(
+            continuous_dim=self.hparams.continuous_dim,
+            categorical_cardinality=self.hparams.categorical_cardinality,
+            embedding_dim=self.hparams.embedding_dim,
+            shared_embedding_strategy=self.hparams.share_embedding_strategy,
+            frac_shared_embed=self.hparams.shared_embedding_fraction,
+            embedding_bias=self.hparams.embedding_bias,
+            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            embedding_dropout=self.hparams.embedding_dropout,
+            initialization=self.hparams.embedding_initialization,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.hparams.deep_layers:
             x = self.linear_layers(x)
         # (N, B, E*) --> E* is the Attn Dimention
@@ -112,15 +112,29 @@ class AutoIntModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
         # Backbone
-        self.backbone = AutoIntBackbone(self.hparams)
+        self._backbone = AutoIntBackbone(self.hparams)
+        # Embedding Layer
+        self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
-        self.head = self._get_head_from_config()
+        self._head = self._get_head_from_config()
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
-            return self.backbone.embedding_layer.cat_embedding_layers
+            return self.embedding_layer.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"

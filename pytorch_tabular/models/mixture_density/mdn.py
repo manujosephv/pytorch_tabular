@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """Mixture Density Models"""
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -13,6 +13,7 @@ from torch import Tensor
 from pytorch_tabular import models
 from pytorch_tabular.config.config import ModelConfig
 from pytorch_tabular.models.common.heads import blocks
+from pytorch_tabular.models.tab_transformer.tab_transformer import TabTransformerBackbone
 from pytorch_tabular.tabular_model import getattr_nested
 
 from ..base_model import BaseModel, safe_merge_config
@@ -45,6 +46,18 @@ class MDNModel(BaseModel):
             config=_head_callable._config_template(**self.hparams.head_config),
         )  # output_dim auto-calculated from other configs
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
         # Backbone
         callable, config = (
@@ -69,10 +82,31 @@ class MDNModel(BaseModel):
         backbone_config = safe_merge_config(
             OmegaConf.structured(backbone_config), self.inferred_config
         )
-        self.backbone = backbone_callable(backbone_config)
-        # Adding the last layer
+        self._backbone = backbone_callable(backbone_config)
+        # Embedding Layer
+        self._embedding_layer = self._backbone._build_embedding_layer()
+        # Head
+        self._head = self._get_head_from_config()
 
-        self.head = self._get_head_from_config()
+    # Redefining forward because TabTransformer flow is slightly different
+    def forward(self, x: Dict):
+        if isinstance(self.backbone, TabTransformerBackbone):
+            if self.hparams.categorical_dim > 0:
+                x_cat = self.embed_input(dict(categorical=x["categorical"]))
+            x = self.compute_backbone(dict(categorical=x_cat, continuous=x["continuous"]))
+        else:
+            x = self.embedding_layer(x)
+            x = self.compute_backbone(x)
+        return self.compute_head(x)
+
+        # Redefining compute_backbone because TabTransformer flow flow is slightly different
+    def compute_backbone(self, x: Union[Dict, torch.Tensor]):
+        # Returns output
+        if isinstance(self.backbone, TabTransformerBackbone):
+            x = self.backbone(x["categorical"], x["continuous"])
+        else:
+            x = self.backbone(x)
+        return x
 
     def compute_head(self, x: Tensor):
         pi, sigma, mu = self.head(x)

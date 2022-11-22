@@ -90,6 +90,24 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def _build_network(self):
         pass
 
+    @property
+    def backbone(self):
+        raise NotImplementedError(
+            "backbone property needs to be implemented by inheriting classes"
+        )
+
+    @property
+    def embedding_layer(self):
+        raise NotImplementedError(
+            "embedding_layer property needs to be implemented by inheriting classes"
+        )
+
+    @property
+    def head(self):
+        raise NotImplementedError(
+            "head property needs to be implemented by inheriting classes"
+        )
+
     def _check_and_verify(self):
         assert hasattr(self, "backbone"), "Model has no attribute called `backbone`"
         assert hasattr(self, "head"), "Model has no attribute called `head`"
@@ -227,6 +245,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         x = self.backbone(x)
         return x
 
+    def embed_input(self, x: Dict):
+        return self.embedding_layer(x)
+
     def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor):
         if (self.hparams.task == "regression") and (
             self.hparams.target_range is not None
@@ -257,6 +278,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     #     )
 
     def forward(self, x: Dict):
+        x = self.embed_input(x)
         x = self.compute_backbone(x)
         # if self.hparams.task == "ssl":
         #     return self.compute_ssl_head(x)
@@ -274,6 +296,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def forward_pass(self, batch):
         return self(batch), None
+
+    def extract_embedding(self):  # TODO Need to put in model specific checks
+        if self.hparams.categorical_dim > 0:
+            return self.embedding_layer.cat_embedding_layers
+        else:
+            raise ValueError(
+                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+            )
 
     def training_step(self, batch, batch_idx):
         output, y = self.forward_pass(batch)

@@ -56,7 +56,7 @@ from pytorch_tabular.ssl_models.dae import DenoisingAutoEncoderConfig
 data_config = DataConfig(
     target=['target'], #target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
     continuous_cols=num_col_names,
-    categorical_cols=cat_col_names,
+    # categorical_cols=cat_col_names,
     continuous_feature_transform="quantile_normal",
     normalize_continuous_features=True
 )

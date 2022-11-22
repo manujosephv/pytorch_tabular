@@ -96,6 +96,19 @@ class TabTransformerConfig(ModelConfig):
             "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
         },
     )
+    embedding_initialization: Optional[str] = field(
+        default="kaiming_uniform",
+        metadata={
+            "help": "Initialization scheme for the embedding layers. Defaults to `kaiming`",
+            "choices": ["kaiming_uniform", "kaiming_normal"],
+        },
+    )
+    embedding_bias: bool = field(
+        default=False,
+        metadata={
+            "help": "Flag to turn on Embedding Bias. Defaults to False"
+        },
+    )
     share_embedding: bool = field(
         default=False,
         metadata={

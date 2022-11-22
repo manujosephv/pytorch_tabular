@@ -3,8 +3,8 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model"""
 import logging
-from typing import Dict
 
+import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
@@ -23,12 +23,6 @@ class CategoryEmbeddingBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
-        self.embedding = Embedding1dLayer(
-            continuous_dim=self.hparams.continuous_dim,
-            categorical_embedding_dims=self.hparams.embedding_dims,
-            embedding_dropout=self.hparams.embedding_dropout,
-            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-        )
         # Linear Layers
         layers = []
         _curr_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
@@ -50,8 +44,15 @@ class CategoryEmbeddingBackbone(nn.Module):
         )
         self.output_dim = _curr_units
 
-    def forward(self, x: Dict):
-        x = self.embedding(x)
+    def _build_embedding_layer(self):
+        return Embedding1dLayer(
+            continuous_dim=self.hparams.continuous_dim,
+            categorical_embedding_dims=self.hparams.embedding_dims,
+            embedding_dropout=self.hparams.embedding_dropout,
+            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear_layers(x)
         return x
 
@@ -60,10 +61,25 @@ class CategoryEmbeddingModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
         # Backbone
-        self.backbone = CategoryEmbeddingBackbone(self.hparams)
+        self._backbone = CategoryEmbeddingBackbone(self.hparams)
+        # Embedding Layer
+        self._embedding_layer = self._backbone._build_embedding_layer()
+        # Head
         self.head = self._get_head_from_config()
 
-    def extract_embedding(self):
-        return self.backbone.embedding.cat_embedding_layers
+    def extract_embedding(self):  # TODO move to base model with sufficient conditions
+        return self.embedding_layer.cat_embedding_layers

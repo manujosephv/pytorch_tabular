@@ -24,7 +24,7 @@ from omegaconf import DictConfig
 from pytorch_tabular.utils import _linear_dropout_bn
 
 from ..base_model import BaseModel
-from ..common.layers import SharedEmbeddings, TransformerEncoderBlock
+from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
 
 logger = logging.getLogger(__name__)
 
@@ -40,30 +40,6 @@ class TabTransformerBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
-        if self.hparams.categorical_dim > 0:
-            # Category Embedding layers
-            if self.hparams.share_embedding:
-                self.cat_embedding_layers = nn.ModuleList(
-                    [
-                        SharedEmbeddings(
-                            cardinality,
-                            self.hparams.input_embed_dim,
-                            add_shared_embed=self.hparams.share_embedding_strategy
-                            == "add",
-                            frac_shared_embed=self.hparams.shared_embedding_fraction,
-                        )
-                        for cardinality in self.hparams.categorical_cardinality
-                    ]
-                )
-            else:
-                self.cat_embedding_layers = nn.ModuleList(
-                    [
-                        nn.Embedding(cardinality, self.hparams.input_embed_dim)
-                        for cardinality in self.hparams.categorical_cardinality
-                    ]
-                )
-            if self.hparams.embedding_dropout != 0:
-                self.embed_dropout = nn.Dropout(self.hparams.embedding_dropout)
         self.transformer_blocks = OrderedDict()
         for i in range(self.hparams.num_attn_blocks):
             self.transformer_blocks[f"mha_block_{i}"] = TransformerEncoderBlock(
@@ -102,28 +78,31 @@ class TabTransformerBackbone(nn.Module):
         self.linear_layers = nn.Sequential(*layers)
         self.output_dim = _curr_units
 
-    def forward(self, x: Dict):
+    def _build_embedding_layer(self):
+        return Embedding2dLayer(
+            continuous_dim=0,
+            categorical_cardinality=self.hparams.categorical_cardinality,
+            embedding_dim=self.hparams.input_embed_dim,
+            shared_embedding_strategy=self.hparams.share_embedding_strategy,
+            frac_shared_embed=self.hparams.shared_embedding_fraction,
+            embedding_bias=self.hparams.embedding_bias,
+            embedding_dropout=self.hparams.embedding_dropout,
+            initialization=self.hparams.embedding_initialization,
+        )
+
+    def forward(self, x_cat: torch.Tensor, x_cont: torch.Tensor) -> torch.Tensor:
         # (B, N)
-        continuous_data, categorical_data = x["continuous"], x["categorical"]
         x = None
         if self.hparams.categorical_dim > 0:
-            x_cat = [
-                embedding_layer(categorical_data[:, i]).unsqueeze(1)
-                for i, embedding_layer in enumerate(self.cat_embedding_layers)
-            ]
-            # (B, N, E)
-            x = torch.cat(x_cat, 1)
-            if self.hparams.embedding_dropout != 0:
-                x = self.embed_dropout(x)
             for i, block in enumerate(self.transformer_blocks):
-                x = block(x)
+                x_cat = block(x_cat)
             # Flatten (Batch, N_Categorical, Hidden) --> (Batch, N_CategoricalxHidden)
-            x = rearrange(x, "b n h -> b (n h)")
+            x = rearrange(x_cat, "b n h -> b (n h)")
         if self.hparams.continuous_dim > 0:
             if self.hparams.batch_norm_continuous_input:
-                x_cont = self.normalizing_batch_norm(continuous_data)
+                x_cont = self.normalizing_batch_norm(x_cont)
             else:
-                x_cont = continuous_data
+                x_cont = x_cont
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
         x = self.linear_layers(x)
@@ -134,16 +113,42 @@ class TabTransformerModel(BaseModel):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__(config, **kwargs)
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
         # Backbone
-        self.backbone = TabTransformerBackbone(self.hparams)
-        self.dropout = nn.Dropout(self.hparams.out_ff_dropout)
-        # Adding the last layer
-        self.head = self._get_head_from_config()
+        self._backbone = TabTransformerBackbone(self.hparams)
+        # Embedding Layer
+        self._embedding_layer = self._backbone._build_embedding_layer()
+        # Head
+        self._head = self._get_head_from_config()
+
+    # Redefining forward because this model flow is slightly different
+    def forward(self, x: Dict):
+        if self.hparams.categorical_dim > 0:
+            x_cat = self.embed_input(dict(categorical=x["categorical"]))
+        x = self.compute_backbone(dict(categorical=x_cat, continuous=x["continuous"]))
+        return self.compute_head(x)
+
+    # Redefining compute_backbone because this model flow is slightly different
+    def compute_backbone(self, x: Dict):
+        # Returns output
+        x = self.backbone(x["categorical"], x["continuous"])
+        return x
 
     def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
-            return self.backbone.cat_embedding_layers
+            return self.embedding_layer.cat_embedding_layers
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
