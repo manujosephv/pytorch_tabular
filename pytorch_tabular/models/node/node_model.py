@@ -76,14 +76,6 @@ class NODEBackbone(nn.Module):
         return embedding
 
     def forward(self, x: torch.Tensor):  # TODO factor out target encoding option.
-        # if self.hparams.embed_categorical:  
-        #     x = self.embedding(x)
-        # else:
-        #     # unpacking into a tuple
-        #     x = x["categorical"], x["continuous"]
-        #     # eliminating None in case there is no categorical or continuous columns
-        #     x = (item for item in x if len(item) > 0)
-        #     x = torch.cat(tuple(x), dim=1)
         x = self.dense_block(x)
         return x
 
@@ -136,11 +128,11 @@ class NODEModel(BaseModel):
         )
         self._head = Lambda(self.subset)
 
-    def extract_embedding(self):
-        if self.hparams.embed_categorical:
-            if self.hparams.embedded_cat_dim != 0:
-                return self.embedding_layer.cat_embedding_layers
-        else:
-            raise ValueError(
-                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
-            )
+    # def extract_embedding(self):
+    #     if self.hparams.embed_categorical:
+    #         if self.hparams.embedded_cat_dim != 0:
+    #             return self.embedding_layer.cat_embedding_layers
+    #     else:
+    #         raise ValueError(
+    #             "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+    #         )

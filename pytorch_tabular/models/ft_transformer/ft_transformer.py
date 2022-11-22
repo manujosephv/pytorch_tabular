@@ -167,13 +167,13 @@ class FTTransformerModel(BaseModel):
         # Head
         self._head = self._get_head_from_config()
 
-    def extract_embedding(self):
-        if self.hparams.categorical_dim > 0:
-            return self.embedding_layer.cat_embedding_layers
-        else:
-            raise ValueError(
-                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
-            )
+    # def extract_embedding(self):
+    #     if self.hparams.categorical_dim > 0:
+    #         return self.embedding_layer.cat_embedding_layers
+    #     else:
+    #         raise ValueError(
+    #             "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+    #         )
 
     def feature_importance(self):
         if self.hparams.attn_feature_importance:

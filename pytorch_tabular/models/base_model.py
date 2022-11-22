@@ -12,6 +12,7 @@ import torch.nn as nn
 import torchmetrics
 from omegaconf import DictConfig, OmegaConf
 from torch import Tensor
+from pytorch_tabular.models.common.layers import PreEncoded1dLayer
 
 import pytorch_tabular.models.ssl.augmentations as augmentations
 from pytorch_tabular.models.common.heads import blocks
@@ -297,9 +298,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def forward_pass(self, batch):
         return self(batch), None
 
-    def extract_embedding(self):  # TODO Need to put in model specific checks
+    def extract_embedding(self):
         if self.hparams.categorical_dim > 0:
-            return self.embedding_layer.cat_embedding_layers
+            if not isinstance(self.embedding_layer, PreEncoded1dLayer):
+                return self.embedding_layer.cat_embedding_layers
+            else:
+                raise ValueError(
+                    "Cannot extract embedding for PreEncoded1dLayer. Please use a different embedding layer."
+                )
         else:
             raise ValueError(
                 "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"

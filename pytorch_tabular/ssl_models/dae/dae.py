@@ -113,7 +113,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
             with torch.no_grad():
                 x, mask = self.swap_noise(x)
         # encoder
-        z = self.encoder(dict(continuous=x)) #TODO Need to separate embedding to resuse backbones
+        z = self.encoder(dict(continuous=x))
         return self.output_tuple(z, mask)
 
 

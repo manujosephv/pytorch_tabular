@@ -81,5 +81,3 @@ class CategoryEmbeddingModel(BaseModel):
         # Head
         self.head = self._get_head_from_config()
 
-    def extract_embedding(self):  # TODO move to base model with sufficient conditions
-        return self.embedding_layer.cat_embedding_layers

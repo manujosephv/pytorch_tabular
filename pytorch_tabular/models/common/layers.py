@@ -1,6 +1,6 @@
 # noqa W605
-from functools import partial
 import math
+from functools import partial
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -259,7 +259,9 @@ class PreEncoded1dLayer(nn.Module):
         continuous_data, categorical_data = x.get(
             "continuous", torch.empty(0, 0)
         ), x.get("categorical", torch.empty(0, 0))
-        assert categorical_data.shape[1] == self.categorical_dim, "categorical_data must have same number of columns as categorical embedding layers"
+        assert (
+            categorical_data.shape[1] == self.categorical_dim
+        ), "categorical_data must have same number of columns as categorical embedding layers"
         assert (
             continuous_data.shape[1] == self.continuous_dim
         ), "continuous_data must have same number of columns as continuous dim"
@@ -279,6 +281,7 @@ class PreEncoded1dLayer(nn.Module):
         if self.embd_dropout is not None:
             embed = self.embd_dropout(embed)
         return embed
+
 
 class Embedding1dLayer(nn.Module):
     """

@@ -657,58 +657,63 @@ class TabularModel:
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
     def pretrain(
-            self,
-            train: Optional[pd.DataFrame],
-            validation: Optional[pd.DataFrame] = None,
-            optimizer: Optional[torch.optim.Optimizer] = None,
-            optimizer_params: Dict = {},
-            max_epochs: Optional[int] = None,
-            min_epochs: Optional[int] = None,
-            seed: Optional[int] = 42,
-            callbacks: Optional[List[pl.Callback]] = None,
-            datamodule: Optional[TabularDatamodule] = None,
-        ) -> None:
-            """The fit method which takes in the data and triggers the training
+        self,
+        train: Optional[pd.DataFrame],
+        validation: Optional[pd.DataFrame] = None,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+        optimizer_params: Dict = {},
+        max_epochs: Optional[int] = None,
+        min_epochs: Optional[int] = None,
+        seed: Optional[int] = 42,
+        callbacks: Optional[List[pl.Callback]] = None,
+        datamodule: Optional[TabularDatamodule] = None,
+    ) -> None:
+        """The fit method which takes in the data and triggers the training
 
-            Args:
-                train (pd.DataFrame): Training Dataframe
+        Args:
+            train (pd.DataFrame): Training Dataframe
 
-                validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-                    Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
+                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
 
-                optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
-                    This should be the Class and not the initialized object
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
+                This should be the Class and not the initialized object
 
-                optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
-                max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
+            max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
-                min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
+            min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
 
-                seed: (int): Random seed for reproducibility. Defaults to 42.
+            seed: (int): Random seed for reproducibility. Defaults to 42.
 
-                callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
 
-                datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
-            """
-            seed = seed if seed is not None else self.config.seed
-            seed_everything(seed)
-            if datamodule is None:
-                datamodule = self.prepare_dataloader(
-                    train, validation, test=None, train_sampler=None, target_transform=None, seed=seed
-                )
-            else:
-                if train is not None:
-                    warnings.warn(
-                        "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
-                    )
-            model = self.prepare_model(
-                datamodule,
-                optimizer,
-                optimizer_params,
+            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
+        """
+        seed = seed if seed is not None else self.config.seed
+        seed_everything(seed)
+        if datamodule is None:
+            datamodule = self.prepare_dataloader(
+                train,
+                validation,
+                test=None,
+                train_sampler=None,
+                target_transform=None,
+                seed=seed,
             )
+        else:
+            if train is not None:
+                warnings.warn(
+                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                )
+        model = self.prepare_model(
+            datamodule,
+            optimizer,
+            optimizer_params,
+        )
 
-            return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
+        return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
     def find_learning_rate(
         self,

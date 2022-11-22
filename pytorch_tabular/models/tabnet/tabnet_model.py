@@ -68,3 +68,8 @@ class TabNetModel(BaseModel):
         self.backbone = TabNetBackbone(self.hparams)
         setattr(self.backbone, "output_dim", self.hparams.output_dim)
         self.head = nn.Identity()
+
+    def extract_embedding(self):
+        raise ValueError(
+            "Extracting Embeddings is not supported by Tabnet. Please use another compatible model"
+        )

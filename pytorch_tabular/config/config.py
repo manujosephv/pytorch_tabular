@@ -7,7 +7,7 @@ import os
 from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from pytorch_tabular.models.common import heads
 logger = logging.getLogger(__name__)
@@ -191,7 +191,7 @@ class InferredConfig:
     )
     embedding_dims: Optional[
         List
-    ] = field(  # TODO need to check if embedding_dims would be duplicated from model_config and inferred_config
+    ] = field(
         default=None,
         metadata={
             "help": "The dimensions of the embedding for each categorical column as a list of tuples "
