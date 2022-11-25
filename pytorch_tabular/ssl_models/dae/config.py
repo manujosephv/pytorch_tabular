@@ -49,6 +49,16 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
             "help": "Maximum cardinality of one-hot encoded categorical features. Any categorical feature with cardinality>max_onehot_cardinality will be embedded in a learned embedding space and others will be converted to a one hot representation. If set to 0, will use the embedding strategy for all categorical feature. Default is 4"
         },
     )
+    embedding_dropout: float = field(
+        default=0.5,
+        metadata={"help": "probability of an embedding element to be zeroed."},
+    )
+    batch_norm_continuous_input: bool = field(
+        default=True,
+        metadata={
+            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer"
+        },
+    )
 
     _module_src: str = field(default="ssl_models.dae")
     _model_name: str = field(default="DenoisingAutoEncoderModel")
