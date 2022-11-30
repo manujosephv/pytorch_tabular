@@ -82,6 +82,16 @@ class TabularDatamodule(pl.LightningDataModule):
         super().__init__()
         self.train = train.copy()
         self.validation = validation
+        self._set_target_transform(target_transform)
+        self.test = test if test is None else test.copy()
+        self.target = config.target
+        self.batch_size = config.batch_size
+        self.train_sampler = train_sampler
+        self.config = config
+        self.seed = seed
+        self._fitted = False
+
+    def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
                 target_transform = FunctionTransformer(
@@ -91,13 +101,6 @@ class TabularDatamodule(pl.LightningDataModule):
         else:
             self.do_target_transform = False
         self.target_transform_template = target_transform
-        self.test = test if test is None else test.copy()
-        self.target = config.target
-        self.batch_size = config.batch_size
-        self.train_sampler = train_sampler
-        self.config = config
-        self.seed = seed
-        self._fitted = False
 
     def update_config(self, config) -> None:
         """Calculates and updates a few key information to the config object
@@ -144,6 +147,114 @@ class TabularDatamodule(pl.LightningDataModule):
             not self.config.embed_categorical
         )
 
+    def _encode_date_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+        added_features = []
+        for field_name, freq in self.config.date_columns:
+            data = self.make_date(data, field_name)
+            data, _new_feats = self.add_datepart(
+                data, field_name, frequency=freq, prefix=None, drop=True
+            )
+            added_features+=_new_feats
+        return data, added_features
+    
+    def _encode_categorical_columns(self, data: pd.DataFrame, stage:str) -> pd.DataFrame:
+        if stage == "fit":
+            if self.do_leave_one_out_encoder():
+                logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
+                self.categorical_encoder = ce.LeaveOneOutEncoder(
+                    cols=self.config.categorical_cols, random_state=self.seed
+                )
+                # Multi-Target Regression uses the first target to encode the categorical columns
+                if len(self.config.target) > 1:
+                    logger.warning(
+                        f"Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
+                    )
+                data = self.categorical_encoder.fit_transform(
+                    data, data[self.config.target[0]]
+                )
+            else:
+                logger.debug("Encoding Categorical Columns using OrdinalEncoder")
+                self.categorical_encoder = OrdinalEncoder(
+                    cols=self.config.categorical_cols
+                )
+                data = self.categorical_encoder.fit_transform(data)
+        else:
+            data = self.categorical_encoder.transform(data)
+        return data
+    
+    def _transform_continuous_columns(self, data: pd.DataFrame, stage:str) -> pd.DataFrame:
+        if stage == "fit":
+            transform = self.CONTINUOUS_TRANSFORMS[
+                self.config.continuous_feature_transform
+            ]
+            if "random_state" in transform["params"] and self.seed is not None:
+                transform["params"]["random_state"] = self.seed
+            self.continuous_transform = transform["callable"](**transform["params"])
+            # TODO implement quantile noise
+            data.loc[
+                :, self.config.continuous_cols
+            ] = self.continuous_transform.fit_transform(
+                data.loc[:, self.config.continuous_cols]
+            )
+        else:
+            data.loc[
+                :, self.config.continuous_cols
+            ] = self.continuous_transform.transform(
+                data.loc[:, self.config.continuous_cols]
+            )
+        return data
+    
+    def _normalize_continuous_columns(self, data: pd.DataFrame, stage:str) -> pd.DataFrame:
+        if stage == "fit":
+            self.scaler = StandardScaler()
+            data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
+                data.loc[:, self.config.continuous_cols]
+            )
+        else:
+            data.loc[:, self.config.continuous_cols] = self.scaler.transform(
+                data.loc[:, self.config.continuous_cols]
+            )
+        return data
+    
+    def _label_encode_target(self, data: pd.DataFrame, stage:str) -> pd.DataFrame:
+        if self.config.task == "classification":
+            if stage == "fit":
+                self.label_encoder = LabelEncoder()
+                data[self.config.target[0]] = self.label_encoder.fit_transform(
+                    data[self.config.target[0]]
+                )
+            else:
+                if self.config.target[0] in data.columns:
+                    data[self.config.target[0]] = self.label_encoder.transform(
+                        data[self.config.target[0]]
+                    )
+        return data
+    
+    def _target_transform(self, data: pd.DataFrame, stage:str) -> pd.DataFrame:
+        if self.config.task == "regression":
+            # target transform only for regression
+            if all([col in data.columns for col in self.config.target]):
+                if self.do_target_transform:
+                    if stage == "fit":
+                        target_transforms = []
+                        for col in self.config.target:
+                            _target_transform = copy.deepcopy(
+                                self.target_transform_template
+                            )
+                            data[col] = _target_transform.fit_transform(
+                                data[col].values.reshape(-1, 1)
+                            )
+                            target_transforms.append(_target_transform)
+                        self.target_transforms = target_transforms
+                    else:
+                        for col, _target_transform in zip(
+                            self.config.target, self.target_transforms
+                        ):
+                            data[col] = _target_transform.transform(
+                                data[col].values.reshape(-1, 1)
+                            )
+        return data
+
     def preprocess_data(
         self, data: pd.DataFrame, stage: str = "inference"
     ) -> Tuple[pd.DataFrame, list]:
@@ -159,11 +270,7 @@ class TabularDatamodule(pl.LightningDataModule):
         logger.info(f"Preprocessing data: Stage: {stage}...")
         added_features = None
         if self.config.encode_date_columns:
-            for field_name, freq in self.config.date_columns:
-                data = self.make_date(data, field_name)
-                data, added_features = self.add_datepart(
-                    data, field_name, frequency=freq, prefix=None, drop=True
-                )
+            data, added_features = self._encode_date_columns(data)
         # The only features that are added are the date features extracted
         # from the date which are categorical in nature
         if (added_features is not None) and (stage == "fit"):
@@ -179,100 +286,22 @@ class TabularDatamodule(pl.LightningDataModule):
             )
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
-            if stage == "fit":
-                if self.do_leave_one_out_encoder():
-                    logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
-                    self.categorical_encoder = ce.LeaveOneOutEncoder(
-                        cols=self.config.categorical_cols, random_state=self.seed
-                    )
-                    # Multi-Target Regression uses the first target to encode the categorical columns
-                    if len(self.config.target) > 1:
-                        logger.warning(
-                            f"Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
-                        )
-                    data = self.categorical_encoder.fit_transform(
-                        data, data[self.config.target[0]]
-                    )
-                else:
-                    logger.debug("Encoding Categorical Columns using OrdinalEncoder")
-                    self.categorical_encoder = OrdinalEncoder(
-                        cols=self.config.categorical_cols
-                    )
-                    data = self.categorical_encoder.fit_transform(data)
-            else:
-                data = self.categorical_encoder.transform(data)
+            data = self._encode_categorical_columns(data, stage)
 
         # Transforming Continuous Columns
         if (self.config.continuous_feature_transform is not None) and (
             len(self.config.continuous_cols) > 0
         ):
-            if stage == "fit":
-                transform = self.CONTINUOUS_TRANSFORMS[
-                    self.config.continuous_feature_transform
-                ]
-                if "random_state" in transform["params"] and self.seed is not None:
-                    transform["params"]["random_state"] = self.seed
-                self.continuous_transform = transform["callable"](**transform["params"])
-                # TODO implement quantile noise
-                data.loc[
-                    :, self.config.continuous_cols
-                ] = self.continuous_transform.fit_transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
-            else:
-                data.loc[
-                    :, self.config.continuous_cols
-                ] = self.continuous_transform.transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
-
+            data = self._transform_continuous_columns(data, stage)
         # Normalizing Continuous Columns
         if (self.config.normalize_continuous_features) and (
             len(self.config.continuous_cols) > 0
         ):
-            if stage == "fit":
-                self.scaler = StandardScaler()
-                data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
-            else:
-                data.loc[:, self.config.continuous_cols] = self.scaler.transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
-
+            data = self._normalize_continuous_columns(data, stage)
         # Converting target labels to a 0 indexed label
-        if self.config.task == "classification":
-            if stage == "fit":
-                self.label_encoder = LabelEncoder()
-                data[self.config.target[0]] = self.label_encoder.fit_transform(
-                    data[self.config.target[0]]
-                )
-            else:
-                if self.config.target[0] in data.columns:
-                    data[self.config.target[0]] = self.label_encoder.transform(
-                        data[self.config.target[0]]
-                    )
+        data = self._label_encode_target(data, stage)
         # Target Transforms
-        if all([col in data.columns for col in self.config.target]):
-            if self.do_target_transform:
-                if stage == "fit":
-                    target_transforms = []
-                    for col in self.config.target:
-                        _target_transform = copy.deepcopy(
-                            self.target_transform_template
-                        )
-                        data[col] = _target_transform.fit_transform(
-                            data[col].values.reshape(-1, 1)
-                        )
-                        target_transforms.append(_target_transform)
-                    self.target_transforms = target_transforms
-                else:
-                    for col, _target_transform in zip(
-                        self.config.target, self.target_transforms
-                    ):
-                        data[col] = _target_transform.transform(
-                            data[col].values.reshape(-1, 1)
-                        )
+        data = self._target_transform(data, stage)
         return data, added_features
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -537,6 +566,19 @@ class TabularDatamodule(pl.LightningDataModule):
                 pin_memory=self.config.pin_memory,
             )
 
+    def _prepare_inference_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Prepare data for inference."""
+        # TODO Is the target encoding necessary?
+        if len(set(self.target) - set(df.columns)) > 0:
+            if self.config.task == "classification":
+                df.loc[:, self.target] = np.array(
+                    [self.label_encoder.classes_[0]] * len(df)
+                )
+            else:
+                df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
+        df, _ = self.preprocess_data(df, stage="inference")
+        return df
+
     def prepare_inference_dataloader(self, df: pd.DataFrame) -> DataLoader:
         """Function that prepares and loads the new data.
 
@@ -547,15 +589,7 @@ class TabularDatamodule(pl.LightningDataModule):
             DataLoader: The dataloader for the passed in dataframe
         """
         df = df.copy()
-        if len(set(self.target) - set(df.columns)) > 0:
-            if self.config.task == "classification":
-                df.loc[:, self.target] = np.array(
-                    [self.label_encoder.classes_[0]] * len(df)
-                )
-            else:
-                df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
-        df, _ = self.preprocess_data(df, stage="inference")
-
+        df = self._prepare_inference_data(df)
         dataset = TabularDataset(
             task=self.config.task,
             data=df,

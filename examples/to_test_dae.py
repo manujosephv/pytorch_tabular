@@ -18,8 +18,11 @@ def make_mixed_classification(n_samples, n_features, n_categories):
     )
     cat_cols = random.choices(list(range(X.shape[-1])), k=n_categories)
     num_cols = [i for i in range(X.shape[-1]) if i not in cat_cols]
-    for col in cat_cols:
-        X[:, col] = pd.qcut(X[:, col], q=4).codes.astype(int)
+    card_l = [2,3, 5, 6]
+    # for col in cat_cols:
+    #     X[:, col] = pd.qcut(X[:, col], q=random.randint(2, 5)).codes.astype(int)
+    for card,col in zip(card_l, cat_cols):
+        X[:, col] = pd.qcut(X[:, col], q=card).codes.astype(int)
     col_names = []
     num_col_names = []
     cat_col_names = []
@@ -80,7 +83,8 @@ trainer_config = TrainerConfig(
     auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=10,
-    gpus=-1,  # index of the GPU to use. 0, means CPU
+    gpus=0,#-1,  # index of the GPU to use. 0, means CPU
+    auto_select_gpus=False,
     fast_dev_run=False,
 )
 optimizer_config = OptimizerConfig()
@@ -102,9 +106,33 @@ tabular_model = TabularModel(
 
 # tabular_model.fit(train=train, validation=val)
 tabular_model.pretrain(train=train, validation=val)
+
+ft_trainer_config = TrainerConfig(
+    auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
+    batch_size=512,
+    max_epochs=5,
+    gpus=-1,  # index of the GPU to use. 0, means CPU
+    fast_dev_run=False,
+)
+ft_optimizer_config = OptimizerConfig(optimizer="SGD")
+finetune_model = tabular_model.create_finetune_model(
+    task = "classification",
+    head="LinearHead",
+    head_config={
+        "layers": "64-32-16",
+        "activation": "LeakyReLU",
+    },
+    trainer_config=ft_trainer_config,
+    optimizer_config=ft_optimizer_config,
+)
 # decoder=nn.Identity(),
-test.drop(columns=["target"], inplace=True)
-pred_df = tabular_model.predict(test)
+finetune_model.finetune(train=train, validation=val)
+
+test.drop(columns=['target'], inplace=True)
+pred_df = finetune_model.predict(test)
+
+# test.drop(columns=["target"], inplace=True)
+# pred_df = tabular_model.predict(test)
 
 # tabular_model.fit(train=train, validation=val)
 # tabular_model.fit(train=train, validation=val, max_epochs=5)

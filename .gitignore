@@ -148,3 +148,4 @@ examples/basic/
 exp_version_manager.yml
 .tmp/exp_version_manager.yml
 compare.py
+checkpoints/
