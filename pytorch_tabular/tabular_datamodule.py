@@ -196,7 +196,13 @@ class TabularDatamodule(pl.LightningDataModule):
                 else:
                     logger.debug("Encoding Categorical Columns using OrdinalEncoder")
                     self.categorical_encoder = OrdinalEncoder(
-                        cols=self.config.categorical_cols
+                        cols=self.config.categorical_cols,
+                        handle_unseen="impute"
+                        if self.config.handle_unknown_categories
+                        else "error",
+                        handle_missing="impute"
+                        if self.config.handle_missing_values
+                        else "error",
                     )
                     data = self.categorical_encoder.fit_transform(data)
             else:

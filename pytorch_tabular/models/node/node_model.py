@@ -23,6 +23,7 @@ class NODEBackbone(nn.Module):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__()
         self.hparams = config
+        # self.hparams.output_dim = (0 if self.hparams.output_dim is None else self.hparams.output_dim)  # For SSL cases where output_dim will be None
         self._build_network()
 
     def _build_network(self):

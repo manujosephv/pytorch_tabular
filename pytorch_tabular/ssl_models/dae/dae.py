@@ -11,6 +11,8 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
+from pytorch_tabular.models import CategoryEmbeddingModelConfig
+
 from ..base_model import SSLBaseModel
 from ..common.heads import MultiTaskHead
 from ..common.noise_generators import SwapNoiseCorrupter
@@ -49,10 +51,10 @@ class MixedEmbedding1dLayer(nn.Module):
                 binary_feat_idx.append(i)
             elif cardinality <= max_onehot_cardinality:
                 onehot_feat_idx.append(i)
-                one_hot_layers[str(i)]=OneHot(cardinality)
+                one_hot_layers[str(i)] = OneHot(cardinality)
             else:
                 embedding_feat_idx.append(i)
-                embd_layers[str(i)]=nn.Embedding(cardinality, embed_dim)
+                embd_layers[str(i)] = nn.Embedding(cardinality, embed_dim)
 
         if self.categorical_dim > 0:
             # Embedding layers
@@ -72,7 +74,13 @@ class MixedEmbedding1dLayer(nn.Module):
 
     @property
     def embedded_cat_dim(self):
-        return sum([embd_dim for i, (_, embd_dim) in enumerate(self.categorical_embedding_dims) if i in self._embedding_feat_idx])
+        return sum(
+            [
+                embd_dim
+                for i, (_, embd_dim) in enumerate(self.categorical_embedding_dims)
+                if i in self._embedding_feat_idx
+            ]
+        )
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert (
@@ -103,9 +111,11 @@ class MixedEmbedding1dLayer(nn.Module):
                     x_binary.append(categorical_data[:, i : i + 1])
                 elif i in self._onehot_feat_idx:
                     x_cat.append(self.one_hot_layers[str(i)](categorical_data[:, i]))
-                    x_cat_orig.append(categorical_data[:, i:i+1])
+                    x_cat_orig.append(categorical_data[:, i : i + 1])
                 else:
-                    x_embed.append(self.embedding_layers[str(i)](categorical_data[:, i]))
+                    x_embed.append(
+                        self.embedding_layers[str(i)](categorical_data[:, i])
+                    )
             # (B, N, E)
             x_cat = torch.cat(x_cat, 1) if len(x_cat) > 0 else None
             x_cat_orig = torch.cat(x_cat_orig, 1) if len(x_cat_orig) > 0 else None
@@ -154,29 +164,6 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
 
     def _build_network(self):
         swap_probabilities = []
-        # binary_feat_idx = []
-        # onehot_feat_idx = []
-        # embedding_feat_idx = []
-        # embd_layers = []
-        # one_hot_layers = []
-        # for i, (name, (cardinality, embed_dim)) in enumerate(
-        #     zip(self.config.categorical_cols, self.config.embedding_dims)
-        # ):  # conditions based on real cardinality (excluding missing value placeholder)
-        #     if cardinality == 2:
-        #         binary_feat_idx.append(i)
-        #         swap_probabilities += [self._get_noise_probability(name)]
-        #     elif cardinality <= self.config.max_onehot_cardinality:
-        #         onehot_feat_idx.append(i)
-        #         swap_probabilities += [self._get_noise_probability(name)] * cardinality
-        #         one_hot_layers.append(OneHot(cardinality))
-        #     else:
-        #         embedding_feat_idx.append(i)
-        #         swap_probabilities += [self._get_noise_probability(name)] * embed_dim
-        #         embd_layers.append(nn.Embedding(cardinality, embed_dim))
-        # for name in self.config.continuous_cols:
-        #     swap_probabilities.append(self._get_noise_probability(name))
-
-        swap_probabilities = []
         for i, (name, (cardinality, embed_dim)) in enumerate(
             zip(self.config.categorical_cols, self.config.embedding_dims)
         ):  # conditions based on real cardinality (excluding missing value placeholder)
@@ -189,60 +176,13 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
         for name in self.config.continuous_cols:
             swap_probabilities.append(self._get_noise_probability(name))
 
-        # if self.config.categorical_dim > 0:
-        #     # Embedding layers
-        #     self.embedding_layers = nn.ModuleList(embd_layers)
-        #     self.onehot_layers = nn.ModuleList(one_hot_layers)
-        # self._onehot_feat_idx = onehot_feat_idx
-        # self._binary_feat_idx = binary_feat_idx
-        # self._embedding_feat_idx = embedding_feat_idx
         self._swap_probabilities = swap_probabilities
         self.swap_noise = SwapNoiseCorrupter(swap_probabilities)
-        # self.reconstruction = MultiTaskHead(
-        #     self.decoder.output_dim,
-        #     n_binary=len(binary_feat_idx),
-        #     n_categorical=len(onehot_feat_idx),
-        #     n_numerical=len(embedding_feat_idx) + len(self.config.continuous_cols),
-        # )
-        # self.mask_reconstruction = nn.Linear(
-        #     self.decoder.output_dim, len(swap_probabilities)
-        # )
-
-    # def _embed_input(self, x: Dict):
-    #     # (B, N)
-    #     continuous_data, categorical_data = x["continuous"], x["categorical"]
-    #     if self.config.categorical_dim > 0:
-    #         x_cat = []
-    #         x_binary = []
-    #         x_embed = []
-    #         for i in range(len(self.config.categorical_cols)):
-    #             if i in self._binary_feat_idx:
-    #                 x_binary.append(categorical_data[:, i : i + 1])
-    #             elif i in self._onehot_feat_idx:
-    #                 x_cat.append(self.one_hot_layers[i](categorical_data[:, i]))
-    #             else:
-    #                 x_embed.append(self.embedding_layers[i](categorical_data[:, i]))
-    #         # (B, N, E)
-    #         x_cat = torch.cat(x_cat, 1) if len(x_cat) > 0 else None
-    #         x_binary = torch.cat(x_binary, 1) if len(x_binary) > 0 else None
-    #         x_embed = torch.cat(x_embed, 1) if len(x_embed) > 0 else None
-    #         all_none = (x_cat is None) and (x_binary is None) and (x_embed is None)
-    #         assert not all_none, "All inputs can't be none!"
-    #     else:
-    #         x_cat = None
-    #         x_binary = None
-    #         x_embed = None
-    #     return OrderedDict(
-    #         binary=x_binary,
-    #         categorical=x_cat,
-    #         continuous=continuous_data,
-    #         embedding=x_embed,
-    #     )
 
     def forward(self, x: Dict, perturb: bool = True):
         # (B, N, E)
         # x = self._embed_input(x)
-        pick_keys = ['binary','categorical','continuous','embedding']
+        pick_keys = ["binary", "categorical", "continuous", "embedding"]
         x = torch.cat([x[key] for key in pick_keys if x[key] is not None], 1)
         # x = torch.cat([item for item in x.values() if item is not None], 1)
         mask = None
@@ -257,19 +197,36 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
 
 class DenoisingAutoEncoderModel(SSLBaseModel):
     output_tuple = namedtuple("output_tuple", ["original", "reconstructed"])
+    ALLOWED_MODELS = ["CategoryEmbeddingModelConfig"]
 
     def __init__(self, config: DictConfig, **kwargs):
         encoded_cat_dims = 0
         inferred_config = kwargs.get("inferred_config")
-        encoder_config = kwargs.get("encoder_config")
         for card, embd_dim in inferred_config.embedding_dims:
             if card == 2:
                 encoded_cat_dims += 1
             elif card <= config.max_onehot_cardinality:
-                encoded_cat_dims+= card
+                encoded_cat_dims += card
             else:
-                encoded_cat_dims+=embd_dim
-        config.encoder_config._backbone_input_dim = encoded_cat_dims + len(config.continuous_cols)
+                encoded_cat_dims += embd_dim
+        config.encoder_config._backbone_input_dim = encoded_cat_dims + len(
+            config.continuous_cols
+        )
+        assert (
+            config.encoder_config._config_name in self.ALLOWED_MODELS
+        ), "Encoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
+        if config.decoder_config is not None:
+            assert (
+                config.decoder_config._config_name in self.ALLOWED_MODELS
+            ), "Decoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
+            if "-" in config.encoder_config.layers:
+                config.decoder_config._backbone_input_dim = int(
+                    config.encoder_config.layers.split("-")[-1]
+                )
+            else:
+                config.decoder_config._backbone_input_dim = int(
+                    config.encoder_config.layers
+                )
         super().__init__(config, **kwargs)
 
     def _get_noise_probability(self, name):
@@ -286,7 +243,10 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             n_categorical=len(self.embedding._onehot_feat_idx),
             n_numerical=self.embedding.embedded_cat_dim
             + len(self.hparams.continuous_cols),
-            cardinality=[self.embedding.categorical_embedding_dims[i][0] for i in self.embedding._onehot_feat_idx],
+            cardinality=[
+                self.embedding.categorical_embedding_dims[i][0]
+                for i in self.embedding._onehot_feat_idx
+            ],
         )
         self.mask_reconstruction = nn.Linear(
             self.decoder.output_dim, len(self.featurizer.swap_noise.probas)
@@ -329,29 +289,18 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 x["binary"], reconstructed_in["binary"]
             )
         return output_dict
-        # return dict(
-        #     continuous=self.output_tuple(
-        #         torch.cat([x["continuous"], x["embedding"]], 1),
-        #         reconstructed_in["continuous"],
-        #     ),
-        #     categorical=self.output_tuple(
-        #         x["categorical"], reconstructed_in["categorical"]
-        #     ),
-        #     binary=self.output_tuple(x["binary"], reconstructed_in["binary"]),
-        #     mask=self.output_tuple(mask, reconstructed_mask),
-        # )
 
     def calculate_loss(self, output, tag):
         total_loss = 0
         # TODO include weights for different types
         for type, out in output.items():
-            #TODO special treatment for categorical. input is one-hot encoded, output is list of logits
-            if type=="categorical":
+            # TODO special treatment for categorical. input is one-hot encoded, output is list of logits
+            if type == "categorical":
                 loss = 0
                 for i in range(out.original.size(-1)):
-                    loss += self.losses[type](out.reconstructed[i], out.original[:,i])
+                    loss += self.losses[type](out.reconstructed[i], out.original[:, i])
             else:
-                loss = self.losses[type]( out.reconstructed, out.original)
+                loss = self.losses[type](out.reconstructed, out.original)
             self.log(
                 f"{tag}_{type}_loss",
                 loss.item(),

@@ -60,7 +60,7 @@ train, test = train_test_split(data, random_state=42)
 train, val = train_test_split(train, random_state=42)
 
 from pytorch_tabular import TabularModel
-from pytorch_tabular.models import CategoryEmbeddingModelConfig
+from pytorch_tabular.models import CategoryEmbeddingModelConfig, AutoIntConfig, FTTransformerConfig, NodeConfig, TabTransformerConfig, TabNetModelConfig
 from pytorch_tabular.models.category_embedding import CategoryEmbeddingBackbone
 from pytorch_tabular.config import (
     DataConfig,
@@ -78,6 +78,8 @@ data_config = DataConfig(
     categorical_cols=cat_col_names,
     continuous_feature_transform="quantile_normal",
     normalize_continuous_features=True,
+    handle_missing_values=False,
+    handle_unknown_categories=False
 )
 trainer_config = TrainerConfig(
     auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
@@ -89,11 +91,21 @@ trainer_config = TrainerConfig(
 optimizer_config = OptimizerConfig()
 encoder_config = CategoryEmbeddingModelConfig(
     task="backbone",
-    layers="4096-4096-512",  # Number of nodes in each layer
+    layers="4096-2048-512",  # Number of nodes in each layer
     activation="LeakyReLU",  # Activation between each layers
 )
+
+decoder_config = CategoryEmbeddingModelConfig(
+    task="backbone",
+    layers="512-2048-4096",  # Number of nodes in each layer
+    activation="LeakyReLU",  # Activation between each layers
+)
+# encoder_config = TabTransformerConfig(
+#     task="backbone",
+# )
 dae_config = DenoisingAutoEncoderConfig(
     encoder_config=encoder_config,
+    decoder_config=decoder_config,
 )
 
 tabular_model = TabularModel(

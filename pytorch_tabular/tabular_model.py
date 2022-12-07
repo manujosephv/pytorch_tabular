@@ -168,6 +168,13 @@ class TabularModel:
                     raise ValueError(
                         "Targe Range, if defined, should be list tuples of length two(min,max). The length of the list should be equal to hte length of target columns"
                     )
+        if self.config.task == "ssl":
+            assert (
+                not self.config.handle_unknown_categories
+            ), "SSL only supports handle_unknown_categories=False. Please set this in your DataConfig"
+            assert (
+                not self.config.handle_missing_values
+            ), "SSL only supports handle_missing_values=False. Please set this in your DataConfig"
 
     def _read_parse_config(self, config, cls):
         if isinstance(config, str):

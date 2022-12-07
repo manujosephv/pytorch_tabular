@@ -149,6 +149,18 @@ class DataConfig:
         default=True,
         metadata={"help": "Whether or not to pin memory for data loading."},
     )
+    handle_unknown_categories: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether or not to handle unknown or new values in categorical columns as unknown"
+        },
+    )
+    handle_missing_values: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether or not to handle missing values in categorical columns as unknown"
+        },
+    )
     # categorical_dim: int = field(init=False)
     # continuous_dim: int = field(init=False)
     # output_dim: int = field(init=False)

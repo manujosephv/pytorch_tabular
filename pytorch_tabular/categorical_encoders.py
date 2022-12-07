@@ -19,9 +19,10 @@ NAN_CATEGORY = 0
 
 
 class BaseEncoder(object):
-    def __init__(self, cols, handle_unseen, min_samples, imputed):
+    def __init__(self, cols, handle_unseen, min_samples, imputed, handle_missing):
         self.cols = cols
         self.handle_unseen = handle_unseen
+        self.handle_missing = handle_missing
         self.min_samples = max(1, min_samples)
         # In case of unseen value or not enough data to learn the mapping, we use this value for imputation
         self._imputed = imputed
@@ -38,7 +39,10 @@ class BaseEncoder(object):
         if not self._mapping:
             raise ValueError("`fit` method must be called before `transform`.")
         assert all(c in X.columns for c in self.cols)
-
+        if self.handle_missing == "error":
+            assert (
+                not X[self.cols].isnull().any().any()
+            ), "`handle_missing` = `error` and missing values found in columns to encode."
         X_encoded = X.copy(deep=True)
         for col, mapping in self._mapping.items():
             X_encoded.loc[:, col] = (
@@ -101,7 +105,7 @@ class OrdinalEncoder(BaseEncoder):
     Target Encoder for categorical features.
     """
 
-    def __init__(self, cols=None, handle_unseen="impute"):
+    def __init__(self, cols=None, handle_unseen="impute", handle_missing="impute"):
         """Instantiation
         :param [str] cols: list of columns to encode, or None (then all dataset columns will be encoded at fitting time)
         :param str handle_unseen:
@@ -111,7 +115,8 @@ class OrdinalEncoder(BaseEncoder):
         :return: None
         """
         self._input_check("handle_unseen", handle_unseen, ["error", "ignore", "impute"])
-        super(OrdinalEncoder, self).__init__(cols, handle_unseen, 1, NAN_CATEGORY)
+        self._input_check("handle_missing", handle_missing, ["error", "impute"])
+        super(OrdinalEncoder, self).__init__(cols, handle_unseen, 1, NAN_CATEGORY, handle_missing)
 
     def fit(self, X, y=None):
         """Label Encode given columns of X.
@@ -119,6 +124,10 @@ class OrdinalEncoder(BaseEncoder):
         :return: None
         """
         self._before_fit_check(X, y)
+        if self.handle_missing == "error":
+            assert (
+                not X[self.cols].isnull().any().any()
+            ), "`handle_missing` = `error` and missing values found in columns to encode."
         for col in self.cols:
             map = (
                 pd.Series(pd.unique(X[col].fillna(NAN_CATEGORY)), name=col)

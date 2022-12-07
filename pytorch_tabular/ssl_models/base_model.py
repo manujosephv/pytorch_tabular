@@ -89,7 +89,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             )
             self.encoder = model_callable(
                 safe_merge_config(encoder_config, inferred_config),
-                inferred_config=inferred_config,
+                # inferred_config=inferred_config,
             )
         if decoder is not None:
             self.decoder = decoder
@@ -101,7 +101,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             )
             self.decoder = model_callable(
                 safe_merge_config(decoder_config, inferred_config),
-                inferred_config=inferred_config,
+                # inferred_config=inferred_config,
             )
         else:
             self.decoder = nn.Identity()
