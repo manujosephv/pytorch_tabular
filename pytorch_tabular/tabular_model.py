@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model"""
+import copy
 import inspect
 import logging
 import os
@@ -14,6 +15,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
+from sklearn.preprocessing import LabelEncoder
 import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
@@ -26,6 +28,7 @@ from pytorch_lightning.utilities.model_summary import summarize
 from pytorch_lightning.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from torch import nn
+import torchmetrics
 from tqdm.autonotebook import tqdm
 
 from pytorch_tabular.config import (
@@ -37,6 +40,7 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.config.config import InferredConfig
+from pytorch_tabular.models.base_model import _GenericModel, safe_merge_config
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import getattr_nested
 
@@ -722,6 +726,154 @@ class TabularModel:
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
+    def create_finetune_model(
+        self,
+        task: str,
+        head: str,
+        head_config: Dict,
+        target: Optional[str] = None,
+        # data_config: Optional[Union[DataConfig, str]] = None,
+        optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
+        trainer_config: Optional[Union[TrainerConfig, str]] = None,
+        experiment_config: Optional[Union[ExperimentConfig, str]] = None,
+        loss: Optional[torch.nn.Module] = None,
+        metrics: Optional[List[Callable]] = None,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+        optimizer_params: Dict = {},
+    ):
+        config = self.config
+        if target is None:
+            assert hasattr(
+                config, "target"
+            ), "target should either be part of the initial data_config"
+        else:
+            config.target = target
+        config.task = task
+        # Add code to update configs with newly provided ones
+        if optimizer_config is not None:
+            for key, value in optimizer_config.__dict__.items():
+                config[key] = value
+            if len(optimizer_params)>0:
+                config.optimizer_params = optimizer_params
+            else:
+                config.optimizer_params = {}
+        if trainer_config is not None:
+            for key, value in trainer_config.__dict__.items():
+                config[key] = value
+        if experiment_config is not None:
+            for key, value in experiment_config.__dict__.items():
+                config[key] = value
+
+        datamodule = self.datamodule
+        # datamodule = prepare_dataloader(
+        #     train,
+        #     validation,
+        #     test,
+        #     train_sampler,
+        #     target_transform,
+        #     seed,
+        # )
+        # if hasattr(config, "log_target") and (config.log_target is not None):
+        #     logger = self.logger
+        # else:
+        #     logger = None
+        # if hasattr(self, "callbacks"):
+        #     callbacks = self.callbacks
+        # else:
+        #     callbacks = []
+        if task == "regression":
+            loss = loss if loss is not None else torch.nn.MSELoss()
+            metrics = (
+                metrics
+                if metrics is not None
+                else [torchmetrics.functional.mean_squared_error]
+            )
+        elif task == "classification":
+            loss = loss if loss is not None else torch.nn.CrossEntropyLoss()
+            metrics = (
+                metrics if metrics is not None else [torchmetrics.functional.accuracy]
+            )
+
+        model_callable = _GenericModel
+        inferred_config = self.datamodule.update_config(config)
+        inferred_config = OmegaConf.structured(inferred_config)
+        self.model.mode = "finetune"
+        model_args = {
+            "backbone": self.model,
+            "head": head,
+            "head_config": head_config,
+            "config": config,
+            "inferred_config": inferred_config,
+            "custom_loss": loss,
+            "custom_metrics": metrics,
+            "custom_optimizer": optimizer,
+            "custom_optimizer_params": optimizer_params,
+        }
+        # Initializing with default metrics, losses, and optimizers. Will revert once initialized
+        model = model_callable(
+            **model_args,
+        )
+
+        # model._setup_loss()
+        # model._setup_metrics()
+        tabular_model = TabularModel(config=config)
+        tabular_model.model = model
+        tabular_model.datamodule = datamodule
+        # tabular_model.callbacks = callbacks
+        # tabular_model.trainer = tabular_model._prepare_trainer(callbacks=callbacks)
+        # tabular_model.trainer.model = model
+        # tabular_model.logger = logger
+        return tabular_model
+
+    # TODO add parameters for fine tune strategy
+    # TODO handle experiment config. Force to have new experiment name
+    # TODO First, think if we can create new datamodule, but reuse the artifacts from old one
+    def finetune(
+        self,
+        train,
+        validation: Optional[pd.DataFrame] = None,
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
+        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
+        max_epochs: Optional[int] = None,
+        min_epochs: Optional[int] = None,
+        seed: Optional[int] = 42,
+        callbacks: Optional[List[pl.Callback]] = None,
+        datamodule: Optional[TabularDatamodule] = None,
+    ):
+        seed = seed if seed is not None else self.config.seed
+        seed_everything(seed)
+        if datamodule is None:
+            target_transform = self._check_and_set_target_transform(target_transform)
+            self.datamodule._set_target_transform(target_transform)
+            if self.config.task == "classification":
+                self.datamodule.label_encoder = LabelEncoder()
+                self.datamodule.label_encoder.fit(train[self.config.target[0]])
+            elif self.config.task == "regression":
+                target_transforms = []
+                for col in self.config.target:
+                    _target_transform = copy.deepcopy(
+                        self.target_transform_template
+                    )
+                    _target_transform.fit(
+                        train[col].values.reshape(-1, 1)
+                    )
+                    target_transforms.append(_target_transform)
+                self.datamodule.target_transforms = target_transforms
+            self.datamodule.train = self.datamodule._prepare_inference_data(train)
+            if validation is not None:
+                self.datamodule.validation = self.datamodule._prepare_inference_data(validation)
+            else:
+                self.datamodule.validation = None
+            self.datamodule.train_sampler = train_sampler
+            datamodule = self.datamodule
+        else:
+            if train is not None:
+                warnings.warn(
+                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                )
+        return self.train(self.model, datamodule, callbacks=callbacks, max_epochs=max_epochs, min_epochs=min_epochs)
+        
+    
     def find_learning_rate(
         self,
         model: pl.LightningModule,

@@ -40,8 +40,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     def __init__(
         self,
         config: DictConfig,
-        encoder_config: Optional[DictConfig] = None,
-        decoder_config: Optional[DictConfig] = None,
+        mode: str = "pretrain",
         encoder: Optional[nn.Module] = None,
         decoder: Optional[nn.Module] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
@@ -57,7 +56,11 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         config = safe_merge_config(config, inferred_config)
 
         self._setup_encoder_decoder(
-            encoder, config.encoder_config, decoder, config.decoder_config, inferred_config
+            encoder,
+            config.encoder_config,
+            decoder,
+            config.decoder_config,
+            inferred_config,
         )
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
@@ -66,6 +69,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
         if len(self.custom_optimizer_params) > 0:
             config.optimizer_params = self.custom_optimizer_params
+        self.mode = mode
         self._check_and_verify()
         self.save_hyperparameters(config)
         self._build_network()

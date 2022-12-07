@@ -14,9 +14,10 @@ from omegaconf import DictConfig, OmegaConf
 from torch import Tensor
 from pytorch_tabular.models.common.layers import PreEncoded1dLayer
 
-import pytorch_tabular.models.ssl.augmentations as augmentations
+# import pytorch_tabular.models.ssl.augmentations as augmentations
 from pytorch_tabular.models.common.heads import blocks
-import pytorch_tabular.models.ssl.ssl_losses as ssl_losses
+
+# import pytorch_tabular.models.ssl.ssl_losses as ssl_losses
 
 try:
     import plotly.graph_objects as go
@@ -66,6 +67,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         inferred_config = kwargs["inferred_config"]
         # Merging the config and inferred config
         config = safe_merge_config(config, inferred_config)
+        self.kwargs = kwargs
         self.custom_loss = custom_loss
         self.custom_metrics = custom_metrics
         self.custom_optimizer = custom_optimizer
@@ -273,16 +275,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         y_hat = self.apply_output_sigmoid_scaling(y_hat)
         return self.pack_output(y_hat, backbone_features)
 
-    # def compute_ssl_head(self, x: Dict):
-    #     return getattr(ssl_utils, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
-    #         x
-    #     )
-
     def forward(self, x: Dict):
         x = self.embed_input(x)
         x = self.compute_backbone(x)
-        # if self.hparams.task == "ssl":
-        #     return self.compute_ssl_head(x)
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
@@ -437,9 +432,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             )
 
 
-class SSLBaseModel(BaseModel):
+class _GenericModel(BaseModel):
     def __init__(
         self,
+        backbone: nn.Module,
+        head: str,
+        head_config: Dict,
         config: DictConfig,
         custom_loss: Optional[torch.nn.Module] = None,
         custom_metrics: Optional[List[Callable]] = None,
@@ -447,37 +445,92 @@ class SSLBaseModel(BaseModel):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
+        assert (hasattr(config, "loss") or custom_loss is not None), "Loss function not defined in the config"
         super().__init__(
             config,
-            custom_loss=custom_loss,
-            custom_metrics=custom_metrics,
-            custom_optimizer=custom_optimizer,
-            custom_optimizer_params=custom_optimizer_params,
+            custom_loss,
+            custom_metrics,
+            custom_optimizer,
+            custom_optimizer_params,
+            head=head,
+            head_config=head_config,
+            backbone=backbone,
             **kwargs,
         )
+        # self._backbone = backbone
+        # self.head = head
+        # self.head_config = head_config
+        # backbone.mode = "fine_tune"
+        # self._head = self._get_head_from_config()
 
-    def _setup_loss(self):
-        if self.custom_loss is None:
-            try:
-                if self.hparams.loss.startswith("ssl"):
-                    self._loss = getattr(ssl_losses, self.hparams.loss)
-                else:
-                    self.loss = getattr(nn, self.hparams.loss)()
-            except AttributeError as e:
-                logger.error(
-                    f"{self.hparams.loss} is not a valid loss defined in the torch.nn module or in the ssl_losses module"
-                )
-                raise e
-        else:
-            self.loss = self.custom_loss
+    def _get_head_from_config(self):
+        _head_callable = getattr(blocks, self.kwargs.get("head"))
+        return _head_callable(
+            in_units=self.backbone.output_dim,
+            output_dim=self.hparams.output_dim,
+            config=_head_callable._config_template(**self.kwargs.get("head_config")),
+        )  # output_dim auto-calculated from other configs
 
-    # def compute_head(self, x: Dict):
-    #     return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
-    #         x
-    #     )
+    @property
+    def backbone(self):
+        return self._backbone
 
-    def forward_pass(self, batch):
-        y = self(batch)["logits"]
-        batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
-        y_hat = self(batch_augmented)["logits"]
-        return y, y_hat
+    @property
+    def embedding_layer(self):
+        return self.backbone.embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
+    def _build_network(self):
+        # Leaving it blank because of some parameter passing issues
+        # all components are initialized in the init function
+        self._backbone = self.kwargs.get("backbone")
+        self._head = self._get_head_from_config()
+
+
+# class SSLBaseModel(BaseModel):
+#     def __init__(
+#         self,
+#         config: DictConfig,
+#         custom_loss: Optional[torch.nn.Module] = None,
+#         custom_metrics: Optional[List[Callable]] = None,
+#         custom_optimizer: Optional[torch.optim.Optimizer] = None,
+#         custom_optimizer_params: Dict = {},
+#         **kwargs,
+#     ):
+#         super().__init__(
+#             config,
+#             custom_loss=custom_loss,
+#             custom_metrics=custom_metrics,
+#             custom_optimizer=custom_optimizer,
+#             custom_optimizer_params=custom_optimizer_params,
+#             **kwargs,
+#         )
+
+#     def _setup_loss(self):
+#         if self.custom_loss is None:
+#             try:
+#                 if self.hparams.loss.startswith("ssl"):
+#                     self._loss = getattr(ssl_losses, self.hparams.loss)
+#                 else:
+#                     self.loss = getattr(nn, self.hparams.loss)()
+#             except AttributeError as e:
+#                 logger.error(
+#                     f"{self.hparams.loss} is not a valid loss defined in the torch.nn module or in the ssl_losses module"
+#                 )
+#                 raise e
+#         else:
+#             self.loss = self.custom_loss
+
+#     # def compute_head(self, x: Dict):
+#     #     return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
+#     #         x
+#     #     )
+
+#     def forward_pass(self, batch):
+#         y = self(batch)["logits"]
+#         batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
+#         y_hat = self(batch_augmented)["logits"]
+#         return y, y_hat
