@@ -25,7 +25,10 @@ class CategoryEmbeddingBackbone(nn.Module):
     def _build_network(self):
         # Linear Layers
         layers = []
-        _curr_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
+        if hasattr(self.hparams, "_backbone_input_dim"):
+            _curr_units = self.hparams._backbone_input_dim # TODO implement this backdoor in every model?
+        else:
+            _curr_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
         for units in self.hparams.layers.split("-"):
             layers.extend(
                 _linear_dropout_bn(

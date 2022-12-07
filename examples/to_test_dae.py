@@ -18,8 +18,11 @@ def make_mixed_classification(n_samples, n_features, n_categories):
     )
     cat_cols = random.choices(list(range(X.shape[-1])), k=n_categories)
     num_cols = [i for i in range(X.shape[-1]) if i not in cat_cols]
-    for col in cat_cols:
-        X[:, col] = pd.qcut(X[:, col], q=4).codes.astype(int)
+    card_l = [2,3,5,5]
+    # for col in cat_cols:
+    #     X[:, col] = pd.qcut(X[:, col], q=4).codes.astype(int)
+    for card, col in zip(card_l, cat_cols):
+        X[:, col] = pd.qcut(X[:, col], q=card).codes.astype(int)
     col_names = []
     num_col_names = []
     cat_col_names = []
