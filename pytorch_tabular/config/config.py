@@ -85,7 +85,6 @@ class DataConfig:
         pin_memory (Optional[bool, NoneType]): Whether or not to use pin_memory for data loading.
     """
 
-    # TODO Can be missing for SSL cases. 
     target: List[str] = field(
         default=MISSING,
         metadata={"help": "A list of strings with the names of the target column(s)"},
