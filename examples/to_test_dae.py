@@ -117,9 +117,30 @@ tabular_model = TabularModel(
 
 # tabular_model.fit(train=train, validation=val)
 tabular_model.pretrain(train=train, validation=val)
-# decoder=nn.Identity(),
-test.drop(columns=["target"], inplace=True)
-pred_df = tabular_model.predict(test)
+
+# ft_trainer_config = TrainerConfig(
+#     auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
+#     batch_size=512,
+#     max_epochs=5,
+#     gpus=-1,  # index of the GPU to use. 0, means CPU
+#     fast_dev_run=False,
+# )
+# ft_optimizer_config = OptimizerConfig(optimizer="SGD")
+# finetune_model = tabular_model.create_finetune_model(
+#     task = "classification",
+#     head="LinearHead",
+#     head_config={
+#         "layers": "64-32-16",
+#         "activation": "LeakyReLU",
+#     },
+#     trainer_config=ft_trainer_config,
+#     optimizer_config=ft_optimizer_config,
+# )
+# # decoder=nn.Identity(),
+# finetune_model.finetune(train=train, validation=val)
+
+# test.drop(columns=['target'], inplace=True)
+# pred_df = finetune_model.predict(test)
 
 # tabular_model.fit(train=train, validation=val)
 # tabular_model.fit(train=train, validation=val, max_epochs=5)
