@@ -449,7 +449,9 @@ class _GenericModel(BaseModel):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
-        assert (hasattr(config, "loss") or custom_loss is not None), "Loss function not defined in the config"
+        assert (
+            hasattr(config, "loss") or custom_loss is not None
+        ), "Loss function not defined in the config"
         super().__init__(
             config,
             custom_loss,
@@ -481,7 +483,7 @@ class _GenericModel(BaseModel):
 
     @property
     def embedding_layer(self):
-        return self.backbone.embedding_layer
+        return self.backbone.embedding_layers
 
     @property
     def head(self):

@@ -587,7 +587,7 @@ class TabularDatamodule(pl.LightningDataModule):
             if self.config.task == "classification":
                 df.loc[:, self.target] = np.array(
                     [self.label_encoder.classes_[0]] * len(df)
-                )
+                ).reshape(-1, 1)
             else:
                 df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
         df, _ = self.preprocess_data(df, stage="inference")

@@ -64,10 +64,26 @@ class TabNetModel(BaseModel):
         ], "TabNet is only implemented for Regression and Classification"
         super().__init__(config, **kwargs)
 
+    @property
+    def backbone(self):
+        return self._backbone
+
+    @property
+    def embedding_layer(self):
+        return self._embedding_layer
+
+    @property
+    def head(self):
+        return self._head
+
     def _build_network(self):
-        self.backbone = TabNetBackbone(self.hparams)
+        # TabNet has its own embedding layer.
+        # So we are not using the embedding layer from BaseModel
+        self._embedding_layer = lambda x: x
+        self._backbone = TabNetBackbone(self.hparams)
         setattr(self.backbone, "output_dim", self.hparams.output_dim)
-        self.head = nn.Identity()
+        # TabNet has its own head
+        self._head = nn.Identity()
 
     def extract_embedding(self):
         raise ValueError(

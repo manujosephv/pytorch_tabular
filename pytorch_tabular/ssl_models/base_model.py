@@ -56,7 +56,11 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         config = safe_merge_config(config, inferred_config)
 
         self._setup_encoder_decoder(
-            encoder, config.encoder_config, decoder, config.decoder_config, inferred_config
+            encoder,
+            config.encoder_config,
+            decoder,
+            config.decoder_config,
+            inferred_config,
         )
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
@@ -115,6 +119,18 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         assert hasattr(
             self.decoder, "output_dim"
         ), "A decoder must have an output_dim attribute"
+
+    @property
+    def embedding_layers(self):
+        raise NotImplementedError(
+            "embedding_layer property needs to be implemented by inheriting classes"
+        )
+
+    @property
+    def featurizer(self):
+        raise NotImplementedError(
+            "embedding_layer property needs to be implemented by inheriting classes"
+        )
 
     @abstractmethod
     def _setup_loss(self):

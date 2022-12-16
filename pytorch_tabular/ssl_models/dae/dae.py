@@ -114,22 +114,30 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             name, self.hparams.default_noise_probability
         )
 
+    @property
+    def embedding_layers(self):
+        return self._embedding
+
+    @property
+    def featurizer(self):
+        return self._featurizer
+
     def _build_network(self):
-        self.featurizer = DenoisingAutoEncoderFeaturizer(self.encoder, self.hparams)
-        self.embedding = self.featurizer._build_embedding_layer()
+        self._featurizer = DenoisingAutoEncoderFeaturizer(self.encoder, self.hparams)
+        self._embedding = self._featurizer._build_embedding_layer()
         self.reconstruction = MultiTaskHead(
             self.decoder.output_dim,
-            n_binary=len(self.embedding._binary_feat_idx),
-            n_categorical=len(self.embedding._onehot_feat_idx),
-            n_numerical=self.embedding.embedded_cat_dim
+            n_binary=len(self._embedding._binary_feat_idx),
+            n_categorical=len(self._embedding._onehot_feat_idx),
+            n_numerical=self._embedding.embedded_cat_dim
             + len(self.hparams.continuous_cols),
             cardinality=[
-                self.embedding.categorical_embedding_dims[i][0]
-                for i in self.embedding._onehot_feat_idx
+                self._embedding.categorical_embedding_dims[i][0]
+                for i in self._embedding._onehot_feat_idx
             ],
         )
         self.mask_reconstruction = nn.Linear(
-            self.decoder.output_dim, len(self.featurizer.swap_noise.probas)
+            self.decoder.output_dim, len(self._featurizer.swap_noise.probas)
         )
 
     def _setup_loss(self):
@@ -144,10 +152,10 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
         return None
 
     def forward(self, x: Dict):
-        x = self.embedding(x)
-        # (B, N, E)
-        features = self.featurizer(x, perturb=True)
         if self.mode == "pretrain":
+            x = self.embedding_layers(x)
+            # (B, N, E)
+            features = self.featurizer(x, perturb=True)
             z, mask = features.features, features.mask
             # decoder
             z_hat = self.decoder(z)
@@ -171,7 +179,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 )
             return output_dict
         else:  # self.mode == "finetune"
-            return features.features
+            return self.featurize(x)
 
     def calculate_loss(self, output, tag):
         total_loss = 0
@@ -208,9 +216,9 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
         pass
 
     def featurize(self, x: Dict):
-        x = self.embedding(x)
+        # x = self.embedding_layers(x)
         return self.featurizer(x, perturb=False).features
 
     @property
     def output_dim(self):
-        return self.featurizer.encoder.output_dim
+        return self._featurizer.encoder.output_dim
