@@ -3,7 +3,7 @@
 # For license information, see LICENSE.TXT
 """DenoisingAutoEncoder Config"""
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, List, Optional
 
 from pytorch_tabular.config import SSLModelConfig
 
@@ -41,6 +41,18 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         default=0.8,
         metadata={
             "help": "Default probability to corrupt the input features with swap/zero noise. For features for which noise_probabilities does not define a probability. Default is 0.8"
+        },
+    )
+    loss_type_weights: Optional[List[float]] = field(
+        default=None,
+        metadata={
+            "help": "Weights to be used for the loss function in the order [binary, categorical, numerical]. If None, will use the default weights using a formula. eg. for binary, default weight will be n_binary/n_features. Defaults to None"
+        },
+    )
+    mask_loss_weight: float = field(
+        default=2.0,
+        metadata={
+            "help": "Weight to be used for the loss function for the masked features. Defaults to 1.0"
         },
     )
     max_onehot_cardinality: int = field(

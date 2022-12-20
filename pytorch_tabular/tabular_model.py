@@ -733,7 +733,7 @@ class TabularModel:
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {},
+        optimizer_params: Dict = {}, #TODO add learning rate param
     ):
         config = self.config
         if target is None:
@@ -821,7 +821,6 @@ class TabularModel:
 
     # TODO add parameters for fine tune strategy
     # TODO handle experiment config. Force to have new experiment name
-    # TODO First, think if we can create new datamodule, but reuse the artifacts from old one
     def finetune(
         self,
         train,

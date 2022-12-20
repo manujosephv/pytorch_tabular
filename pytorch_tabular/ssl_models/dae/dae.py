@@ -77,6 +77,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
 
 class DenoisingAutoEncoderModel(SSLBaseModel):
     output_tuple = namedtuple("output_tuple", ["original", "reconstructed"])
+    loss_weight_tuple = namedtuple("loss_weight_tuple", ["binary", "categorical", "continuous","mask"])
     ALLOWED_MODELS = ["CategoryEmbeddingModelConfig"]
 
     def __init__(self, config: DictConfig, **kwargs):
@@ -147,6 +148,19 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             "continuous": nn.MSELoss(),
             "mask": nn.BCEWithLogitsLoss(),
         }
+        if self.hparams.loss_type_weights is None:
+            self.loss_weights = self.loss_weight_tuple(*self._init_loss_weights())
+        else:
+            self.loss_weights = self.loss_weight_tuple(
+                *self.hparams.loss_type_weights, self.hparams.mask_loss_weight
+            )
+
+    def _init_loss_weights(self):
+        n_features = self.hparams.continuous_dim + len(self.hparams.embedding_dims)
+        return [len(self.embedding_layers._binary_feat_idx)/n_features,
+                len(self.embedding_layers._onehot_feat_idx)/n_features,
+                self.hparams.continuous_dim + len(self.embedding_layers._embedding_feat_idx)/n_features,
+                self.hparams.mask_loss_weight]
 
     def _setup_metrics(self):
         return None
@@ -166,7 +180,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             output_dict = dict(mask=self.output_tuple(mask, reconstructed_mask))
             if "continuous" in reconstructed_in.keys():
                 output_dict["continuous"] = self.output_tuple(
-                    torch.cat([x["continuous"], x["embedding"]], 1),
+                    torch.cat([i for i in [x.get("continuous", None), x.get("embedding", None)] if i is not None], 1),
                     reconstructed_in["continuous"],
                 )
             if "categorical" in reconstructed_in.keys():
@@ -183,17 +197,16 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
 
     def calculate_loss(self, output, tag):
         total_loss = 0
-        # TODO include weights for different types
-        for type, out in output.items():
-            # TODO special treatment for categorical. input is one-hot encoded, output is list of logits
-            if type == "categorical":
+        for type_, out in output.items():
+            if type_ == "categorical":
                 loss = 0
                 for i in range(out.original.size(-1)):
-                    loss += self.losses[type](out.reconstructed[i], out.original[:, i])
+                    loss += self.losses[type_](out.reconstructed[i], out.original[:, i])
+                loss *= getattr(self.loss_weights, type_)
             else:
-                loss = self.losses[type](out.reconstructed, out.original)
+                loss = self.losses[type_](out.reconstructed, out.original) * getattr(self.loss_weights, type_)
             self.log(
-                f"{tag}_{type}_loss",
+                f"{tag}_{type_}_loss",
                 loss.item(),
                 on_epoch=True,
                 on_step=False,
