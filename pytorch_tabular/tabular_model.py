@@ -832,6 +832,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
+        freeze_backbone:bool = False
     ):
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
@@ -862,6 +863,9 @@ class TabularModel:
                 warnings.warn(
                     "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
                 )
+        if freeze_backbone:
+            for param in self.model.backbone.parameters():
+                param.requires_grad = False
         return self.train(
             self.model,
             datamodule,

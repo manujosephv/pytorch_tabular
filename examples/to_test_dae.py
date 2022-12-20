@@ -114,7 +114,7 @@ from pytorch_tabular.config import (
 )
 from pytorch_tabular.ssl_models.dae import DenoisingAutoEncoderConfig
 
-max_epochs = 15
+max_epochs = 5
 batch_size = 1024
 lr=1e-3
 
@@ -186,7 +186,7 @@ finetune_model = tabular_model.create_finetune_model(
     optimizer_config=ft_optimizer_config,
 )
 # decoder=nn.Identity(),
-finetune_model.finetune(train=finetune_train, validation=finetune_val)
+finetune_model.finetune(train=finetune_train, validation=finetune_val, freeze_backbone=True)
 
 tgt = finetune_test[target_name]
 finetune_test.drop(columns=[target_name], inplace=True)
