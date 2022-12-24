@@ -2,6 +2,7 @@
 """Tests for `pytorch_tabular` package."""
 import pytest
 import torch
+
 # import os
 
 from pytorch_tabular import TabularModel
@@ -13,7 +14,6 @@ from pytorch_tabular.models import (
     CategoryEmbeddingModelConfig,
     NodeConfig,
     TabNetModelConfig,
-    TabTransformerConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 

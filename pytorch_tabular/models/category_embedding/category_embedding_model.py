@@ -26,7 +26,9 @@ class CategoryEmbeddingBackbone(nn.Module):
         # Linear Layers
         layers = []
         if hasattr(self.hparams, "_backbone_input_dim"):
-            _curr_units = self.hparams._backbone_input_dim # TODO implement this backdoor in every model?
+            _curr_units = (
+                self.hparams._backbone_input_dim
+            )  # TODO implement this backdoor in every model?
         else:
             _curr_units = self.hparams.embedded_cat_dim + self.hparams.continuous_dim
         for units in self.hparams.layers.split("-"):
@@ -83,4 +85,3 @@ class CategoryEmbeddingModel(BaseModel):
         self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
         self.head = self._get_head_from_config()
-

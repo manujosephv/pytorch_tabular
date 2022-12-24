@@ -772,7 +772,9 @@ class TabularModel:
 
         datamodule = self.datamodule
         if metrics is not None:
-                assert len(metrics)==len(metrics_params), "Number of metrics and metrics_params should be same"
+            assert len(metrics) == len(
+                metrics_params
+            ), "Number of metrics and metrics_params should be same"
         if task == "regression":
             loss = loss if loss is not None else torch.nn.MSELoss()
             if metrics is None:
@@ -844,7 +846,9 @@ class TabularModel:
                 target_transforms = []
                 if target_transform is not None:
                     for col in self.config.target:
-                        _target_transform = copy.deepcopy(self.datamodule.target_transform_template)
+                        _target_transform = copy.deepcopy(
+                            self.datamodule.target_transform_template
+                        )
                         _target_transform.fit(train[col].values.reshape(-1, 1))
                         target_transforms.append(_target_transform)
                 self.datamodule.target_transforms = target_transforms

@@ -51,7 +51,7 @@ class MixedEmbedding1dLayer(nn.Module):
         self._binary_feat_idx = binary_feat_idx
         self._embedding_feat_idx = embedding_feat_idx
 
-        if embedding_dropout > 0 and len(embedding_feat_idx)>0:
+        if embedding_dropout > 0 and len(embedding_feat_idx) > 0:
             self.embd_dropout = nn.Dropout(embedding_dropout)
         else:
             self.embd_dropout = None
