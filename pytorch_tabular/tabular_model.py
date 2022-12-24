@@ -20,8 +20,9 @@ import torchmetrics
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
-from pytorch_lightning.callbacks.gradient_accumulation_scheduler import \
-    GradientAccumulationScheduler
+from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
+    GradientAccumulationScheduler,
+)
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities.model_summary import summarize
 from pytorch_lightning.utilities.seed import seed_everything
@@ -30,9 +31,14 @@ from sklearn.preprocessing import LabelEncoder
 from torch import nn
 from tqdm.autonotebook import tqdm
 
-from pytorch_tabular.config import (DataConfig, ExperimentConfig,
-                                    ExperimentRunManager, ModelConfig,
-                                    OptimizerConfig, TrainerConfig)
+from pytorch_tabular.config import (
+    DataConfig,
+    ExperimentConfig,
+    ExperimentRunManager,
+    ModelConfig,
+    OptimizerConfig,
+    TrainerConfig,
+)
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import _GenericModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
@@ -636,6 +642,9 @@ class TabularModel:
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
         """
+        assert (
+            self.config.task != "ssl"
+        ), "Please use `pretrain` for semi-supervised learning"
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:
@@ -732,8 +741,11 @@ class TabularModel:
         experiment_config: Optional[Union[ExperimentConfig, str]] = None,
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
+        metrics_params: Optional[Dict] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {}, #TODO add learning rate param
+        optimizer_params: Dict = {},
+        learning_rate: Optional[float] = None,
+        target_range: Optional[Tuple[float, float]] = None,
     ):
         config = self.config
         if target is None:
@@ -759,39 +771,26 @@ class TabularModel:
                 config[key] = value
 
         datamodule = self.datamodule
-        # datamodule = prepare_dataloader(
-        #     train,
-        #     validation,
-        #     test,
-        #     train_sampler,
-        #     target_transform,
-        #     seed,
-        # )
-        # if hasattr(config, "log_target") and (config.log_target is not None):
-        #     logger = self.logger
-        # else:
-        #     logger = None
-        # if hasattr(self, "callbacks"):
-        #     callbacks = self.callbacks
-        # else:
-        #     callbacks = []
+        if metrics is not None:
+                assert len(metrics)==len(metrics_params), "Number of metrics and metrics_params should be same"
         if task == "regression":
             loss = loss if loss is not None else torch.nn.MSELoss()
-            metrics = (
-                metrics
-                if metrics is not None
-                else [torchmetrics.functional.mean_squared_error]
-            )
+            if metrics is None:
+                metrics = [torchmetrics.functional.mean_squared_error]
+                metrics_params = [{}]
         elif task == "classification":
             loss = loss if loss is not None else torch.nn.CrossEntropyLoss()
-            metrics = (
-                metrics if metrics is not None else [torchmetrics.functional.accuracy]
-            )
+            if metrics is None:
+                metrics = [torchmetrics.functional.accuracy]
+                metrics_params = [{}]
 
         model_callable = _GenericModel
         inferred_config = self.datamodule.update_config(config)
         inferred_config = OmegaConf.structured(inferred_config)
         self.model.mode = "finetune"
+        if learning_rate is not None:
+            config.learning_rate = learning_rate
+        config.target_range = target_range
         model_args = {
             "backbone": self.model,
             "head": head,
@@ -819,7 +818,6 @@ class TabularModel:
         # tabular_model.logger = logger
         return tabular_model
 
-    # TODO add parameters for fine tune strategy
     # TODO handle experiment config. Force to have new experiment name
     def finetune(
         self,
@@ -832,7 +830,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
-        freeze_backbone:bool = False
+        freeze_backbone: bool = False,
     ):
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
@@ -844,10 +842,11 @@ class TabularModel:
                 self.datamodule.label_encoder.fit(train[self.config.target[0]])
             elif self.config.task == "regression":
                 target_transforms = []
-                for col in self.config.target:
-                    _target_transform = copy.deepcopy(self.target_transform_template)
-                    _target_transform.fit(train[col].values.reshape(-1, 1))
-                    target_transforms.append(_target_transform)
+                if target_transform is not None:
+                    for col in self.config.target:
+                        _target_transform = copy.deepcopy(self.datamodule.target_transform_template)
+                        _target_transform.fit(train[col].values.reshape(-1, 1))
+                        target_transforms.append(_target_transform)
                 self.datamodule.target_transforms = target_transforms
             self.datamodule.train = self.datamodule._prepare_inference_data(train)
             if validation is not None:
@@ -975,7 +974,7 @@ class TabularModel:
         )
         return result
 
-    # TODO factor out model specific predict logic to model
+    # TODO add predict to SSL for FeatureExtractor to work
     def predict(
         self,
         test: pd.DataFrame,

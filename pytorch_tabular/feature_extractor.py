@@ -67,9 +67,16 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
                     # Skipping empty list
                     continue
                 batch[k] = v.to(self.tabular_model.model.device)
-            _, ret_value = self.tabular_model.model.predict(
-                batch, ret_model_output=True
-            )
+            if self.tabular_model.config.task == "ssl":
+                ret_value = dict(
+                    backbone_features=self.tabular_model.model.predict(
+                        batch, ret_model_output=True
+                    )
+                )
+            else:
+                _, ret_value = self.tabular_model.model.predict(
+                    batch, ret_model_output=True
+                )
             for k in self.extract_keys:
                 if k in ret_value.keys():
                     logits_predictions[k].append(ret_value[k].detach().cpu())

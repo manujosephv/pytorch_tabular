@@ -156,6 +156,10 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     def featurize(self, x: Dict):
         pass
 
+    def predict(self, x: Dict, ret_model_output: bool = True):  # ret_model_output only for compatibility
+        assert ret_model_output, "ret_model_output must be True in case of SSL predict"
+        return self.featurize(x)
+
     def data_aware_initialization(self, datamodule):
         pass
 

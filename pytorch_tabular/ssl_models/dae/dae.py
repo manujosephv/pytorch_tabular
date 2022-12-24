@@ -193,7 +193,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 )
             return output_dict
         else:  # self.mode == "finetune"
-            return self.featurize(x)
+            return self.featurizer(x, perturb=False).features
 
     def calculate_loss(self, output, tag):
         total_loss = 0
@@ -229,7 +229,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
         pass
 
     def featurize(self, x: Dict):
-        # x = self.embedding_layers(x)
+        x = self.embedding_layers(x)
         return self.featurizer(x, perturb=False).features
 
     @property

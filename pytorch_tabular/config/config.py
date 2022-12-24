@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from omegaconf import OmegaConf
 
 from pytorch_tabular.models.common import heads
+
 logger = logging.getLogger(__name__)
 
 LINEAR_HEAD_CONFIG_DEPRECATION_MSG = "Defining the parameters of the head individually has been deprecated and will be removed in the next release. Please use the newly introduced `head` and `head_config` parameters."
@@ -84,6 +85,7 @@ class DataConfig:
 
         pin_memory (Optional[bool, NoneType]): Whether or not to use pin_memory for data loading.
     """
+
     # TODO Can be missing for SSL cases.
     target: List[str] = field(
         default=MISSING,
@@ -201,9 +203,7 @@ class InferredConfig:
         default=None,
         metadata={"help": "The number of unique values in categorical features"},
     )
-    embedding_dims: Optional[
-        List
-    ] = field(
+    embedding_dims: Optional[List] = field(
         default=None,
         metadata={
             "help": "The dimensions of the embedding for each categorical column as a list of tuples "
@@ -835,6 +835,7 @@ class SSLModelConfig:
     )
 
     def __post_init__(self):
+        assert self.task == "ssl", f"task should be ssl, got {self.task}"
         _validate_choices(self)
 
 

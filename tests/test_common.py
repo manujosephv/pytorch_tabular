@@ -6,6 +6,7 @@ import torch
 
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
+from pytorch_tabular.config.config import SSLModelConfig
 from pytorch_tabular.feature_extractor import DeepFeatureExtractor
 from pytorch_tabular.models import (
     AutoIntConfig,
@@ -14,6 +15,7 @@ from pytorch_tabular.models import (
     TabNetModelConfig,
     TabTransformerConfig,
 )
+from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
 MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, dict(layers="10-20")),
@@ -41,6 +43,7 @@ MODEL_CONFIG_SAVE_ONNX_TEST = [
 MODEL_CONFIG_FEATURE_EXT_TEST = [
     CategoryEmbeddingModelConfig,
     AutoIntConfig,
+    DenoisingAutoEncoderConfig,
 ]
 
 
@@ -150,12 +153,30 @@ def test_feature_extractor(
     categorical_cols,
 ):
     (train, test, target) = regression_data
+    is_ssl = issubclass(model_config_class, SSLModelConfig)
     data_config = DataConfig(
         target=target,
         continuous_cols=continuous_cols,
         categorical_cols=categorical_cols,
+        handle_missing_values=False if is_ssl else True,
+        handle_unknown_categories=False if is_ssl else True,
     )
-    model_config_params = dict(task="regression")
+    model_config_params = dict()
+    if not is_ssl:
+        model_config_params["task"] = "regression"
+    else:
+        encoder_config = CategoryEmbeddingModelConfig(
+            task="backbone",
+            layers="4096-2048-512",  # Number of nodes in each layer
+            activation="LeakyReLU",  # Activation between each layers
+        )
+        decoder_config = CategoryEmbeddingModelConfig(
+            task="backbone",
+            layers="512-2048-4096",  # Number of nodes in each layer
+            activation="LeakyReLU",  # Activation between each layers
+        )
+        model_config_params["encoder_config"] = encoder_config
+        model_config_params["decoder_config"] = decoder_config
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=3,
@@ -172,10 +193,16 @@ def test_feature_extractor(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(
-        train=train,
-        test=test,
-    )
+    if is_ssl:
+        tabular_model.pretrain(
+            train=train,
+            validation=test,
+        )
+    else:
+        tabular_model.fit(
+            train=train,
+            validation=test,
+        )
     dt = DeepFeatureExtractor(tabular_model)
     enc_df = dt.fit_transform(test)
     assert any([col for col in enc_df.columns if "backbone" in col])
