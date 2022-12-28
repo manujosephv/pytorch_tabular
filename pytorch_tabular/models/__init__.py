@@ -15,8 +15,9 @@ from .mixture_density import MDNModel, MDNConfig
 from .autoint import AutoIntConfig, AutoIntModel
 from .tab_transformer import TabTransformerConfig, TabTransformerModel
 from .ft_transformer import FTTransformerConfig, FTTransformerModel
+from .gate import GatedAdditiveTreeEnsembleConfig, GatedAdditiveTreeEnsembleModel
 from .base_model import BaseModel
-from . import category_embedding, node, mixture_density, tabnet, autoint
+from . import category_embedding, node, mixture_density, tabnet, autoint, gate
 
 __all__ = [
     "CategoryEmbeddingModel",
@@ -42,10 +43,13 @@ __all__ = [
     "TabTransformerModel",
     "FTTransformerConfig",
     "FTTransformerModel",
+    "GatedAdditiveTreeEnsembleConfig",
+    "GatedAdditiveTreeEnsembleModel",
     "category_embedding",
     "node",
     "mixture_density",
     "tabnet",
     "autoint",
-    "tab_transformer"
+    "tab_transformer",
+    "gate"
 ]

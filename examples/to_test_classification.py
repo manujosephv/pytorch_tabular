@@ -1,3 +1,4 @@
+from pytorch_tabular.models.gate.config import GatedAdditiveTreeEnsembleConfig
 from pytorch_tabular.models.tab_transformer.config import TabTransformerConfig
 from pytorch_tabular.models.ft_transformer.config import FTTransformerConfig
 import torch
@@ -99,14 +100,14 @@ data_config = DataConfig(
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-model_config = TabTransformerConfig(
-    task="classification",
-    metrics=["f1", "accuracy"],
-    share_embedding = True,
-    share_embedding_strategy="add",
-    shared_embedding_fraction=0.25,
-    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
-)
+# model_config = TabTransformerConfig(
+#     task="classification",
+#     metrics=["f1", "accuracy"],
+#     share_embedding = True,
+#     share_embedding_strategy="add",
+#     shared_embedding_fraction=0.25,
+#     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+# )
 # model_config = FTTransformerConfig(
 #     task="classification",
 #     metrics=["f1", "accuracy"],
@@ -117,12 +118,23 @@ model_config = TabTransformerConfig(
 #     shared_embedding_fraction=0.25,
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 # )
-trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=True, max_epochs=5, batch_size=512)
-experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
-                                     run_name="node_forest_cov", 
-                                     exp_watch="gradients", 
-                                     log_target="wandb", 
-                                     log_logits=True)
+# model_config_params = dict(
+#             task="regression",
+#             gflu_stages=1,
+#             tree_depth=1,
+#             num_trees=2,
+#         )
+model_config = GatedAdditiveTreeEnsembleConfig(
+    task="classification",
+    metrics=["f1_score", "accuracy"],
+    metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+)
+trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
+# experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example", 
+#                                      run_name="node_forest_cov", 
+#                                      exp_watch="gradients", 
+#                                      log_target="wandb", 
+#                                      log_logits=True)
 optimizer_config = OptimizerConfig()
 
 # tabular_model = TabularModel(
@@ -155,8 +167,8 @@ train_transform = transformer.fit_transform(train)
 # result = tabular_model.evaluate(test)
 # print(result)
 # test.drop(columns=ta6rget_name, inplace=True)
-# pred_df = tabular_model.predict(test)
-# print(pred_df.head())
+pred_df = tabular_model.predict(test)
+print(pred_df.head())
 # pred_df.to_csv("output/temp2.csv")
 # tabular_model.save_model("test_save")
 # new_model = TabularModel.load_from_checkpoint("test_save")
