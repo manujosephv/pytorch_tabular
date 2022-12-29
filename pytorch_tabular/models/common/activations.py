@@ -10,7 +10,16 @@ from pytorch_tabular.models.common.layers import PositionWiseFeedForward
 
 # GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
 class GEGLU(nn.Module):
+    """
+    Gated Exponential Linear Unit (GEGLU)
+    """
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
+        """
+        Args:
+            d_model: dimension of the model
+            d_ff: dimension of the feedforward layer
+            dropout: dropout probability
+        """
         super().__init__()
         self.ffn = PositionWiseFeedForward(
             d_model, d_ff, dropout, nn.GELU(), True, False, False, False
@@ -21,7 +30,16 @@ class GEGLU(nn.Module):
 
 
 class ReGLU(nn.Module):
+    """
+    ReGLU
+    """
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
+        """
+        Args:
+            d_model: dimension of the model
+            d_ff: dimension of the feedforward layer
+            dropout: dropout probability
+        """
         super().__init__()
         self.ffn = PositionWiseFeedForward(
             d_model, d_ff, dropout, nn.ReLU(), True, False, False, False
@@ -33,6 +51,12 @@ class ReGLU(nn.Module):
 
 class SwiGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
+        """
+        Args:
+            d_model: dimension of the model
+            d_ff: dimension of the feedforward layer
+            dropout: dropout probability
+        """
         super().__init__()
         self.ffn = PositionWiseFeedForward(
             d_model, d_ff, dropout, nn.SiLU(), True, False, False, False

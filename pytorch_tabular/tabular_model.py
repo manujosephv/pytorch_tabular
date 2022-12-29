@@ -485,6 +485,10 @@ class TabularModel:
 
             seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
         """
+        if test is not None:
+            warnings.warn(
+                "Providing test data in `fit` is deprecated and will be removed in next major release. Plese use `evaluate` for evaluating on test data"
+            )
         logger.info("Preparing the DataLoaders...")
         target_transform = self._check_and_set_target_transform(target_transform)
 
@@ -596,7 +600,7 @@ class TabularModel:
         self,
         train: Optional[pd.DataFrame],
         validation: Optional[pd.DataFrame] = None,
-        test: Optional[pd.DataFrame] = None,  # TODO Need to deprecate this
+        test: Optional[pd.DataFrame] = None,  # TODO: Deprecate test in next version
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
@@ -619,6 +623,7 @@ class TabularModel:
 
             test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
                 which you'll be able to check performance after the model is trained. Defaults to None.
+                DEPRECATED. Will be removed in the next version.
 
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
@@ -648,7 +653,7 @@ class TabularModel:
         """
         assert (
             self.config.task != "ssl"
-        ), "Please use `pretrain` for semi-supervised learning"
+        ), "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:
@@ -686,7 +691,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
     ) -> None:
-        """The fit method which takes in the data and triggers the training
+        """The pretrained method which takes in the data and triggers the training
 
         Args:
             train (pd.DataFrame): Training Dataframe
@@ -709,6 +714,9 @@ class TabularModel:
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
         """
+        assert (
+            self.config.task == "ssl"
+        ), f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:
@@ -739,17 +747,57 @@ class TabularModel:
         head: str,
         head_config: Dict,
         target: Optional[str] = None,
-        optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
-        trainer_config: Optional[Union[TrainerConfig, str]] = None,
-        experiment_config: Optional[Union[ExperimentConfig, str]] = None,
+        optimizer_config: Optional[OptimizerConfig] = None,
+        trainer_config: Optional[TrainerConfig] = None,
+        experiment_config: Optional[ExperimentConfig] = None,
         loss: Optional[torch.nn.Module] = None,
-        metrics: Optional[List[Callable]] = None,
+        metrics: Optional[List[Union[Callable, str]]] = None,
         metrics_params: Optional[Dict] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
         learning_rate: Optional[float] = None,
         target_range: Optional[Tuple[float, float]] = None,
     ):
+        """Creates a new TabularModel model using the pretrained weights and the new task and head
+        Args:
+            task (str): The task to be performed. One of "regression", "classification"
+
+            head (str): The head to be used for the model. Should be one of the heads defined
+                in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
+                [`None`,`LinearHead`,`MixtureDensityHead`].
+
+            head_config (Dict): The config as a dict which defines the head. If left empty,
+                will be initialized as default linear head.
+
+            target (Optional[str], optional): The target column name if not provided in the initial pretraining stage. Defaults to None.
+
+            optimizer_config (Optional[OptimizerConfig], optional): If provided, will redefine the optimizer for fine-tuning stage. Defaults to None.
+
+            trainer_config (Optional[TrainerConfig], optional): If provided, will redefine the trainer for fine-tuning stage. Defaults to None.
+
+            experiment_config (Optional[ExperimentConfig], optional): If provided, will redefine the experiment for fine-tuning stage. Defaults to None.
+
+            loss (Optional[torch.nn.Module], optional): If provided, will be used as the loss function for the fine-tuning. By Default it is MSELoss for
+                regression and CrossEntropyLoss for classification.
+
+            metrics (Optional[List[Callable]], optional): List of metrics (either callables or str) to be used for the fine-tuning stage. If str, it should be
+                one of the functional metrics implemented in ``torchmetrics.functional``Defaults to None.
+
+            metrics_params (Optional[Dict], optional): The parameters for the metrics in the same order as metrics.
+                For eg. f1_score for multi-class needs a parameter `average` to fully define the metric. Defaults to None.
+
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard
+                PyTorch optimizers. If provided, the OptimizerConfig is ignored in favor of this. Defaults to None.
+
+            optimizer_params (Dict, optional): The parameters for the optimizer. Defaults to {}.
+
+            learning_rate (Optional[float], optional): The learning rate to be used. Defaults to 1e-3.
+
+            target_range (Optional[Tuple[float, float]], optional): The target range for the regression task.
+                Is ignored for classification. Defaults to None.
+        Returns:
+            TabularModel: The new TabularModel model for fine-tuning
+        """
         config = self.config
         if target is None:
             assert hasattr(
@@ -774,13 +822,17 @@ class TabularModel:
                 config[key] = value
         else:
             # Renaming the experiment run so that a different log is created for finetuning
-            config["run_name"] = config["run_name"]+"_finetuned"
+            config["run_name"] = config["run_name"] + "_finetuned"
 
         datamodule = self.datamodule
         if metrics is not None:
             assert len(metrics) == len(
                 metrics_params
             ), "Number of metrics and metrics_params should be same"
+            metrics = [
+                getattr(torchmetrics.functional, m) if isinstance(m, str) else m
+                for m in metrics
+            ]
         if task == "regression":
             loss = loss if loss is not None else torch.nn.MSELoss()
             if metrics is None:
@@ -817,6 +869,8 @@ class TabularModel:
         tabular_model = TabularModel(config=config)
         tabular_model.model = model
         tabular_model.datamodule = datamodule
+        # Setting a flag to identify this as a fine-tune model
+        tabular_model._is_finetune_model = True
         return tabular_model
 
     def finetune(
@@ -832,6 +886,36 @@ class TabularModel:
         datamodule: Optional[TabularDatamodule] = None,
         freeze_backbone: bool = False,
     ):
+        """Finetunes the model on the provided data
+        Args:
+            train (pd.DataFrame): The training data with labels
+
+            validation (Optional[pd.DataFrame], optional): The validation data with labels. Defaults to None.
+
+            train_sampler (Optional[torch.utils.data.Sampler], optional): If provided, will be used as a batch sampler
+                for training. Defaults to None.
+
+            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used to transform
+                the target before training and inverse transform the predictions.
+
+            max_epochs (Optional[int], optional): The maximum number of epochs to train for. Defaults to None.
+
+            min_epochs (Optional[int], optional): The minimum number of epochs to train for. Defaults to None.
+
+            seed (Optional[int], optional): The seed to be used for training. Defaults to 42.
+
+            callbacks (Optional[List[pl.Callback]], optional): If provided, will be added to the callbacks for Trainer.
+                Defaults to None.
+
+            datamodule (Optional[TabularDatamodule], optional): If provided, will be used as the datamodule for training.
+                Defaults to None.
+
+            freeze_backbone (bool, optional): If True, will freeze the backbone by tirning off gradients.
+                Defaults to False, which means the pretrained weights are also further tuned during fine-tuning.
+        """
+        assert (
+            self._is_finetune_model
+        ), "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:

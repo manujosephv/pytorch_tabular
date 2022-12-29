@@ -57,38 +57,45 @@ class DataConfig:
     """Data configuration.
 
     Args:
-        target (List[str]): A list of strings with the names of the target column(s)
+        target (Union[List[str], NoneType]): A list of strings with the names of the target column(s).
+            It is mandatory for all except SSL tasks.
 
-        continuous_cols (List[str]): Column names of the numeric fields. Defaults to []
+        continuous_cols (List): Column names of the numeric fields. Defaults to []
 
         categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to []
 
-        date_columns (List): (Column names, Freq) tuples of the date fields. For eg. a field named introduction_date
-            and with a monthly frequency should have an entry ('intro_date','M'}
+        date_columns (List): (Column names, Freq) tuples of the date fields.
+            For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}
 
         encode_date_columns (bool): Whether or not to encode the derived variables from date
 
-        validation_split (Optional[float, NoneType]): Percentage of Training rows to keep aside as validation.
+        validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
             Used only if Validation Data is not given separately
 
-        continuous_feature_transform (Optional[str, NoneType]): Whether or not to transform the features before modelling.
-            By default it is turned off.Choices are: None "yeo-johnson" "box-cox" "quantile_normal" "quantile_uniform"
+        continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
+            By default it is turned off.. Choices are: [`None`,`yeo-johnson`,`box-cox`,`quantile_normal`,`quantile_uniform`].
 
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
 
-        quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
-            gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
-            Please note that this transformation does NOT apply gaussian noise to the resulting data,
-            the noise is only applied for QuantileTransformer
+        quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added gaussian noise
+            with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
+            Please not that this transformation does NOT apply gaussian noise to the resulting data, the noise is only
+            applied for QuantileTransformer
 
-        num_workers (Optional[int, NoneType]): The number of workers used for data loading. For Windows always set to 0
+        num_workers (Union[int, NoneType]): The number of workers used for data loading. For Windows always set to 0 to avoid errors.
 
-        pin_memory (Optional[bool, NoneType]): Whether or not to use pin_memory for data loading.
+        pin_memory (bool): Whether or not to pin memory for data loading.
+
+        handle_unknown_categories (bool): Whether or not to handle unknown or new values in categorical columns as unknown
+
+        handle_missing_values (bool): Whether or not to handle missing values in categorical columns as unknown
     """
 
     target: Optional[List[str]] = field(
         default=None,
-        metadata={"help": "A list of strings with the names of the target column(s). It is mandatory for all except SSL tasks."},
+        metadata={
+            "help": "A list of strings with the names of the target column(s). It is mandatory for all except SSL tasks."
+        },
     )
     continuous_cols: List = field(
         default_factory=list,
@@ -187,6 +194,22 @@ class DataConfig:
 
 @dataclass
 class InferredConfig:
+    """
+    Configuration inferred from the data during `fit` of the TabularDatamodule
+
+    Args:
+        categorical_dim (int): The number of categorical features
+
+        continuous_dim (int): The number of continuous features
+
+        output_dim (Optional[int], optional): The number of output targets. Defaults to None.
+
+        categorical_cardinality (Optional[List[int]], optional): The number of unique values in categorical features.
+            Defaults to None.
+
+        embedding_dims (Optional[List], optional): The dimensions of the embedding for each categorical column as a
+            list of tuples (cardinality, embedding_dim). Defaults to None.
+    """
 
     categorical_dim: int = field(
         metadata={"help": "The number of categorical features"},
@@ -232,54 +255,66 @@ class TrainerConfig:
     Args:
         batch_size (int): Number of samples in each batch of training
 
-        fast_dev_run (bool): Quick Debug Run of Val
+        fast_dev_run (bool): runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val
+                and test to find any bugs (ie: a sort of unit test).
 
         max_epochs (int): Maximum number of epochs to be run
 
-        min_epochs (int): Force training for at least these many epochs. 1 by default
+        min_epochs (Union[int, NoneType]): Force training for at least these many epochs. 1 by default
 
-        max_time (Optional[int]): Stop training after this amount of time has passed. Disabled by default (None)
+        max_time (Union[int, NoneType]): Stop training after this amount of time has passed. Disabled by
+                default (None)
 
-        gpus (int): Number of gpus to train on (int) or which GPUs to train on (list or str). -1 uses all available GPUs. By default uses CPU (None)
+        gpus (Union[int, NoneType]): Number of gpus to train on (int). -1 uses all available GPUs. By
+                default uses CPU (None)
 
-        accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict.
-            Trainer also calls optimizer.step() for the last indivisible step number.
+        accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict. Trainer
+                also calls optimizer.step() for the last indivisible step number.
 
-        auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),
-            to find optimal initial learning rate.
+        auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling
+                trainer.tune(), to find optimal initial learning rate.
 
         auto_select_gpus (bool): If enabled and `gpus` is an integer, pick available gpus automatically.
-            This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one
-            process at a time can access them.
+                This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one
+                process at a time can access them.
 
         check_val_every_n_epoch (int): Check val every n train epochs.
 
-        deterministic (bool): If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility.
-
         gradient_clip_val (float): Gradient clipping value
 
-        overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same training set
-            for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it.
-            Useful for quickly debugging or trying to overfit on purpose.
+        overfit_batches (float): Uses this much data of the training set. If nonzero, will use the same
+                training set for validation and testing. If the training dataloaders have shuffle=True, Lightning
+                will automatically disable it. Useful for quickly debugging or trying to overfit on purpose.
 
-        profiler (Optional[str, NoneType]): To profile individual steps during training and assist in identifying bottlenecks.
-            Choices are: 'None' 'simple' 'advanced'
+        deterministic (bool): If true enables cudnn.deterministic. Might make your system slower, but
+                ensures reproducibility.
 
-        early_stopping (str): The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping
+        profiler (Union[str, NoneType]): To profile individual steps during training and assist in
+                identifying bottlenecks. None, simple or advanced, pytorch. Choices are:
+                [`None`,`simple`,`advanced`,`pytorch`].
 
-        early_stopping_min_delta (float): The minimum delta in the loss/metric which qualifies as an improvement in early stopping
+        early_stopping (Union[str, NoneType]): The loss/metric that needed to be monitored for early
+                stopping. If None, there will be no early stopping
 
-        early_stopping_mode (str): The direction in which the loss/metric should be optimized. Choices are `max` and `min`
+        early_stopping_min_delta (float): The minimum delta in the loss/metric which qualifies as an
+                improvement in early stopping
 
-        early_stopping_patience (int): The number of epochs to wait until there is no further improvements in loss/metric
+        early_stopping_mode (str): The direction in which the loss/metric should be optimized. Choices are:
+                [`max`,`min`].
 
-        checkpoints (str): The loss/metric that needed to be monitored for checkpoints. If None, there will be no checkpoints
+        early_stopping_patience (int): The number of epochs to wait until there is no further improvements
+                in loss/metric
 
-        checkpoints_path (str): The path to save checkpoints
+        checkpoints (Union[str, NoneType]): The loss/metric that needed to be monitored for checkpoints. If
+                None, there will be no checkpoints
 
-        checkpoints_name(Optional[str]): The name under which the models will be saved.
-            If left blank, first it will look for `run_name` in experiment_config and if that is also None
-            then it will use a generic name like task_version.
+        checkpoints_path (str): The path where the saved models will be
+
+        checkpoints_every_n_epochs (int): Number of training steps between checkpoints
+
+        checkpoints_name (Union[str, NoneType]): The name under which the models will be saved. If left
+                blank, first it will look for `run_name` in experiment_config and if that is also None then it
+                will use a generic name like task_version.
 
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
 
@@ -287,20 +322,18 @@ class TrainerConfig:
 
         load_best (bool): Flag to load the best model saved during training
 
-        track_grad_norm (int): Track and Log Gradient Norms in the logger.
-            -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc.
+        track_grad_norm (int): Track and Log Gradient Norms in the logger. -1 by default means no tracking.
+                1 for the L1 norm, 2 for L2 norm, etc.
 
-        progress_bar (str): Progress bar type. Can be one of: `none`, `simple`,
-            `rich`. Defaults to `rich`.
+        progress_bar (str): Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`.
 
-        precision (int): Lightning supports either double precision (64), full
-            precision (32), or half precision (16) training. Half precision, or
-            mixed precision, is the combined use of 32 and 16 bit floating points
-            to reduce memory footprint during model training. This can result in
-            improved performance, achieving +3X speedups on modern GPUs.
+        precision (int): Precision of the model. Can be one of: `32`, `16`, `64`. Defaults to `32`..
+                Choices are: [`32`,`16`,`64`].
 
-        trainer_kwargs (dict[str, Any]): Additional kwargs to be passed to PyTorch Lightning Trainer.
-            See https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-class-api
+        seed (int): Seed for random number generators. Defaults to 42
+
+        trainer_kwargs (Dict[str, Any]): Additional kwargs to be passed to PyTorch Lightning Trainer. See
+                https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer
     """
 
     batch_size: int = field(
@@ -633,26 +666,39 @@ class ExperimentRunManager:
 class ModelConfig:
     """Base Model configuration
     Args:
-        task (str): Specify whether the problem is regression, classification, backbone. Choices are: regression classification backbone
+        task (str): Specify whether the problem is regression or classification. `backbone` is a task which
+                considers the model as a backbone to generate features. Mostly used internally for SSL and related
+                tasks.. Choices are: [`regression`,`classification`,`backbone`].
 
-        embedding_dims (Optional[List, NoneType]): The dimensions of the embedding for each categorical column
-            as a list of tuples (or a nested list) (cardinality, embedding_dim). If left empty, will infer using the cardinality of the
-            categorical column using the rule min(50, (x + 1) // 2). Will only be used if the model uses categorical embedding.
+        head (Union[str, NoneType]): The head to be used for the model. Should be one of the heads defined
+                in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
+                [`None`,`LinearHead`,`MixtureDensityHead`].
 
-        learning_rate (float): The learning rate of the model
+        head_config (Union[Dict, NoneType]): The config as a dict which defines the head. If left empty,
+                will be initialized as default linear head.
 
-        loss (Optional[str, NoneType]): The loss function to be applied.
-            By Default it is MSELoss for regression and CrossEntropyLoss for classification.
-            Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
+        embedding_dims (Union[List, NoneType]): The dimensions of the embedding for each categorical column
+                as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality
+                of the categorical column using the rule min(50, (x + 1) // 2)
 
-        metrics (Optional[List[str], NoneType]): the list of metrics you need to track during training.
-            The metrics should be one of the metrics implemented in PyTorch Lightning.
-            By default, it is accuracy if classification and mean_squared_error for regression
+        learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        metrics_params (Optional[List, NoneType]): The parameters to be passed to the metrics function
+        loss (Union[str, NoneType]): The loss function to be applied. By Default it is MSELoss for
+                regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave
+                it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
 
-        target_range (Optional[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
-            Typically used for Regression problems. If left empty, will not apply any restrictions
+        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training. The
+                metrics should be one of the functional metrics implemented in ``torchmetrics.functional``. By default, it is
+                accuracy if classification and mean_squared_error for regression
+
+        metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function. 
+                For eg. f1_score for multi-class needs a parameter `average` to fully define the metric.
+
+        target_range (Union[List, NoneType]): The range in which we should limit the output variable.
+                Currently ignored for multi-target regression. Typically used for Regression problems. If left
+                empty, will not apply any restrictions
+
+        seed (int): The seed for reproducibility. Defaults to 42
 
     Raises:
         NotImplementedError: Raises an error if task is not regression or classification
@@ -689,7 +735,7 @@ class ModelConfig:
         },
     )
     learning_rate: float = field(
-        default=1e-3, metadata={"help": "The learning rate of the model"}
+        default=1e-3, metadata={"help": "The learning rate of the model. Defaults to 1e-3."}
     )
     loss: Optional[str] = field(
         default=None,
@@ -777,28 +823,21 @@ class ModelConfig:
 
 @dataclass
 class SSLModelConfig:
-    """Base SSL Model configuration
+    """Base SSLModel Configuration
     Args:
+        encoder_config (Union[ModelConfig, NoneType]): The config of the encoder to be used for
+                the model. Should be one of the model configs defined in PyTorch Tabular
 
-        embedding_dims (Optional[List[int], NoneType]): The dimensions of the embedding for each categorical column
-            as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column
-            using the rule min(50, (x + 1) // 2). Will only be used if the model uses categorical embedding.
+        decoder_config (Union[ModelConfig, NoneType]): The config of decoder to be used for the
+                model. Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity
 
-        learning_rate (float): The learning rate of the model
+        embedding_dims (Union[List, NoneType]): The dimensions of the embedding for each categorical column
+                as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality
+                of the categorical column using the rule min(50, (x + 1) // 2)
 
-        loss (Optional[str, NoneType]): The loss function to be applied.
+        learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
-        metrics (Optional[List[str], NoneType]): the list of metrics you need to track during training.
-            The metrics should be one of the metrics implemented in PyTorch Lightning.
-            By default, it is accuracy if classification and mean_squared_error for regression
-
-        metrics_params (Optional[List, NoneType]): The parameters to be passed to the metrics function
-
-        target_range (Optional[List, NoneType]): The range in which we should limit the output variable. Currently ignored for multi-target regression
-            Typically used for Regression problems. If left empty, will not apply any restrictions
-
-    Raises:
-        NotImplementedError: Raises an error if task is not regression or classification
+        seed (int): The seed for reproducibility. Defaults to 42
     """
 
     task: str = field(init=False, default="ssl")
@@ -826,7 +865,7 @@ class SSLModelConfig:
         },
     )
     learning_rate: float = field(
-        default=1e-3, metadata={"help": "The learning rate of the model"}
+        default=1e-3, metadata={"help": "The learning rate of the model. Defaults to 1e-3"}
     )
     seed: int = field(
         default=42,
@@ -837,118 +876,6 @@ class SSLModelConfig:
         assert self.task == "ssl", f"task should be ssl, got {self.task}"
         _validate_choices(self)
 
-
-# @dataclass
-# class SSLModelConfig(ModelConfig):
-#     """Base Self Supervised Model configuration
-#     Args:
-
-#         ssl_task (str): Specify the kind of self supervised algorithm to use. Choices are: Denoising, Contrastive, None
-
-#         aug_task (str): Specify the kind of augmentations algorithm to use for ssl. Choices are: cutmix, mixup, None
-
-#     """
-
-#     task: str = field(init=False, default="ssl")
-
-#     ssl_task: Optional[str] = field(
-#         default=None,
-#         metadata={
-#             "help": "Specify the kind of self supervised algorithm to use.",
-#             "choices": ["Denoising", "Contrastive", None],
-#         },
-#     )
-#     aug_task: Optional[str] = field(
-#         default=None,
-#         metadata={
-#             "help": "Specify the kind of augmentations algorithm to use for ssl.",
-#             "choices": ["cutmix", "mixup", None],
-#         },
-#     )
-#     embedding_dims: Optional[List] = field(
-#         default=None,
-#         metadata={
-#             "help": "The dimensions of the embedding for each categorical column as a list of tuples "
-#             "(cardinality, embedding_dim). If left empty, will infer using the cardinality of the "
-#             "categorical column using the rule min(50, (x + 1) // 2)"
-#         },
-#     )
-#     learning_rate: float = field(
-#         default=1e-3, metadata={"help": "The learning rate of the model"}
-#     )
-#     loss: Optional[str] = field(
-#         default=None,
-#         metadata={
-#             "help": "The loss function to be applied. By Default it is MSELoss for regression "
-#             "and CrossEntropyLoss for classification. Unless you are sure what you are doing, "
-#             "leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification"
-#         },
-#     )
-#     metrics: Optional[List[str]] = field(
-#         default=None,
-#         metadata={
-#             "help": "the list of metrics you need to track during training. The metrics should be one "
-#             "of the functional metrics implemented in ``torchmetrics``. By default, "
-#             "it is accuracy if classification and mean_squared_error for regression"
-#         },
-#     )
-#     metrics_params: Optional[List] = field(
-#         default=None,
-#         metadata={"help": "The parameters to be passed to the metrics function"},
-#     )
-#     target_range: Optional[List] = field(
-#         default=None,
-#         metadata={
-#             "help": "The range in which we should limit the output variable. "
-#             "Currently ignored for multi-target regression. Typically used for Regression problems. "
-#             "If left empty, will not apply any restrictions"
-#         },
-#     )
-#     seed: int = field(
-#         default=42,
-#         metadata={"help": "The seed for reproducibility. Defaults to 42"},
-#     )
-
-#     def __post_init__(self):
-#         if self.task == "regression":
-#             self.loss = "MSELoss" if self.loss is None else self.loss
-#             self.metrics = (
-#                 ["mean_squared_error"] if self.metrics is None else self.metrics
-#             )
-#             self.metrics_params = (
-#                 [{} for _ in self.metrics]
-#                 if self.metrics_params is None
-#                 else self.metrics_params
-#             )
-#         elif self.task == "classification":
-#             self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
-#             self.metrics = ["accuracy"] if self.metrics is None else self.metrics
-#             self.metrics_params = (
-#                 [{} for _ in self.metrics]
-#                 if self.metrics_params is None
-#                 else self.metrics_params
-#             )
-#         elif self.task == "ssl":
-#             assert self.ssl_task, "if task is ssl, ssl_task cannot be None"
-#             assert self.aug_task, "if task is ssl, aug_task cannot be None"
-#             if self.ssl_task == "Contrastive":
-#                 if self.loss:
-#                     logger.warning(
-#                         "In case of Contrastive the loss cannot be specified and will be ignored"
-#                     )
-#                 self.loss = "ContrastiveLoss" if self.loss is None else self.loss
-#             else:
-#                 self.loss = "MSELoss" if self.loss is None else self.loss
-#             self.metrics = (
-#                 ["mean_squared_error"] if self.metrics is None else self.metrics
-#             )
-#             self.metrics_params = [{}]
-#         else:
-#             raise NotImplementedError(
-#                 f"{self.task} is not a valid task. Should be one of "
-#                 f"{self.__dataclass_fields__['task'].metadata['choices']}"
-#             )
-#         assert len(self.metrics) == len(
-#             self.metrics_params
-#         ), "metrics and metric_params should have same length"
-#         _validate_choices(self)
+# if __name__ == "__main__":
+#     import textwrap
+#     print(generate_doc_dataclass(SSLModelConfig, desc="Base SSLModel Configuration"))

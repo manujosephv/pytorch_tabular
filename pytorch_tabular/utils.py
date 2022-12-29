@@ -1,4 +1,5 @@
 import logging
+import textwrap
 
 import numpy as np
 import pandas as pd
@@ -111,3 +112,27 @@ def getattr_nested(_module_src, _model_name):
     for m in _module_src.split("."):
         module = getattr(module, m)
     return getattr(module, _model_name)
+
+
+def generate_doc_dataclass(dataclass, desc=None, width=100):
+    if desc is not None:
+        doc_str = f"{desc}\nArgs:"
+    else:
+        doc_str = "Args:"
+    for key in dataclass.__dataclass_fields__.keys():
+        atr = dataclass.__dataclass_fields__[key]
+        if atr.init:
+            type = (
+                str(atr.type)
+                .replace("<class '", "")
+                .replace("'>", "")
+                .replace("typing.", "")
+            )
+            help_str = atr.metadata.get("help", "")
+            if "choices" in atr.metadata.keys():
+                help_str += f'. Choices are: [{",".join(["`"+str(ch)+"`" for ch in atr.metadata["choices"]])}].'
+            # help_str += f'. Defaults to {atr.default}'
+            h_str = textwrap.fill(f"{key} ({type}): {help_str}", width=width, subsequent_indent="\t\t", initial_indent="\t")
+            h_str = f"\n{h_str}\n"
+            doc_str += h_str
+    return doc_str

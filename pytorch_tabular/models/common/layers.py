@@ -1,7 +1,7 @@
 # noqa W605
 import math
 from functools import partial
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 from einops import rearrange
@@ -368,6 +368,17 @@ class Embedding2dLayer(nn.Module):
         embedding_dropout: float = 0.0,
         initialization: Optional[str] = None,
     ):
+        """
+        Args:
+            continuous_dim: number of continuous features
+            categorical_cardinality: list of cardinalities of categorical features
+            embedding_dim: embedding dimension
+            shared_embedding_strategy: strategy to use for shared embeddings
+            frac_shared_embed: fraction of embeddings to share
+            embedding_bias: whether to use bias in embedding layers
+            batch_norm_continuous_input: whether to use batch norm on continuous features
+            embedding_dropout: dropout to apply to embeddings
+            initialization: initialization strategy to use for embedding layers"""
         super(Embedding2dLayer, self).__init__()
         self.continuous_dim = continuous_dim
         self.categorical_cardinality = categorical_cardinality
@@ -504,6 +515,18 @@ class TransformerEncoderBlock(nn.Module):
         add_norm_dropout: float = 0.1,
         transformer_head_dim: Optional[int] = None,
     ):
+        """
+        Args:
+            input_embed_dim: The input embedding dimension
+            num_heads: The number of attention heads
+            ff_hidden_multiplier: The hidden dimension multiplier for the position-wise feed-forward layer
+            ff_activation: The activation function for the position-wise feed-forward layer
+            attn_dropout: The dropout probability for the attention layer
+            keep_attn: Whether to keep the attention weights
+            ff_dropout: The dropout probability for the position-wise feed-forward layer
+            add_norm_dropout: The dropout probability for the residual connections
+            transformer_head_dim: The dimension of the attention heads. If None, will default to input_embed_dim
+        """
         super().__init__()
         self.mha = MultiHeadedAttention(
             input_embed_dim,
@@ -539,7 +562,13 @@ class TransformerEncoderBlock(nn.Module):
 
 
 class Lambda(nn.Module):
-    def __init__(self, func):
+    """A wrapper for a lambda function as a pytorch module"""
+
+    def __init__(self, func: Callable):
+        """Initialize lambda module
+        Args:
+            func: any function/callable
+        """
         super().__init__()
         self.func = func
 
