@@ -141,7 +141,7 @@ class CustomHead(nn.Module):
         self.hparams = hparams
         self.input_dim = input_dim
         if self.hparams.share_head_weights:
-            self.head = self._get_head_from_config()  # TODO pass this from base model
+            self.head = self._get_head_from_config()
         else:
             self.head = nn.ModuleList(
                 [self._get_head_from_config() for _ in range(self.hparams.num_trees)]

@@ -93,6 +93,10 @@ class TabularModel:
                 or (optimizer_config is not None)
                 or (trainer_config is not None)
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
+            if model_config.task != "ssl":
+                assert (
+                    data_config.target is not None
+                ), f"`target` in data_config should not be None for {model_config.task} task"
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
@@ -666,7 +670,7 @@ class TabularModel:
             metrics,
             optimizer,
             optimizer_params,
-        )  # TODO move reset and loading training backbone in separate method fine_tune
+        )
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
@@ -735,7 +739,6 @@ class TabularModel:
         head: str,
         head_config: Dict,
         target: Optional[str] = None,
-        # data_config: Optional[Union[DataConfig, str]] = None,
         optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
         trainer_config: Optional[Union[TrainerConfig, str]] = None,
         experiment_config: Optional[Union[ExperimentConfig, str]] = None,
@@ -769,6 +772,9 @@ class TabularModel:
         if experiment_config is not None:
             for key, value in experiment_config.__dict__.items():
                 config[key] = value
+        else:
+            # Renaming the experiment run so that a different log is created for finetuning
+            config["run_name"] = config["run_name"]+"_finetuned"
 
         datamodule = self.datamodule
         if metrics is not None:
@@ -808,19 +814,11 @@ class TabularModel:
         model = model_callable(
             **model_args,
         )
-
-        # model._setup_loss()
-        # model._setup_metrics()
         tabular_model = TabularModel(config=config)
         tabular_model.model = model
         tabular_model.datamodule = datamodule
-        # tabular_model.callbacks = callbacks
-        # tabular_model.trainer = tabular_model._prepare_trainer(callbacks=callbacks)
-        # tabular_model.trainer.model = model
-        # tabular_model.logger = logger
         return tabular_model
 
-    # TODO handle experiment config. Force to have new experiment name
     def finetune(
         self,
         train,
@@ -978,7 +976,6 @@ class TabularModel:
         )
         return result
 
-    # TODO add predict to SSL for FeatureExtractor to work
     def predict(
         self,
         test: pd.DataFrame,
