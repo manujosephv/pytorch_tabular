@@ -1,4 +1,4 @@
-from .ft_transformer import FTTransformerBackbone, FTTransformerModel
 from .config import FTTransformerConfig
+from .ft_transformer import FTTransformerBackbone, FTTransformerModel
 
 __all__ = ["FTTransformerBackbone", "FTTransformerModel", "FTTransformerConfig"]

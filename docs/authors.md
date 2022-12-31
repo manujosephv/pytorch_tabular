@@ -1,12 +1,9 @@
-Credits
-=======
+# Credits
 
-Development Lead
-----------------
+## Development Lead
 
--   Manu Joseph <manujosephv@gmail.com>
+- Manu Joseph <manujosephv@gmail.com>
 
-Contributors
-------------
+## Contributors
 
 None yet. Why not be the first?

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
 
-from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
-from pytorch_tabular.models.node import NodeConfig
-from pytorch_tabular.models.tabnet import TabNetModelConfig
-from pytorch_tabular.tabular_model import TabularModel
-
 import numpy as np
 import pandas as pd
 from sklearn.datasets import fetch_california_housing, fetch_covtype
+
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
+from pytorch_tabular.models.node import NodeConfig
+from pytorch_tabular.tabular_model import TabularModel
 
 
 def regression_data():
@@ -60,7 +59,7 @@ def test_regression(
         model_config = NodeConfig(**model_config_params)
         # model_config_params = dict(task="regression")
         # model_config = NodeConfig(**model_config_params)
-        
+
         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()
 

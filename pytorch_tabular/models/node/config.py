@@ -69,9 +69,7 @@ class NodeConfig(ModelConfig):
 
     num_layers: int = field(
         default=1,
-        metadata={
-            "help": "Number of Oblivious Decision Tree Layers in the Dense Architecture"
-        },
+        metadata={"help": "Number of Oblivious Decision Tree Layers in the Dense Architecture"},
     )
     num_trees: int = field(
         default=2048,
@@ -109,9 +107,7 @@ class NodeConfig(ModelConfig):
     )
     input_dropout: float = field(
         default=0.0,
-        metadata={
-            "help": "Dropout to be applied to the inputs between layers of the Dense Architecture"
-        },
+        metadata={"help": "Dropout to be applied to the inputs between layers of the Dense Architecture"},
     )
     initialize_response: str = field(
         default="normal",
