@@ -14,7 +14,7 @@ def make_mixed_classification(n_samples, n_features, n_categories):
     num_cols = [i for i in range(X.shape[-1]) if i not in cat_cols]
     for col in cat_cols:
         X[:,col] = pd.qcut(X[:,col], q=4).codes.astype(int)
-    col_names = [] 
+    col_names = []
     num_col_names=[]
     cat_col_names=[]
     for i in range(X.shape[-1]):
@@ -62,7 +62,7 @@ trainer_config = TrainerConfig(
     auto_lr_find=True, # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=10,
-    gpus=1, #index of the GPU to use. 0, means CPU
+    gpus=torch.cuda.device_count(), #index of the GPU to use. 0, means CPU
     fast_dev_run=True
 )
 optimizer_config = OptimizerConfig()

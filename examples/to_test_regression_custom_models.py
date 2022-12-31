@@ -179,14 +179,14 @@ class MultiStageModel(BaseModel):
 
         def subset_clf(x):
             return x[..., : 2].mean(dim=-2)
-        
+
         def subset_rg(x):
             return x[..., 2: 4].mean(dim=-2)
 
         self.clf_out = utils.Lambda(subset_clf)
         self.rg_out = utils.Lambda(subset_rg)
         self.classification_loss = nn.CrossEntropyLoss()
-    
+
     def unpack_input(self, x: Dict):
         continuous_data, categorical_data = x["continuous"], x["categorical"]
         if self.hparams.embedded_cat_dim != 0:
@@ -217,9 +217,9 @@ class MultiStageModel(BaseModel):
         x = self.backbone(x)
         clf_logits = self.clf_out(x)
         clf_prob = nn.functional.gumbel_softmax(clf_logits, tau=1, dim=-1)
-        
+
         rg_out = self.rg_out(x)
-        
+
         y_hat = torch.sum(clf_prob * rg_out, dim=-1)
         if (self.hparams.task == "regression") and (
             self.hparams.target_range is not None
@@ -228,7 +228,7 @@ class MultiStageModel(BaseModel):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return {"logits": y_hat, "clf_logits": clf_logits}
-    
+
     def training_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
@@ -237,7 +237,7 @@ class MultiStageModel(BaseModel):
         )
         _ = self.calculate_metrics(y, ret_value['logits'], tag="train")
         return loss
-    
+
     def validation_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
@@ -255,7 +255,7 @@ class MultiStageModel(BaseModel):
         )
         _ = self.calculate_metrics(y, ret_value['logits'], tag="test")
         return ret_value['logits'], y
-    
+
     def calculate_loss(self, y, classification_logits, y_hat, tag):
         cl_loss = self.classification_loss(classification_logits.squeeze(), y[:,0].squeeze().long())
         rg_loss = self.loss(y_hat, y[:, 1])
@@ -286,7 +286,7 @@ class MultiStageModel(BaseModel):
             prog_bar=True,
         )
         return computed_loss
-    
+
     def calculate_metrics(self, y, y_hat, tag):
         for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if metric.__name__==pl.metrics.functional.mean_squared_log_error.__name__:
@@ -343,7 +343,7 @@ trainer_config = TrainerConfig(
     early_stopping_patience = 5,
     checkpoints=None,
 #         fast_dev_run=True,
-    gpus=1, #index of the GPU to use. 0, means CPU
+    gpus=torch.cuda.device_count(), #index of the GPU to use. 0, means CPU
 )
 optimizer_config = OptimizerConfig(lr_scheduler="OneCycleLR", lr_scheduler_params={"max_lr":0.005, "epochs": epochs, "steps_per_epoch":steps_per_epoch})
 #     optimizer_config = OptimizerConfig(lr_scheduler="ReduceLROnPlateau", lr_scheduler_params={"patience":3})
