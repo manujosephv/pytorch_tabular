@@ -3,8 +3,6 @@
 import pytest
 import torch
 
-# import os
-
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.config.config import SSLModelConfig
