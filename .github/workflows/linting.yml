@@ -3,7 +3,7 @@ name: Linting
 on: [push, pull_request]
 
 jobs:
-  flake8:
+  pre-commit:
 
     runs-on: ubuntu-latest
     strategy:
