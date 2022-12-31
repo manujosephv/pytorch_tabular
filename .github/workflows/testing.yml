@@ -28,7 +28,7 @@ jobs:
           pip install -r requirements_testing.txt
       - name: Install main package
         run: |
-          pip install -e .
+          pip install -e .[extra]
 
       - name: Run test-suite
         run: |

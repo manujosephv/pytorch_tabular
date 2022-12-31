@@ -185,7 +185,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         self.log(
             f"{tag}_loss",
             computed_loss,
-            on_epoch=(tag == "valid") or (tag == "test"),
+            on_epoch=(tag in ["valid", "test"]),
             on_step=(tag == "train"),
             # on_step=False,
             logger=True,
