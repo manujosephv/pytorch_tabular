@@ -1,5 +1,6 @@
 import os
 # os.chdir("..")
+import torch
 from sklearn.datasets import fetch_covtype, make_classification
 from sklearn.model_selection import train_test_split
 import random
