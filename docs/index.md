@@ -51,6 +51,7 @@ python setup.py install
 
 ## Usage
 ```python
+import torch
 from pytorch_tabular import TabularModel
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig, ExperimentConfig
