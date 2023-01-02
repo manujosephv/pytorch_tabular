@@ -19,10 +19,7 @@ MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, dict(layers="10-20")),
     (
         AutoIntConfig,
-        dict(
-            num_heads=1,
-            num_attn_blocks=1,
-        ),
+        dict(num_heads=1, num_attn_blocks=1)
     ),
     (NodeConfig, dict(num_trees=100, depth=2)),
     (TabNetModelConfig, dict(n_a=2, n_d=2)),
@@ -44,28 +41,15 @@ MODEL_CONFIG_FEATURE_EXT_TEST = [
     DenoisingAutoEncoderConfig,
 ]
 
+DATASET_CONTINUOUS_COLUMNS = ("AveRooms", "AveBedrms", "Population", "AveOccup", "Latitude", "Longitude")
+
 
 def fake_metric(y_hat, y):
     return (y_hat - y).mean()
 
 
-@pytest.mark.parametrize(
-    "model_config_class",
-    MODEL_CONFIG_SAVE_TEST,
-)
-@pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-    ],
-)
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_TEST)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
@@ -126,23 +110,8 @@ def test_save_load(
     )
 
 
-@pytest.mark.parametrize(
-    "model_config_class",
-    MODEL_CONFIG_FEATURE_EXT_TEST,
-)
-@pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-    ],
-)
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_EXT_TEST)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 def test_feature_extractor(
     regression_data,
@@ -208,21 +177,9 @@ def test_feature_extractor(
 
 @pytest.mark.parametrize(
     "model_config_class",
-    MODEL_CONFIG_SAVE_TEST,
+    MODEL_CONFIG_SAVE_TEST
 )
-@pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-    ],
-)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
