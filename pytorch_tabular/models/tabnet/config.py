@@ -90,8 +90,8 @@ class TabNetModelConfig(ModelConfig):
     _model_name: str = field(default="TabNetModel")
     _config_name: str = field(default="TabNetModelConfig")
 
-    def __post_init__(self):
-        pass
+    # def __post_init__(self):
+    #     pass
 
 
 # cls = TabNetModelConfig

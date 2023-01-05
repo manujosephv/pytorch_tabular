@@ -395,7 +395,9 @@ class TabularModel:
             "inferred_config": inferred_config,
         }
         custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
-        if custom_params.get("custom_loss") is not None: #TODO change load_from_checkpoint to accept custom loss
+        if (
+            custom_params.get("custom_loss") is not None
+        ):
             model_args["loss"] = "MSELoss"  # For compatibility. Not Used
         if custom_params.get("custom_metrics") is not None:
             model_args["metrics"] = [
