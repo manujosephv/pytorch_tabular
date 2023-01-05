@@ -8,7 +8,6 @@ from .config import (
     SSLModelConfig,
     ExperimentRunManager,
     _validate_choices,
-    LINEAR_HEAD_CONFIG_DEPRECATION_MSG
 )
 
 __all__ = [
@@ -21,5 +20,4 @@ __all__ = [
     "SSLModelConfig",
     "ExperimentRunManager",
     "_validate_choices",
-    "LINEAR_HEAD_CONFIG_DEPRECATION_MSG"
 ]

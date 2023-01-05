@@ -88,36 +88,6 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
         default=0.0,
         metadata={"help": "probability of dropout in tree binning transformation."},
     )
-    batch_norm_continuous_input: bool = field(
-        default=True,
-        metadata={
-            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer"
-        },
-    )
-    embedding_dropout: float = field(
-        default=0.0,
-        metadata={"help": "Dropout for the categorical embedding layer."},
-    )
-
-    use_batch_norm: bool = field(
-        default=False,
-        metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut"
-        },
-    )
-    initialization: str = field(
-        default="kaiming",
-        metadata={
-            "help": "Initialization scheme for the linear layers",
-            "choices": ["kaiming", "xavier", "random"],
-        },
-    )
-    activation: str = field(
-        default="ReLU",
-        metadata={
-            "help": "The activation type in the classification head. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
-        },
-    )
     chain_trees: bool = field(
         default=True,
         metadata={

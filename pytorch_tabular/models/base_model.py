@@ -110,6 +110,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def _check_and_verify(self):
         assert hasattr(self, "backbone"), "Model has no attribute called `backbone`"
+        assert hasattr(self.backbone, "output_dim"), "Backbone needs to have attribute `output_dim`"
         assert hasattr(self, "head"), "Model has no attribute called `head`"
 
     def _get_head_from_config(self):
@@ -280,8 +281,6 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def forward(self, x: Dict):
         x = self.embed_input(x)
         x = self.compute_backbone(x)
-        # if self.hparams.task == "ssl":
-        #     return self.compute_ssl_head(x)
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):

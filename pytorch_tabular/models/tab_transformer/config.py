@@ -4,8 +4,10 @@
 """AutomaticFeatureInteraction Config"""
 from dataclasses import dataclass, field
 from typing import Optional
+import warnings
 
 from pytorch_tabular.config import ModelConfig
+from pytorch_tabular.utils import ifnone
 
 
 @dataclass
@@ -90,12 +92,6 @@ class TabTransformerConfig(ModelConfig):
             "help": "The embedding dimension for the input categorical features. Defaults to 32"
         },
     )
-    embedding_dropout: float = field(
-        default=0.1,
-        metadata={
-            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
-        },
-    )
     embedding_initialization: Optional[str] = field(
         default="kaiming_uniform",
         metadata={
@@ -105,22 +101,20 @@ class TabTransformerConfig(ModelConfig):
     )
     embedding_bias: bool = field(
         default=False,
-        metadata={
-            "help": "Flag to turn on Embedding Bias. Defaults to False"
-        },
+        metadata={"help": "Flag to turn on Embedding Bias. Defaults to False"},
     )
     share_embedding: bool = field(
         default=False,
         metadata={
             "help": "The flag turns on shared embeddings in the input embedding process. The key idea here is to have an embedding for the feature as a whole along with embeddings of each unique values of that column. For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
-        }
+        },
     )
     share_embedding_strategy: Optional[str] = field(
         default="fraction",
         metadata={
             "help": "There are two strategies in adding shared embeddings. 1. `add` - A separate embedding for the feature is added to the embedding of the unique values of the feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of the feature. Defaults to fraction.",
-            "choices": ["add", "fraction"]
-        }
+            "choices": ["add", "fraction"],
+        },
     )
     shared_embedding_fraction: float = field(
         default=0.25,
@@ -177,47 +171,54 @@ class TabTransformerConfig(ModelConfig):
             "help": "The activation type in the transformer feed forward layers. In addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU, ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU",
         },
     )
-    out_ff_layers: str = field(
-        default="128-64-32",
+    out_ff_layers: Optional[str] = field(
+        default=None,
         metadata={
-            "help": "Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
+            "help": "DEPRECATED: Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
         },
     )
-    out_ff_activation: str = field(
-        default="ReLU",
+    out_ff_activation: Optional[str] = field(
+        default=None,
         metadata={
-            "help": "The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
+            "help": "DEPRECATED: The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
         },
     )
-    out_ff_dropout: float = field(
-        default=0.0,
+    out_ff_dropout: Optional[float] = field(
+        default=None,
         metadata={
-            "help": "probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
+            "help": "DEPRECATED: probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
         },
     )
-    use_batch_norm: bool = field(
-        default=False,
+    out_ff_initialization: Optional[str] = field(
+        default=None,
         metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
-        },
-    )
-    batch_norm_continuous_input: bool = field(
-        default=False,
-        metadata={
-            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. Defaults to Fasle"
-        },
-    )
-    out_ff_initialization: str = field(
-        default="kaiming",
-        metadata={
-            "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
-            "choices": ["kaiming", "xavier", "random"],
+            "help": "DEPRECATED: Initialization scheme for the linear layers. Defaults to `kaiming`",
+            "choices": [None, "kaiming", "xavier", "random"],
         },
     )
     _module_src: str = field(default="models.tab_transformer")
     _model_name: str = field(default="TabTransformerModel")
     _backbone_name: str = field(default="TabTransformerBackbone")
     _config_name: str = field(default="TabTransformerConfig")
+
+    def __post_init__(self):
+        deprecated_args = ["out_ff_layers", "out_ff_activation", "out_ff_dropoout", "out_ff_initialization"]
+        if any([p is not None for p in deprecated_args]):
+            warnings.warn(
+                "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
+                DeprecationWarning,
+            )
+            self.head = "LinearHead"
+            # TODO: Remove this once we deprecate the old config
+            # Fill the head_config using deprecated parameters
+            self.head_config = dict(
+                layers=ifnone(self.out_ff_layers, ""),
+                activation=ifnone(self.out_ff_activation, "ReLU"),
+                dropout=ifnone(self.out_ff_dropout, 0.0),
+                use_batch_norm=False,
+                initialization=ifnone(self.out_ff_initialization, "kaiming"),
+            )
+        return super().__post_init__()
 
 
 # cls = TabTransformerConfig

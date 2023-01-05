@@ -4,6 +4,8 @@
 """Config"""
 import logging
 import os
+import re
+import warnings
 from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -12,8 +14,6 @@ from omegaconf import OmegaConf
 from pytorch_tabular.models.common import heads
 
 logger = logging.getLogger(__name__)
-
-LINEAR_HEAD_CONFIG_DEPRECATION_MSG = "Defining the parameters of the head individually has been deprecated and will be removed in the next release. Please use the newly introduced `head` and `head_config` parameters."
 
 
 def _read_yaml(filename):
@@ -363,9 +363,29 @@ class TrainerConfig:
     gpus: Optional[int] = field(
         default=None,
         metadata={
-            "help": "Number of gpus to train on (int). -1 uses all available GPUs. By default uses CPU (None)"
+            "help": "DEPRECATED: Number of gpus to train on (int). -1 uses all available GPUs. By default uses CPU (None)"
         },
     )
+    accelerator: Optional[str] = field(
+        default="auto",
+        metadata={
+            "help": "The accelerator to use for training. Can be one of 'cpu','gpu','tpu','ipu','auto'. Defaults to 'auto'",
+            "choices": ["cpu", "gpu", "tpu", "ipu", "auto"],
+        },
+    )
+    devices: Optional[int] = field(
+        default=-1,
+        metadata={
+            "help": "Number of devices to train on (int). -1 uses all available devices. By default uses all available devices (-1)",
+        },
+    )
+    devices_list: Optional[List[int]] = field(
+        default=None,
+        metadata={
+            "help": "List of devices to train on (list). If specified, takes precedence over `devices` argument. Defaults to None",
+        },
+    )
+
     accumulate_grad_batches: int = field(
         default=1,
         metadata={
@@ -381,7 +401,7 @@ class TrainerConfig:
     auto_select_gpus: bool = field(
         default=True,
         metadata={
-            "help": "If enabled and `gpus` is an integer, pick available gpus automatically. This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one process at a time can access them."
+            "help": "If enabled and `devices` is an integer, pick available gpus automatically. This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one process at a time can access them."
         },
     )
     check_val_every_n_epoch: int = field(
@@ -498,6 +518,23 @@ class TrainerConfig:
 
     def __post_init__(self):
         _validate_choices(self)
+        if self.gpus is not None:
+            warnings.warn(
+                "The `gpus` argument is deprecated in favor of `accelerator` and will be removed in a future version of PyTorch Tabular. Please use `accelerator='gpu'` instead.",
+                DeprecationWarning,
+            )
+            if self.devices is None:
+                self.devices = self.gpus
+            if self.accelerator is None:
+                self.accelerator = "gpu"
+        else:
+            if self.accelerator is None:
+                self.accelerator = "cpu"
+        delattr(self, "gpus")
+        if self.devices_list is not None:
+            warnings.warn("Ignoring devices in favor of devices_list")
+            self.devices = self.devices_list
+        delattr(self, "devices_list")
 
 
 @dataclass
@@ -691,7 +728,7 @@ class ModelConfig:
                 metrics should be one of the functional metrics implemented in ``torchmetrics.functional``. By default, it is
                 accuracy if classification and mean_squared_error for regression
 
-        metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function. 
+        metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function.
                 For eg. f1_score for multi-class needs a parameter `average` to fully define the metric.
 
         target_range (Union[List, NoneType]): The range in which we should limit the output variable.
@@ -721,7 +758,7 @@ class ModelConfig:
     )
 
     head_config: Optional[Dict] = field(
-        default_factory=lambda: {},
+        default_factory=lambda: {"layers": ""},
         metadata={
             "help": "The config as a dict which defines the head. If left empty, will be initialized as default linear head."
         },
@@ -734,8 +771,36 @@ class ModelConfig:
             "categorical column using the rule min(50, (x + 1) // 2)"
         },
     )
+    embedding_dropout: float = field(
+        default=0.1,
+        metadata={
+            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
+        },
+    )
+    batch_norm_continuous_input: bool = field(
+        default=True,
+        metadata={
+            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer. DEPRECATED - Use head and head_config instead"
+        },
+    )
+
+    # use_batch_norm: bool = field(
+    #     default=False,
+    #     metadata={
+    #         "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
+    #     },
+    # )
+    # initialization: str = field(
+    #     default="kaiming",
+    #     metadata={
+    #         "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
+    #         "choices": ["kaiming", "xavier", "random"],
+    #     },
+    # )
+
     learning_rate: float = field(
-        default=1e-3, metadata={"help": "The learning rate of the model. Defaults to 1e-3."}
+        default=1e-3,
+        metadata={"help": "The learning rate of the model. Defaults to 1e-3."},
     )
     loss: Optional[str] = field(
         default=None,
@@ -769,6 +834,11 @@ class ModelConfig:
         default=42,
         metadata={"help": "The seed for reproducibility. Defaults to 42"},
     )
+
+    _module_src: str = field(default="models")
+    _model_name: str = field(default="Model")
+    _backbone_name: str = field(default="Backbone")
+    _config_name: str = field(default="Config")
 
     def __post_init__(self):
         if self.task == "regression":
@@ -808,7 +878,11 @@ class ModelConfig:
             assert len(self.metrics) == len(
                 self.metrics_params
             ), "metrics and metric_params should have same length"
-        if self.head is not None:
+
+        # if len(self.head_config) == 0:  # No Head Config provided
+        #     raise ValueError("`head_config` cannot be empty")
+        # else:
+        if self.task != "backbone":
             assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
             _head_callable = getattr(heads.blocks, self.head)
             ideal_head_config = _head_callable._config_template
@@ -818,6 +892,14 @@ class ModelConfig:
             assert (
                 len(invalid_keys) == 0
             ), f"`head_config` has some invalid keys: {invalid_keys}"
+
+        # For Custom models, setting these values for compatibility
+        if not hasattr(self, "_config_name"):
+            self._config_name = type(self).__name__
+        if not hasattr(self, "_model_name"):
+            self._model_name = re.sub("[Cc]onfig", "Model", self._config_name)
+        if not hasattr(self, "_backbone_name"):
+            self._backbone_name = re.sub("[Cc]onfig", "Backbone", self._config_name)
         _validate_choices(self)
 
 
@@ -864,17 +946,40 @@ class SSLModelConfig:
             "categorical column using the rule min(50, (x + 1) // 2)"
         },
     )
+    embedding_dropout: float = field(
+        default=0.1,
+        metadata={
+            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
+        },
+    )
+    batch_norm_continuous_input: bool = field(
+        default=True,
+        metadata={
+            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer. DEPRECATED - Use head and head_config instead"
+        },
+    )
     learning_rate: float = field(
-        default=1e-3, metadata={"help": "The learning rate of the model. Defaults to 1e-3"}
+        default=1e-3,
+        metadata={"help": "The learning rate of the model. Defaults to 1e-3"},
     )
     seed: int = field(
         default=42,
         metadata={"help": "The seed for reproducibility. Defaults to 42"},
     )
 
+    _module_src: str = field(default="models")
+    _model_name: str = field(default="Model")
+    _config_name: str = field(default="Config")
+
     def __post_init__(self):
         assert self.task == "ssl", f"task should be ssl, got {self.task}"
+        # For Custom models, setting these values for compatibility
+        if not hasattr(self, "_config_name"):
+            self._config_name = type(self).__name__
+        if not hasattr(self, "_model_name"):
+            self._model_name = re.sub("[Cc]onfig", "Model", self._config_name)
         _validate_choices(self)
+
 
 # if __name__ == "__main__":
 #     import textwrap

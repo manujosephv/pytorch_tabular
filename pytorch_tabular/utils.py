@@ -114,6 +114,10 @@ def getattr_nested(_module_src, _model_name):
     return getattr(module, _model_name)
 
 
+def ifnone(arg, default_arg):
+    return default_arg if arg is None else arg
+
+
 def generate_doc_dataclass(dataclass, desc=None, width=100):
     if desc is not None:
         doc_str = f"{desc}\nArgs:"
@@ -132,7 +136,12 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
             if "choices" in atr.metadata.keys():
                 help_str += f'. Choices are: [{",".join(["`"+str(ch)+"`" for ch in atr.metadata["choices"]])}].'
             # help_str += f'. Defaults to {atr.default}'
-            h_str = textwrap.fill(f"{key} ({type}): {help_str}", width=width, subsequent_indent="\t\t", initial_indent="\t")
+            h_str = textwrap.fill(
+                f"{key} ({type}): {help_str}",
+                width=width,
+                subsequent_indent="\t\t",
+                initial_indent="\t",
+            )
             h_str = f"\n{h_str}\n"
             doc_str += h_str
     return doc_str

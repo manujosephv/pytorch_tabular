@@ -21,9 +21,9 @@ class LinearHeadConfig:
     """
 
     layers: str = field(
-        default="32",
+        default="",
         metadata={
-            "help": "Hyphen-separated number of layers and units in the classification/regression head. eg. 32-64-32."
+            "help": "Hyphen-separated number of layers and units in the classification/regression head. eg. 32-64-32. Default is just a mapping from intput dimension to output dimension"
         },
     )
     activation: str = field(
@@ -33,7 +33,7 @@ class LinearHeadConfig:
         },
     )
     dropout: float = field(
-        default=0.5,
+        default=0.0,
         metadata={"help": "probability of an classification element to be zeroed."},
     )
     use_batch_norm: bool = field(
@@ -45,7 +45,7 @@ class LinearHeadConfig:
     initialization: str = field(
         default="kaiming",
         metadata={
-            "help": "Initialization scheme for the linear layers",
+            "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
             "choices": ["kaiming", "xavier", "random"],
         },
     )

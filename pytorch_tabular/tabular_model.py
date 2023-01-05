@@ -395,7 +395,7 @@ class TabularModel:
             "inferred_config": inferred_config,
         }
         custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
-        if custom_params.get("custom_loss") is not None:
+        if custom_params.get("custom_loss") is not None: #TODO change load_from_checkpoint to accept custom loss
             model_args["loss"] = "MSELoss"  # For compatibility. Not Used
         if custom_params.get("custom_metrics") is not None:
             model_args["metrics"] = [
@@ -630,16 +630,17 @@ class TabularModel:
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
                 signature metric_fn(y_hat, y) and works on torch tensor inputs
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
-                This should be the Class and not the initialized object
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
+                standard PyToch optimizers. This should be the Class and not the initialized object
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
-            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed
+                to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
 
-            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
-                and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
-                a tuple of callables (transform_func, inverse_transform_func)
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the
+                target before modelling and inverse the transform during prediction. The parameter can either be a sklearn Transformer
+                which has an inverse_transform method, or a tuple of callables (transform_func, inverse_transform_func)
 
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
@@ -649,7 +650,8 @@ class TabularModel:
 
             callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
 
-            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
+            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters
+                like train, test etc and use the datamodule. Defaults to None.
         """
         assert (
             self.config.task != "ssl"
@@ -685,6 +687,7 @@ class TabularModel:
         validation: Optional[pd.DataFrame] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
         seed: Optional[int] = 42,
@@ -699,10 +702,13 @@ class TabularModel:
             validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
-                This should be the Class and not the initialized object
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
+                standard PyToch optimizers. This should be the Class and not the initialized object
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+
+            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed
+                to the DataLoaders. Use samplers which do not use the `target` column
 
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
@@ -712,7 +718,8 @@ class TabularModel:
 
             callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
 
-            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters like train, test etc and use the datamodule. Defaults to None.
+            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
+                parameters like train, test etc and use the datamodule. Defaults to None.
         """
         assert (
             self.config.task == "ssl"
@@ -769,25 +776,30 @@ class TabularModel:
             head_config (Dict): The config as a dict which defines the head. If left empty,
                 will be initialized as default linear head.
 
-            target (Optional[str], optional): The target column name if not provided in the initial pretraining stage. Defaults to None.
+            target (Optional[str], optional): The target column name if not provided in the initial pretraining stage.
+                Defaults to None.
 
-            optimizer_config (Optional[OptimizerConfig], optional): If provided, will redefine the optimizer for fine-tuning stage. Defaults to None.
+            optimizer_config (Optional[OptimizerConfig], optional): If provided, will redefine the optimizer for fine-tuning
+                stage. Defaults to None.
 
-            trainer_config (Optional[TrainerConfig], optional): If provided, will redefine the trainer for fine-tuning stage. Defaults to None.
+            trainer_config (Optional[TrainerConfig], optional): If provided, will redefine the trainer for fine-tuning stage.
+                Defaults to None.
 
-            experiment_config (Optional[ExperimentConfig], optional): If provided, will redefine the experiment for fine-tuning stage. Defaults to None.
+            experiment_config (Optional[ExperimentConfig], optional): If provided, will redefine the experiment for fine-tuning
+                stage. Defaults to None.
 
-            loss (Optional[torch.nn.Module], optional): If provided, will be used as the loss function for the fine-tuning. By Default it is MSELoss for
-                regression and CrossEntropyLoss for classification.
+            loss (Optional[torch.nn.Module], optional): If provided, will be used as the loss function for the fine-tuning.
+                By Default it is MSELoss for regression and CrossEntropyLoss for classification.
 
-            metrics (Optional[List[Callable]], optional): List of metrics (either callables or str) to be used for the fine-tuning stage. If str, it should be
-                one of the functional metrics implemented in ``torchmetrics.functional``Defaults to None.
+            metrics (Optional[List[Callable]], optional): List of metrics (either callables or str) to be used for the
+                fine-tuning stage. If str, it should be one of the functional metrics implemented in ``torchmetrics.functional``
+                Defaults to None.
 
             metrics_params (Optional[Dict], optional): The parameters for the metrics in the same order as metrics.
                 For eg. f1_score for multi-class needs a parameter `average` to fully define the metric. Defaults to None.
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard
-                PyTorch optimizers. If provided, the OptimizerConfig is ignored in favor of this. Defaults to None.
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
+                standard PyTorch optimizers. If provided, the OptimizerConfig is ignored in favor of this. Defaults to None.
 
             optimizer_params (Dict, optional): The parameters for the optimizer. Defaults to {}.
 
@@ -821,8 +833,9 @@ class TabularModel:
             for key, value in experiment_config.__dict__.items():
                 config[key] = value
         else:
-            # Renaming the experiment run so that a different log is created for finetuning
-            config["run_name"] = config["run_name"] + "_finetuned"
+            if self.track_experiment:
+                # Renaming the experiment run so that a different log is created for finetuning
+                config["run_name"] = config["run_name"] + "_finetuned"
 
         datamodule = self.datamodule
         if metrics is not None:

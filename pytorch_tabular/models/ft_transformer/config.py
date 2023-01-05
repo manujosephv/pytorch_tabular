@@ -4,8 +4,10 @@
 """AutomaticFeatureInteraction Config"""
 from dataclasses import dataclass, field
 from typing import Optional
+import warnings
 
 from pytorch_tabular.config import ModelConfig
+from pytorch_tabular.utils import ifnone
 
 
 @dataclass
@@ -103,12 +105,6 @@ class FTTransformerConfig(ModelConfig):
             "help": "Flag to turn on Embedding Bias. Defaults to True"
         },
     )
-    embedding_dropout: float = field(
-        default=0.1,
-        metadata={
-            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
-        },
-    )
     share_embedding: bool = field(
         default=False,
         metadata={
@@ -183,41 +179,29 @@ class FTTransformerConfig(ModelConfig):
             "help": "The activation type in the transformer feed forward layers. In addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU, ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU",
         },
     )
-    out_ff_layers: str = field(
-        default="128-64-32",
+    out_ff_layers: Optional[str] = field(
+        default=None,
         metadata={
-            "help": "Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
+            "help": "DEPRECATED: Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
         },
     )
-    out_ff_activation: str = field(
-        default="ReLU",
+    out_ff_activation: Optional[str] = field(
+        default=None,
         metadata={
-            "help": "The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
+            "help": "DEPRECATED: The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
         },
     )
-    out_ff_dropout: float = field(
-        default=0.0,
+    out_ff_dropout: Optional[float] = field(
+        default=None,
         metadata={
-            "help": "probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
+            "help": "DEPRECATED: probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
         },
     )
-    use_batch_norm: bool = field(
-        default=False,
+    out_ff_initialization: Optional[str] = field(
+        default=None,
         metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
-        },
-    )
-    batch_norm_continuous_input: bool = field(
-        default=False,
-        metadata={
-            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. Defaults to Fasle"
-        },
-    )
-    out_ff_initialization: str = field(
-        default="kaiming",
-        metadata={
-            "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
-            "choices": ["kaiming", "xavier", "random"],
+            "help": "DEPRECATED: Initialization scheme for the linear layers. Defaults to `kaiming`",
+            "choices": [None, "kaiming", "xavier", "random"],
         },
     )
     _module_src: str = field(default="models.ft_transformer")
@@ -225,6 +209,24 @@ class FTTransformerConfig(ModelConfig):
     _backbone_name: str = field(default="FTTransformerBackbone")
     _config_name: str = field(default="FTTransformerConfig")
 
+    def __post_init__(self):
+        deprecated_args = ["out_ff_layers", "out_ff_activation", "out_ff_dropoout", "out_ff_initialization"]
+        if any([p is not None for p in deprecated_args]):
+            warnings.warn(
+                "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
+                DeprecationWarning,
+            )
+            self.head = "LinearHead"
+            # TODO: Remove this once we deprecate the old config
+            # Fill the head_config using deprecated parameters
+            self.head_config = dict(
+                layers=ifnone(self.out_ff_layers, ""),
+                activation=ifnone(self.out_ff_activation, "ReLU"),
+                dropout=ifnone(self.out_ff_dropout, 0.0),
+                use_batch_norm=False,
+                initialization=ifnone(self.out_ff_initialization, "kaiming"),
+            )
+        return super().__post_init__()
 
 # cls = TabTransformerConfig
 # desc = "Configuration for Data."

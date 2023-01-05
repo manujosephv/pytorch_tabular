@@ -64,7 +64,7 @@ class NODEBackbone(nn.Module):
             embedding = Embedding1dLayer(
                 continuous_dim=self.hparams.continuous_dim,
                 categorical_embedding_dims=self.hparams.embedding_dims,
-                embedding_dropout=self.hparams.cat_embedding_dropout,
+                embedding_dropout=self.hparams.embedding_dropout,
                 batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             )
         else:
@@ -72,7 +72,7 @@ class NODEBackbone(nn.Module):
                 continuous_dim=self.hparams.continuous_dim,
                 categorical_dim=self.hparams.categorical_dim,
                 batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-                embedding_dropout=self.hparams.cat_embedding_dropout,
+                embedding_dropout=self.hparams.embedding_dropout,
             )
         return embedding
 

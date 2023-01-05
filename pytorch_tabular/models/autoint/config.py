@@ -97,12 +97,6 @@ class AutoIntConfig(ModelConfig):
             "help": "Flag to turn on Embedding Bias. Defaults to True"
         },
     )
-    embedding_dropout: float = field(
-        default=0.1,
-        metadata={
-            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
-        },
-    )
     share_embedding: bool = field(
         default=False,
         metadata={
@@ -140,28 +134,10 @@ class AutoIntConfig(ModelConfig):
             "help": "The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
         },
     )
-    dropout: float = field(
-        default=0.0,
-        metadata={
-            "help": "probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
-        },
-    )
     use_batch_norm: bool = field(
         default=False,
         metadata={
             "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
-        },
-    )
-    batch_norm_continuous_input: bool = field(
-        default=False,
-        metadata={
-            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. Defaults to Fasle"
-        },
-    )
-    attention_pooling: bool = field(
-        default=False,
-        metadata={
-            "help": "If True, will combine the attention outputs of each block for final prediction. Defaults to False"
         },
     )
     initialization: str = field(
@@ -169,6 +145,18 @@ class AutoIntConfig(ModelConfig):
         metadata={
             "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
             "choices": ["kaiming", "xavier", "random"],
+        },
+    )
+    dropout: float = field(
+        default=0.0,
+        metadata={
+            "help": "probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
+        },
+    )
+    attention_pooling: bool = field(
+        default=False,
+        metadata={
+            "help": "If True, will combine the attention outputs of each block for final prediction. Defaults to False"
         },
     )
     _module_src: str = field(default="models.autoint")

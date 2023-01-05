@@ -145,9 +145,12 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns:
             bool
         """
-        return (self.config._model_name == "NODEModel") and (
-            not self.config.embed_categorical
-        )
+        if hasattr(self.config, "_model_name"):
+            return (self.config._model_name == "NODEModel") and (
+                not self.config.embed_categorical
+            )
+        else:
+            return False
 
     def _encode_date_columns(self, data: pd.DataFrame) -> pd.DataFrame:
         added_features = []

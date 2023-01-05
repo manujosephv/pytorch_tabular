@@ -159,15 +159,9 @@ class NodeConfig(ModelConfig):
             """
         },
     )
-    batch_norm_continuous_input: bool = field(
-        default=False,
-        metadata={
-            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer"
-        },
-    )
     cat_embedding_dropout: float = field(
         default=0.0,
-        metadata={"help": "probability of an embedding element to be zeroed."},
+        metadata={"help": "DEPRECATED: Please use `embedding_dropout` instead. probability of an embedding element to be zeroed."},
     )
 
     embed_categorical: bool = field(
@@ -188,6 +182,7 @@ class NodeConfig(ModelConfig):
             warnings.warn(
                 "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features. This is deprecated and will be removed in future versions and categorical columns will be embedded by default."
             )
+        warnings.warn("`cat_embedding_dropout` is deprecated and will be removed in the next release. Please use `embedding_dropout` instead")
         super().__post_init__()
 
 

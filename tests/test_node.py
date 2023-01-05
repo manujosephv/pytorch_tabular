@@ -66,7 +66,11 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            accelerator="cpu",
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -121,7 +125,11 @@ def test_classification(
         )
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+            max_epochs=1,
+            checkpoints=None,
+            early_stopping=None,
+            accelerator="cpu",
+            fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
 
@@ -158,7 +166,11 @@ def test_embedding_transformer(regression_data):
     )
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
-        max_epochs=1, checkpoints=None, early_stopping=None, gpus=None, fast_dev_run=True
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
 
@@ -184,63 +196,3 @@ def test_embedding_transformer(regression_data):
             for val in transformer._mapping["HouseAgeBin"].values()
         ]
     )
-
-
-# @pytest.mark.parametrize(
-#     "continuous_cols",
-#     [
-#         [f"feature_{i}" for i in range(54)],
-#     ],
-# )
-# @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
-# @pytest.mark.parametrize("continuous_feature_transform", [None])
-# @pytest.mark.parametrize("embed_categorical", [True, False])
-# @pytest.mark.parametrize("normalize_continuous_features", [True])
-# @pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
-# @pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
-# def test_ssl(
-#     classification_data,
-#     continuous_cols,
-#     categorical_cols,
-#     embed_categorical,
-#     continuous_feature_transform,
-#     normalize_continuous_features,
-#     ssl_task,
-#     aug_task
-# ):
-#     (train, test, target) = classification_data
-#     if len(continuous_cols) + len(categorical_cols) == 0:
-#         assert True
-#     else:
-#         data_config = DataConfig(
-#             target=target,
-#             continuous_cols=continuous_cols,
-#             categorical_cols=categorical_cols,
-#             continuous_feature_transform=continuous_feature_transform,
-#             normalize_continuous_features=normalize_continuous_features,
-#         )
-#         model_config_params = dict(
-#             task="ssl",
-#             depth=2,
-#             num_trees=50,
-#             embed_categorical=embed_categorical,
-#             ssl_task=ssl_task,
-#             aug_task=aug_task
-#         )
-#         model_config = NodeConfig(**model_config_params)
-#         trainer_config = TrainerConfig(
-#             max_epochs=1, checkpoints=None, early_stopping=None,
-#             gpus=None, fast_dev_run=True
-#         )
-#         optimizer_config = OptimizerConfig()
-
-#         tabular_model = TabularModel(
-#             data_config=data_config,
-#             model_config=model_config,
-#             optimizer_config=optimizer_config,
-#             trainer_config=trainer_config,
-#         )
-#         tabular_model.fit(train=train, test=test)
-
-#         result = tabular_model.evaluate(test)
-#         assert "test_mean_squared_error" in result[0].keys()

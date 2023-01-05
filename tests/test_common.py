@@ -95,7 +95,7 @@ def test_save_load(
         max_epochs=3,
         checkpoints=None,
         early_stopping=None,
-        gpus=None,
+        accelerator="cpu",
         fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
@@ -182,7 +182,7 @@ def test_feature_extractor(
         max_epochs=3,
         checkpoints=None,
         early_stopping=None,
-        gpus=None,
+        accelerator="cpu",
         fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
@@ -252,7 +252,7 @@ def test_save_load_statedict(
         max_epochs=3,
         checkpoints=None,
         early_stopping=None,
-        gpus=None,
+        accelerator="cpu",
         fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
@@ -346,7 +346,7 @@ def test_save_load_statedict(
 #         max_epochs=3,
 #         checkpoints=None,
 #         early_stopping=None,
-#         gpus=None,
+#         accelerator="cpu",
 #         fast_dev_run=True,
 #     )
 #     optimizer_config = OptimizerConfig()

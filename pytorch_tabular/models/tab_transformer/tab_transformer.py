@@ -21,7 +21,6 @@ import torch.nn as nn
 from einops import rearrange
 from omegaconf import DictConfig
 
-from pytorch_tabular.utils import _linear_dropout_bn
 
 from ..base_model import BaseModel
 from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
@@ -56,31 +55,15 @@ class TabTransformerBackbone(nn.Module):
         self.attention_weights = [None] * self.hparams.num_attn_blocks
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
-        # Final MLP Layers
-        _curr_units = (
+
+        self.output_dim = (
             self.hparams.input_embed_dim * self.hparams.categorical_dim
             + self.hparams.continuous_dim
         )
-        # Linear Layers
-        layers = []
-        for units in self.hparams.out_ff_layers.split("-"):
-            layers.extend(
-                _linear_dropout_bn(
-                    self.hparams.out_ff_activation,
-                    self.hparams.out_ff_initialization,
-                    self.hparams.use_batch_norm,
-                    _curr_units,
-                    int(units),
-                    self.hparams.out_ff_dropout,
-                )
-            )
-            _curr_units = int(units)
-        self.linear_layers = nn.Sequential(*layers)
-        self.output_dim = _curr_units
 
     def _build_embedding_layer(self):
         return Embedding2dLayer(
-            continuous_dim=0,
+            continuous_dim=0,  # Only passing and embedding categorical features
             categorical_cardinality=self.hparams.categorical_cardinality,
             embedding_dim=self.hparams.input_embed_dim,
             shared_embedding_strategy=self.hparams.share_embedding_strategy,
@@ -105,7 +88,6 @@ class TabTransformerBackbone(nn.Module):
                 x_cont = x_cont
             # (B, N, E)
             x = x_cont if x is None else torch.cat([x, x_cont], 1)
-        x = self.linear_layers(x)
         return x
 
 

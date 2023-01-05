@@ -71,7 +71,7 @@ def test_regression(
             max_epochs=3,
             checkpoints=None,
             early_stopping=None,
-            gpus=None,
+            accelerator="cpu",
             fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
@@ -130,7 +130,7 @@ def test_classification(
             max_epochs=3,
             checkpoints=None,
             early_stopping=None,
-            gpus=None,
+            accelerator="cpu",
             fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()

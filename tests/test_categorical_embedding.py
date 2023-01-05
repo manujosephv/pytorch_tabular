@@ -89,7 +89,7 @@ def test_regression(
             max_epochs=3,
             checkpoints=None,
             early_stopping=None,
-            gpus=None,
+            accelerator="cpu",
             fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
@@ -154,7 +154,7 @@ def test_classification(
             max_epochs=3,
             checkpoints=None,
             early_stopping=None,
-            gpus=None,
+            accelerator="cpu",
             fast_dev_run=True,
         )
         optimizer_config = OptimizerConfig()
@@ -194,7 +194,7 @@ def test_embedding_transformer(regression_data):
         max_epochs=1,
         checkpoints=None,
         early_stopping=None,
-        gpus=None,
+        accelerator="cpu",
         fast_dev_run=True,
     )
     optimizer_config = OptimizerConfig()
@@ -221,98 +221,3 @@ def test_embedding_transformer(regression_data):
             for val in transformer._mapping["HouseAgeBin"].values()
         ]
     )
-
-
-# @pytest.mark.parametrize(
-#     "continuous_cols",
-#     [
-#         [
-#             "AveRooms",
-#             "AveBedrms",
-#             "Population",
-#             "AveOccup",
-#             "Latitude",
-#             "Longitude",
-#         ]
-#     ],
-# )
-# @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
-# @pytest.mark.parametrize("continuous_feature_transform", [None, "yeo-johnson"])
-# @pytest.mark.parametrize("normalize_continuous_features", [True, False])
-# @pytest.mark.parametrize("target_range", [True])
-# @pytest.mark.parametrize(
-#     "target_transform",
-#     [None],
-# )
-# @pytest.mark.parametrize("custom_metrics", [None])
-# @pytest.mark.parametrize("custom_loss", [None])
-# @pytest.mark.parametrize("custom_optimizer", [None])
-# @pytest.mark.parametrize("ssl_task", ["Denoising", "Contrastive"])
-# @pytest.mark.parametrize("aug_task", ["cutmix", "mixup"])
-# def test_ssl(
-#     regression_data,
-#     continuous_cols,
-#     categorical_cols,
-#     continuous_feature_transform,
-#     normalize_continuous_features,
-#     target_range,
-#     target_transform,
-#     custom_metrics,
-#     custom_loss,
-#     custom_optimizer,
-#     ssl_task,
-#     aug_task,
-# ):
-#     (train, test, target) = regression_data
-#     if len(continuous_cols) + len(categorical_cols) == 0:
-#         assert True
-#     else:
-#         data_config = DataConfig(
-#             target=target,
-#             continuous_cols=continuous_cols,
-#             categorical_cols=categorical_cols,
-#             continuous_feature_transform=continuous_feature_transform,
-#             normalize_continuous_features=normalize_continuous_features,
-#         )
-#         model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
-#         if target_range:
-#             _target_range = []
-#             for target in data_config.target:
-#                 _target_range.append(
-#                     (
-#                         float(train[target].min()),
-#                         float(train[target].max()),
-#                     )
-#                 )
-#             model_config_params["target_range"] = _target_range
-#         model_config = CategoryEmbeddingModelConfig(**model_config_params)
-#         trainer_config = TrainerConfig(
-#             max_epochs=3,
-#             checkpoints=None,
-#             early_stopping=None,
-#             gpus=None,
-#             fast_dev_run=True,
-#         )
-#         optimizer_config = OptimizerConfig()
-
-#         tabular_model = TabularModel(
-#             data_config=data_config,
-#             model_config=model_config,
-#             optimizer_config=optimizer_config,
-#             trainer_config=trainer_config,
-#         )
-#         tabular_model.fit(
-#             train=train,
-#             test=test,
-#             metrics=custom_metrics,
-#             target_transform=target_transform,
-#             loss=custom_loss,
-#             optimizer=custom_optimizer,
-#             optimizer_params={},
-#         )
-
-#         result = tabular_model.evaluate(test)
-#         if custom_metrics is None:
-#             assert "test_mean_squared_error" in result[0].keys()
-#         else:
-#             assert "test_fake_metric" in result[0].keys()

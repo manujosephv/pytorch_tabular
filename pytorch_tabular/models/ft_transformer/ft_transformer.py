@@ -80,24 +80,8 @@ class FTTransformerBackbone(nn.Module):
             self.attention_weights_ = [None] * self.hparams.num_attn_blocks
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
-        # Final MLP Layers
-        _curr_units = self.hparams.input_embed_dim
-        # Linear Layers
-        layers = []
-        for units in self.hparams.out_ff_layers.split("-"):
-            layers.extend(
-                _linear_dropout_bn(
-                    self.hparams.out_ff_activation,
-                    self.hparams.out_ff_initialization,
-                    self.hparams.use_batch_norm,
-                    _curr_units,
-                    int(units),
-                    self.hparams.out_ff_dropout,
-                )
-            )
-            _curr_units = int(units)
-        self.linear_layers = nn.Sequential(*layers)
-        self.output_dim = _curr_units
+
+        self.output_dim = self.hparams.input_embed_dim
 
     def _build_embedding_layer(self):
         return Embedding2dLayer(
@@ -125,8 +109,7 @@ class FTTransformerBackbone(nn.Module):
         # Flatten (Batch, N_Categorical, Hidden) --> (Batch, N_CategoricalxHidden)
         # x = rearrange(x, "b n h -> b (n h)")
         # Taking only CLS token for the prediction head
-        x = self.linear_layers(x[:, -1])
-        return x
+        return x[:, -1]
 
     # Not Tested Properly
     def _calculate_feature_importance(self):
