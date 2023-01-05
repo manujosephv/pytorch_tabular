@@ -101,22 +101,20 @@ class FTTransformerConfig(ModelConfig):
     )
     embedding_bias: bool = field(
         default=True,
-        metadata={
-            "help": "Flag to turn on Embedding Bias. Defaults to True"
-        },
+        metadata={"help": "Flag to turn on Embedding Bias. Defaults to True"},
     )
     share_embedding: bool = field(
         default=False,
         metadata={
             "help": "The flag turns on shared embeddings in the input embedding process. The key idea here is to have an embedding for the feature as a whole along with embeddings of each unique values of that column. For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
-        }
+        },
     )
     share_embedding_strategy: Optional[str] = field(
         default="fraction",
         metadata={
             "help": "There are two strategies in adding shared embeddings. 1. `add` - A separate embedding for the feature is added to the embedding of the unique values of the feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of the feature. Defaults to fraction.",
-            "choices": ["add", "fraction"]
-        }
+            "choices": ["add", "fraction"],
+        },
     )
     shared_embedding_fraction: float = field(
         default=0.25,
@@ -210,23 +208,34 @@ class FTTransformerConfig(ModelConfig):
     _config_name: str = field(default="FTTransformerConfig")
 
     def __post_init__(self):
-        deprecated_args = ["out_ff_layers", "out_ff_activation", "out_ff_dropoout", "out_ff_initialization"]
-        if any([p is not None for p in deprecated_args]):
+        deprecated_args = [
+            "out_ff_layers",
+            "out_ff_activation",
+            "out_ff_dropoout",
+            "out_ff_initialization",
+        ]
+        if self.head_config != {"layers": ""}:  # If the user has passed a head_config
             warnings.warn(
-                "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
-                DeprecationWarning,
+                "Ignoring the deprecated arguments, `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` as head_config is passed."
             )
-            self.head = "LinearHead"
-            # TODO: Remove this once we deprecate the old config
-            # Fill the head_config using deprecated parameters
-            self.head_config = dict(
-                layers=ifnone(self.out_ff_layers, ""),
-                activation=ifnone(self.out_ff_activation, "ReLU"),
-                dropout=ifnone(self.out_ff_dropout, 0.0),
-                use_batch_norm=False,
-                initialization=ifnone(self.out_ff_initialization, "kaiming"),
-            )
+        else:
+            if any([p is not None for p in deprecated_args]):
+                warnings.warn(
+                    "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
+                    DeprecationWarning,
+                )
+                # TODO: Remove this once we deprecate the old config
+                # Fill the head_config using deprecated parameters
+                self.head_config = dict(
+                    layers=ifnone(self.out_ff_layers, ""),
+                    activation=ifnone(self.out_ff_activation, "ReLU"),
+                    dropout=ifnone(self.out_ff_dropout, 0.0),
+                    use_batch_norm=False,
+                    initialization=ifnone(self.out_ff_initialization, "kaiming"),
+                )
+
         return super().__post_init__()
+
 
 # cls = TabTransformerConfig
 # desc = "Configuration for Data."

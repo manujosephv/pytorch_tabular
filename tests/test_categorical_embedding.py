@@ -44,7 +44,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
-@pytest.mark.parametrize("custom_head_config", [None, "32", "32-32"])
+@pytest.mark.parametrize("custom_head_config", [None, "", "32", "32-32"])
 def test_regression(
     regression_data,
     multi_target,

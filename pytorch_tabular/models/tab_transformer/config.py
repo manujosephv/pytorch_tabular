@@ -202,22 +202,31 @@ class TabTransformerConfig(ModelConfig):
     _config_name: str = field(default="TabTransformerConfig")
 
     def __post_init__(self):
-        deprecated_args = ["out_ff_layers", "out_ff_activation", "out_ff_dropoout", "out_ff_initialization"]
-        if any([p is not None for p in deprecated_args]):
+        deprecated_args = [
+            "out_ff_layers",
+            "out_ff_activation",
+            "out_ff_dropoout",
+            "out_ff_initialization",
+        ]
+        if self.head_config != {"layers": ""}:  # If the user has passed a head_config
             warnings.warn(
-                "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
-                DeprecationWarning,
+                "Ignoring the deprecated arguments, `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` as head_config is passed."
             )
-            self.head = "LinearHead"
-            # TODO: Remove this once we deprecate the old config
-            # Fill the head_config using deprecated parameters
-            self.head_config = dict(
-                layers=ifnone(self.out_ff_layers, ""),
-                activation=ifnone(self.out_ff_activation, "ReLU"),
-                dropout=ifnone(self.out_ff_dropout, 0.0),
-                use_batch_norm=False,
-                initialization=ifnone(self.out_ff_initialization, "kaiming"),
-            )
+        else:
+            if any([p is not None for p in deprecated_args]):
+                warnings.warn(
+                    "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
+                    DeprecationWarning,
+                )
+                # TODO: Remove this once we deprecate the old config
+                # Fill the head_config using deprecated parameters
+                self.head_config = dict(
+                    layers=ifnone(self.out_ff_layers, ""),
+                    activation=ifnone(self.out_ff_activation, "ReLU"),
+                    dropout=ifnone(self.out_ff_dropout, 0.0),
+                    use_batch_norm=False,
+                    initialization=ifnone(self.out_ff_initialization, "kaiming"),
+                )
         return super().__post_init__()
 
 

@@ -137,20 +137,20 @@ class AutoIntConfig(ModelConfig):
     use_batch_norm: bool = field(
         default=False,
         metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
+            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut in the deep MLP. Defaults to False"
         },
     )
     initialization: str = field(
         default="kaiming",
         metadata={
-            "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
+            "help": "Initialization scheme for the linear layers in the deep MLP. Defaults to `kaiming`",
             "choices": ["kaiming", "xavier", "random"],
         },
     )
     dropout: float = field(
         default=0.0,
         metadata={
-            "help": "probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
+            "help": "probability of an element to be zeroed in the deep MLP. Defaults to 0.0"
         },
     )
     attention_pooling: bool = field(
@@ -163,19 +163,3 @@ class AutoIntConfig(ModelConfig):
     _model_name: str = field(default="AutoIntModel")
     _backbone_name: str = field(default="AutoIntBackbone")
     _config_name: str = field(default="AutoIntConfig")
-
-
-# cls = AutoIntConfig
-# desc = "Configuration for Data."
-# doc_str = f"{desc}\nArgs:"
-# for key in cls.__dataclass_fields__.keys():
-#     atr = cls.__dataclass_fields__[key]
-#     if atr.init:
-#         type = str(atr.type).replace("<class '","").replace("'>","").replace("typing.","")
-#         help_str = atr.metadata.get("help","")
-#         if "choices" in atr.metadata.keys():
-#             help_str += f'. Choices are: [{",".join(["`"+str(ch)+"`" for ch in atr.metadata["choices"]])}].'
-#         # help_str += f'. Defaults to {atr.default}'
-#         doc_str+=f'\n\t\t{key} ({type}): {help_str}'
-
-# print(doc_str)

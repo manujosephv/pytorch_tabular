@@ -11,8 +11,6 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.utils import _linear_dropout_bn
-
 from ..base_model import BaseModel
 from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
 
