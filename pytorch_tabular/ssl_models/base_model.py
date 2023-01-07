@@ -30,9 +30,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     # using base config values if exist
     if "embedding_dims" in config.keys() and config.embedding_dims is not None:
         inferred_config.embedding_dims = config.embedding_dims
-    merged_config = OmegaConf.merge(
-        OmegaConf.to_container(config), OmegaConf.to_container(inferred_config)
-    )
+    merged_config = OmegaConf.merge(OmegaConf.to_container(config), OmegaConf.to_container(inferred_config))
     return merged_config
 
 
@@ -48,9 +46,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         **kwargs,
     ):
         super().__init__()
-        assert (
-            "inferred_config" in kwargs
-        ), "inferred_config not found in initialization arguments"
+        assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
         inferred_config = kwargs["inferred_config"]
         # Merging the config and inferred config
         config = safe_merge_config(config, inferred_config)
@@ -76,9 +72,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         self._setup_loss()
         self._setup_metrics()
 
-    def _setup_encoder_decoder(
-        self, encoder, encoder_config, decoder, decoder_config, inferred_config
-    ):
+    def _setup_encoder_decoder(self, encoder, encoder_config, decoder, decoder_config, inferred_config):
         assert (encoder is not None) or (
             encoder_config is not None
         ), "Either encoder or encoder_config must be provided"
@@ -88,9 +82,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             self._custom_decoder = True
         else:
             # Since encoder is not provided, we will use the encoder_config
-            model_callable = getattr_nested(
-                encoder_config._module_src, encoder_config._backbone_name
-            )
+            model_callable = getattr_nested(encoder_config._module_src, encoder_config._backbone_name)
             self.encoder = model_callable(
                 safe_merge_config(encoder_config, inferred_config),
                 # inferred_config=inferred_config,
@@ -100,9 +92,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             self._custom_encoder = True
         elif decoder_config is not None:
             # Since decoder is not provided, we will use the decoder_config
-            model_callable = getattr_nested(
-                decoder_config._module_src, decoder_config._backbone_name
-            )
+            model_callable = getattr_nested(decoder_config._module_src, decoder_config._backbone_name)
             self.decoder = model_callable(
                 safe_merge_config(decoder_config, inferred_config),
                 # inferred_config=inferred_config,
@@ -111,26 +101,18 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             self.decoder = nn.Identity()
 
     def _check_and_verify(self):
-        assert hasattr(
-            self.encoder, "output_dim"
-        ), "An encoder backbone must have an output_dim attribute"
+        assert hasattr(self.encoder, "output_dim"), "An encoder backbone must have an output_dim attribute"
         if isinstance(self.decoder, nn.Identity):
             self.decoder.output_dim = self.encoder.output_dim
-        assert hasattr(
-            self.decoder, "output_dim"
-        ), "A decoder must have an output_dim attribute"
+        assert hasattr(self.decoder, "output_dim"), "A decoder must have an output_dim attribute"
 
     @property
     def embedding_layers(self):
-        raise NotImplementedError(
-            "embedding_layer property needs to be implemented by inheriting classes"
-        )
+        raise NotImplementedError("embedding_layer property needs to be implemented by inheriting classes")
 
     @property
     def featurizer(self):
-        raise NotImplementedError(
-            "embedding_layer property needs to be implemented by inheriting classes"
-        )
+        raise NotImplementedError("embedding_layer property needs to be implemented by inheriting classes")
 
     @abstractmethod
     def _setup_loss(self):
@@ -198,9 +180,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
                     **self.hparams.optimizer_params,
                 )
             except AttributeError as e:
-                logger.error(
-                    f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module"
-                )
+                logger.error(f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module")
                 raise e
         else:
             # Loading from custom fit arguments
@@ -213,9 +193,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             )
         if self.hparams.lr_scheduler is not None:
             try:
-                self._lr_scheduler = getattr(
-                    torch.optim.lr_scheduler, self.hparams.lr_scheduler
-                )
+                self._lr_scheduler = getattr(torch.optim.lr_scheduler, self.hparams.lr_scheduler)
             except AttributeError as e:
                 logger.error(
                     f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined in the torch.optim.lr_scheduler module"
@@ -224,16 +202,12 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             if isinstance(self._lr_scheduler, torch.optim.lr_scheduler._LRScheduler):
                 return {
                     "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(
-                        opt, **self.hparams.lr_scheduler_params
-                    ),
+                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                 }
             else:
                 return {
                     "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(
-                        opt, **self.hparams.lr_scheduler_params
-                    ),
+                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                     "monitor": self.hparams.lr_scheduler_monitor_metric,
                 }
         else:

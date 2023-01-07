@@ -19,9 +19,7 @@ import torch
 
 
 class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
-    def __init__(
-        self, tabular_model, extract_keys=["backbone_features"], drop_original=True
-    ):
+    def __init__(self, tabular_model, extract_keys=["backbone_features"], drop_original=True):
         """Initializes the Transformer and extracts the neural features
 
         Args:
@@ -57,9 +55,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
         X_encoded = X.copy(deep=True)
         orig_features = X_encoded.columns
         self.tabular_model.model.eval()
-        inference_dataloader = (
-            self.tabular_model.datamodule.prepare_inference_dataloader(X_encoded)
-        )
+        inference_dataloader = self.tabular_model.datamodule.prepare_inference_dataloader(X_encoded)
         logits_predictions = defaultdict(list)
         for batch in tqdm(inference_dataloader, desc="Generating Features..."):
             for k, v in batch.items():
@@ -68,15 +64,9 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
                     continue
                 batch[k] = v.to(self.tabular_model.model.device)
             if self.tabular_model.config.task == "ssl":
-                ret_value = dict(
-                    backbone_features=self.tabular_model.model.predict(
-                        batch, ret_model_output=True
-                    )
-                )
+                ret_value = dict(backbone_features=self.tabular_model.model.predict(batch, ret_model_output=True))
             else:
-                _, ret_value = self.tabular_model.model.predict(
-                    batch, ret_model_output=True
-                )
+                _, ret_value = self.tabular_model.model.predict(batch, ret_model_output=True)
             for k in self.extract_keys:
                 if k in ret_value.keys():
                     logits_predictions[k].append(ret_value[k].detach().cpu())
@@ -110,9 +100,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
 
     def save_as_object_file(self, path):
         if not self._mapping:
-            raise ValueError(
-                "`fit` method must be called before `save_as_object_file`."
-            )
+            raise ValueError("`fit` method must be called before `save_as_object_file`.")
         pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):

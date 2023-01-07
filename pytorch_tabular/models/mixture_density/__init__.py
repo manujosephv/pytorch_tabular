@@ -1,5 +1,6 @@
-from .mdn import MDNModel
 from .config import MDNConfig
+from .mdn import MDNModel
+
 __all__ = [
     # "MixtureDensityHead",
     # "MixtureDensityHeadConfig",

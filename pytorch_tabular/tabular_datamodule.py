@@ -3,8 +3,8 @@
 # For license information, see LICENSE.TXT
 """Tabular Data Module"""
 import logging
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
@@ -16,7 +16,7 @@ import torch
 from omegaconf import DictConfig
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
-from sklearn.base import TransformerMixin, copy
+from sklearn.base import copy, TransformerMixin
 from sklearn.preprocessing import (
     FunctionTransformer,
     LabelEncoder,
@@ -91,14 +91,10 @@ class TabularDatamodule(pl.LightningDataModule):
         self.seed = seed
         self._fitted = False
 
-    def _set_target_transform(
-        self, target_transform: Union[TransformerMixin, Tuple]
-    ) -> None:
+    def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
-                target_transform = FunctionTransformer(
-                    func=target_transform[0], inverse_func=target_transform[1]
-                )
+                target_transform = FunctionTransformer(func=target_transform[0], inverse_func=target_transform[1])
             self.do_target_transform = True
         else:
             self.do_target_transform = False
@@ -122,12 +118,9 @@ class TabularDatamodule(pl.LightningDataModule):
         embedding_dims = None
         if not self.do_leave_one_out_encoder():
             categorical_cardinality = [
-                int(self.train[col].fillna("NA").nunique()) + 1
-                for col in config.categorical_cols
+                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
             ]
-            embedding_dims = [
-                (x, min(50, (x + 1) // 2)) for x in categorical_cardinality
-            ]
+            embedding_dims = [(x, min(50, (x + 1) // 2)) for x in categorical_cardinality]
             if hasattr(config, "embedding_dims"):
                 if config.embedding_dims is not None:
                     embedding_dims = config.embedding_dims
@@ -146,9 +139,7 @@ class TabularDatamodule(pl.LightningDataModule):
             bool
         """
         if hasattr(self.config, "_model_name"):
-            return (self.config._model_name == "NODEModel") and (
-                not self.config.embed_categorical
-            )
+            return (self.config._model_name == "NODEModel") and (not self.config.embed_categorical)
         else:
             return False
 
@@ -156,15 +147,11 @@ class TabularDatamodule(pl.LightningDataModule):
         added_features = []
         for field_name, freq in self.config.date_columns:
             data = self.make_date(data, field_name)
-            data, _new_feats = self.add_datepart(
-                data, field_name, frequency=freq, prefix=None, drop=True
-            )
+            data, _new_feats = self.add_datepart(data, field_name, frequency=freq, prefix=None, drop=True)
             added_features += _new_feats
         return data, added_features
 
-    def _encode_categorical_columns(
-        self, data: pd.DataFrame, stage: str
-    ) -> pd.DataFrame:
+    def _encode_categorical_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
         if stage == "fit":
             if self.do_leave_one_out_encoder():
                 logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
@@ -176,75 +163,53 @@ class TabularDatamodule(pl.LightningDataModule):
                     logger.warning(
                         f"Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
                     )
-                data = self.categorical_encoder.fit_transform(
-                    data, data[self.config.target[0]]
-                )
+                data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
             else:
                 logger.debug("Encoding Categorical Columns using OrdinalEncoder")
                 self.categorical_encoder = OrdinalEncoder(
                     cols=self.config.categorical_cols,
-                    handle_unseen="impute"
-                    if self.config.handle_unknown_categories
-                    else "error",
-                    handle_missing="impute"
-                    if self.config.handle_missing_values
-                    else "error",
+                    handle_unseen="impute" if self.config.handle_unknown_categories else "error",
+                    handle_missing="impute" if self.config.handle_missing_values else "error",
                 )
                 data = self.categorical_encoder.fit_transform(data)
         else:
             data = self.categorical_encoder.transform(data)
         return data
 
-    def _transform_continuous_columns(
-        self, data: pd.DataFrame, stage: str
-    ) -> pd.DataFrame:
+    def _transform_continuous_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
         if stage == "fit":
-            transform = self.CONTINUOUS_TRANSFORMS[
-                self.config.continuous_feature_transform
-            ]
+            transform = self.CONTINUOUS_TRANSFORMS[self.config.continuous_feature_transform]
             if "random_state" in transform["params"] and self.seed is not None:
                 transform["params"]["random_state"] = self.seed
             self.continuous_transform = transform["callable"](**transform["params"])
             # TODO implement quantile noise
-            data.loc[
-                :, self.config.continuous_cols
-            ] = self.continuous_transform.fit_transform(
+            data.loc[:, self.config.continuous_cols] = self.continuous_transform.fit_transform(
                 data.loc[:, self.config.continuous_cols]
             )
         else:
-            data.loc[
-                :, self.config.continuous_cols
-            ] = self.continuous_transform.transform(
+            data.loc[:, self.config.continuous_cols] = self.continuous_transform.transform(
                 data.loc[:, self.config.continuous_cols]
             )
         return data
 
-    def _normalize_continuous_columns(
-        self, data: pd.DataFrame, stage: str
-    ) -> pd.DataFrame:
+    def _normalize_continuous_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
         if stage == "fit":
             self.scaler = StandardScaler()
             data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
                 data.loc[:, self.config.continuous_cols]
             )
         else:
-            data.loc[:, self.config.continuous_cols] = self.scaler.transform(
-                data.loc[:, self.config.continuous_cols]
-            )
+            data.loc[:, self.config.continuous_cols] = self.scaler.transform(data.loc[:, self.config.continuous_cols])
         return data
 
     def _label_encode_target(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
         if self.config.task == "classification":
             if stage == "fit":
                 self.label_encoder = LabelEncoder()
-                data[self.config.target[0]] = self.label_encoder.fit_transform(
-                    data[self.config.target[0]]
-                )
+                data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
             else:
                 if self.config.target[0] in data.columns:
-                    data[self.config.target[0]] = self.label_encoder.transform(
-                        data[self.config.target[0]]
-                    )
+                    data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
         return data
 
     def _target_transform(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
@@ -255,26 +220,16 @@ class TabularDatamodule(pl.LightningDataModule):
                     if stage == "fit":
                         target_transforms = []
                         for col in self.config.target:
-                            _target_transform = copy.deepcopy(
-                                self.target_transform_template
-                            )
-                            data[col] = _target_transform.fit_transform(
-                                data[col].values.reshape(-1, 1)
-                            )
+                            _target_transform = copy.deepcopy(self.target_transform_template)
+                            data[col] = _target_transform.fit_transform(data[col].values.reshape(-1, 1))
                             target_transforms.append(_target_transform)
                         self.target_transforms = target_transforms
                     else:
-                        for col, _target_transform in zip(
-                            self.config.target, self.target_transforms
-                        ):
-                            data[col] = _target_transform.transform(
-                                data[col].values.reshape(-1, 1)
-                            )
+                        for col, _target_transform in zip(self.config.target, self.target_transforms):
+                            data[col] = _target_transform.transform(data[col].values.reshape(-1, 1))
         return data
 
-    def preprocess_data(
-        self, data: pd.DataFrame, stage: str = "inference"
-    ) -> Tuple[pd.DataFrame, list]:
+    def preprocess_data(self, data: pd.DataFrame, stage: str = "inference") -> Tuple[pd.DataFrame, list]:
         """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before feeding into the dataloder
 
         Args:
@@ -291,29 +246,21 @@ class TabularDatamodule(pl.LightningDataModule):
         # The only features that are added are the date features extracted
         # from the date which are categorical in nature
         if (added_features is not None) and (stage == "fit"):
-            logger.debug(
-                f"Added {added_features} features after encoding the date_columns"
-            )
+            logger.debug(f"Added {added_features} features after encoding the date_columns")
             self.config.categorical_cols += added_features
             # Update the categorical dimension in config
             self.config.categorical_dim = (
-                len(self.config.categorical_cols)
-                if self.config.categorical_cols is not None
-                else 0
+                len(self.config.categorical_cols) if self.config.categorical_cols is not None else 0
             )
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
             data = self._encode_categorical_columns(data, stage)
 
         # Transforming Continuous Columns
-        if (self.config.continuous_feature_transform is not None) and (
-            len(self.config.continuous_cols) > 0
-        ):
+        if (self.config.continuous_feature_transform is not None) and (len(self.config.continuous_cols) > 0):
             data = self._transform_continuous_columns(data, stage)
         # Normalizing Continuous Columns
-        if (self.config.normalize_continuous_features) and (
-            len(self.config.continuous_cols) > 0
-        ):
+        if (self.config.normalize_continuous_features) and (len(self.config.continuous_cols) > 0):
             data = self._normalize_continuous_columns(data, stage)
         # Converting target labels to a 0 indexed label
         data = self._label_encode_target(data, stage)
@@ -343,9 +290,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 self.validation = self.validation.copy()
             # Preprocessing Train, Validation
             self.train, _ = self.preprocess_data(self.train, stage="fit")
-            self.validation, _ = self.preprocess_data(
-                self.validation, stage="inference"
-            )
+            self.validation, _ = self.preprocess_data(self.validation, stage="inference")
             if self.test is not None:
                 self.test, _ = self.preprocess_data(self.test, stage="inference")
             self._fitted = True
@@ -492,9 +437,7 @@ class TabularDatamodule(pl.LightningDataModule):
     ):
         "Helper function that adds columns relevant to a date in the column `field_name` of `df`."
         field = df[field_name]
-        prefix = (
-            re.sub("[Dd]ate$", "", field_name) if prefix is None else prefix
-        ) + "_"
+        prefix = (re.sub("[Dd]ate$", "", field_name) if prefix is None else prefix) + "_"
         attr = cls.time_features_from_frequency_str(frequency)
         added_features = []
         for n in attr:
@@ -504,11 +447,7 @@ class TabularDatamodule(pl.LightningDataModule):
             added_features.append(prefix + n)
         # Pandas removed `dt.week` in v1.1.10
         if "Week" in attr:
-            week = (
-                field.dt.isocalendar().week
-                if hasattr(field.dt, "isocalendar")
-                else field.dt.week
-            )
+            week = field.dt.isocalendar().week if hasattr(field.dt, "isocalendar") else field.dt.week
             df.insert(3, prefix + "Week", week)
             added_features.append(prefix + "Week")
         # TODO Not adding Elapsed by default. Need to route it through config
@@ -588,9 +527,7 @@ class TabularDatamodule(pl.LightningDataModule):
         # TODO Is the target encoding necessary?
         if len(set(self.target) - set(df.columns)) > 0:
             if self.config.task == "classification":
-                df.loc[:, self.target] = np.array(
-                    [self.label_encoder.classes_[0]] * len(df)
-                ).reshape(-1, 1)
+                df.loc[:, self.target] = np.array([self.label_encoder.classes_[0]] * len(df)).reshape(-1, 1)
             else:
                 df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
         df, _ = self.preprocess_data(df, stage="inference")
@@ -613,9 +550,7 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target
-            if all([col in df.columns for col in self.target])
-            else None,
+            target=self.target if all([col in df.columns for col in self.target]) else None,
         )
         return DataLoader(
             dataset,
@@ -707,10 +642,6 @@ class TabularDataset(Dataset):
         """
         return {
             "target": self.y[idx],
-            "continuous": self.continuous_X[idx]
-            if self.continuous_cols
-            else torch.Tensor(),
-            "categorical": self.categorical_X[idx]
-            if self.categorical_cols
-            else torch.Tensor(),
+            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
+            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
         }

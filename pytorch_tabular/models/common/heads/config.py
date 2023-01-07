@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
+
 # from typing import Any, Dict, Iterable, List, Optional
 
 
@@ -38,9 +39,7 @@ class LinearHeadConfig:
     )
     use_batch_norm: bool = field(
         default=False,
-        metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut"
-        },
+        metadata={"help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut"},
     )
     initialization: str = field(
         default="kaiming",
@@ -157,6 +156,6 @@ class MixtureDensityHeadConfig:
         default=None,
         metadata={
             "help": "The input dimensions to the head. This will be automatically filled in while initializing from the `backbone.output_dim`",
-        }
+        },
     )
     _probabilistic: bool = field(default=True)

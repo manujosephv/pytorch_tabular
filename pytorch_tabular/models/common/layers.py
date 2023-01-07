@@ -140,9 +140,7 @@ class MultiHeadedAttention(nn.Module):
         keep_attn: bool = True,
     ):
         super().__init__()
-        assert (
-            input_dim % num_heads == 0
-        ), "'input_dim' must be multiples of 'num_heads'"
+        assert input_dim % num_heads == 0, "'input_dim' must be multiples of 'num_heads'"
         inner_dim = head_dim * num_heads
         self.n_heads = num_heads
         self.scale = head_dim**-0.5
@@ -220,9 +218,7 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
     elif initialization is None:
         pass
     else:
-        raise NotImplementedError(
-            "initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`"
-        )
+        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
 
 
 class PreEncoded1dLayer(nn.Module):
@@ -252,13 +248,11 @@ class PreEncoded1dLayer(nn.Module):
             self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
-        assert (
-            "continuous" in x or "categorical" in x
-        ), "x must contain either continuous and categorical features"
+        assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get(
-            "continuous", torch.empty(0, 0)
-        ), x.get("categorical", torch.empty(0, 0))
+        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
+            "categorical", torch.empty(0, 0)
+        )
         assert (
             categorical_data.shape[1] == self.categorical_dim
         ), "categorical_data must have same number of columns as categorical embedding layers"
@@ -301,9 +295,7 @@ class Embedding1dLayer(nn.Module):
         self.batch_norm_continuous_input = batch_norm_continuous_input
 
         # Embedding layers
-        self.cat_embedding_layers = nn.ModuleList(
-            [nn.Embedding(x, y) for x, y in categorical_embedding_dims]
-        )
+        self.cat_embedding_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in categorical_embedding_dims])
         if embedding_dropout > 0:
             self.embd_dropout = nn.Dropout(embedding_dropout)
         else:
@@ -313,13 +305,11 @@ class Embedding1dLayer(nn.Module):
             self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
-        assert (
-            "continuous" in x or "categorical" in x
-        ), "x must contain either continuous and categorical features"
+        assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get(
-            "continuous", torch.empty(0, 0)
-        ), x.get("categorical", torch.empty(0, 0))
+        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
+            "categorical", torch.empty(0, 0)
+        )
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers
         ), "categorical_data must have same number of columns as categorical embedding layers"
@@ -428,21 +418,15 @@ class Embedding2dLayer(nn.Module):
                 for embedding_layer in self.cat_embedding_layers:
                     self._initialize_kaiming(embedding_layer.weight)
         if embedding_bias:
-            self.cat_embedding_bias = nn.Parameter(
-                torch.Tensor(len(self.categorical_cardinality), self.embedding_dim)
-            )
+            self.cat_embedding_bias = nn.Parameter(torch.Tensor(len(self.categorical_cardinality), self.embedding_dim))
             if self._do_kaiming_initialization:
                 self._initialize_kaiming(self.cat_embedding_bias)
         # Continuous Embedding Layer
-        self.cont_embedding_layer = nn.Embedding(
-            self.continuous_dim, self.embedding_dim
-        )
+        self.cont_embedding_layer = nn.Embedding(self.continuous_dim, self.embedding_dim)
         if self._do_kaiming_initialization:
             self._initialize_kaiming(self.cont_embedding_layer.weight)
         if embedding_bias:
-            self.cont_embedding_bias = nn.Parameter(
-                torch.Tensor(self.continuous_dim, self.embedding_dim)
-            )
+            self.cont_embedding_bias = nn.Parameter(torch.Tensor(self.continuous_dim, self.embedding_dim))
             if self._do_kaiming_initialization:
                 self._initialize_kaiming(self.cont_embedding_bias)
         if batch_norm_continuous_input:
@@ -453,13 +437,11 @@ class Embedding2dLayer(nn.Module):
             self.embd_dropout = None
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
-        assert (
-            "continuous" in x or "categorical" in x
-        ), "x must contain either continuous and categorical features"
+        assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get(
-            "continuous", torch.empty(0, 0)
-        ), x.get("categorical", torch.empty(0, 0))
+        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
+            "categorical", torch.empty(0, 0)
+        )
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers
         ), "categorical_data must have same number of columns as categorical embedding layers"
@@ -468,9 +450,9 @@ class Embedding2dLayer(nn.Module):
         ), "continuous_data must have same number of columns as continuous dim"
         embed = None
         if continuous_data.shape[1] > 0:
-            cont_idx = torch.arange(
-                self.continuous_dim, device=continuous_data.device
-            ).expand(continuous_data.size(0), -1)
+            cont_idx = torch.arange(self.continuous_dim, device=continuous_data.device).expand(
+                continuous_data.size(0), -1
+            )
             if self.batch_norm_continuous_input:
                 continuous_data = self.normalizing_batch_norm(continuous_data)
             embed = torch.mul(
@@ -531,9 +513,7 @@ class TransformerEncoderBlock(nn.Module):
         self.mha = MultiHeadedAttention(
             input_embed_dim,
             num_heads,
-            head_dim=input_embed_dim
-            if transformer_head_dim is None
-            else transformer_head_dim,
+            head_dim=input_embed_dim if transformer_head_dim is None else transformer_head_dim,
             dropout=attn_dropout,
             keep_attn=keep_attn,
         )
@@ -581,9 +561,7 @@ class ModuleWithInit(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self._is_initialized_tensor = nn.Parameter(
-            torch.tensor(0, dtype=torch.uint8), requires_grad=False
-        )
+        self._is_initialized_tensor = nn.Parameter(torch.tensor(0, dtype=torch.uint8), requires_grad=False)
         self._is_initialized_bool = None
         # Note: this module uses a separate flag self._is_initialized so as to achieve both
         # * persistence: is_initialized is saved alongside model in state_dict

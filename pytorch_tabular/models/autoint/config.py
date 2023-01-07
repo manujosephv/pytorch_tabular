@@ -50,27 +50,19 @@ class AutoIntConfig(ModelConfig):
 
     attn_embed_dim: int = field(
         default=32,
-        metadata={
-            "help": "The number of hidden units in the Multi-Headed Attention layers. Defaults to 32"
-        },
+        metadata={"help": "The number of hidden units in the Multi-Headed Attention layers. Defaults to 32"},
     )
     num_heads: int = field(
         default=2,
-        metadata={
-            "help": "The number of heads in the Multi-Headed Attention layer. Defaults to 2"
-        },
+        metadata={"help": "The number of heads in the Multi-Headed Attention layer. Defaults to 2"},
     )
     num_attn_blocks: int = field(
         default=3,
-        metadata={
-            "help": "The number of layers of stacked Multi-Headed Attention layers. Defaults to 2"
-        },
+        metadata={"help": "The number of layers of stacked Multi-Headed Attention layers. Defaults to 2"},
     )
     attn_dropouts: float = field(
         default=0.0,
-        metadata={
-            "help": "Dropout between layers of Multi-Headed Attention Layers. Defaults to 0.0"
-        },
+        metadata={"help": "Dropout between layers of Multi-Headed Attention Layers. Defaults to 0.0"},
     )
     has_residuals: bool = field(
         default=True,
@@ -80,9 +72,7 @@ class AutoIntConfig(ModelConfig):
     )
     embedding_dim: int = field(
         default=16,
-        metadata={
-            "help": "The dimensions of the embedding for continuous and categorical columns. Defaults to 16"
-        },
+        metadata={"help": "The dimensions of the embedding for continuous and categorical columns. Defaults to 16"},
     )
     embedding_initialization: Optional[str] = field(
         default="kaiming_uniform",
@@ -93,22 +83,20 @@ class AutoIntConfig(ModelConfig):
     )
     embedding_bias: bool = field(
         default=True,
-        metadata={
-            "help": "Flag to turn on Embedding Bias. Defaults to True"
-        },
+        metadata={"help": "Flag to turn on Embedding Bias. Defaults to True"},
     )
     share_embedding: bool = field(
         default=False,
         metadata={
             "help": "The flag turns on shared embeddings in the input embedding process. The key idea here is to have an embedding for the feature as a whole along with embeddings of each unique values of that column. For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
-        }
+        },
     )
     share_embedding_strategy: Optional[str] = field(
         default="fraction",
         metadata={
             "help": "There are two strategies in adding shared embeddings. 1. `add` - A separate embedding for the feature is added to the embedding of the unique values of the feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of the feature. Defaults to fraction.",
-            "choices": ["add", "fraction"]
-        }
+            "choices": ["add", "fraction"],
+        },
     )
     shared_embedding_fraction: float = field(
         default=0.25,
@@ -118,15 +106,11 @@ class AutoIntConfig(ModelConfig):
     )
     deep_layers: bool = field(
         default=False,
-        metadata={
-            "help": "Flag to enable a deep MLP layer before the Multi-Headed Attention layer. Defaults to False"
-        },
+        metadata={"help": "Flag to enable a deep MLP layer before the Multi-Headed Attention layer. Defaults to False"},
     )
     layers: str = field(
         default="128-64-32",
-        metadata={
-            "help": "Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
-        },
+        metadata={"help": "Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"},
     )
     activation: str = field(
         default="ReLU",
@@ -149,9 +133,7 @@ class AutoIntConfig(ModelConfig):
     )
     dropout: float = field(
         default=0.0,
-        metadata={
-            "help": "probability of an element to be zeroed in the deep MLP. Defaults to 0.0"
-        },
+        metadata={"help": "probability of an element to be zeroed in the deep MLP. Defaults to 0.0"},
     )
     attention_pooling: bool = field(
         default=False,
