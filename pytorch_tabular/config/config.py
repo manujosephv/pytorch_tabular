@@ -374,7 +374,7 @@ class TrainerConfig:
         },
     )
     devices: Optional[int] = field(
-        default=-1,
+        default=None,
         metadata={
             "help": "Number of devices to train on (int). -1 uses all available devices. By default uses all available devices (-1)",
         },

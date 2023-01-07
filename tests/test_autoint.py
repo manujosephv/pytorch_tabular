@@ -9,19 +9,9 @@ from pytorch_tabular.models import AutoIntConfig
 
 
 @pytest.mark.parametrize("multi_target", [True, False])
-@pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-    ],
-)
+@pytest.mark.parametrize("continuous_cols", [[
+    "AveRooms", "AveBedrms", "Population", "AveOccup", "Latitude", "Longitude"
+]])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
