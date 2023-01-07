@@ -34,4 +34,4 @@ jobs:
 
       - name: Run test-suite
         run: |
-          python -m pytest -v
+          python -m pytest
