@@ -90,7 +90,6 @@ trainer_config = TrainerConfig(
     auto_lr_find=True, # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=100,
-    gpus=torch.cuda.device_count(), #index of the GPU to use. 0, means CPU
 )
 optimizer_config = OptimizerConfig()
 
@@ -142,7 +141,7 @@ If you use PyTorch Tabular for a scientific publication, we would appreciate cit
 * [arxiv Paper](https://arxiv.org/abs/2104.13638)
 ```
 @misc{joseph2021pytorch,
-      title={PyTorch Tabular: A Framework for Deep Learning with Tabular Data}, 
+      title={PyTorch Tabular: A Framework for Deep Learning with Tabular Data},
       author={Manu Joseph},
       year={2021},
       eprint={2104.13638},
@@ -152,15 +151,15 @@ If you use PyTorch Tabular for a scientific publication, we would appreciate cit
 ```
 * Zenodo Software Citation
 ```
-@article{manujosephv_2021, 
-    title={manujosephv/pytorch_tabular: v0.7.0-alpha}, 
-    DOI={10.5281/zenodo.5359010}, 
+@article{manujosephv_2021,
+    title={manujosephv/pytorch_tabular: v0.7.0-alpha},
+    DOI={10.5281/zenodo.5359010},
     abstractNote={<p>Added a few more SOTA models - TabTransformer, FTTransformer
         Made improvements in the model save and load capability
-        Made installation less restrictive by unfreezing some dependencies.</p>}, 
-    publisher={Zenodo}, 
-    author={manujosephv}, 
-    year={2021}, 
+        Made installation less restrictive by unfreezing some dependencies.</p>},
+    publisher={Zenodo},
+    author={manujosephv},
+    year={2021},
     month={May}
 }
 ```

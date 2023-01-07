@@ -13,7 +13,7 @@ The parameters that you would set most frequently are:
 
 ### Usage Example
 ```python
-trainer_config = TrainerConfig(batch_size=64, max_epochs=10, gpus=1)
+trainer_config = TrainerConfig(batch_size=64, max_epochs=10, accelerator="auto")
 ```
 
 PyTorch Tabular uses Early Stopping by default and monitors `valid_loss` to stop training. Checkpoint saving is also turned on by default, which monitors `valid_loss` and saved the best model in a folder `saved_models`. All of these are configurable as we will see in the next section.
@@ -35,7 +35,7 @@ Checkpoint Saving is also turned on by default and to turn it off you can set th
 - `checkpoints_mode`: str: The direction in which the loss/metric should be optimized. Choices are `max` and `min`. Defaults to `min`
 - `checkpoints_save_top_k`: int: The number of best models to save. If you want to save more than one best models, you can set this parameter to >1. Defaults to `1`
 
-!!!note 
+!!!note
     Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and cehck the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
 
 ### Learning Rate Finder

@@ -87,7 +87,6 @@ model_config = CategoryEmbeddingModelConfig(
 trainer_config = TrainerConfig(
     checkpoints=None,
     max_epochs=2,
-    gpus=torch.cuda.device_count(),
     profiler=None,
     fast_dev_run=False,
     auto_lr_find=True,

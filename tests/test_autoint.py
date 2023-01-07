@@ -193,7 +193,6 @@ def test_classification(
 #             max_epochs=3,
 #             checkpoints=None,
 #             early_stopping=None,
-#             gpus=None,
 #             fast_dev_run=True,
 #         )
 #         optimizer_config = OptimizerConfig()
