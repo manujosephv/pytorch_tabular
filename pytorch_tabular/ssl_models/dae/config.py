@@ -70,9 +70,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
     )
     mask_loss_weight: float = field(
         default=2.0,
-        metadata={
-            "help": "Weight to be used for the loss function for the masked features. Defaults to 1.0"
-        },
+        metadata={"help": "Weight to be used for the loss function for the masked features. Defaults to 1.0"},
     )
     max_onehot_cardinality: int = field(
         default=4,
@@ -86,9 +84,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
     _config_name: str = field(default="DenoisingAutoEncoderConfig")
 
     def __post_init__(self):
-        assert hasattr(
-            self.encoder_config, "_backbone_name"
-        ), "encoder_config should have a _backbone_name attribute"
+        assert hasattr(self.encoder_config, "_backbone_name"), "encoder_config should have a _backbone_name attribute"
         if self.decoder_config is not None:
             assert hasattr(
                 self.decoder_config, "_backbone_name"

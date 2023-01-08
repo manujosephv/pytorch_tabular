@@ -7,15 +7,14 @@ import torch
 import torch.nn as nn
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
+
 import pytorch_tabular as root_module
 
 logger = logging.getLogger(__name__)
 
 
 def _make_smooth_weights_for_balanced_classes(y_train, mu=1.0):
-    labels_dict = {
-        label: count for label, count in zip(np.unique(y_train), np.bincount(y_train))
-    }
+    labels_dict = {label: count for label, count in zip(np.unique(y_train), np.bincount(y_train))}
     total = np.sum(list(labels_dict.values()))
     keys = sorted(labels_dict.keys())
     weight = []
@@ -42,9 +41,7 @@ def get_balanced_sampler(y_train):
     class_weights = 1.0 / torch.Tensor(class_sample_counts)
     train_samples_weight = [class_weights[class_id] for class_id in y_train]
     # now lets initialize samplers
-    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(
-        train_samples_weight, len(y_train)
-    )
+    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(train_samples_weight, len(y_train))
     return train_sampler
 
 
@@ -60,9 +57,7 @@ def _initialize_layers(activation, initialization, layers):
             nonlinearity = "leaky_relu"
         else:
             if initialization == "kaiming":
-                logger.warning(
-                    "Kaiming initialization is only recommended for ReLU and LeakyReLU."
-                )
+                logger.warning("Kaiming initialization is only recommended for ReLU and LeakyReLU.")
                 nonlinearity = "leaky_relu"
             else:
                 nonlinearity = "relu"
@@ -72,17 +67,13 @@ def _initialize_layers(activation, initialization, layers):
         elif initialization == "xavier":
             nn.init.xavier_normal_(
                 layers.weight,
-                gain=nn.init.calculate_gain(nonlinearity)
-                if activation in ["ReLU", "LeakyReLU"]
-                else 1,
+                gain=nn.init.calculate_gain(nonlinearity) if activation in ["ReLU", "LeakyReLU"] else 1,
             )
         elif initialization == "random":
             nn.init.normal_(layers.weight)
 
 
-def _linear_dropout_bn(
-    activation, initialization, use_batch_norm, in_units, out_units, dropout
-):
+def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out_units, dropout):
     if isinstance(activation, str):
         _activation = getattr(nn, activation)
     else:
@@ -126,12 +117,7 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
     for key in dataclass.__dataclass_fields__.keys():
         atr = dataclass.__dataclass_fields__[key]
         if atr.init:
-            type = (
-                str(atr.type)
-                .replace("<class '", "")
-                .replace("'>", "")
-                .replace("typing.", "")
-            )
+            type = str(atr.type).replace("<class '", "").replace("'>", "").replace("typing.", "")
             help_str = atr.metadata.get("help", "")
             if "choices" in atr.metadata.keys():
                 help_str += f'. Choices are: [{",".join(["`"+str(ch)+"`" for ch in atr.metadata["choices"]])}].'

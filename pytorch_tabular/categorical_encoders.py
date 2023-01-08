@@ -45,17 +45,13 @@ class BaseEncoder(object):
             ), "`handle_missing` = `error` and missing values found in columns to encode."
         X_encoded = X.copy(deep=True)
         for col, mapping in self._mapping.items():
-            X_encoded.loc[:, col] = (
-                X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
-            )
+            X_encoded.loc[:, col] = X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
 
             if self.handle_unseen == "impute":
                 X_encoded[col].fillna(self._imputed, inplace=True)
             elif self.handle_unseen == "error":
                 if np.unique(X_encoded[col]).shape[0] > mapping.shape[0]:
-                    raise ValueError(
-                        "Unseen categories found in `{}` column.".format(col)
-                    )
+                    raise ValueError("Unseen categories found in `{}` column.".format(col))
 
         return X_encoded
 
@@ -73,9 +69,7 @@ class BaseEncoder(object):
 
     def _input_check(self, name, value, options):
         if value not in options:
-            raise ValueError(
-                "Wrong input: {} parameter must be in {}".format(name, options)
-            )
+            raise ValueError("Wrong input: {} parameter must be in {}".format(name, options))
 
     def _before_fit_check(self, X, y):
         # Checking columns to encode
@@ -90,9 +84,7 @@ class BaseEncoder(object):
 
     def save_as_object_file(self, path):
         if not self._mapping:
-            raise ValueError(
-                "`fit` method must be called before `save_as_object_file`."
-            )
+            raise ValueError("`fit` method must be called before `save_as_object_file`.")
         pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):
@@ -166,14 +158,10 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
             for i, col in enumerate(self.cols):
                 self._mapping[col] = {}
                 embedding = embedding_layers[i]
-                self._mapping[col][self.NAN_CATEGORY] = (
-                    embedding.weight[0, :].detach().cpu().numpy().ravel()
-                )
+                self._mapping[col][self.NAN_CATEGORY] = embedding.weight[0, :].detach().cpu().numpy().ravel()
                 for key in self._categorical_encoder._mapping[col].index:
                     self._mapping[col][key] = (
-                        embedding.weight[
-                            self._categorical_encoder._mapping[col].loc[key], :
-                        ]
+                        embedding.weight[self._categorical_encoder._mapping[col].loc[key], :]
                         .detach()
                         .cpu()
                         .numpy()
@@ -211,14 +199,10 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         ):
             for dim in range(mapping[self.NAN_CATEGORY].shape[0]):
                 X_encoded.loc[:, f"{col}_embed_dim_{dim}"] = (
-                    X_encoded[col]
-                    .fillna(self.NAN_CATEGORY)
-                    .map({k: v[dim] for k, v in mapping.items()})
+                    X_encoded[col].fillna(self.NAN_CATEGORY).map({k: v[dim] for k, v in mapping.items()})
                 )
                 # Filling unseen categories also with NAN Embedding
-                X_encoded[f"{col}_embed_dim_{dim}"].fillna(
-                    mapping[self.NAN_CATEGORY][dim], inplace=True
-                )
+                X_encoded[f"{col}_embed_dim_{dim}"].fillna(mapping[self.NAN_CATEGORY][dim], inplace=True)
         X_encoded.drop(columns=self.cols, inplace=True)
         return X_encoded
 
@@ -237,9 +221,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
     def save_as_object_file(self, path):
         if not self._mapping:
-            raise ValueError(
-                "`fit` method must be called before `save_as_object_file`."
-            )
+            raise ValueError("`fit` method must be called before `save_as_object_file`.")
         pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):

@@ -1,39 +1,16 @@
-from pytorch_tabular.models.node.config import NodeConfig
+import pandas as pd
+import torch
 from sklearn.datasets import fetch_california_housing
-from torch.utils import data
-from pytorch_tabular.config import (
-    DataConfig,
-    ExperimentConfig,
-    ExperimentRunManager,
-    ModelConfig,
-    OptimizerConfig,
-    TrainerConfig,
-)
-from pytorch_tabular.models.category_embedding.config import (
-    CategoryEmbeddingModelConfig,
-)
-from pytorch_tabular.models import AutoIntModel, AutoIntConfig, GatedAdditiveTreeEnsembleConfig, CategoryEmbeddingModelConfig
+
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
+from pytorch_tabular.models.category_embedding.config import CategoryEmbeddingModelConfig
+from pytorch_tabular.tabular_model import TabularModel
 
 # from pytorch_tabular.models.mixture_density import (
-    # CategoryEmbeddingMDNConfig,
-    # MixtureDensityHeadConfig,
-    # NODEMDNConfig,
-# )
-from pytorch_tabular.models import MDNModel, MDNConfig
+# CategoryEmbeddingMDNConfig,
+# MixtureDensityHeadConfig,
+# NODEMDNConfig,
 
-# from pytorch_tabular.models.deep_gmm import (
-#     DeepGaussianMixtureModelConfig,
-# )
-from pytorch_tabular.models.category_embedding.category_embedding_model import (
-    CategoryEmbeddingModel,
-)
-import pandas as pd
-from omegaconf import OmegaConf
-from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.tabular_model import TabularModel
-import pytorch_lightning as pl
-from sklearn.preprocessing import PowerTransformer
-import torch
 
 dataset = fetch_california_housing(data_home="data", as_frame=True)
 dataset.frame["HouseAgeBin"] = pd.qcut(dataset.frame["HouseAge"], q=4)
@@ -77,12 +54,7 @@ data_config = DataConfig(
 #     batch_norm_continuous_input=True,
 #     attention_pooling=True,
 # )
-model_config = CategoryEmbeddingModelConfig(
-    task="regression",
-    dropout=0.2,
-    head_config=dict(
-        layers="32-16")
-)
+model_config = CategoryEmbeddingModelConfig(task="regression", dropout=0.2, head_config=dict(layers="32-16"))
 
 trainer_config = TrainerConfig(
     checkpoints=None,
@@ -105,7 +77,7 @@ def fake_metric(y_hat, y):
     return (y_hat - y).mean()
 
 
-from sklearn.preprocessing import PowerTransformer
+from sklearn.preprocessing import PowerTransformer  # noqa: E402
 
 tr = PowerTransformer()
 tabular_model = TabularModel(
@@ -124,8 +96,6 @@ tabular_model.fit(
     optimizer=torch.optim.Adagrad,
     optimizer_params={},
 )
-
-from pytorch_tabular.feature_extractor import DeepFeatureExtractor
 
 # dt = DeepFeatureExtractor(tabular_model)
 # enc_df = dt.fit_transform(test)

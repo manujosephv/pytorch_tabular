@@ -41,9 +41,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     # using base config values if exist
     if "embedding_dims" in config.keys() and config.embedding_dims is not None:
         inferred_config.embedding_dims = config.embedding_dims
-    merged_config = OmegaConf.merge(
-        OmegaConf.to_container(config), OmegaConf.to_container(inferred_config)
-    )
+    merged_config = OmegaConf.merge(OmegaConf.to_container(config), OmegaConf.to_container(inferred_config))
     return merged_config
 
 
@@ -58,9 +56,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         **kwargs,
     ):
         super().__init__()
-        assert (
-            "inferred_config" in kwargs
-        ), "inferred_config not found in initialization arguments"
+        assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
         inferred_config = kwargs["inferred_config"]
         # Merging the config and inferred config
         config = safe_merge_config(config, inferred_config)
@@ -92,21 +88,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     @property
     def backbone(self):
-        raise NotImplementedError(
-            "backbone property needs to be implemented by inheriting classes"
-        )
+        raise NotImplementedError("backbone property needs to be implemented by inheriting classes")
 
     @property
     def embedding_layer(self):
-        raise NotImplementedError(
-            "embedding_layer property needs to be implemented by inheriting classes"
-        )
+        raise NotImplementedError("embedding_layer property needs to be implemented by inheriting classes")
 
     @property
     def head(self):
-        raise NotImplementedError(
-            "head property needs to be implemented by inheriting classes"
-        )
+        raise NotImplementedError("head property needs to be implemented by inheriting classes")
 
     def _check_and_verify(self):
         assert hasattr(self, "backbone"), "Model has no attribute called `backbone`"
@@ -126,9 +116,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             try:
                 self.loss = getattr(nn, self.hparams.loss)()
             except AttributeError as e:
-                logger.error(
-                    f"{self.hparams.loss} is not a valid loss defined in the torch.nn module"
-                )
+                logger.error(f"{self.hparams.loss} is not a valid loss defined in the torch.nn module")
                 raise e
         else:
             self.loss = self.custom_loss
@@ -195,16 +183,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
-        for metric, metric_str, metric_params in zip(
-            self.metrics, self.hparams.metrics, self.hparams.metrics_params
-        ):
+        for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
-                    if (
-                        metric.__name__
-                        == torchmetrics.functional.mean_squared_log_error.__name__
-                    ):
+                    if metric.__name__ == torchmetrics.functional.mean_squared_log_error.__name__:
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(
                             torch.clamp(y_hat[:, i], min=0),
@@ -250,17 +233,13 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.embedding_layer(x)
 
     def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor):
-        if (self.hparams.task == "regression") and (
-            self.hparams.target_range is not None
-        ):
+        if (self.hparams.task == "regression") and (self.hparams.target_range is not None):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return y_hat
 
-    def pack_output(
-        self, y_hat: torch.Tensor, backbone_features: torch.tensor
-    ) -> Dict[str, Any]:
+    def pack_output(self, y_hat: torch.Tensor, backbone_features: torch.tensor) -> Dict[str, Any]:
         # if self.head is the Identity function it means that we cannot extract backbone features,
         # because the model cannot be divide in backbone and head (i.e. TabNet)
         if type(self.head) == nn.Identity:
@@ -284,9 +263,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False):
-        assert (
-            self.hparams.task != "ssl"
-        ), "It's not allowed to use the method predict in case of ssl task"
+        assert self.hparams.task != "ssl", "It's not allowed to use the method predict in case of ssl task"
         ret_value = self.forward(x)
         if ret_model_output:
             return ret_value.get("logits"), ret_value
@@ -352,9 +329,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     **self.hparams.optimizer_params,
                 )
             except AttributeError as e:
-                logger.error(
-                    f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module"
-                )
+                logger.error(f"{self.hparams.optimizer} is not a valid optimizer defined in the torch.optim module")
                 raise e
         else:
             # Loading from custom fit arguments
@@ -367,9 +342,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             )
         if self.hparams.lr_scheduler is not None:
             try:
-                self._lr_scheduler = getattr(
-                    torch.optim.lr_scheduler, self.hparams.lr_scheduler
-                )
+                self._lr_scheduler = getattr(torch.optim.lr_scheduler, self.hparams.lr_scheduler)
             except AttributeError as e:
                 logger.error(
                     f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined in the torch.optim.lr_scheduler module"
@@ -378,16 +351,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             if isinstance(self._lr_scheduler, torch.optim.lr_scheduler._LRScheduler):
                 return {
                     "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(
-                        opt, **self.hparams.lr_scheduler_params
-                    ),
+                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                 }
             else:
                 return {
                     "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(
-                        opt, **self.hparams.lr_scheduler_params
-                    ),
+                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                     "monitor": self.hparams.lr_scheduler_monitor_metric,
                 }
         else:
@@ -407,9 +376,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         # Overlay both histograms
         fig.update_layout(
             barmode="overlay",
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-            ),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         )
         # Reduce opacity to see both histograms
         fig.update_traces(opacity=0.5)
@@ -448,9 +415,7 @@ class _GenericModel(BaseModel):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
-        assert (
-            hasattr(config, "loss") or custom_loss is not None
-        ), "Loss function not defined in the config"
+        assert hasattr(config, "loss") or custom_loss is not None, "Loss function not defined in the config"
         super().__init__(
             config,
             custom_loss,

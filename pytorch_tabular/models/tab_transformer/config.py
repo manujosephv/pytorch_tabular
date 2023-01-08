@@ -2,9 +2,9 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """AutomaticFeatureInteraction Config"""
+import warnings
 from dataclasses import dataclass, field
 from typing import Optional
-import warnings
 
 from pytorch_tabular.config import ModelConfig
 from pytorch_tabular.utils import ifnone
@@ -88,9 +88,7 @@ class TabTransformerConfig(ModelConfig):
 
     input_embed_dim: int = field(
         default=32,
-        metadata={
-            "help": "The embedding dimension for the input categorical features. Defaults to 32"
-        },
+        metadata={"help": "The embedding dimension for the input categorical features. Defaults to 32"},
     )
     embedding_initialization: Optional[str] = field(
         default="kaiming_uniform",
@@ -124,15 +122,11 @@ class TabTransformerConfig(ModelConfig):
     )
     num_heads: int = field(
         default=8,
-        metadata={
-            "help": "The number of heads in the Multi-Headed Attention layer. Defaults to 8"
-        },
+        metadata={"help": "The number of heads in the Multi-Headed Attention layer. Defaults to 8"},
     )
     num_attn_blocks: int = field(
         default=6,
-        metadata={
-            "help": "The number of layers of stacked Multi-Headed Attention layers. Defaults to 6"
-        },
+        metadata={"help": "The number of layers of stacked Multi-Headed Attention layers. Defaults to 6"},
     )
     transformer_head_dim: Optional[int] = field(
         default=None,
@@ -142,27 +136,19 @@ class TabTransformerConfig(ModelConfig):
     )
     attn_dropout: float = field(
         default=0.1,
-        metadata={
-            "help": "Dropout to be applied after Multi headed Attention. Defaults to 0.1"
-        },
+        metadata={"help": "Dropout to be applied after Multi headed Attention. Defaults to 0.1"},
     )
     add_norm_dropout: float = field(
         default=0.1,
-        metadata={
-            "help": "Dropout to be applied in the AddNorm Layer. Defaults to 0.1"
-        },
+        metadata={"help": "Dropout to be applied in the AddNorm Layer. Defaults to 0.1"},
     )
     ff_dropout: float = field(
         default=0.1,
-        metadata={
-            "help": "Dropout to be applied in the Positionwise FeedForward Network. Defaults to 0.1"
-        },
+        metadata={"help": "Dropout to be applied in the Positionwise FeedForward Network. Defaults to 0.1"},
     )
     ff_hidden_multiplier: int = field(
         default=4,
-        metadata={
-            "help": "Multiple by which the Positionwise FF layer scales the input. Defaults to 4"
-        },
+        metadata={"help": "Multiple by which the Positionwise FF layer scales the input. Defaults to 4"},
     )
     # TODO improve documentation
     transformer_activation: str = field(

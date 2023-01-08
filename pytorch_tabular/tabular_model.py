@@ -20,9 +20,7 @@ import torchmetrics
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
-from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
-    GradientAccumulationScheduler,
-)
+from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities.model_summary import summarize
 from pytorch_lightning.utilities.seed import seed_everything
@@ -100,9 +98,7 @@ class TabularModel:
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
-            optimizer_config = self._read_parse_config(
-                optimizer_config, OptimizerConfig
-            )
+            optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
             if experiment_config is None:
                 logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
@@ -113,9 +109,7 @@ class TabularModel:
                     OmegaConf.to_container(optimizer_config),
                 )
             else:
-                experiment_config = self._read_parse_config(
-                    experiment_config, ExperimentConfig
-                )
+                experiment_config = self._read_parse_config(experiment_config, ExperimentConfig)
                 self.track_experiment = True
                 self.config = OmegaConf.merge(
                     OmegaConf.to_container(data_config),
@@ -141,9 +135,7 @@ class TabularModel:
 
         self.exp_manager = ExperimentRunManager()
         if model_callable is None:
-            self.model_callable = getattr_nested(
-                self.config._module_src, self.config._model_name
-            )
+            self.model_callable = getattr_nested(self.config._module_src, self.config._model_name)
             self.custom_model = False
         else:
             self.model_callable = model_callable
@@ -161,17 +153,13 @@ class TabularModel:
         """
         if self.config.task == "classification":
             if len(self.config.target) > 1:
-                raise NotImplementedError(
-                    "Multi-Target Classification is not implemented."
-                )
+                raise NotImplementedError("Multi-Target Classification is not implemented.")
         if self.config.task == "regression":
             if self.config.target_range is not None:
                 if (
                     (len(self.config.target_range) != len(self.config.target))
                     or any([len(range_) != 2 for range_ in self.config.target_range])
-                    or any(
-                        [range_[0] > range_[1] for range_ in self.config.target_range]
-                    )
+                    or any([range_[0] > range_[1] for range_ in self.config.target_range])
                 ):
                     raise ValueError(
                         "Targe Range, if defined, should be list tuples of length two(min,max). The length of the list should be equal to hte length of target columns"
@@ -197,8 +185,7 @@ class TabularModel:
                     **{
                         k: v
                         for k, v in _config.items()
-                        if (k in cls.__dataclass_fields__.keys())
-                        and (cls.__dataclass_fields__[k].init)
+                        if (k in cls.__dataclass_fields__.keys()) and (cls.__dataclass_fields__[k].init)
                     }
                 )
             else:
@@ -214,10 +201,7 @@ class TabularModel:
         """
         if hasattr(self.config, "run_name") and self.config.run_name is not None:
             name = self.config.run_name
-        elif (
-            hasattr(self.config, "checkpoints_name")
-            and self.config.checkpoints_name is not None
-        ):
+        elif hasattr(self.config, "checkpoints_name") and self.config.checkpoints_name is not None:
             name = self.config.checkpoints_name
         else:
             name = self.config.task
@@ -241,9 +225,7 @@ class TabularModel:
                 offline=False,
             )
         else:
-            raise NotImplementedError(
-                f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]"
-            )
+            raise NotImplementedError(f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]")
 
     def _prepare_callbacks(self, callbacks=None) -> List:
         """Prepares the necesary callbacks to the Trainer based on the configuration
@@ -290,9 +272,7 @@ class TabularModel:
         # Getting Trainer Arguments from the init signature
         trainer_sig = inspect.signature(pl.Trainer.__init__)
         trainer_args = [p for p in trainer_sig.parameters.keys() if p != "self"]
-        trainer_args_config = {
-            k: v for k, v in self.config.items() if k in trainer_args
-        }
+        trainer_args_config = {k: v for k, v in self.config.items() if k in trainer_args}
         # For some weird reason, checkpoint_callback is not appearing in the Trainer vars
         trainer_args_config["enable_checkpointing"] = self.config.enable_checkpointing
         # turn off progress bar if progress_bar=='none'
@@ -314,19 +294,13 @@ class TabularModel:
             elif isinstance(target_transform, TransformerMixin):
                 pass
             else:
-                raise ValueError(
-                    "`target_transform` should wither be an sklearn Transformer or a tuple of callables."
-                )
+                raise ValueError("`target_transform` should wither be an sklearn Transformer or a tuple of callables.")
         if self.config.task == "classification" and target_transform is not None:
-            logger.warning(
-                "For classification task, target transform is not used. Ignoring the parameter"
-            )
+            logger.warning("For classification task, target transform is not used. Ignoring the parameter")
             target_transform = None
         return target_transform
 
-    def _prepare_for_training(
-        self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None
-    ):
+    def _prepare_for_training(self, model, datamodule, callbacks=None, max_epochs=None, min_epochs=None):
         self.callbacks = self._prepare_callbacks(callbacks)
         self.trainer = self._prepare_trainer(callbacks, max_epochs, min_epochs)
         self.model = model
@@ -374,9 +348,7 @@ class TabularModel:
             callbacks = joblib.load(os.path.join(dir, "callbacks.sav"))
             # Excluding Gradient Accumulation Scheduler Callback as we are creating
             # a new one in trainer
-            callbacks = [
-                c for c in callbacks if not isinstance(c, GradientAccumulationScheduler)
-            ]
+            callbacks = [c for c in callbacks if not isinstance(c, GradientAccumulationScheduler)]
         else:
             callbacks = []
         if os.path.exists(os.path.join(dir, "custom_model_callable.sav")):
@@ -395,14 +367,10 @@ class TabularModel:
             "inferred_config": inferred_config,
         }
         custom_params = joblib.load(os.path.join(dir, "custom_params.sav"))
-        if (
-            custom_params.get("custom_loss") is not None
-        ):
+        if custom_params.get("custom_loss") is not None:
             model_args["loss"] = "MSELoss"  # For compatibility. Not Used
         if custom_params.get("custom_metrics") is not None:
-            model_args["metrics"] = [
-                "mean_squared_error"
-            ]  # For compatibility. Not Used
+            model_args["metrics"] = ["mean_squared_error"]  # For compatibility. Not Used
             model_args["metric_params"] = [{}]  # For compatibility. Not Used
         if custom_params.get("custom_optimizer") is not None:
             model_args["optimizer"] = "Adam"  # For compatibility. Not Used
@@ -533,9 +501,7 @@ class TabularModel:
         """
         logger.info(f"Preparing the Model: {self.config._model_name}...")
         # Fetching the config as some data specific configs have been added in the datamodule
-        self.inferred_config = self._read_parse_config(
-            datamodule.update_config(self.config), InferredConfig
-        )
+        self.inferred_config = self._read_parse_config(datamodule.update_config(self.config), InferredConfig)
         # if hasattr(self, "model") and self.model is not None and not reset:
         #     logger.debug("Using the trained model...")
         # else:
@@ -555,9 +521,7 @@ class TabularModel:
             # if trained_backbone:
             #     model.backbone = trained_backbone
         if self.track_experiment and self.config.log_target == "wandb":
-            self.logger.watch(
-                model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq
-            )
+            self.logger.watch(model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq)
         return model
 
     def train(
@@ -661,9 +625,7 @@ class TabularModel:
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:
-            datamodule = self.prepare_dataloader(
-                train, validation, test, train_sampler, target_transform, seed
-            )
+            datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed)
         else:
             if train is not None:
                 warnings.warn(
@@ -814,9 +776,7 @@ class TabularModel:
         """
         config = self.config
         if target is None:
-            assert hasattr(
-                config, "target"
-            ), "target should either be part of the initial data_config"
+            assert hasattr(config, "target"), "target should either be part of the initial data_config"
         else:
             config.target = target
         config.task = task
@@ -841,13 +801,8 @@ class TabularModel:
 
         datamodule = self.datamodule
         if metrics is not None:
-            assert len(metrics) == len(
-                metrics_params
-            ), "Number of metrics and metrics_params should be same"
-            metrics = [
-                getattr(torchmetrics.functional, m) if isinstance(m, str) else m
-                for m in metrics
-            ]
+            assert len(metrics) == len(metrics_params), "Number of metrics and metrics_params should be same"
+            metrics = [getattr(torchmetrics.functional, m) if isinstance(m, str) else m for m in metrics]
         if task == "regression":
             loss = loss if loss is not None else torch.nn.MSELoss()
             if metrics is None:
@@ -943,17 +898,13 @@ class TabularModel:
                 target_transforms = []
                 if target_transform is not None:
                     for col in self.config.target:
-                        _target_transform = copy.deepcopy(
-                            self.datamodule.target_transform_template
-                        )
+                        _target_transform = copy.deepcopy(self.datamodule.target_transform_template)
                         _target_transform.fit(train[col].values.reshape(-1, 1))
                         target_transforms.append(_target_transform)
                 self.datamodule.target_transforms = target_transforms
             self.datamodule.train = self.datamodule._prepare_inference_data(train)
             if validation is not None:
-                self.datamodule.validation = self.datamodule._prepare_inference_data(
-                    validation
-                )
+                self.datamodule.validation = self.datamodule._prepare_inference_data(validation)
             else:
                 self.datamodule.validation = None
             self.datamodule.train_sampler = train_sampler
@@ -1015,9 +966,7 @@ class TabularModel:
             train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
 
         """
-        self._prepare_for_training(
-            model, datamodule, callbacks, max_epochs=None, min_epochs=None
-        )
+        self._prepare_for_training(model, datamodule, callbacks, max_epochs=None, min_epochs=None)
         train_loader, _ = datamodule.train_dataloader(), datamodule.val_dataloader()
         lr_finder = self.trainer.tuner.lr_find(
             model=self.model,
@@ -1098,18 +1047,13 @@ class TabularModel:
             pd.DataFrame: Returns a dataframe with predictions and features.
                 If classification, it returns probabilities and final prediction
         """
-        assert all(
-            [q <= 1 and q >= 0 for q in quantiles]
-        ), "Quantiles should be a decimal between 0 and 1"
+        assert all([q <= 1 and q >= 0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
         self.model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
         point_predictions = []
         quantile_predictions = []
         logits_predictions = defaultdict(list)
-        is_probabilistic = (
-            hasattr(self.model.hparams, "_probabilistic")
-            and self.model.hparams._probabilistic
-        )
+        is_probabilistic = hasattr(self.model.hparams, "_probabilistic") and self.model.hparams._probabilistic
         for batch in tqdm(inference_dataloader, desc="Generating Predictions..."):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
@@ -1117,15 +1061,11 @@ class TabularModel:
                     continue
                 batch[k] = v.to(self.model.device)
             if is_probabilistic:
-                samples, ret_value = self.model.sample(
-                    batch, n_samples, ret_model_output=True
-                )
+                samples, ret_value = self.model.sample(batch, n_samples, ret_model_output=True)
                 y_hat = torch.mean(samples, dim=-1)
                 quantile_preds = []
                 for q in quantiles:
-                    quantile_preds.append(
-                        torch.quantile(samples, q=q, dim=-1).unsqueeze(1)
-                    )
+                    quantile_preds.append(torch.quantile(samples, q=q, dim=-1).unsqueeze(1))
             else:
                 y_hat, ret_value = self.model.predict(batch, ret_model_output=True)
             if ret_logits:
@@ -1135,9 +1075,7 @@ class TabularModel:
                     logits_predictions[k].append(v.detach().cpu())
             point_predictions.append(y_hat.detach().cpu())
             if is_probabilistic:
-                quantile_predictions.append(
-                    torch.cat(quantile_preds, dim=-1).detach().cpu()
-                )
+                quantile_predictions.append(torch.cat(quantile_preds, dim=-1).detach().cpu())
         point_predictions = torch.cat(point_predictions, dim=0)
         if point_predictions.ndim == 1:
             point_predictions = point_predictions.unsqueeze(-1)
@@ -1154,30 +1092,22 @@ class TabularModel:
             for i, target_col in enumerate(self.config.target):
                 if self.datamodule.do_target_transform:
                     if self.config.target[i] in pred_df.columns:
-                        pred_df[
-                            self.config.target[i]
-                        ] = self.datamodule.target_transforms[i].inverse_transform(
+                        pred_df[self.config.target[i]] = self.datamodule.target_transforms[i].inverse_transform(
                             pred_df[self.config.target[i]].values.reshape(-1, 1)
                         )
-                    pred_df[
-                        f"{target_col}_prediction"
-                    ] = self.datamodule.target_transforms[i].inverse_transform(
+                    pred_df[f"{target_col}_prediction"] = self.datamodule.target_transforms[i].inverse_transform(
                         point_predictions[:, i].reshape(-1, 1)
                     )
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
-                            pred_df[
-                                f"{target_col}_q{int(q*100)}"
-                            ] = self.datamodule.target_transforms[i].inverse_transform(
-                                quantile_predictions[:, j, i].reshape(-1, 1)
-                            )
+                            pred_df[f"{target_col}_q{int(q*100)}"] = self.datamodule.target_transforms[
+                                i
+                            ].inverse_transform(quantile_predictions[:, j, i].reshape(-1, 1))
                 else:
                     pred_df[f"{target_col}_prediction"] = point_predictions[:, i]
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
-                            pred_df[
-                                f"{target_col}_q{int(q*100)}"
-                            ] = quantile_predictions[:, j, i].reshape(-1, 1)
+                            pred_df[f"{target_col}_q{int(q*100)}"] = quantile_predictions[:, j, i].reshape(-1, 1)
 
         elif self.config.task == "classification":
             point_predictions = nn.Softmax(dim=-1)(point_predictions).numpy()
@@ -1208,13 +1138,9 @@ class TabularModel:
                 ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["state_dict"])
             else:
-                logger.info(
-                    "No best model available to load. Did you run it more than 1 epoch?..."
-                )
+                logger.info("No best model available to load. Did you run it more than 1 epoch?...")
         else:
-            logger.info(
-                "No best model available to load. Did you run it more than 1 epoch?..."
-            )
+            logger.info("No best model available to load. Did you run it more than 1 epoch?...")
 
     def save_datamodule(self, dir: str):
         joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
@@ -1248,9 +1174,7 @@ class TabularModel:
         custom_params["custom_optimizer_params"] = self.model.custom_optimizer_params
         joblib.dump(custom_params, os.path.join(dir, "custom_params.sav"))
         if self.custom_model:
-            joblib.dump(
-                self.model_callable, os.path.join(dir, "custom_model_callable.sav")
-            )
+            joblib.dump(self.model_callable, os.path.join(dir, "custom_model_callable.sav"))
 
     def save_weights(self, path: Union[str, Path]):
         """Saves the model weights in the specified directory
@@ -1287,9 +1211,7 @@ class TabularModel:
         elif kind == "onnx":
             # Export the model
             onnx_export_params["input_names"] = ["categorical", "continuous"]
-            onnx_export_params["output_names"] = onnx_export_params.get(
-                "output_names", ["output"]
-            )
+            onnx_export_params["output_names"] = onnx_export_params.get("output_names", ["output"])
             onnx_export_params["dynamic_axes"] = {
                 onnx_export_params["input_names"][0]: {0: "batch_size"},
                 onnx_export_params["output_names"][0]: {0: "batch_size"},

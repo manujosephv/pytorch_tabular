@@ -1,9 +1,11 @@
 # Authenticate Travis
 
 ## Encrypt Password
+
 ```
 travis encrypt <password>
 ```
+
 - Copy the resuting encrypted password and add to travis.yml
 
 # Bump Version and Trigger Build
@@ -59,15 +61,15 @@ git push --tags
 
 # Revert Version and Delete a Tag
 
-- Update the version numbers in 
-    1. setup.py 
-    2. setup.cfg 
-    3. __init__.py
+- Update the version numbers in
+  1. setup.py
+  1. setup.cfg
+  1. __init__.py
 - Delete the Git Tags in local
-    ```
-    git tag -d <tag_name>
-    ```
+  ```
+  git tag -d <tag_name>
+  ```
 - Delete the tags from GitHub
-    ```
-    git push --delte origin <tag_name>
-    ```
+  ```
+  git push --delte origin <tag_name>
+  ```

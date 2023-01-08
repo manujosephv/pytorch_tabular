@@ -18,5 +18,3 @@ deploy:
   on:
     tags: true
   skip_existing: true
-
-

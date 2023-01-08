@@ -9,12 +9,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..common.layers import ModuleWithInit
 from ..common.activations import sparsemax, sparsemoid
+from ..common.layers import ModuleWithInit
 
 
 def check_numpy(x):
-    """ Makes sure x is a numpy array """
+    """Makes sure x is a numpy array"""
     if isinstance(x, torch.Tensor):
         x = x.detach().cpu().numpy()
     x = np.asarray(x)
@@ -80,14 +80,10 @@ class ODST(ModuleWithInit):
             threshold_init_cutoff,
         )
 
-        self.response = nn.Parameter(
-            torch.zeros([num_trees, tree_output_dim, 2 ** depth]), requires_grad=True
-        )
+        self.response = nn.Parameter(torch.zeros([num_trees, tree_output_dim, 2**depth]), requires_grad=True)
         initialize_response_(self.response)
 
-        self.feature_selection_logits = nn.Parameter(
-            torch.zeros([in_features, num_trees, depth]), requires_grad=True
-        )
+        self.feature_selection_logits = nn.Parameter(torch.zeros([in_features, num_trees, depth]), requires_grad=True)
         initialize_selection_logits_(self.feature_selection_logits)
 
         self.feature_thresholds = nn.Parameter(
@@ -101,11 +97,9 @@ class ODST(ModuleWithInit):
 
         # binary codes for mapping between 1-hot vectors and bin indices
         with torch.no_grad():
-            indices = torch.arange(2 ** self.depth)
+            indices = torch.arange(2**self.depth)
             offsets = 2 ** torch.arange(self.depth)
-            bin_codes = (indices.view(1, -1) // offsets.view(-1, 1) % 2).to(
-                torch.float32
-            )
+            bin_codes = (indices.view(1, -1) // offsets.view(-1, 1) % 2).to(torch.float32)
             bin_codes_1hot = torch.stack([bin_codes, 1.0 - bin_codes], dim=-1)
             self.bin_codes_1hot = nn.Parameter(bin_codes_1hot, requires_grad=False)
             # ^-- [depth, 2 ** depth, 2]
@@ -113,9 +107,7 @@ class ODST(ModuleWithInit):
     def forward(self, input):
         assert len(input.shape) >= 2
         if len(input.shape) > 2:
-            return self.forward(input.view(-1, input.shape[-1])).view(
-                *input.shape[:-1], -1
-            )
+            return self.forward(input.view(-1, input.shape[-1])).view(*input.shape[:-1], -1)
         # new input shape: [batch_size, in_features]
 
         feature_logits = self.feature_selection_logits
@@ -125,9 +117,7 @@ class ODST(ModuleWithInit):
         feature_values = torch.einsum("bi,ind->bnd", input, feature_selectors)
         # ^--[batch_size, num_trees, depth]
 
-        threshold_logits = (feature_values - self.feature_thresholds) * torch.exp(
-            -self.log_temperatures
-        )
+        threshold_logits = (feature_values - self.feature_thresholds) * torch.exp(-self.log_temperatures)
 
         threshold_logits = torch.stack([-threshold_logits, threshold_logits], dim=-1)
         # ^--[batch_size, num_trees, depth, 2]
@@ -156,9 +146,7 @@ class ODST(ModuleWithInit):
                 "You can do so manually before training. Use with torch.no_grad() for memory efficiency."
             )
         with torch.no_grad():
-            feature_selectors = self.choice_function(
-                self.feature_selection_logits, dim=0
-            )
+            feature_selectors = self.choice_function(self.feature_selection_logits, dim=0)
             # ^--[in_features, num_trees, depth]
 
             feature_values = torch.einsum("bi,ind->bnd", input, feature_selectors)
@@ -191,9 +179,7 @@ class ODST(ModuleWithInit):
 
             # if threshold_init_cutoff > 1, scale everything down by it
             temperatures /= max(1.0, self.threshold_init_cutoff)
-            self.log_temperatures.data[...] = torch.log(
-                torch.as_tensor(temperatures) + eps
-            )
+            self.log_temperatures.data[...] = torch.log(torch.as_tensor(temperatures) + eps)
 
     def __repr__(self):
         return "{}(in_features={}, num_trees={}, depth={}, tree_dim={}, flatten_output={})".format(

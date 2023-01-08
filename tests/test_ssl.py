@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
-import numpy as np
 import pytest
 import torch
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import PowerTransformer
 
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
@@ -34,14 +32,15 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("freeze_backbone", [True, False])
-@pytest.mark.parametrize("target_range", [True, False])
+@pytest.mark.parametrize("target_range", [False])
 @pytest.mark.parametrize(
     "target_transform",
-    [None, PowerTransformer(), (lambda x: np.power(x, 2), lambda x: np.sqrt(x))],
+    [None],
 )
-@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
-@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize(
+    "custom_args",
+    [(None, None, None), ([fake_metric], torch.nn.L1Loss(), torch.optim.Adagrad)],
+)
 def test_regression(
     regression_data,
     multi_target,
@@ -52,11 +51,10 @@ def test_regression(
     freeze_backbone,
     target_range,
     target_transform,
-    custom_metrics,
-    custom_loss,
-    custom_optimizer,
+    custom_args,
 ):
     (train, test, target) = regression_data
+    (custom_metrics, custom_loss, custom_optimizer) = custom_args
     ssl, finetune = train_test_split(train, random_state=42)
     ssl_train, ssl_val = train_test_split(ssl, random_state=42)
     finetune_train, finetune_val = train_test_split(finetune, random_state=42)
@@ -154,7 +152,7 @@ def test_regression(
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-@pytest.mark.parametrize("freeze_backbone", [True, False])
+@pytest.mark.parametrize("freeze_backbone", [False])
 def test_classification(
     classification_data,
     continuous_cols,

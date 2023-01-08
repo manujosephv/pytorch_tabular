@@ -28,36 +28,25 @@ class NODEBackbone(nn.Module):
 
     def _build_network(self):
         if self.hparams.embed_categorical:
-            self.hparams.node_input_dim = (
-                self.hparams.continuous_dim + self.hparams.embedded_cat_dim
-            )
+            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.embedded_cat_dim
         else:
-            self.hparams.node_input_dim = (
-                self.hparams.continuous_dim + self.hparams.categorical_dim
-            )
+            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
         self.dense_block = DenseODSTBlock(
             input_dim=self.hparams.node_input_dim,
             num_trees=self.hparams.num_trees,
             num_layers=self.hparams.num_layers,
-            tree_output_dim=self.hparams.output_dim
-            + self.hparams.additional_tree_output_dim,
+            tree_output_dim=self.hparams.output_dim + self.hparams.additional_tree_output_dim,
             max_features=self.hparams.max_features,
             input_dropout=self.hparams.input_dropout,
             depth=self.hparams.depth,
             choice_function=getattr(activations, self.hparams.choice_function),
             bin_function=getattr(activations, self.hparams.bin_function),
-            initialize_response_=getattr(
-                nn.init, self.hparams.initialize_response + "_"
-            ),
-            initialize_selection_logits_=getattr(
-                nn.init, self.hparams.initialize_selection_logits + "_"
-            ),
+            initialize_response_=getattr(nn.init, self.hparams.initialize_response + "_"),
+            initialize_selection_logits_=getattr(nn.init, self.hparams.initialize_selection_logits + "_"),
             threshold_init_beta=self.hparams.threshold_init_beta,
             threshold_init_cutoff=self.hparams.threshold_init_cutoff,
         )
-        self.output_dim = (
-            self.hparams.output_dim + self.hparams.additional_tree_output_dim
-        )
+        self.output_dim = self.hparams.output_dim + self.hparams.additional_tree_output_dim
 
     def _build_embedding_layer(self):
         if self.hparams.embed_categorical:
@@ -124,9 +113,7 @@ class NODEModel(BaseModel):
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
         # Not using config head because NODE has a specific head
-        warnings.warn(
-            "Ignoring head config because NODE has a specific head which subsets the tree outputs"
-        )
+        warnings.warn("Ignoring head config because NODE has a specific head which subsets the tree outputs")
         self._head = Lambda(self.subset)
 
     # def extract_embedding(self):

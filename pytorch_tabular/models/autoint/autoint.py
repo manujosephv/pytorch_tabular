@@ -44,9 +44,7 @@ class AutoIntBackbone(nn.Module):
             self.linear_layers = nn.Sequential(*layers)
         # Projection to Multi-Headed Attention Dims
         self.attn_proj = nn.Linear(_curr_units, self.hparams.attn_embed_dim)
-        _initialize_layers(
-            self.hparams.activation, self.hparams.initialization, self.attn_proj
-        )
+        _initialize_layers(self.hparams.activation, self.hparams.initialization, self.attn_proj)
         # Multi-Headed Attention Layers
         self.self_attns = nn.ModuleList(
             [
@@ -65,9 +63,7 @@ class AutoIntBackbone(nn.Module):
                 if self.hparams.attention_pooling
                 else self.hparams.attn_embed_dim,
             )
-        self.output_dim = (
-            self.hparams.continuous_dim + self.hparams.categorical_dim
-        ) * self.hparams.attn_embed_dim
+        self.output_dim = (self.hparams.continuous_dim + self.hparams.categorical_dim) * self.hparams.attn_embed_dim
         if self.hparams.attention_pooling:
             self.output_dim = self.output_dim * self.hparams.num_attn_blocks
 

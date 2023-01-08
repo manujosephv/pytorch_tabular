@@ -7,13 +7,11 @@ from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.config.config import SSLModelConfig
 from pytorch_tabular.feature_extractor import DeepFeatureExtractor
-from pytorch_tabular.models import (
-    AutoIntConfig,
-    CategoryEmbeddingModelConfig,
-    NodeConfig,
-    TabNetModelConfig,
-)
+from pytorch_tabular.models import AutoIntConfig, CategoryEmbeddingModelConfig, NodeConfig, TabNetModelConfig
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
+
+# import os
+
 
 MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, dict(layers="10-20")),

@@ -1,11 +1,13 @@
 # noqa W605
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 from torch.autograd import Function
 from torch.jit import script
-from .utils import _make_ix_like
+
 from pytorch_tabular.models.common.layers import PositionWiseFeedForward
+
+from .utils import _make_ix_like
 
 
 # GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
@@ -13,6 +15,7 @@ class GEGLU(nn.Module):
     """
     Gated Exponential Linear Unit (GEGLU)
     """
+
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         """
         Args:
@@ -21,9 +24,7 @@ class GEGLU(nn.Module):
             dropout: dropout probability
         """
         super().__init__()
-        self.ffn = PositionWiseFeedForward(
-            d_model, d_ff, dropout, nn.GELU(), True, False, False, False
-        )
+        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.GELU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -33,6 +34,7 @@ class ReGLU(nn.Module):
     """
     ReGLU
     """
+
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         """
         Args:
@@ -41,9 +43,7 @@ class ReGLU(nn.Module):
             dropout: dropout probability
         """
         super().__init__()
-        self.ffn = PositionWiseFeedForward(
-            d_model, d_ff, dropout, nn.ReLU(), True, False, False, False
-        )
+        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.ReLU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -58,9 +58,7 @@ class SwiGLU(nn.Module):
             dropout: dropout probability
         """
         super().__init__()
-        self.ffn = PositionWiseFeedForward(
-            d_model, d_ff, dropout, nn.SiLU(), True, False, False, False
-        )
+        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.SiLU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)

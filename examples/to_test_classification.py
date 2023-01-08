@@ -1,74 +1,93 @@
+from pathlib import Path
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+# from torch.utils import data
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.gate.config import GatedAdditiveTreeEnsembleConfig
-from pytorch_tabular.models.tab_transformer.config import TabTransformerConfig
-from pytorch_tabular.models.ft_transformer.config import FTTransformerConfig
-import torch
-import numpy as np
-from torch.functional import norm
+from pytorch_tabular.tabular_model import TabularModel
+
+# import wget
+from pytorch_tabular.utils import get_balanced_sampler
+
 # torch.manual_seed(0)
 # np.random.seed(0)
 # torch.set_deterministic(True)
 
-from sklearn.datasets import fetch_covtype
 
-# from torch.utils import data
-from pytorch_tabular.config import (
-    DataConfig,
-    ExperimentConfig,
-    ExperimentRunManager,
-    ModelConfig,
-    OptimizerConfig,
-    TrainerConfig,
-)
-from pytorch_tabular.models.node.config import NodeConfig
-from pytorch_tabular.models.category_embedding.config import (
-    CategoryEmbeddingModelConfig,
-)
-from pytorch_tabular.models.category_embedding.category_embedding_model import (
-    CategoryEmbeddingModel,
-)
-import pandas as pd
-from omegaconf import OmegaConf
-from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.tabular_model import TabularModel
-import pytorch_lightning as pl
-from sklearn.preprocessing import PowerTransformer
-from sklearn.model_selection import train_test_split
-from pathlib import Path
-# import wget
-from pytorch_tabular.utils import get_balanced_sampler, get_class_weighted_cross_entropy
-
-
-BASE_DIR = Path.home().joinpath('data')
-datafile = BASE_DIR.joinpath('covtype.data.gz')
+BASE_DIR = Path.home().joinpath("data")
+datafile = BASE_DIR.joinpath("covtype.data.gz")
 datafile.parent.mkdir(parents=True, exist_ok=True)
 url = "https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz"
 if not datafile.exists():
+    import wget
+
     wget.download(url, datafile.as_posix())
 
 target_name = ["Covertype"]
 
 cat_col_names = [
-    "Wilderness_Area1", "Wilderness_Area2", "Wilderness_Area3",
-    "Wilderness_Area4", "Soil_Type1", "Soil_Type2", "Soil_Type3", "Soil_Type4",
-    "Soil_Type5", "Soil_Type6", "Soil_Type7", "Soil_Type8", "Soil_Type9",
-    "Soil_Type10", "Soil_Type11", "Soil_Type12", "Soil_Type13", "Soil_Type14",
-    "Soil_Type15", "Soil_Type16", "Soil_Type17", "Soil_Type18", "Soil_Type19",
-    "Soil_Type20", "Soil_Type21", "Soil_Type22", "Soil_Type23", "Soil_Type24",
-    "Soil_Type25", "Soil_Type26", "Soil_Type27", "Soil_Type28", "Soil_Type29",
-    "Soil_Type30", "Soil_Type31", "Soil_Type32", "Soil_Type33", "Soil_Type34",
-    "Soil_Type35", "Soil_Type36", "Soil_Type37", "Soil_Type38", "Soil_Type39",
-    "Soil_Type40"
+    "Wilderness_Area1",
+    "Wilderness_Area2",
+    "Wilderness_Area3",
+    "Wilderness_Area4",
+    "Soil_Type1",
+    "Soil_Type2",
+    "Soil_Type3",
+    "Soil_Type4",
+    "Soil_Type5",
+    "Soil_Type6",
+    "Soil_Type7",
+    "Soil_Type8",
+    "Soil_Type9",
+    "Soil_Type10",
+    "Soil_Type11",
+    "Soil_Type12",
+    "Soil_Type13",
+    "Soil_Type14",
+    "Soil_Type15",
+    "Soil_Type16",
+    "Soil_Type17",
+    "Soil_Type18",
+    "Soil_Type19",
+    "Soil_Type20",
+    "Soil_Type21",
+    "Soil_Type22",
+    "Soil_Type23",
+    "Soil_Type24",
+    "Soil_Type25",
+    "Soil_Type26",
+    "Soil_Type27",
+    "Soil_Type28",
+    "Soil_Type29",
+    "Soil_Type30",
+    "Soil_Type31",
+    "Soil_Type32",
+    "Soil_Type33",
+    "Soil_Type34",
+    "Soil_Type35",
+    "Soil_Type36",
+    "Soil_Type37",
+    "Soil_Type38",
+    "Soil_Type39",
+    "Soil_Type40",
 ]
 
 num_col_names = [
-    "Elevation", "Aspect", "Slope", "Horizontal_Distance_To_Hydrology",
-    "Vertical_Distance_To_Hydrology", "Horizontal_Distance_To_Roadways",
-    "Hillshade_9am", "Hillshade_Noon", "Hillshade_3pm",
-    "Horizontal_Distance_To_Fire_Points"
+    "Elevation",
+    "Aspect",
+    "Slope",
+    "Horizontal_Distance_To_Hydrology",
+    "Vertical_Distance_To_Hydrology",
+    "Horizontal_Distance_To_Roadways",
+    "Hillshade_9am",
+    "Hillshade_Noon",
+    "Hillshade_3pm",
+    "Horizontal_Distance_To_Fire_Points",
 ]
 
-feature_columns = (
-    num_col_names + cat_col_names + target_name)
+feature_columns = num_col_names + cat_col_names + target_name
 
 df = pd.read_csv(datafile, header=None, names=feature_columns)
 # cat_col_names = []
@@ -88,7 +107,7 @@ data_config = DataConfig(
     target=target_name,
     continuous_cols=num_col_names,
     categorical_cols=cat_col_names,
-    continuous_feature_transform=None,#"quantile_normal",
+    continuous_feature_transform=None,  # "quantile_normal",
     normalize_continuous_features=False,
 )
 # model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
@@ -157,9 +176,11 @@ tabular_model.fit(
     train=train,
     validation=val,
     # loss=cust_loss,
-    train_sampler=sampler)
+    train_sampler=sampler,
+)
 
-from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
+from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer  # noqa: E402
+
 transformer = CategoricalEmbeddingTransformer(tabular_model)
 train_transform = transformer.fit_transform(train)
 # test_transform = transformer.transform(test)
