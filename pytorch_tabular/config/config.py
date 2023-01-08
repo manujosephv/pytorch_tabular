@@ -6,7 +6,7 @@ import logging
 import os
 import re
 import warnings
-from dataclasses import MISSING, dataclass, field
+from dataclasses import dataclass, field, MISSING
 from typing import Any, Dict, Iterable, List, Optional
 
 from omegaconf import OmegaConf
@@ -103,9 +103,7 @@ class DataConfig:
     )
     categorical_cols: List = field(
         default_factory=list,
-        metadata={
-            "help": "Column names of the categorical fields to treat differently. Defaults to []"
-        },
+        metadata={"help": "Column names of the categorical fields to treat differently. Defaults to []"},
     )
     date_columns: List = field(
         default_factory=list,
@@ -149,9 +147,7 @@ class DataConfig:
     )
     num_workers: Optional[int] = field(
         default=0,
-        metadata={
-            "help": "The number of workers used for data loading. For windows always set to 0"
-        },
+        metadata={"help": "The number of workers used for data loading. For windows always set to 0"},
     )
     pin_memory: bool = field(
         default=True,
@@ -159,15 +155,11 @@ class DataConfig:
     )
     handle_unknown_categories: bool = field(
         default=True,
-        metadata={
-            "help": "Whether or not to handle unknown or new values in categorical columns as unknown"
-        },
+        metadata={"help": "Whether or not to handle unknown or new values in categorical columns as unknown"},
     )
     handle_missing_values: bool = field(
         default=True,
-        metadata={
-            "help": "Whether or not to handle missing values in categorical columns as unknown"
-        },
+        metadata={"help": "Whether or not to handle missing values in categorical columns as unknown"},
     )
     # categorical_dim: int = field(init=False)
     # continuous_dim: int = field(init=False)
@@ -175,10 +167,7 @@ class DataConfig:
 
     def __post_init__(self):
         assert (
-            len(self.categorical_cols)
-            + len(self.continuous_cols)
-            + len(self.date_columns)
-            > 0
+            len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_columns) > 0
         ), "There should be at-least one feature defined in categorical, continuous, or date columns"
         # self.categorical_dim = (
         #     len(self.categorical_cols) if self.categorical_cols is not None else 0
@@ -234,9 +223,7 @@ class InferredConfig:
     )
     embedded_cat_dim: int = field(
         init=False,
-        metadata={
-            "help": "The number of features or dimensions of the embedded categorical features"
-        },
+        metadata={"help": "The number of features or dimensions of the embedded categorical features"},
     )
 
     def __post_init__(self):
@@ -336,29 +323,21 @@ class TrainerConfig:
                 https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer
     """
 
-    batch_size: int = field(
-        default=64, metadata={"help": "Number of samples in each batch of training"}
-    )
+    batch_size: int = field(default=64, metadata={"help": "Number of samples in each batch of training"})
     fast_dev_run: bool = field(
         default=False,
         metadata={
             "help": "runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val and test to find any bugs (ie: a sort of unit test)."
         },
     )
-    max_epochs: int = field(
-        default=10, metadata={"help": "Maximum number of epochs to be run"}
-    )
+    max_epochs: int = field(default=10, metadata={"help": "Maximum number of epochs to be run"})
     min_epochs: Optional[int] = field(
         default=1,
-        metadata={
-            "help": "Force training for at least these many epochs. 1 by default"
-        },
+        metadata={"help": "Force training for at least these many epochs. 1 by default"},
     )
     max_time: Optional[int] = field(
         default=None,
-        metadata={
-            "help": "Stop training after this amount of time has passed. Disabled by default (None)"
-        },
+        metadata={"help": "Stop training after this amount of time has passed. Disabled by default (None)"},
     )
     gpus: Optional[int] = field(
         default=None,
@@ -404,12 +383,8 @@ class TrainerConfig:
             "help": "If enabled and `devices` is an integer, pick available gpus automatically. This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one process at a time can access them."
         },
     )
-    check_val_every_n_epoch: int = field(
-        default=1, metadata={"help": "Check val every n train epochs."}
-    )
-    gradient_clip_val: float = field(
-        default=0.0, metadata={"help": "Gradient clipping value"}
-    )
+    check_val_every_n_epoch: int = field(default=1, metadata={"help": "Check val every n train epochs."})
+    gradient_clip_val: float = field(default=0.0, metadata={"help": "Gradient clipping value"})
     overfit_batches: float = field(
         default=0.0,
         metadata={
@@ -437,9 +412,7 @@ class TrainerConfig:
     )
     early_stopping_min_delta: float = field(
         default=0.001,
-        metadata={
-            "help": "The minimum delta in the loss/metric which qualifies as an improvement in early stopping"
-        },
+        metadata={"help": "The minimum delta in the loss/metric which qualifies as an improvement in early stopping"},
     )
     early_stopping_mode: str = field(
         default="min",
@@ -450,9 +423,7 @@ class TrainerConfig:
     )
     early_stopping_patience: int = field(
         default=3,
-        metadata={
-            "help": "The number of epochs to wait until there is no further improvements in loss/metric"
-        },
+        metadata={"help": "The number of epochs to wait until there is no further improvements in loss/metric"},
     )
     checkpoints: Optional[str] = field(
         default="valid_loss",
@@ -494,9 +465,7 @@ class TrainerConfig:
     )
     progress_bar: str = field(
         default="rich",
-        metadata={
-            "help": "Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`."
-        },
+        metadata={"help": "Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`."},
     )
     precision: int = field(
         default=32,
@@ -634,9 +603,7 @@ class OptimizerConfig:
     )
     optimizer_params: Dict = field(
         default_factory=lambda: {"weight_decay": 0, "amsgrad": False},
-        metadata={
-            "help": "The parameters for the optimizer. If left blank, will use default parameters."
-        },
+        metadata={"help": "The parameters for the optimizer. If left blank, will use default parameters."},
     )
     lr_scheduler: Optional[str] = field(
         default=None,
@@ -646,16 +613,12 @@ class OptimizerConfig:
     )
     lr_scheduler_params: Optional[Dict] = field(
         default_factory=lambda: {},
-        metadata={
-            "help": "The parameters for the LearningRateScheduler. If left blank, will use default parameters."
-        },
+        metadata={"help": "The parameters for the LearningRateScheduler. If left blank, will use default parameters."},
     )
 
     lr_scheduler_monitor_metric: Optional[str] = field(
         default="valid_loss",
-        metadata={
-            "help": "Used with ReduceLROnPlateau, where the plateau is decided based on this metric"
-        },
+        metadata={"help": "Used with ReduceLROnPlateau, where the plateau is decided based on this metric"},
     )
 
     @staticmethod
@@ -773,9 +736,7 @@ class ModelConfig:
     )
     embedding_dropout: float = field(
         default=0.1,
-        metadata={
-            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
-        },
+        metadata={"help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"},
     )
     batch_norm_continuous_input: bool = field(
         default=True,
@@ -843,30 +804,18 @@ class ModelConfig:
     def __post_init__(self):
         if self.task == "regression":
             self.loss = "MSELoss" if self.loss is None else self.loss
-            self.metrics = (
-                ["mean_squared_error"] if self.metrics is None else self.metrics
-            )
-            self.metrics_params = (
-                [{} for _ in self.metrics]
-                if self.metrics_params is None
-                else self.metrics_params
-            )
+            self.metrics = ["mean_squared_error"] if self.metrics is None else self.metrics
+            self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         elif self.task == "classification":
             self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
             self.metrics = ["accuracy"] if self.metrics is None else self.metrics
-            self.metrics_params = (
-                [{} for _ in self.metrics]
-                if self.metrics_params is None
-                else self.metrics_params
-            )
+            self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         elif self.task == "backbone":
             self.loss = None
             self.metrics = None
             self.metrics_params = None
             if self.head is not None:
-                logger.warning(
-                    "`head` is not a valid parameter for backbone task. Making `head=None`"
-                )
+                logger.warning("`head` is not a valid parameter for backbone task. Making `head=None`")
                 self.head = None
                 self.head_config = None
         else:
@@ -875,9 +824,7 @@ class ModelConfig:
                 f"{self.__dataclass_fields__['task'].metadata['choices']}"
             )
         if self.metrics is not None:
-            assert len(self.metrics) == len(
-                self.metrics_params
-            ), "metrics and metric_params should have same length"
+            assert len(self.metrics) == len(self.metrics_params), "metrics and metric_params should have same length"
 
         # if len(self.head_config) == 0:  # No Head Config provided
         #     raise ValueError("`head_config` cannot be empty")
@@ -886,12 +833,8 @@ class ModelConfig:
             assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
             _head_callable = getattr(heads.blocks, self.head)
             ideal_head_config = _head_callable._config_template
-            invalid_keys = set(self.head_config.keys()) - set(
-                ideal_head_config.__dict__.keys()
-            )
-            assert (
-                len(invalid_keys) == 0
-            ), f"`head_config` has some invalid keys: {invalid_keys}"
+            invalid_keys = set(self.head_config.keys()) - set(ideal_head_config.__dict__.keys())
+            assert len(invalid_keys) == 0, f"`head_config` has some invalid keys: {invalid_keys}"
 
         # For Custom models, setting these values for compatibility
         if not hasattr(self, "_config_name"):
@@ -948,9 +891,7 @@ class SSLModelConfig:
     )
     embedding_dropout: float = field(
         default=0.1,
-        metadata={
-            "help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"
-        },
+        metadata={"help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"},
     )
     batch_norm_continuous_input: bool = field(
         default=True,

@@ -34,7 +34,7 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
     [
         None,
         PowerTransformer(method="yeo-johnson"),
-        (lambda x: x ** 2, lambda x: np.sqrt(x)),
+        (lambda x: x**2, lambda x: np.sqrt(x)),
     ],
 )
 @pytest.mark.parametrize("validation_split", [None, 0.3])
@@ -65,9 +65,7 @@ def test_dataloader(
         )
         model_config_params = dict(task="regression", embedding_dims=embedding_dims)
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=1, checkpoints=None, early_stopping=None
-        )
+        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()
 
         tabular_model = TabularModel(

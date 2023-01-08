@@ -7,12 +7,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.activations import (
-    entmax15,
-    entmoid15,
-    sparsemax,
-    sparsemoid,
-)
+from pytorch_tabular.models.common.activations import entmax15, entmoid15, sparsemax, sparsemoid
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import Embedding1dLayer
 
@@ -91,9 +86,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
             [
                 NeuralDecisionTree(
                     depth=self.tree_depth,
-                    n_features=self.n_features + 2**self.tree_depth * t
-                    if self.chain_trees
-                    else self.n_features,
+                    n_features=self.n_features + 2**self.tree_depth * t if self.chain_trees else self.n_features,
                     dropout=self.tree_dropout,
                     binning_activation=self.binning_activation,
                     feature_mask_function=self.feature_mask_function,
@@ -136,12 +129,13 @@ class GatedAdditiveTreesBackbone(nn.Module):
 
 
 class CustomHead(nn.Module):
-    """ Custom Head for GATE
+    """Custom Head for GATE
 
     Args:
         input_dim (int): Input dimension of the head
         hparams (DictConfig): Config of the model
     """
+
     def __init__(self, input_dim: int, hparams: DictConfig):
         super().__init__()
         self.hparams = hparams
@@ -149,15 +143,11 @@ class CustomHead(nn.Module):
         if self.hparams.share_head_weights:
             self.head = self._get_head_from_config()
         else:
-            self.head = nn.ModuleList(
-                [self._get_head_from_config() for _ in range(self.hparams.num_trees)]
-            )
+            self.head = nn.ModuleList([self._get_head_from_config() for _ in range(self.hparams.num_trees)])
         # random parameter with num_trees elements
         self.eta = nn.Parameter(torch.rand(self.hparams.num_trees, requires_grad=True))
         if self.hparams.task == "regression":
-            self.T0 = nn.Parameter(
-                torch.rand(self.hparams.output_dim), requires_grad=True
-            )
+            self.T0 = nn.Parameter(torch.rand(self.hparams.output_dim), requires_grad=True)
 
     def _get_head_from_config(self):
         _head_callable = getattr(blocks, self.hparams.head)
@@ -172,10 +162,7 @@ class CustomHead(nn.Module):
         if not self.hparams.share_head_weights:
             # B x T X Output
             y_hat = torch.cat(
-                [
-                    h(backbone_features[:, :, i]).unsqueeze(1)
-                    for i, h in enumerate(self.head)
-                ],
+                [h(backbone_features[:, :, i]).unsqueeze(1) for i, h in enumerate(self.head)],
                 dim=1,
             )
         else:

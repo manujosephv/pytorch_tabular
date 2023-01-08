@@ -31,9 +31,7 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
     result = {}
     for key, value in batch.items():
         random_index = _get_random_index(value)
-        x_binary_mask = torch.from_numpy(
-            np.random.choice(2, size=value.shape, p=[lam, 1 - lam])
-        )
+        x_binary_mask = torch.from_numpy(np.random.choice(2, size=value.shape, p=[lam, 1 - lam]))
         x_random = value[random_index, :]
         x_noised = value.clone().detach()
         x_noised[x_binary_mask == 0] = x_random[x_binary_mask == 0]

@@ -11,9 +11,7 @@ def to_one_hot(y, depth=None):
     """
     y_flat = y.to(torch.int64).view(-1, 1)
     depth = depth if depth is not None else int(torch.max(y_flat)) + 1
-    y_one_hot = torch.zeros(y_flat.size()[0], depth, device=y.device).scatter_(
-        1, y_flat, 1
-    )
+    y_one_hot = torch.zeros(y_flat.size()[0], depth, device=y.device).scatter_(1, y_flat, 1)
     y_one_hot = y_one_hot.view(*(tuple(y.shape) + (-1,)))
     return y_one_hot
 

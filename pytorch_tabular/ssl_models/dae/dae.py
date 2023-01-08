@@ -29,9 +29,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
         self._build_network()
 
     def _get_noise_probability(self, name):
-        return self.config.noise_probabilities.get(
-            name, self.config.default_noise_probability
-        )
+        return self.config.noise_probabilities.get(name, self.config.default_noise_probability)
 
     def _build_embedding_layer(self):
         return MixedEmbedding1dLayer(
@@ -77,9 +75,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
 
 class DenoisingAutoEncoderModel(SSLBaseModel):
     output_tuple = namedtuple("output_tuple", ["original", "reconstructed"])
-    loss_weight_tuple = namedtuple(
-        "loss_weight_tuple", ["binary", "categorical", "continuous", "mask"]
-    )
+    loss_weight_tuple = namedtuple("loss_weight_tuple", ["binary", "categorical", "continuous", "mask"])
     ALLOWED_MODELS = ["CategoryEmbeddingModelConfig"]
 
     def __init__(self, config: DictConfig, **kwargs):
@@ -92,9 +88,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 encoded_cat_dims += card
             else:
                 encoded_cat_dims += embd_dim
-        config.encoder_config._backbone_input_dim = encoded_cat_dims + len(
-            config.continuous_cols
-        )
+        config.encoder_config._backbone_input_dim = encoded_cat_dims + len(config.continuous_cols)
         assert (
             config.encoder_config._config_name in self.ALLOWED_MODELS
         ), "Encoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
@@ -103,19 +97,13 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 config.decoder_config._config_name in self.ALLOWED_MODELS
             ), "Decoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
             if "-" in config.encoder_config.layers:
-                config.decoder_config._backbone_input_dim = int(
-                    config.encoder_config.layers.split("-")[-1]
-                )
+                config.decoder_config._backbone_input_dim = int(config.encoder_config.layers.split("-")[-1])
             else:
-                config.decoder_config._backbone_input_dim = int(
-                    config.encoder_config.layers
-                )
+                config.decoder_config._backbone_input_dim = int(config.encoder_config.layers)
         super().__init__(config, **kwargs)
 
     def _get_noise_probability(self, name):
-        return self.hparams.noise_probabilities.get(
-            name, self.hparams.default_noise_probability
-        )
+        return self.hparams.noise_probabilities.get(name, self.hparams.default_noise_probability)
 
     @property
     def embedding_layers(self):
@@ -132,16 +120,10 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             self.decoder.output_dim,
             n_binary=len(self._embedding._binary_feat_idx),
             n_categorical=len(self._embedding._onehot_feat_idx),
-            n_numerical=self._embedding.embedded_cat_dim
-            + len(self.hparams.continuous_cols),
-            cardinality=[
-                self._embedding.categorical_embedding_dims[i][0]
-                for i in self._embedding._onehot_feat_idx
-            ],
+            n_numerical=self._embedding.embedded_cat_dim + len(self.hparams.continuous_cols),
+            cardinality=[self._embedding.categorical_embedding_dims[i][0] for i in self._embedding._onehot_feat_idx],
         )
-        self.mask_reconstruction = nn.Linear(
-            self.decoder.output_dim, len(self._featurizer.swap_noise.probas)
-        )
+        self.mask_reconstruction = nn.Linear(self.decoder.output_dim, len(self._featurizer.swap_noise.probas))
 
     def _setup_loss(self):
         self.losses = {
@@ -153,17 +135,14 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
         if self.hparams.loss_type_weights is None:
             self.loss_weights = self.loss_weight_tuple(*self._init_loss_weights())
         else:
-            self.loss_weights = self.loss_weight_tuple(
-                *self.hparams.loss_type_weights, self.hparams.mask_loss_weight
-            )
+            self.loss_weights = self.loss_weight_tuple(*self.hparams.loss_type_weights, self.hparams.mask_loss_weight)
 
     def _init_loss_weights(self):
         n_features = self.hparams.continuous_dim + len(self.hparams.embedding_dims)
         return [
             len(self.embedding_layers._binary_feat_idx) / n_features,
             len(self.embedding_layers._onehot_feat_idx) / n_features,
-            self.hparams.continuous_dim
-            + len(self.embedding_layers._embedding_feat_idx) / n_features,
+            self.hparams.continuous_dim + len(self.embedding_layers._embedding_feat_idx) / n_features,
             self.hparams.mask_loss_weight,
         ]
 
@@ -199,13 +178,9 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                     reconstructed_in["continuous"],
                 )
             if "categorical" in reconstructed_in.keys():
-                output_dict["categorical"] = self.output_tuple(
-                    x["_categorical_orig"], reconstructed_in["categorical"]
-                )
+                output_dict["categorical"] = self.output_tuple(x["_categorical_orig"], reconstructed_in["categorical"])
             if "binary" in reconstructed_in.keys():
-                output_dict["binary"] = self.output_tuple(
-                    x["binary"], reconstructed_in["binary"]
-                )
+                output_dict["binary"] = self.output_tuple(x["binary"], reconstructed_in["binary"])
             return output_dict
         else:  # self.mode == "finetune"
             return self.featurizer(x, perturb=False).features
@@ -219,9 +194,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                     loss += self.losses[type_](out.reconstructed[i], out.original[:, i])
                 loss *= getattr(self.loss_weights, type_)
             else:
-                loss = self.losses[type_](out.reconstructed, out.original) * getattr(
-                    self.loss_weights, type_
-                )
+                loss = self.losses[type_](out.reconstructed, out.original) * getattr(self.loss_weights, type_)
             self.log(
                 f"{tag}_{type_}_loss",
                 loss.item(),

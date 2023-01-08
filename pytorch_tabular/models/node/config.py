@@ -1,6 +1,6 @@
+import warnings
 from dataclasses import dataclass, field
 from typing import Optional
-import warnings
 
 from pytorch_tabular.config import ModelConfig
 
@@ -69,9 +69,7 @@ class NodeConfig(ModelConfig):
 
     num_layers: int = field(
         default=1,
-        metadata={
-            "help": "Number of Oblivious Decision Tree Layers in the Dense Architecture"
-        },
+        metadata={"help": "Number of Oblivious Decision Tree Layers in the Dense Architecture"},
     )
     num_trees: int = field(
         default=2048,
@@ -109,9 +107,7 @@ class NodeConfig(ModelConfig):
     )
     input_dropout: float = field(
         default=0.0,
-        metadata={
-            "help": "Dropout to be applied to the inputs between layers of the Dense Architecture"
-        },
+        metadata={"help": "Dropout to be applied to the inputs between layers of the Dense Architecture"},
     )
     initialize_response: str = field(
         default="normal",
@@ -161,7 +157,9 @@ class NodeConfig(ModelConfig):
     )
     cat_embedding_dropout: float = field(
         default=0.0,
-        metadata={"help": "DEPRECATED: Please use `embedding_dropout` instead. probability of an embedding element to be zeroed."},
+        metadata={
+            "help": "DEPRECATED: Please use `embedding_dropout` instead. probability of an embedding element to be zeroed."
+        },
     )
 
     embed_categorical: bool = field(
@@ -182,7 +180,9 @@ class NodeConfig(ModelConfig):
             warnings.warn(
                 "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features. This is deprecated and will be removed in future versions and categorical columns will be embedded by default."
             )
-        warnings.warn("`cat_embedding_dropout` is deprecated and will be removed in the next release. Please use `embedding_dropout` instead")
+        warnings.warn(
+            "`cat_embedding_dropout` is deprecated and will be removed in the next release. Please use `embedding_dropout` instead"
+        )
         super().__post_init__()
 
 

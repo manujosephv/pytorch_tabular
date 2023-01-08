@@ -7,7 +7,6 @@ from typing import Dict
 
 from pytorch_tabular.config.config import ModelConfig
 
-
 INCOMPATIBLE_BACKBONES = ["NodeConfig", "TabNetModelConfig", "MDNConfig"]
 
 

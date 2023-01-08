@@ -21,7 +21,6 @@ import torch.nn as nn
 from einops import rearrange
 from omegaconf import DictConfig
 
-
 from ..base_model import BaseModel
 from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
 
@@ -56,10 +55,7 @@ class TabTransformerBackbone(nn.Module):
         if self.hparams.batch_norm_continuous_input:
             self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
 
-        self.output_dim = (
-            self.hparams.input_embed_dim * self.hparams.categorical_dim
-            + self.hparams.continuous_dim
-        )
+        self.output_dim = self.hparams.input_embed_dim * self.hparams.categorical_dim + self.hparams.continuous_dim
 
     def _build_embedding_layer(self):
         return Embedding2dLayer(

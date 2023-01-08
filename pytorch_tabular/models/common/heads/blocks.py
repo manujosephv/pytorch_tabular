@@ -119,25 +119,14 @@ class MixtureDensityHead(nn.Module):
         """
         target = target.expand_as(sigma)
         if log:
-            ret = (
-                -torch.log(sigma)
-                - 0.5 * LOG2PI
-                - 0.5 * torch.pow((target - mu) / sigma, 2)
-            )
+            ret = -torch.log(sigma) - 0.5 * LOG2PI - 0.5 * torch.pow((target - mu) / sigma, 2)
         else:
-            ret = (ONEOVERSQRT2PI / sigma) * torch.exp(
-                -0.5 * ((target - mu) / sigma) ** 2
-            )
+            ret = (ONEOVERSQRT2PI / sigma) * torch.exp(-0.5 * ((target - mu) / sigma) ** 2)
         return ret  # torch.prod(ret, 2)
 
     def log_prob(self, pi, sigma, mu, y):
         log_component_prob = self.gaussian_probability(sigma, mu, y, log=True)
-        log_mix_prob = torch.log(
-            nn.functional.gumbel_softmax(
-                pi, tau=self.hparams.softmax_temperature, dim=-1
-            )
-            + 1e-15
-        )
+        log_mix_prob = torch.log(nn.functional.gumbel_softmax(pi, tau=self.hparams.softmax_temperature, dim=-1) + 1e-15)
         return torch.logsumexp(log_component_prob + log_mix_prob, dim=-1)
 
     def sample(self, pi, sigma, mu):
@@ -153,12 +142,8 @@ class MixtureDensityHead(nn.Module):
         if n_samples is None:
             n_samples = self.hparams.n_samples
         samples = []
-        softmax_pi = nn.functional.gumbel_softmax(
-            pi, tau=self.hparams.softmax_temperature, dim=-1
-        )
-        assert (
-            softmax_pi < 0
-        ).sum().item() == 0, "pi parameter should not have negative"
+        softmax_pi = nn.functional.gumbel_softmax(pi, tau=self.hparams.softmax_temperature, dim=-1)
+        assert (softmax_pi < 0).sum().item() == 0, "pi parameter should not have negative"
         for _ in range(n_samples):
             samples.append(self.sample(softmax_pi, sigma, mu))
         samples = torch.cat(samples, dim=1)

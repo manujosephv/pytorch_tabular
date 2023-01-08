@@ -54,9 +54,7 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     )
     use_batch_norm: bool = field(
         default=False,
-        metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
-        },
+        metadata={"help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"},
     )
     initialization: str = field(
         default="kaiming",
