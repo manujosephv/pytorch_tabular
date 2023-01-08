@@ -210,11 +210,9 @@ class MultiStageModel(BaseModel):
     def test_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
-        _ = self.calculate_loss(
-            y, ret_value['clf_logits'], ret_value['logits'] , tag="test"
-        )
-        _ = self.calculate_metrics(y, ret_value['logits'], tag="test")
-        return ret_value['logits'], y
+        _ = self.calculate_loss(y, ret_value["clf_logits"], ret_value["logits"], tag="test")
+        _ = self.calculate_metrics(y, ret_value["logits"], tag="test")
+        return ret_value["logits"], y
 
     def calculate_loss(self, y, classification_logits, y_hat, tag):
         cl_loss = self.classification_loss(classification_logits.squeeze(), y[:, 0].squeeze().long())
@@ -298,7 +296,7 @@ trainer_config = TrainerConfig(
     max_epochs=epochs,
     early_stopping_patience=5,
     checkpoints=None,
-#         fast_dev_run=True,
+    #         fast_dev_run=True,
 )
 optimizer_config = OptimizerConfig(
     lr_scheduler="OneCycleLR",

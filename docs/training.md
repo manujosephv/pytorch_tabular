@@ -37,7 +37,7 @@ Checkpoint Saving is also turned on by default and to turn it off you can set th
 - `checkpoints_save_top_k`: int: The number of best models to save. If you want to save more than one best models, you can set this parameter to >1. Defaults to `1`
 
 !!!note
-    Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and cehck the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
+Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and cehck the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
 
 ### Learning Rate Finder
 

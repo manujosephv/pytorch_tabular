@@ -1,8 +1,3 @@
-import os
-# os.chdir("..")
-import torch
-from sklearn.datasets import fetch_covtype, make_classification
-from sklearn.model_selection import train_test_split
 import random
 
 import pandas as pd
@@ -18,10 +13,10 @@ def make_mixed_classification(n_samples, n_features, n_categories):
     cat_cols = random.choices(list(range(X.shape[-1])), k=n_categories)
     num_cols = [i for i in range(X.shape[-1]) if i not in cat_cols]
     for col in cat_cols:
-        X[:,col] = pd.qcut(X[:,col], q=4).codes.astype(int)
+        X[:, col] = pd.qcut(X[:, col], q=4).codes.astype(int)
     col_names = []
-    num_col_names=[]
-    cat_col_names=[]
+    num_col_names = []
+    cat_col_names = []
     for i in range(X.shape[-1]):
         if i in cat_cols:
             col_names.append(f"cat_col_{i}")
@@ -70,7 +65,7 @@ trainer_config = TrainerConfig(
     auto_lr_find=True,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=10,
-    fast_dev_run=True
+    fast_dev_run=True,
 )
 optimizer_config = OptimizerConfig()
 model_config = CategoryEmbeddingModelConfig(

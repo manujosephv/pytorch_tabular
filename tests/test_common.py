@@ -15,10 +15,7 @@ from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
 MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, dict(layers="10-20")),
-    (
-        AutoIntConfig,
-        dict(num_heads=1, num_attn_blocks=1)
-    ),
+    (AutoIntConfig, dict(num_heads=1, num_attn_blocks=1)),
     (NodeConfig, dict(num_trees=100, depth=2)),
     (TabNetModelConfig, dict(n_a=2, n_d=2)),
 ]
@@ -173,10 +170,7 @@ def test_feature_extractor(
     assert any([col for col in enc_df.columns if "backbone" in col])
 
 
-@pytest.mark.parametrize(
-    "model_config_class",
-    MODEL_CONFIG_SAVE_TEST
-)
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_TEST)
 @pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
