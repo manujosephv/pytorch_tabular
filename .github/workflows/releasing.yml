@@ -23,9 +23,11 @@ jobs:
           python-version: 3.8
 
     - name: Create package 📦
-      uses: Lightning-AI/utilities/.github/actions/pkg-create
-    - name: local 🗃️ files
-      run: ls -lh dist/
+      run: |
+        pip install "twine==4.0.2" setuptools wheel
+        python setup.py sdist bdist_wheel
+        ls -lh dist/
+        twine check dist/*
 
     - name: Upload to release
       if: github.event_name == 'release'
