@@ -86,6 +86,4 @@ class TabNetModel(BaseModel):
         self._head = nn.Identity()
 
     def extract_embedding(self):
-        raise ValueError(
-            "Extracting Embeddings is not supported by Tabnet. Please use another compatible model"
-        )
+        raise ValueError("Extracting Embeddings is not supported by Tabnet. Please use another compatible model")

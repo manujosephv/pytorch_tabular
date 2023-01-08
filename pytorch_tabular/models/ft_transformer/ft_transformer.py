@@ -25,9 +25,7 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
     elif initialization is None:
         pass
     else:
-        raise NotImplementedError(
-            "initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`"
-        )
+        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
 
 
 class AppendCLSToken(nn.Module):
@@ -117,9 +115,7 @@ class FTTransformerBackbone(nn.Module):
         self.local_feature_importance = torch.zeros((n, f), device=device)
         for attn_weights in self.attention_weights_:
             self.local_feature_importance += attn_weights[:, :, :, -1].sum(dim=1)
-        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[
-            :, :-1
-        ]
+        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[:, :-1]
         self.feature_importance_ = self.local_feature_importance.mean(dim=0)
         # self.feature_importance_count_+=attn_weights.shape[0]
 
@@ -160,15 +156,10 @@ class FTTransformerModel(BaseModel):
         if self.hparams.attn_feature_importance:
             importance_df = pd.DataFrame(
                 {
-                    "Features": self.hparams.categorical_cols
-                    + self.hparams.continuous_cols,
-                    "importance": self.backbone.feature_importance_.detach()
-                    .cpu()
-                    .numpy(),
+                    "Features": self.hparams.categorical_cols + self.hparams.continuous_cols,
+                    "importance": self.backbone.feature_importance_.detach().cpu().numpy(),
                 }
             )
             return importance_df
         else:
-            raise ValueError(
-                "If you want Feature Importance, `attn_feature_weights` should be `True`."
-            )
+            raise ValueError("If you want Feature Importance, `attn_feature_weights` should be `True`.")

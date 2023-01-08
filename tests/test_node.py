@@ -2,10 +2,10 @@
 """Tests for `pytorch_tabular` package."""
 import pytest
 
-from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
-from pytorch_tabular.models import NodeConfig
 from pytorch_tabular import TabularModel
 from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
+from pytorch_tabular.models import NodeConfig
 
 
 @pytest.mark.parametrize("multi_target", [True, False])
@@ -161,9 +161,7 @@ def test_embedding_transformer(regression_data):
         ],
         categorical_cols=["HouseAgeBin"],
     )
-    model_config_params = dict(
-        task="regression", depth=2, num_trees=50, embed_categorical=True
-    )
+    model_config_params = dict(task="regression", depth=2, num_trees=50, embed_categorical=True)
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=1,
@@ -184,15 +182,6 @@ def test_embedding_transformer(regression_data):
 
     transformer = CategoricalEmbeddingTransformer(tabular_model)
     train_transform = transformer.fit_transform(train)
-    embed_cols = [
-        col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col
-    ]
-    assert len(train["HouseAgeBin"].unique()) + 1 == len(
-        transformer._mapping["HouseAgeBin"].keys()
-    )
-    assert all(
-        [
-            val.shape[0] == len(embed_cols)
-            for val in transformer._mapping["HouseAgeBin"].values()
-        ]
-    )
+    embed_cols = [col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col]
+    assert len(train["HouseAgeBin"].unique()) + 1 == len(transformer._mapping["HouseAgeBin"].keys())
+    assert all([val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values()])

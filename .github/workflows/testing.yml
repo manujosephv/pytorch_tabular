@@ -28,7 +28,7 @@ jobs:
       - name: Install test dependencies
         run: |
           pip install -r requirements_testing.txt
-  
+
       - name: Install main package
         run: |
           pip install -e .

@@ -41,39 +41,27 @@ class TabNetModelConfig(ModelConfig):
 
     n_d: int = field(
         default=8,
-        metadata={
-            "help": "Dimension of the prediction  layer (usually between 4 and 64)"
-        },
+        metadata={"help": "Dimension of the prediction  layer (usually between 4 and 64)"},
     )
     n_a: int = field(
         default=8,
-        metadata={
-            "help": "Dimension of the attention  layer (usually between 4 and 64)"
-        },
+        metadata={"help": "Dimension of the attention  layer (usually between 4 and 64)"},
     )
     n_steps: int = field(
         default=3,
-        metadata={
-            "help": "Number of sucessive steps in the newtork (usually betwenn 3 and 10)"
-        },
+        metadata={"help": "Number of sucessive steps in the newtork (usually betwenn 3 and 10)"},
     )
     gamma: float = field(
         default=1.3,
-        metadata={
-            "help": "Float above 1, scaling factor for attention updates (usually betwenn 1.0 to 2.0)"
-        },
+        metadata={"help": "Float above 1, scaling factor for attention updates (usually betwenn 1.0 to 2.0)"},
     )
     n_independent: int = field(
         default=2,
-        metadata={
-            "help": "Number of independent GLU layer in each GLU block (default 2)"
-        },
+        metadata={"help": "Number of independent GLU layer in each GLU block (default 2)"},
     )
     n_shared: int = field(
         default=2,
-        metadata={
-            "help": "Number of independent GLU layer in each GLU block (default 2)"
-        },
+        metadata={"help": "Number of independent GLU layer in each GLU block (default 2)"},
     )
     virtual_batch_size: int = field(
         default=128,

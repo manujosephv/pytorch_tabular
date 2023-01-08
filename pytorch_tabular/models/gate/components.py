@@ -8,9 +8,7 @@ from typing import Callable
 import torch
 import torch.nn as nn
 
-from pytorch_tabular.models.common.activations import (
-    entmax15,
-)
+from pytorch_tabular.models.common.activations import entmax15
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +51,9 @@ class NeuralDecisionStump(nn.Module):
 
         cutpoints = torch.rand([self.n_features, self._num_cutpoints])
         # Append zeros to the beginning of each row
-        cutpoints = torch.cat(
-            [torch.zeros([self.n_features, 1], device=cutpoints.device), cutpoints], 1
-        )
+        cutpoints = torch.cat([torch.zeros([self.n_features, 1], device=cutpoints.device), cutpoints], 1)
         self.cut_points = nn.Parameter(cutpoints, requires_grad=True)
-        self.leaf_responses = nn.Parameter(
-            torch.rand(self.n_features, self._num_leaf), requires_grad=True
-        )
+        self.leaf_responses = nn.Parameter(torch.rand(self.n_features, self._num_leaf), requires_grad=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.feature_mask_function is not None:
@@ -112,9 +106,7 @@ class NeuralDecisionTree(nn.Module):
             layer_nodes = []
             layer_feature_masks = []
             for n in range(max(2 ** (d), 1)):
-                leaf_nodes, feature_mask = self._modules[
-                    "decision_stump_{}_{}".format(d, n)
-                ](tree_input)
+                leaf_nodes, feature_mask = self._modules["decision_stump_{}_{}".format(d, n)](tree_input)
                 layer_nodes.append(leaf_nodes)
                 layer_feature_masks.append(feature_mask)
             layer_nodes = torch.cat(layer_nodes, dim=1)
@@ -158,16 +150,10 @@ class GatedFeatureLearningUnit(nn.Module):
 
     def _build_network(self):
         self.W_in = nn.ModuleList(
-            [
-                nn.Linear(2 * self.n_features_in, 2 * self.n_features_in)
-                for _ in range(self.n_stages)
-            ]
+            [nn.Linear(2 * self.n_features_in, 2 * self.n_features_in) for _ in range(self.n_stages)]
         )
         self.W_out = nn.ModuleList(
-            [
-                nn.Linear(2 * self.n_features_in, self.n_features_in)
-                for _ in range(self.n_stages)
-            ]
+            [nn.Linear(2 * self.n_features_in, self.n_features_in) for _ in range(self.n_stages)]
         )
 
         self.feature_masks = self._create_feature_mask()
@@ -179,7 +165,7 @@ class GatedFeatureLearningUnit(nn.Module):
             feature = self.feature_mask_function(self.feature_masks[d]) * x
             h_in = self.W_in[d](torch.cat([feature, h], dim=-1))
             z = torch.sigmoid(h_in[:, : self.n_features_in])
-            r = torch.sigmoid(h_in[:, self.n_features_in :])
+            r = torch.sigmoid(h_in[:, self.n_features_in :])  # noqa: E203
             h_out = torch.tanh(self.W_out[d](torch.cat([r * h, x], dim=-1)))
             h = self.dropout((1 - z) * h + z * h_out)
         return h

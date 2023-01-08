@@ -25,9 +25,7 @@ from pytorch_tabular.models import MDNConfig
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
-@pytest.mark.parametrize(
-    "variant", ["CategoryEmbeddingModelConfig", "TabTransformerConfig", "FTTransformerConfig"]
-)
+@pytest.mark.parametrize("variant", ["CategoryEmbeddingModelConfig", "TabTransformerConfig", "FTTransformerConfig"])
 @pytest.mark.parametrize("num_gaussian", [1, 2])
 def test_regression(
     regression_data,

@@ -58,9 +58,7 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
         metadata={"help": "Number of layers in the feature abstraction layer"},
     )
 
-    gflu_dropout: float = field(
-        default=0.0, metadata={"help": "Dropout rate for the feature abstraction layer"}
-    )
+    gflu_dropout: float = field(default=0.0, metadata={"help": "Dropout rate for the feature abstraction layer"})
 
     tree_depth: int = field(default=5, metadata={"help": "Depth of the tree. "})
 
@@ -90,33 +88,26 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     )
     chain_trees: bool = field(
         default=True,
-        metadata={
-            "help": "If True, we will chain the trees together. Defaults to False"
-        },
+        metadata={"help": "If True, we will chain the trees together. Defaults to False"},
     )
     tree_wise_attention: bool = field(
         default=True,
-        metadata={
-            "help": "If True, we will use tree wise attention to combine trees. Defaults to True"
-        },
+        metadata={"help": "If True, we will use tree wise attention to combine trees. Defaults to True"},
     )
     tree_wise_attention_dropout: float = field(
         default=0.0,
-        metadata={
-            "help": "probability of dropout in the tree wise attention layer. Defaults to 0.0"
-        },
+        metadata={"help": "probability of dropout in the tree wise attention layer. Defaults to 0.0"},
     )
     share_head_weights: bool = field(
         default=True,
-        metadata={
-            "help": "If True, we will share the weights between the heads. Defaults to True"
-        },
+        metadata={"help": "If True, we will share the weights between the heads. Defaults to True"},
     )
 
     _module_src: str = field(default="models.gate")
     _model_name: str = field(default="GatedAdditiveTreeEnsembleModel")
     _backbone_name: str = field(default="GatedAdditiveTreesBackbone")
     _config_name: str = field(default="GatedAdditiveTreeEnsembleConfig")
+
 
 # if __name__ == "__main__":
 #     from pytorch_tabular.utils import generate_doc_dataclass

@@ -16,12 +16,12 @@ PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible
 
 It has been built on the shoulders of giants like [**PyTorch**](https://pytorch.org/)(obviously), and [**PyTorch Lightning**](https://www.pytorchlightning.ai/).
 
-
 ## Installation
 
 Although the installation includes PyTorch, the best and recommended way is to first install PyTorch from [here](https://pytorch.org/get-started/locally/), picking up the right CUDA version for your machine. (PyTorch Version >1.3)
 
 Once, you have got Pytorch installed, just use:
+
 ```
  pip install pytorch_tabular[all]
 ```
@@ -29,6 +29,7 @@ Once, you have got Pytorch installed, just use:
 to install the complete library with extra dependencies(Weights&Biases).
 
 And :
+
 ```
  pip install pytorch_tabular
 ```
@@ -50,29 +51,37 @@ python setup.py install
 ```
 
 ## Usage
+
 ```python
 from pytorch_tabular import TabularModel
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
-from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig, ExperimentConfig
+from pytorch_tabular.config import (
+    DataConfig,
+    OptimizerConfig,
+    TrainerConfig,
+    ExperimentConfig,
+)
 
 data_config = DataConfig(
-    target=['target'], #target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
+    target=[
+        "target"
+    ],  # target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
     continuous_cols=num_col_names,
     categorical_cols=cat_col_names,
 )
 trainer_config = TrainerConfig(
-    auto_lr_find=True, # Runs the LRFinder to automatically derive a learning rate
+    auto_lr_find=True,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=100,
-    gpus=1, #index of the GPU to use. 0, means CPU
+    gpus=1,  # index of the GPU to use. 0, means CPU
 )
 optimizer_config = OptimizerConfig()
 
 model_config = CategoryEmbeddingModelConfig(
     task="classification",
     layers="1024-512-512",  # Number of nodes in each layer
-    activation="LeakyReLU", # Activation between each layers
-    learning_rate = 1e-3
+    activation="LeakyReLU",  # Activation between each layers
+    learning_rate=1e-3,
 )
 
 tabular_model = TabularModel(
@@ -87,15 +96,16 @@ pred_df = tabular_model.predict(test)
 tabular_model.save_model("examples/basic")
 loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ```
+
 ## Citation
 
 If you use PyTorch Tabular for a scientific publication, we would appreciate citations to the published software and the following paper:
 
+- [arxiv Paper](https://arxiv.org/abs/2104.13638)
 
-* [arxiv Paper](https://arxiv.org/abs/2104.13638)
 ```
 @misc{joseph2021pytorch,
-      title={PyTorch Tabular: A Framework for Deep Learning with Tabular Data}, 
+      title={PyTorch Tabular: A Framework for Deep Learning with Tabular Data},
       author={Manu Joseph},
       year={2021},
       eprint={2104.13638},
@@ -103,15 +113,17 @@ If you use PyTorch Tabular for a scientific publication, we would appreciate cit
       primaryClass={cs.LG}
 }
 ```
-* Zenodo Software Citation
+
+- Zenodo Software Citation
+
 ```
-@article{manujosephv_2021, 
-    title={manujosephv/pytorch_tabular: v0.5.0-alpha}, 
-    DOI={10.5281/zenodo.4732773}, 
-    abstractNote={<p>First Alpha Release</p>}, 
-    publisher={Zenodo}, 
-    author={manujosephv}, 
-    year={2021}, 
+@article{manujosephv_2021,
+    title={manujosephv/pytorch_tabular: v0.5.0-alpha},
+    DOI={10.5281/zenodo.4732773},
+    abstractNote={<p>First Alpha Release</p>},
+    publisher={Zenodo},
+    author={manujosephv},
+    year={2021},
     month={May}
 }
 ```
