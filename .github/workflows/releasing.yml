@@ -23,7 +23,7 @@ jobs:
           python-version: 3.8
 
     - name: Create package 📦
-      uses: Lightning-AI/utilities/.github/actions/pkg-create@v0.5.0
+      uses: Lightning-AI/utilities/.github/actions/pkg-create/action.yaml@v0.5.0
     - name: local 🗃️ files
       run: ls -lh dist/
 
