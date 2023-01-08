@@ -297,7 +297,6 @@ trainer_config = TrainerConfig(
     early_stopping_patience=5,
     checkpoints=None,
     #         fast_dev_run=True,
-    gpus=1,  # index of the GPU to use. 0, means CPU
 )
 optimizer_config = OptimizerConfig(
     lr_scheduler="OneCycleLR",
@@ -315,7 +314,7 @@ model_config = MultiStageModelConfig(
 )
 # model_config.validate()
 # model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
-# trainer_config = TrainerConfig(checkpoints=None, max_epochs=5, gpus=1, profiler=None)
+# trainer_config = TrainerConfig(checkpoints=None, max_epochs=5, profiler=None)
 # experiment_config = ExperimentConfig(
 #     project_name="DeepGMM_test",
 #     run_name="wand_debug",

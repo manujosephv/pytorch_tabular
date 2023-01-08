@@ -10,17 +10,7 @@ from pytorch_tabular.models import AutoIntConfig
 
 @pytest.mark.parametrize("multi_target", [True, False])
 @pytest.mark.parametrize(
-    "continuous_cols",
-    [
-        [
-            "AveRooms",
-            "AveBedrms",
-            "Population",
-            "AveOccup",
-            "Latitude",
-            "Longitude",
-        ],
-    ],
+    "continuous_cols", [["AveRooms", "AveBedrms", "Population", "AveOccup", "Latitude", "Longitude"]]
 )
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
@@ -203,7 +193,6 @@ def test_classification(
 #             max_epochs=3,
 #             checkpoints=None,
 #             early_stopping=None,
-#             gpus=None,
 #             fast_dev_run=True,
 #         )
 #         optimizer_config = OptimizerConfig()

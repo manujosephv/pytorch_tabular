@@ -59,7 +59,7 @@ def test_regression(
     # custom_loss,
     # custom_optimizer,
     custom_args,
-    custom_head_config
+    custom_head_config,
 ):
     (train, test, target) = regression_data
     (custom_metrics, custom_loss, custom_optimizer) = custom_args
@@ -212,15 +212,6 @@ def test_embedding_transformer(regression_data):
 
     transformer = CategoricalEmbeddingTransformer(tabular_model)
     train_transform = transformer.fit_transform(train)
-    embed_cols = [
-        col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col
-    ]
-    assert len(train["HouseAgeBin"].unique()) + 1 == len(
-        transformer._mapping["HouseAgeBin"].keys()
-    )
-    assert all(
-        [
-            val.shape[0] == len(embed_cols)
-            for val in transformer._mapping["HouseAgeBin"].values()
-        ]
-    )
+    embed_cols = [col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col]
+    assert len(train["HouseAgeBin"].unique()) + 1 == len(transformer._mapping["HouseAgeBin"].keys())
+    assert all([val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values()])

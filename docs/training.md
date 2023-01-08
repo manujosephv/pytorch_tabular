@@ -14,7 +14,7 @@ The parameters that you would set most frequently are:
 ### Usage Example
 
 ```python
-trainer_config = TrainerConfig(batch_size=64, max_epochs=10, gpus=1)
+trainer_config = TrainerConfig(batch_size=64, max_epochs=10, accelerator="auto")
 ```
 
 PyTorch Tabular uses Early Stopping by default and monitors `valid_loss` to stop training. Checkpoint saving is also turned on by default, which monitors `valid_loss` and saved the best model in a folder `saved_models`. All of these are configurable as we will see in the next section.

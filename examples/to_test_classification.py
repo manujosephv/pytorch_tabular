@@ -148,7 +148,7 @@ model_config = GatedAdditiveTreeEnsembleConfig(
     metrics=["f1_score", "accuracy"],
     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
 )
-trainer_config = TrainerConfig(gpus=-1, auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
+trainer_config = TrainerConfig(auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 # experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example",
 #                                      run_name="node_forest_cov",
 #                                      exp_watch="gradients",

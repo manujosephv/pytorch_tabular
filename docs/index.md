@@ -59,7 +59,6 @@ from pytorch_tabular.config import (
     DataConfig,
     OptimizerConfig,
     TrainerConfig,
-    ExperimentConfig,
 )
 
 data_config = DataConfig(
@@ -73,7 +72,6 @@ trainer_config = TrainerConfig(
     auto_lr_find=True,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=100,
-    gpus=1,  # index of the GPU to use. 0, means CPU
 )
 optimizer_config = OptimizerConfig()
 

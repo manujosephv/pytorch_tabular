@@ -159,7 +159,6 @@ trainer_config = TrainerConfig(
     auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=batch_size,
     max_epochs=max_epochs,
-    gpus=-1,  # index of the GPU to use. 0, means CPU
     fast_dev_run=False,
 )
 optimizer_config = OptimizerConfig()
@@ -193,7 +192,6 @@ ft_trainer_config = TrainerConfig(
     auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=batch_size,
     max_epochs=max_epochs,
-    gpus=-1,  # index of the GPU to use. 0, means CPU
     fast_dev_run=False,
 )
 ft_optimizer_config = OptimizerConfig(optimizer="SGD")
@@ -227,7 +225,6 @@ model_config = CategoryEmbeddingModelConfig(
 )
 
 trainer_config = TrainerConfig(
-    gpus=-1,
     auto_select_gpus=True,
     fast_dev_run=True,
     max_epochs=max_epochs,

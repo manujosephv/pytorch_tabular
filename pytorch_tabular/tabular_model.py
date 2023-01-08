@@ -255,9 +255,9 @@ class TabularModel:
                 every_n_epochs=self.config.checkpoints_every_n_epochs,
             )
             callbacks.append(model_checkpoint)
-            self.config.checkpoint_callback = True
+            self.config.enable_checkpointing = True
         else:
-            self.config.checkpoint_callback = False
+            self.config.enable_checkpointing = False
         if self.config.progress_bar == "rich":
             callbacks.append(RichProgressBar())
         logger.debug(f"Callbacks used: {callbacks}")
@@ -274,7 +274,7 @@ class TabularModel:
         trainer_args = [p for p in trainer_sig.parameters.keys() if p != "self"]
         trainer_args_config = {k: v for k, v in self.config.items() if k in trainer_args}
         # For some weird reason, checkpoint_callback is not appearing in the Trainer vars
-        trainer_args_config["checkpoint_callback"] = self.config.checkpoint_callback
+        trainer_args_config["enable_checkpointing"] = self.config.enable_checkpointing
         # turn off progress bar if progress_bar=='none'
         trainer_args_config["enable_progress_bar"] = self.config.progress_bar != "none"
         # Adding trainer_kwargs from config to trainer_args

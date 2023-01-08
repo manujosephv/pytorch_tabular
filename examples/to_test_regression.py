@@ -59,7 +59,6 @@ model_config = CategoryEmbeddingModelConfig(task="regression", dropout=0.2, head
 trainer_config = TrainerConfig(
     checkpoints=None,
     max_epochs=2,
-    gpus=1,
     profiler=None,
     fast_dev_run=False,
     auto_lr_find=True,

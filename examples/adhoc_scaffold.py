@@ -65,7 +65,6 @@ trainer_config = TrainerConfig(
     auto_lr_find=True,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=1024,
     max_epochs=10,
-    gpus=1,  # index of the GPU to use. 0, means CPU
     fast_dev_run=True,
 )
 optimizer_config = OptimizerConfig()

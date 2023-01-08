@@ -90,32 +90,31 @@ def test_classification(
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = dict(task="classification", depth=2, embed_categorical=embed_categorical)
-        model_config = NodeConfig(**model_config_params)
-        trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
-        optimizer_config = OptimizerConfig()
+        return
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = dict(task="classification", depth=2, embed_categorical=embed_categorical)
+    model_config = NodeConfig(**model_config_params)
+    trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train, test=test)
 
-        result = tabular_model.evaluate(test)
-        assert result[0]["valid_loss"] < 2.5
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    assert result[0]["valid_loss"] < 2.5
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 test_regression(
