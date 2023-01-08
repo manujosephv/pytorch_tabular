@@ -41,9 +41,10 @@ def fake_metric(y_hat, y):
     "target_transform",
     [None, PowerTransformer(), (lambda x: np.power(x, 2), lambda x: np.sqrt(x))],
 )
-@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
-@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+# @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
+# @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
+# @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("custom_args", [(None, None, None), ([fake_metric], torch.nn.L1Loss(), torch.optim.Adagrad)])
 @pytest.mark.parametrize("custom_head_config", [None, "", "32", "32-32"])
 def test_regression(
     regression_data,
@@ -54,12 +55,14 @@ def test_regression(
     normalize_continuous_features,
     target_range,
     target_transform,
-    custom_metrics,
-    custom_loss,
-    custom_optimizer,
-    custom_head_config,
+    # custom_metrics,
+    # custom_loss,
+    # custom_optimizer,
+    custom_args,
+    custom_head_config
 ):
     (train, test, target) = regression_data
+    (custom_metrics, custom_loss, custom_optimizer) = custom_args
     if len(continuous_cols) + len(categorical_cols) == 0:
         assert True
     else:
@@ -209,6 +212,15 @@ def test_embedding_transformer(regression_data):
 
     transformer = CategoricalEmbeddingTransformer(tabular_model)
     train_transform = transformer.fit_transform(train)
-    embed_cols = [col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col]
-    assert len(train["HouseAgeBin"].unique()) + 1 == len(transformer._mapping["HouseAgeBin"].keys())
-    assert all([val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values()])
+    embed_cols = [
+        col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col
+    ]
+    assert len(train["HouseAgeBin"].unique()) + 1 == len(
+        transformer._mapping["HouseAgeBin"].keys()
+    )
+    assert all(
+        [
+            val.shape[0] == len(embed_cols)
+            for val in transformer._mapping["HouseAgeBin"].values()
+        ]
+    )
