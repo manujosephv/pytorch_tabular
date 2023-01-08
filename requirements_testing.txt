@@ -1,4 +1,4 @@
-pip==21.1
+pip==22.3.1
 wget
 bump2version==1.0.1
 flake8>=3.7.8
