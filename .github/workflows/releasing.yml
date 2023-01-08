@@ -1,0 +1,45 @@
+name: PyPI Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v?[0-9]+.[0-9]+.[0-9]+']
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+
+  # based on https://github.com/pypa/gh-action-pypi-publish
+  release-pkg:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v3
+    - name: Set up Python 🐍
+      uses: actions/setup-python@v4
+      with:
+          python-version: 3.8
+
+    - name: Create package 📦
+      run: |
+        pip install "twine==4.0.2" setuptools wheel
+        python setup.py sdist bdist_wheel
+        ls -lh dist/
+        twine check dist/*
+
+    - name: Upload to release
+      if: github.event_name == 'release'
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: 'dist/*'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish distribution 📦 to PyPI
+      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
+      uses: pypa/gh-action-pypi-publish@v1.6.4
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_password }}
