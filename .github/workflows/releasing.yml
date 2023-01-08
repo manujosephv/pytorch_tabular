@@ -3,6 +3,7 @@ name: PyPI Release
 on:
   push:
     branches: [main]
+    tags: ['v?[0-9]+.[0-9]+.[0-9]+']
   pull_request:
     branches: [main]
   release:
@@ -37,7 +38,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish distribution 📦 to PyPI
-      if: github.event_name == 'release'
+      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
       uses: pypa/gh-action-pypi-publish@v1.6.4
       with:
         user: __token__
