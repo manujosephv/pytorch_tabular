@@ -11,8 +11,6 @@ from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
 
-# TODO Tests for custom parameters and saving with custom_params
-
 
 def fake_metric(y_hat, y):
     return (y_hat - y).mean()

@@ -57,38 +57,43 @@ class DataConfig:
     """Data configuration.
 
     Args:
-        target (Union[List[str], NoneType]): A list of strings with the names of the target column(s).
-            It is mandatory for all except SSL tasks.
+        target (Optional[List[str]]): A list of strings with the names of the target column(s). It is
+                mandatory for all except SSL tasks.
 
         continuous_cols (List): Column names of the numeric fields. Defaults to []
 
-        categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to []
+        categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to
+                []
 
-        date_columns (List): (Column names, Freq) tuples of the date fields.
-            For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}
+        date_columns (List): (Column names, Freq) tuples of the date fields. For eg. a field named
+                introduction_date and with a monthly frequency should have an entry ('intro_date','M'}
 
         encode_date_columns (bool): Whether or not to encode the derived variables from date
 
-        validation_split (Union[float, NoneType]): Percentage of Training rows to keep aside as validation.
-            Used only if Validation Data is not given separately
+        validation_split (Optional[float]): Percentage of Training rows to keep aside as validation. Used
+                only if Validation Data is not given separately
 
-        continuous_feature_transform (Union[str, NoneType]): Whether or not to transform the features before modelling.
-            By default it is turned off.. Choices are: [`None`,`yeo-johnson`,`box-cox`,`quantile_normal`,`quantile_uniform`].
+        continuous_feature_transform (Optional[str]): Whether or not to transform the features before
+                modelling. By default it is turned off.. Choices are: [`None`,`yeo-johnson`,`box-
+                cox`,`quantile_normal`,`quantile_uniform`].
 
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
 
-        quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added gaussian noise
-            with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable.
-            Please not that this transformation does NOT apply gaussian noise to the resulting data, the noise is only
-            applied for QuantileTransformer
+        quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
+                gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more
+                separable. Please not that this transformation does NOT apply gaussian noise to the resulting
+                data, the noise is only applied for QuantileTransformer
 
-        num_workers (Union[int, NoneType]): The number of workers used for data loading. For Windows always set to 0 to avoid errors.
+        num_workers (Optional[int]): The number of workers used for data loading. For windows always set to
+                0
 
         pin_memory (bool): Whether or not to pin memory for data loading.
 
-        handle_unknown_categories (bool): Whether or not to handle unknown or new values in categorical columns as unknown
+        handle_unknown_categories (bool): Whether or not to handle unknown or new values in categorical
+                columns as unknown
 
-        handle_missing_values (bool): Whether or not to handle missing values in categorical columns as unknown
+        handle_missing_values (bool): Whether or not to handle missing values in categorical columns as
+                unknown
     """
 
     target: Optional[List[str]] = field(
@@ -161,20 +166,11 @@ class DataConfig:
         default=True,
         metadata={"help": "Whether or not to handle missing values in categorical columns as unknown"},
     )
-    # categorical_dim: int = field(init=False)
-    # continuous_dim: int = field(init=False)
-    # output_dim: int = field(init=False)
 
     def __post_init__(self):
         assert (
             len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_columns) > 0
         ), "There should be at-least one feature defined in categorical, continuous, or date columns"
-        # self.categorical_dim = (
-        #     len(self.categorical_cols) if self.categorical_cols is not None else 0
-        # )
-        # self.continuous_dim = (
-        #     len(self.continuous_cols) if self.continuous_cols is not None else 0
-        # )
         _validate_choices(self)
         if os.name == "nt" and self.num_workers != 0:
             print("Windows does not support num_workers > 0. Setting num_workers to 0")
@@ -191,13 +187,12 @@ class InferredConfig:
 
         continuous_dim (int): The number of continuous features
 
-        output_dim (Optional[int], optional): The number of output targets. Defaults to None.
+        output_dim (Optional[int]): The number of output targets
 
-        categorical_cardinality (Optional[List[int]], optional): The number of unique values in categorical features.
-            Defaults to None.
+        categorical_cardinality (Optional[List[int]]): The number of unique values in categorical features
 
-        embedding_dims (Optional[List], optional): The dimensions of the embedding for each categorical column as a
-            list of tuples (cardinality, embedding_dim). Defaults to None.
+        embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
+                list of tuples (cardinality, embedding_dim).
     """
 
     categorical_dim: int = field(
@@ -247,13 +242,22 @@ class TrainerConfig:
 
         max_epochs (int): Maximum number of epochs to be run
 
-        min_epochs (Union[int, NoneType]): Force training for at least these many epochs. 1 by default
+        min_epochs (Optional[int]): Force training for at least these many epochs. 1 by default
 
-        max_time (Union[int, NoneType]): Stop training after this amount of time has passed. Disabled by
-                default (None)
+        max_time (Optional[int]): Stop training after this amount of time has passed. Disabled by default
+                (None)
 
-        gpus (Union[int, NoneType]): Number of gpus to train on (int). -1 uses all available GPUs. By
+        gpus (Optional[int]): DEPRECATED: Number of gpus to train on (int). -1 uses all available GPUs. By
                 default uses CPU (None)
+
+        accelerator (Optional[str]): The accelerator to use for training. Can be one of
+                'cpu','gpu','tpu','ipu','auto'. Defaults to 'auto'. Choices are: [`cpu`,`gpu`,`tpu`,`ipu`,`auto`].
+
+        devices (Optional[int]): Number of devices to train on (int). -1 uses all available devices. By
+                default uses all available devices (-1)
+
+        devices_list (Optional[List[int]]): List of devices to train on (list). If specified, takes
+                precedence over `devices` argument. Defaults to None
 
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict. Trainer
                 also calls optimizer.step() for the last indivisible step number.
@@ -261,7 +265,7 @@ class TrainerConfig:
         auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling
                 trainer.tune(), to find optimal initial learning rate.
 
-        auto_select_gpus (bool): If enabled and `gpus` is an integer, pick available gpus automatically.
+        auto_select_gpus (bool): If enabled and `devices` is an integer, pick available gpus automatically.
                 This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one
                 process at a time can access them.
 
@@ -276,12 +280,12 @@ class TrainerConfig:
         deterministic (bool): If true enables cudnn.deterministic. Might make your system slower, but
                 ensures reproducibility.
 
-        profiler (Union[str, NoneType]): To profile individual steps during training and assist in
-                identifying bottlenecks. None, simple or advanced, pytorch. Choices are:
+        profiler (Optional[str]): To profile individual steps during training and assist in identifying
+                bottlenecks. None, simple or advanced, pytorch. Choices are:
                 [`None`,`simple`,`advanced`,`pytorch`].
 
-        early_stopping (Union[str, NoneType]): The loss/metric that needed to be monitored for early
-                stopping. If None, there will be no early stopping
+        early_stopping (Optional[str]): The loss/metric that needed to be monitored for early stopping. If
+                None, there will be no early stopping
 
         early_stopping_min_delta (float): The minimum delta in the loss/metric which qualifies as an
                 improvement in early stopping
@@ -292,16 +296,16 @@ class TrainerConfig:
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements
                 in loss/metric
 
-        checkpoints (Union[str, NoneType]): The loss/metric that needed to be monitored for checkpoints. If
-                None, there will be no checkpoints
+        checkpoints (Optional[str]): The loss/metric that needed to be monitored for checkpoints. If None,
+                there will be no checkpoints
 
         checkpoints_path (str): The path where the saved models will be
 
         checkpoints_every_n_epochs (int): Number of training steps between checkpoints
 
-        checkpoints_name (Union[str, NoneType]): The name under which the models will be saved. If left
-                blank, first it will look for `run_name` in experiment_config and if that is also None then it
-                will use a generic name like task_version.
+        checkpoints_name (Optional[str]): The name under which the models will be saved. If left blank,
+                first it will look for `run_name` in experiment_config and if that is also None then it will use a
+                generic name like task_version.
 
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
 
@@ -510,23 +514,21 @@ class TrainerConfig:
 class ExperimentConfig:
     """Experiment configuration. Experiment Tracking with WandB and Tensorboard
     Args:
-            project_name (str): The name of the project under which all runs will be logged.
-                For Tensorboard this defines the folder under which the logs will be saved and
-                for W&B it defines the project name.
+        project_name (str): The name of the project under which all runs will be logged. For Tensorboard
+                this defines the folder under which the logs will be saved and for W&B it defines the project name
 
-            run_name (Optional[str, NoneType]): The name of the run; a specific identifier to
-                recognize the run. If left blank, will be assigned a auto-generated name
+        run_name (Optional[str]): The name of the run; a specific identifier to recognize the run. If left
+                blank, will be assigned a auto-generated name
 
-            exp_watch (Optional[str, NoneType]): The level of logging required.
-                Can be `gradients`, `parameters`, `all` or `None`. Defaults to None
+        exp_watch (Optional[str]): The level of logging required.  Can be `gradients`, `parameters`, `all`
+                or `None`. Defaults to None. Choices are: [`gradients`,`parameters`,`all`,`None`].
 
-            log_target (str): Determines where logging happens - Tensorboard or W&BChoices are: wandb tensorboard
+        log_target (str): Determines where logging happens - Tensorboard or W&B. Choices are:
+                [`wandb`,`tensorboard`].
 
-            log_logits (bool): Turn this on to log the logits as a histogram in W&B
+        log_logits (bool): Turn this on to log the logits as a histogram in W&B
 
-            exp_log_freq (int): step count between logging of gradients and parameters.
-
-            _exp_version_manager (str): The location of the yaml file which manages versions of experiments
+        exp_log_freq (int): step count between logging of gradients and parameters.
     """
 
     project_name: str = field(
@@ -583,16 +585,20 @@ class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
     Args:
         optimizer (str): Any of the standard optimizers from
-            [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms). Defaults to `Adam`"
+                [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms).
 
-        optimizer_params (dict): The parameters for the optimizer. If left blank, will use default parameters.
+        optimizer_params (Dict): The parameters for the optimizer. If left blank, will use default
+                parameters.
 
-        lr_scheduler (Optional[str, NoneType]): The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate).
-            If None, will not use any scheduler. Defaults to `None`
+        lr_scheduler (Optional[str]): The name of the LearningRateScheduler to use, if any, from
+                [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-
+                rate). If None, will not use any scheduler. Defaults to `None`
 
-        lr_scheduler_params (Optional[dict, NoneType]): The parameters for the LearningRateScheduler. If left blank, will use default parameters.
+        lr_scheduler_params (Optional[Dict]): The parameters for the LearningRateScheduler. If left blank,
+                will use default parameters.
 
-        lr_scheduler_monitor_metric (Optional[str, NoneType]): Used with `ReduceLROnPlateau`, where the plateau is decided based on this metric
+        lr_scheduler_monitor_metric (Optional[str]): Used with ReduceLROnPlateau, where the plateau is
+                decided based on this metric
     """
 
     optimizer: str = field(
@@ -670,42 +676,42 @@ class ModelConfig:
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
                 tasks.. Choices are: [`regression`,`classification`,`backbone`].
 
-        head (Union[str, NoneType]): The head to be used for the model. Should be one of the heads defined
-                in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
+        head (Optional[str]): The head to be used for the model. Should be one of the heads defined in
+                `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
                 [`None`,`LinearHead`,`MixtureDensityHead`].
 
-        head_config (Union[Dict, NoneType]): The config as a dict which defines the head. If left empty,
-                will be initialized as default linear head.
+        head_config (Optional[Dict]): The config as a dict which defines the head. If left empty, will be
+                initialized as default linear head.
 
-        embedding_dims (Union[List, NoneType]): The dimensions of the embedding for each categorical column
-                as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality
-                of the categorical column using the rule min(50, (x + 1) // 2)
+        embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
+                list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
+                the categorical column using the rule min(50, (x + 1) // 2)
+
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+
+        batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
+                through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Union[str, NoneType]): The loss function to be applied. By Default it is MSELoss for
-                regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave
-                it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
+        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+                CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
+                or L1Loss for regression and CrossEntropyLoss for classification
 
-        metrics (Union[List[str], NoneType]): the list of metrics you need to track during training. The
-                metrics should be one of the functional metrics implemented in ``torchmetrics.functional``. By default, it is
+        metrics (Optional[List[str]]): the list of metrics you need to track during training. The metrics
+                should be one of the functional metrics implemented in ``torchmetrics``. By default, it is
                 accuracy if classification and mean_squared_error for regression
 
-        metrics_params (Union[List, NoneType]): The parameters to be passed to the metrics function.
-                For eg. f1_score for multi-class needs a parameter `average` to fully define the metric.
+        metrics_params (Optional[List]): The parameters to be passed to the metrics function
 
-        target_range (Union[List, NoneType]): The range in which we should limit the output variable.
-                Currently ignored for multi-target regression. Typically used for Regression problems. If left
-                empty, will not apply any restrictions
+        target_range (Optional[List]): The range in which we should limit the output variable. Currently
+                ignored for multi-target regression. Typically used for Regression problems. If left empty, will
+                not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
-
-    Raises:
-        NotImplementedError: Raises an error if task is not regression or classification
     """
 
     task: str = field(
-        # default="regression",
         metadata={
             "help": "Specify whether the problem is regression or classification. `backbone` is a task which considers the model as a backbone to generate features. Mostly used internally for SSL and related tasks.",
             "choices": ["regression", "classification", "backbone"],
@@ -741,23 +747,9 @@ class ModelConfig:
     batch_norm_continuous_input: bool = field(
         default=True,
         metadata={
-            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer. DEPRECATED - Use head and head_config instead"
+            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer."
         },
     )
-
-    # use_batch_norm: bool = field(
-    #     default=False,
-    #     metadata={
-    #         "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to False"
-    #     },
-    # )
-    # initialization: str = field(
-    #     default="kaiming",
-    #     metadata={
-    #         "help": "Initialization scheme for the linear layers. Defaults to `kaiming`",
-    #         "choices": ["kaiming", "xavier", "random"],
-    #     },
-    # )
 
     learning_rate: float = field(
         default=1e-3,
@@ -826,9 +818,6 @@ class ModelConfig:
         if self.metrics is not None:
             assert len(self.metrics) == len(self.metrics_params), "metrics and metric_params should have same length"
 
-        # if len(self.head_config) == 0:  # No Head Config provided
-        #     raise ValueError("`head_config` cannot be empty")
-        # else:
         if self.task != "backbone":
             assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
             _head_callable = getattr(heads.blocks, self.head)
@@ -850,15 +839,20 @@ class ModelConfig:
 class SSLModelConfig:
     """Base SSLModel Configuration
     Args:
-        encoder_config (Union[ModelConfig, NoneType]): The config of the encoder to be used for
-                the model. Should be one of the model configs defined in PyTorch Tabular
+        encoder_config (Optional[__main__.ModelConfig]): The config of the encoder to be used for the
+                model. Should be one of the model configs defined in PyTorch Tabular
 
-        decoder_config (Union[ModelConfig, NoneType]): The config of decoder to be used for the
-                model. Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity
+        decoder_config (Optional[__main__.ModelConfig]): The config of decoder to be used for the model.
+                Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity
 
-        embedding_dims (Union[List, NoneType]): The dimensions of the embedding for each categorical column
-                as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality
-                of the categorical column using the rule min(50, (x + 1) // 2)
+        embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
+                list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
+                the categorical column using the rule min(50, (x + 1) // 2)
+
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+
+        batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
+                through a BatchNorm layer. DEPRECATED - Use head and head_config instead
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
@@ -896,7 +890,7 @@ class SSLModelConfig:
     batch_norm_continuous_input: bool = field(
         default=True,
         metadata={
-            "help": "If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer. DEPRECATED - Use head and head_config instead"
+            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. DEPRECATED - Use head and head_config instead"
         },
     )
     learning_rate: float = field(
@@ -924,4 +918,6 @@ class SSLModelConfig:
 
 # if __name__ == "__main__":
 #     import textwrap
-#     print(generate_doc_dataclass(SSLModelConfig, desc="Base SSLModel Configuration"))
+#     from pytorch_tabular.utils import generate_doc_dataclass
+
+#     print(generate_doc_dataclass(DataConfig))
