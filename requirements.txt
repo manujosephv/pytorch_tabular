@@ -1,5 +1,5 @@
 torch>=1.8.1
-category-encoders==2.2.2
+category-encoders==2.5.*
 numpy>=1.17.2
 pandas>=1.1.5
 scikit-learn>=1.0.0
