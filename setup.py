@@ -34,9 +34,9 @@ test_requirements = requirements_testing
 setup(
     author="Manu Joseph",
     author_email="manujosephv@gmail.com",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
@@ -55,7 +55,8 @@ setup(
     include_package_data=True,
     keywords="pytorch, tabular, pytorch-lightning, neural network",
     name="pytorch_tabular",
-    packages=find_packages(include=["pytorch_tabular", "pytorch_tabular.*"]),
+    packages=find_packages(where="src", include=["pytorch_tabular", "pytorch_tabular.*"]),
+    package_dir={"": "src"},
     # setup_requires=test_requirements,
     test_suite="tests",
     tests_require=test_requirements,
