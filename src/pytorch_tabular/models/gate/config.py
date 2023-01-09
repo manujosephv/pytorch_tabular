@@ -28,20 +28,6 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
 
         tree_dropout (float): probability of dropout in tree binning transformation.
 
-        batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it
-                through a BatchNorm layer
-
-        embedding_dropout (float): Dropout for the categorical embedding layer.
-
-        use_batch_norm (bool): Flag to include a BatchNorm layer after each Linear Layer+DropOut
-
-        initialization (str): Initialization scheme for the linear layers. Choices are:
-                [`kaiming`,`xavier`,`random`].
-
-        activation (str): The activation type in the classification head. The default activaion in PyTorch
-                like ReLU, TanH, LeakyReLU, etc.
-                https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
-
         chain_trees (bool): If True, we will chain the trees together. Defaults to False
 
         tree_wise_attention (bool): If True, we will use tree wise attention to combine trees. Defaults to
@@ -51,6 +37,45 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
                 Defaults to 0.0
 
         share_head_weights (bool): If True, we will share the weights between the heads. Defaults to True
+
+
+        task (str): Specify whether the problem is regression or classification. `backbone` is a task which
+                considers the model as a backbone to generate features. Mostly used internally for SSL and related
+                tasks.. Choices are: [`regression`,`classification`,`backbone`].
+
+        head (Optional[str]): The head to be used for the model. Should be one of the heads defined in
+                `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
+                [`None`,`LinearHead`,`MixtureDensityHead`].
+
+        head_config (Optional[Dict]): The config as a dict which defines the head. If left empty, will be
+                initialized as default linear head.
+
+        embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
+                list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
+                the categorical column using the rule min(50, (x + 1) // 2)
+
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+
+        batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
+                through a BatchNorm layer.
+
+        learning_rate (float): The learning rate of the model. Defaults to 1e-3.
+
+        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+                CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
+                or L1Loss for regression and CrossEntropyLoss for classification
+
+        metrics (Optional[List[str]]): the list of metrics you need to track during training. The metrics
+                should be one of the functional metrics implemented in ``torchmetrics``. By default, it is
+                accuracy if classification and mean_squared_error for regression
+
+        metrics_params (Optional[List]): The parameters to be passed to the metrics function
+
+        target_range (Optional[List]): The range in which we should limit the output variable. Currently
+                ignored for multi-target regression. Typically used for Regression problems. If left empty, will
+                not apply any restrictions
+
+        seed (int): The seed for reproducibility. Defaults to 42
     """
 
     gflu_stages: int = field(

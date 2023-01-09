@@ -8,17 +8,19 @@ from typing import List, Optional
 class LinearHeadConfig:
     """A model class for Linear Head configuration; serves as a template and documentation. The models take a dictionary as input, but if there are keys which are not present in this model calss, it'll throw an exception.
     Args:
-        layers (str): Hyphen-separated number of layers and units in the classification head. eg. 32-64-32.
-        batch_norm_continuous_input (bool): If True, we will normalize the contiinuous layer by passing it through a BatchNorm layer
-        activation (str): The activation type in the classification head.
-            The default activation in PyTorch like ReLU, TanH, LeakyReLU, etc.
-            https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
-        dropout (float): probability of an classification element to be zeroed.
-        use_batch_norm (bool): Flag to include a BatchNorm layer after each Linear Layer+DropOut
-        initialization (str): Initialization scheme for the linear layers. Choices are: `kaiming` `xavier` `random`
+        layers (str): Hyphen-separated number of layers and units in the classification/regression head.
+                eg. 32-64-32. Default is just a mapping from intput dimension to output dimension
 
-    Raises:
-        NotImplementedError: Raises an error if task is not in ['regression','classification']
+        activation (str): The activation type in the classification head. The default activaion in PyTorch
+                like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-
+                weighted-sum-nonlinearity
+
+        dropout (float): probability of an classification element to be zeroed.
+
+        use_batch_norm (bool): Flag to include a BatchNorm layer after each Linear Layer+DropOut
+
+        initialization (str): Initialization scheme for the linear layers. Defaults to `kaiming`. Choices
+                are: [`kaiming`,`xavier`,`random`].
     """
 
     layers: str = field(
@@ -54,25 +56,44 @@ class LinearHeadConfig:
 class MixtureDensityHeadConfig:
     """MixtureDensityHead configuration
     Args:
+        Args:
         num_gaussian (int): Number of Gaussian Distributions in the mixture model. Defaults to 1
-        n_samples (int): Number of samples to draw from the posterior to get prediction. Defaults to 100
-        central_tendency (str): Which measure to use to get the point prediction.
-            Choices are 'mean', 'median'. Defaults to `mean`
+
         sigma_bias_flag (bool): Whether to have a bias term in the sigma layer. Defaults to False
-        mu_bias_init (Optional[List]): To initialize the bias parameter of the mu layer to predefined cluster centers.
-            Should be a list with the same length as number of gaussians in the mixture model.
-            It is highly recommended to set the parameter to combat mode collapse. Defaults to None
-        weight_regularization (Optional[int]): Whether to apply L1 or L2 Norm to the MDN layers.
-            It is highly recommended to use this to avoid mode collapse. Choices are [1,2]. Defaults to L2
-        lambda_sigma (Optional[float]): The regularization constant for weight regularization of sigma layer. Defaults to 0.1
-        lambda_pi (Optional[float]): The regularization constant for weight regularization of pi layer. Defaults to 0.1
-        lambda_mu (Optional[float]): The regularization constant for weight regularization of mu layer. Defaults to 0.1
-        softmax_temperature (Optional[float]): The temperature to be used in the gumbel softmax of the mixing coefficients.
-            Values less than one leads to sharper transition between the multiple components. Defaults to 1
-        speedup_training (bool): Turning on this parameter does away with sampling during training which speeds up training,
-            but also doesn't give you visibility on train metrics. Defaults to False
-        log_debug_plot (bool): Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits
-            (if log_logits is turned on in experment config). Defaults to False
+
+        mu_bias_init (Optional[List]): To initialize the bias parameter of the mu layer to predefined
+                cluster centers. Should be a list with the same length as number of gaussians in the mixture
+                model. It is highly recommended to set the parameter to combat mode collapse. Defaults to None
+
+        weight_regularization (Optional[int]): Whether to apply L1 or L2 Norm to the MDN layers. Defaults
+                to L2. Choices are: [`1`,`2`].
+
+        lambda_sigma (Optional[float]): The regularization constant for weight regularization of sigma
+                layer. Defaults to 0.1
+
+        lambda_pi (Optional[float]): The regularization constant for weight regularization of pi layer.
+                Defaults to 0.1
+
+        lambda_mu (Optional[float]): The regularization constant for weight regularization of mu layer.
+                Defaults to 0
+
+        softmax_temperature (Optional[float]): The temperature to be used in the gumbel softmax of the
+                mixing coefficients. Values less than one leads to sharper transition between the multiple
+                components. Defaults to 1
+
+        n_samples (int): Number of samples to draw from the posterior to get prediction. Defaults to 100
+
+        central_tendency (str): Which measure to use to get the point prediction. Defaults to mean. Choices
+                are: [`mean`,`median`].
+
+        speedup_training (bool): Turning on this parameter does away with sampling during training which
+                speeds up training, but also doesn't give you visibility on train metrics. Defaults to False
+
+        log_debug_plot (bool): Turning on this parameter plots histograms of the mu, sigma, and pi layers
+                in addition to the logits(if log_logits is turned on in experment config). Defaults to False
+
+        input_dim (int): The input dimensions to the head. This will be automatically filled in while
+                initializing from the `backbone.output_dim`
 
     """
 
@@ -159,3 +180,8 @@ class MixtureDensityHeadConfig:
         },
     )
     _probabilistic: bool = field(default=True)
+
+
+# if __name__ == "__main__":
+#     from pytorch_tabular.utils import generate_doc_dataclass
+#     print(generate_doc_dataclass(MixtureDensityHeadConfig))

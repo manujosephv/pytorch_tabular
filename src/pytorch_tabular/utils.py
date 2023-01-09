@@ -115,6 +115,8 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
     else:
         doc_str = "Args:"
     for key in dataclass.__dataclass_fields__.keys():
+        if key.startswith("_"):  # Skipping private fields
+            continue
         atr = dataclass.__dataclass_fields__[key]
         if atr.init:
             type = str(atr.type).replace("<class '", "").replace("'>", "").replace("typing.", "")

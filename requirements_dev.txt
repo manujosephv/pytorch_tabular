@@ -2,11 +2,9 @@ pip==22.3.1
 wget
 bump2version==1.0.1
 flake8>=3.7.8
-# tox>=3.14.0
 # coverage>=4.5.4
 mkdocs-material>=6.0.2
 mkdocstrings>=0.13.6
-# twine>=1.14.0
 mknotebooks>=0.6.2
 pytest>=5.3.2
 pytest-runner>=5.1
