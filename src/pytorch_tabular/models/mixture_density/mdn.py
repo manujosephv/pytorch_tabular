@@ -4,6 +4,7 @@
 """Mixture Density Models"""
 import logging
 from typing import Dict, Optional, Union
+import warnings
 
 import torch
 import torch.nn as nn
@@ -20,10 +21,9 @@ from ..base_model import BaseModel, safe_merge_config
 
 try:
     import wandb
-
-    WANDB_INSTALLED = True
 except ImportError:
-    WANDB_INSTALLED = False
+    warnings.warn("Wandb not installed. WandbLogger will not work.")
+
 logger = logging.getLogger(__name__)
 
 
@@ -178,12 +178,6 @@ class MDNModel(BaseModel):
         return y_hat, y
 
     def validation_epoch_end(self, outputs) -> None:
-        do_log_logits = (
-            hasattr(self.hparams, "log_logits")
-            and self.hparams.log_logits
-            and self.hparams.log_target == "wandb"
-            and WANDB_INSTALLED
-        )
         pi = [
             nn.functional.gumbel_softmax(output[2]["pi"], tau=self.head.hparams.softmax_temperature, dim=-1)
             for output in outputs
@@ -222,7 +216,7 @@ class MDNModel(BaseModel):
                 logger=True,
                 prog_bar=False,
             )
-        if do_log_logits:
+        if self.do_log_logits:
             logits = [output[0] for output in outputs]
             logits = torch.cat(logits).detach().cpu()
             fig = self.create_plotly_histogram(logits.unsqueeze(1), "logits")
@@ -260,50 +254,3 @@ class MDNModel(BaseModel):
                     },
                     commit=False,
                 )
-
-
-# class CategoryEmbeddingMDN(MDNModel):
-#     def __init__(self, config: DictConfig, **kwargs):
-#         super().__init__(config, **kwargs)
-
-#     def _build_network(self):
-#         # Backbone
-#         self.backbone = CategoryEmbeddingBackbone(self.hparams)
-#         # Adding the last layer
-#         self.hparams.mdn_config.input_dim = self.backbone.output_dim
-#         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
-
-
-# class NODEMDN(MDNModel):
-#     def __init__(self, config: DictConfig, **kwargs):
-#         super().__init__(config, **kwargs)
-
-#     def subset(self, x):
-#         return x[..., :].mean(dim=-2)
-
-#     def _build_network(self):
-#         self.hparams.node_input_dim = (
-#             self.hparams.continuous_dim + self.hparams.categorical_dim
-#         )
-#         backbone = NODEBackbone(self.hparams)
-#         # average first n channels of every tree, where n is the number of output targets for regression
-#         # and number of classes for classification
-
-#         output_response = Lambda(self.subset)
-#         self.backbone = nn.Sequential(backbone, output_response)
-#         # Adding the last layer
-#         self.hparams.mdn_config.input_dim = backbone.output_dim
-#         setattr(self.backbone, "output_dim", backbone.output_dim)
-#         self.mdn = MixtureDensityHead(self.hparams.mdn_config)
-
-
-# class AutoIntMDN(MDNModel):
-#     def __init__(self, config: DictConfig, **kwargs):
-#         super().__init__(config, **kwargs)
-
-#     def _build_network(self):
-#         # Backbone
-#         self.backbone = AutoIntBackbone(self.hparams)
-#         # Adding the last layer
-#         self.hparams.mdn_config.input_dim = self.backbone.output_dim
-#         self.mdn = MixtureDensityHead(self.hparams.mdn_config)

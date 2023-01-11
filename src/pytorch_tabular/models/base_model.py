@@ -5,6 +5,7 @@
 import logging
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, List, Optional
+import warnings
 
 import pytorch_lightning as pl
 import torch
@@ -17,12 +18,18 @@ from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import PreEncoded1dLayer
 
 try:
-    import plotly.graph_objects as go
     import wandb
 
     WANDB_INSTALLED = True
 except ImportError:
     WANDB_INSTALLED = False
+
+try:
+    import plotly.graph_objects as go
+
+    PLOTLY_INSTALLED = True
+except ImportError:
+    PLOTLY_INSTALLED = False
 
 
 logger = logging.getLogger(__name__)
@@ -81,6 +88,21 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         self._setup_loss()
         self._setup_metrics()
         self._check_and_verify()
+        self.do_log_logits = (
+            hasattr(self.hparams, "log_logits") and self.hparams.log_logits and self.hparams.log_target == "wandb"
+        )
+        if not WANDB_INSTALLED:
+            self.do_log_logits = False
+            raise warnings.warn(
+                "Wandb is not installed. Please install wandb to log logits. "
+                "You can install wandb using pip install wandb or install PyTorch Tabular using pip install pytorch-tabular[all]"
+            )
+        if not PLOTLY_INSTALLED:
+            self.do_log_logits = False
+            raise warnings.warn(
+                "Plotly is not installed. Please install plotly to log logits. "
+                "You can install plotly using pip install plotly or install PyTorch Tabular using pip install pytorch-tabular[all]"
+            )
 
     @abstractmethod
     def _build_network(self):
@@ -383,19 +405,13 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return fig
 
     def validation_epoch_end(self, outputs) -> None:
-        do_log_logits = (
-            hasattr(self.hparams, "log_logits")
-            and self.hparams.log_logits
-            and self.hparams.log_target == "wandb"
-            and WANDB_INSTALLED
-        )
-        if do_log_logits:
+        if self.do_log_logits:
             logits = [output[0] for output in outputs]
             logits = torch.cat(logits).detach().cpu()
-            fig = self.create_plotly_histogram(logits.unsqueeze(1), "logits")
+            fig = self.create_plotly_histogram(logits, "logits")
             wandb.log(
                 {
-                    "valid_logits": fig,
+                    "valid_logits": wandb.Plotly(fig),
                     "global_step": self.global_step,
                 },
                 commit=False,
