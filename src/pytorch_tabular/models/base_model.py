@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Base Model"""
+import logging
 import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, List, Optional

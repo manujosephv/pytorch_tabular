@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Mixture Density Models"""
+import logging
 import warnings
 from typing import Dict, Optional, Union
 

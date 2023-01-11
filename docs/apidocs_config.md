@@ -1,7 +1,5 @@
 # Configurations
 
-## Core Configuration
-
 ::: pytorch_tabular.config.DataConfig
     options:
             heading_level: 3
@@ -18,6 +16,4 @@
     options:
             heading_level: 3
 ::: pytorch_tabular.config.OptimizerConfig
-    options:
-            heading_level: 3
 ::: pytorch_tabular.config.ExperimentRunManager
