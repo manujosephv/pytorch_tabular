@@ -21,8 +21,8 @@ nav:
     - Other Features:
       - "Other Features": other_features.md
     # - FAQ: faq.md
-    - API:
-      - API: apidocs.md
+    # - API:
+    - API: apidocs.md
     - Contributions:
       - Contributing: contributing.md
     - Credits and History:
@@ -47,8 +47,11 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
+          paths: [src]  # search packages in the src folder
           rendering:
             show_root_heading: yes
+            show_category_heading: yes
+            # docstring_section_style: spacy
 repo_url: https://github.com/manujosephv/pytorch_tabular
 extra:
   social:
