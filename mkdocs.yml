@@ -22,7 +22,12 @@ nav:
       - "Other Features": other_features.md
     # - FAQ: faq.md
     # - API:
-    - API: apidocs.md
+    - API:
+      - Core Classes: apidocs_coreclasses.md
+      - Configuration Classes: apidocs_config.md
+      - Models: apidocs_models.md
+      - Self-Supervised Models: apidocs_ssl.md
+      - Utilities: apidocs_utils.md
     - Contributions:
       - Contributing: contributing.md
     - Credits and History:
@@ -34,8 +39,23 @@ theme:
     - search.suggest
     - navigation.tabs
     - navigation.tabs.sticky
+    - toc.integrate
+    - navigation.top
   palette:
-    primary: deep purple
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # primary: deep purple
   logo: imgs/pytorch_tabular_logo_small.svg
 markdown_extensions:
   - admonition
