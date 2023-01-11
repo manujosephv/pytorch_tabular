@@ -3,8 +3,8 @@
 # For license information, see LICENSE.TXT
 """Mixture Density Models"""
 import logging
-from typing import Dict, Optional, Union
 import warnings
+from typing import Dict, Optional, Union
 
 import torch
 import torch.nn as nn

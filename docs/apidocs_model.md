@@ -1,4 +1,5 @@
 # Models
+
 ::: pytorch_tabular.models.BaseModel
 ::: pytorch_tabular.models.AutoIntConfig
 ::: pytorch_tabular.models.AutoIntModel

@@ -5,10 +5,10 @@ __email__ = "manujosephv@gmail.com"
 __version__ = "0.7.0"
 
 from . import models, ssl_models
-from .tabular_datamodule import TabularDatamodule
-from .tabular_model import TabularModel
 from .categorical_encoders import CategoricalEmbeddingTransformer
 from .feature_extractor import DeepFeatureExtractor
+from .tabular_datamodule import TabularDatamodule
+from .tabular_model import TabularModel
 
 __all__ = [
     "TabularModel",

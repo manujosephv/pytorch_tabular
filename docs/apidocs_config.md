@@ -1,4 +1,5 @@
 # Configurations
+
 ::: pytorch_tabular.config.DataConfig
 ::: pytorch_tabular.config.ModelConfig
 ::: pytorch_tabular.config.TrainerConfig

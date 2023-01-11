@@ -17,13 +17,13 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
+from lightning_lite.utilities.seed import seed_everything
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities.model_summary import summarize
-from lightning_lite.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder
 from torch import nn
