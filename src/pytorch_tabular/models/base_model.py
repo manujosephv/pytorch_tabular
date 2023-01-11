@@ -4,8 +4,7 @@
 """Base Model"""
 import warnings
 from abc import ABCMeta, abstractmethod
-from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional
 
 import pytorch_lightning as pl
 import torch
