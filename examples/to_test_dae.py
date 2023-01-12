@@ -197,6 +197,9 @@ ft_trainer_config = TrainerConfig(
 ft_optimizer_config = OptimizerConfig(optimizer="SGD")
 finetune_model = tabular_model.create_finetune_model(
     task="classification",
+    # target=[
+    #     target_name
+    # ],
     head="LinearHead",
     head_config={
         "layers": "64-32-16",

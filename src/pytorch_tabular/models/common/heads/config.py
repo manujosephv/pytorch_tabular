@@ -6,7 +6,7 @@ from typing import List, Optional
 
 @dataclass
 class LinearHeadConfig:
-    """A model class for Linear Head configuration; serves as a template and documentation. The models take a dictionary as input, but if there are keys which are not present in this model calss, it'll throw an exception.
+    """A model class for Linear Head configuration; serves as a template and documentation. The models take a dictionary as input, but if there are keys which are not present in this model class, it'll throw an exception.
     Args:
         layers (str): Hyphen-separated number of layers and units in the classification/regression head.
                 eg. 32-64-32. Default is just a mapping from intput dimension to output dimension

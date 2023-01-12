@@ -12,23 +12,24 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     """Gated Additive Tree Ensemble Config
 
     Args:
-        gflu_stages (int): Number of layers in the feature abstraction layer
+        gflu_stages (int): Number of layers in the feature abstraction layer. Defaults to 6
 
-        gflu_dropout (float): Dropout rate for the feature abstraction layer
+        gflu_dropout (float): Dropout rate for the feature abstraction layer. Defaults to 0.0
 
-        tree_depth (int): Depth of the tree.
+        tree_depth (int): Depth of the tree. Defaults to 5
 
-        num_trees (int): Number of trees to use in the ensemble. Defaults to 10
+        num_trees (int): Number of trees to use in the ensemble. Defaults to 20
 
-        binning_activation (str): The binning function to use. Defaults to entmoid. Choices are:
-                [`entmoid`,`sparsemoid`,`sigmoid`].
+        binning_activation (str): The binning function to use. Defaults to entmoid. Defaults to entmoid.
+                Choices are: [`entmoid`,`sparsemoid`,`sigmoid`].
 
         feature_mask_function (str): The feature mask function to use. Defaults to entmax. Choices are:
                 [`entmax`,`sparsemax`,`softmax`].
 
-        tree_dropout (float): probability of dropout in tree binning transformation.
+        tree_dropout (float): probability of dropout in tree binning transformation. Defaults to 0.0
 
-        chain_trees (bool): If True, we will chain the trees together. Defaults to False
+        chain_trees (bool): If True, we will chain the trees together. Synonymous to boosting
+            (chaining trees) or bagging (parallel trees). Defaults to True
 
         tree_wise_attention (bool): If True, we will use tree wise attention to combine trees. Defaults to
                 True
@@ -80,22 +81,24 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
 
     gflu_stages: int = field(
         default=6,
-        metadata={"help": "Number of layers in the feature abstraction layer"},
+        metadata={"help": "Number of layers in the feature abstraction layer. Defaults to 6"},
     )
 
-    gflu_dropout: float = field(default=0.0, metadata={"help": "Dropout rate for the feature abstraction layer"})
+    gflu_dropout: float = field(
+        default=0.0, metadata={"help": "Dropout rate for the feature abstraction layer. Defaults to 0.0"}
+    )
 
-    tree_depth: int = field(default=5, metadata={"help": "Depth of the tree. "})
+    tree_depth: int = field(default=5, metadata={"help": "Depth of the tree. Defaults to 5"})
 
     num_trees: int = field(
         default=20,
-        metadata={"help": "Number of trees to use in the ensemble. Defaults to 10"},
+        metadata={"help": "Number of trees to use in the ensemble. Defaults to 20"},
     )
 
     binning_activation: str = field(
         default="entmoid",
         metadata={
-            "help": "The binning function to use. Defaults to entmoid",
+            "help": "The binning function to use. Defaults to entmoid. Defaults to entmoid",
             "choices": ["entmoid", "sparsemoid", "sigmoid"],
         },
     )
@@ -109,11 +112,13 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
 
     tree_dropout: float = field(
         default=0.0,
-        metadata={"help": "probability of dropout in tree binning transformation."},
+        metadata={"help": "probability of dropout in tree binning transformation. Defaults to 0.0"},
     )
     chain_trees: bool = field(
         default=True,
-        metadata={"help": "If True, we will chain the trees together. Defaults to False"},
+        metadata={
+            "help": "If True, we will chain the trees together. Synonymous to boosting (chaining trees) or bagging (parallel trees). Defaults to True"
+        },
     )
     tree_wise_attention: bool = field(
         default=True,
@@ -134,11 +139,7 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     _config_name: str = field(default="GatedAdditiveTreeEnsembleConfig")
 
 
-# if __name__ == "__main__":
-#     from pytorch_tabular.utils import generate_doc_dataclass
+if __name__ == "__main__":
+    from pytorch_tabular.utils import generate_doc_dataclass
 
-#     print(
-#         generate_doc_dataclass(
-#             GatedAdditiveTreeEnsembleConfig, desc="Gated Additive Tree Ensemble Config"
-#         )
-#     )
+    print(generate_doc_dataclass(GatedAdditiveTreeEnsembleConfig, desc="Gated Additive Tree Ensemble Config"))

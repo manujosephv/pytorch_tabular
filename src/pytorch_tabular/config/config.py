@@ -687,7 +687,7 @@ class ModelConfig:
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
@@ -741,8 +741,8 @@ class ModelConfig:
         },
     )
     embedding_dropout: float = field(
-        default=0.1,
-        metadata={"help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.1"},
+        default=0.0,
+        metadata={"help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.0"},
     )
     batch_norm_continuous_input: bool = field(
         default=True,

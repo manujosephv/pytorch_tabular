@@ -17,13 +17,13 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
+from lightning_lite.utilities.seed import seed_everything
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities.model_summary import summarize
-from lightning_lite.utilities.seed import seed_everything
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder
 from torch import nn
@@ -38,7 +38,7 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.config.config import InferredConfig
-from pytorch_tabular.models.base_model import _GenericModel
+from pytorch_tabular.models.base_model import _GenericModel, BaseModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import getattr_nested
 
@@ -145,12 +145,7 @@ class TabularModel:
         self._run_validation()
 
     def _run_validation(self):
-        """Validates the Config params and throws errors if something is wrong
-
-        Raises:
-            NotImplementedError: If you provide a multi-target config to a classification task
-            ValueError: If there is a problem with Target Range
-        """
+        """Validates the Config params and throws errors if something is wrong"""
         if self.config.task == "classification":
             if len(self.config.target) > 1:
                 raise NotImplementedError("Multi-Target Classification is not implemented.")
@@ -178,9 +173,6 @@ class TabularModel:
                 _config = OmegaConf.load(config)
                 if cls == ModelConfig:
                     cls = getattr_nested(_config._module_src, _config._config_name)
-                    # cls = getattr(
-                    #     getattr(models, _config._module_src), _config._config_name
-                    # )
                 config = cls(
                     **{
                         k: v
@@ -209,11 +201,7 @@ class TabularModel:
         return name, uid
 
     def _setup_experiment_tracking(self):
-        """Sets up the Experiment Tracking Framework according to the choices made in the Experimentconfig
-
-        Raises:
-            NotImplementedError: Raises an Error for invalid choices of log_target
-        """
+        """Sets up the Experiment Tracking Framework according to the choices made in the Experimentconfig"""
         if self.config.log_target == "tensorboard":
             self.logger = pl.loggers.TensorBoardLogger(
                 name=self.name, save_dir=self.config.project_name, version=self.uid
@@ -263,7 +251,16 @@ class TabularModel:
         logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
-    def _prepare_trainer(self, callbacks, max_epochs=None, min_epochs=None):
+    def _prepare_trainer(self, callbacks: List, max_epochs: int = None, min_epochs: int = None) -> pl.Trainer:
+        """Prepares the Trainer object
+        Args:
+            callbacks (List): A list of callbacks to be used
+            max_epochs (int, optional): Maximum number of epochs to train for. Defaults to None.
+            min_epochs (int, optional): Minimum number of epochs to train for. Defaults to None.
+
+        Returns:
+            pl.Trainer: A PyTorch Lightning Trainer object
+        """
         logger.info("Preparing the Trainer...")
         if max_epochs is not None:
             self.config.max_epochs = max_epochs
@@ -307,11 +304,14 @@ class TabularModel:
         self.datamodule = datamodule
 
     @classmethod
-    def _load_weights(cls, model, path: Union[str, Path]):
+    def _load_weights(cls, model, path: Union[str, Path]) -> None:
         """Loads the model weights in the specified directory
 
         Args:
             path (str): The path to the file to load the model from
+
+        Returns:
+            None
         """
         ckpt = pl_load(path, map_location=lambda storage, loc: storage)
         if "state_dict" in ckpt.keys():
@@ -325,14 +325,14 @@ class TabularModel:
 
         Args:
             dir (str): The directory where the model wa saved, along with the checkpoints
-            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint
+            map_location (Union[Dict[str, str], str, device, int, Callable, None]) : If your checkpoint
                 saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
                 to the new setup. The behaviour is the same as in torch.load()
-            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys
-                returned by this module’s state dict. Default: True.
+            strict (bool) : Whether to strictly enforce that the keys in checkpoint_path match the keys
+                returned by this module's state dict. Default: True.
 
         Returns:
-            TabularModel: The saved TabularModel
+            TabularModel (TabularModel): The saved TabularModel
         """
         config = OmegaConf.load(os.path.join(dir, "config.yml"))
         datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
@@ -410,15 +410,15 @@ class TabularModel:
         """(Deprecated: Use `load_model` instead) Loads a saved model from the directory
 
         Args:
-            dir (str): The directory where the model wa saved, along with the checkpoints
-            map_location (Union[Dict[str, str], str, device, int, Callable, None]) – If your checkpoint
+            dir (str): The directory where the model was saved, along with the checkpoints
+            map_location (Union[Dict[str, str], str, device, int, Callable, None]) : If your checkpoint
                 saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
                 to the new setup. The behaviour is the same as in torch.load()
-            strict (bool) – Whether to strictly enforce that the keys in checkpoint_path match the keys
-                returned by this module’s state dict. Default: True.
+            strict (bool) : Whether to strictly enforce that the keys in checkpoint_path match the keys
+                returned by this module's state dict. Default: True.
 
         Returns:
-            TabularModel: The saved TabularModel
+            TabularModel (TabularModel): The saved TabularModel
         """
 
         warnings.warn(
@@ -435,7 +435,7 @@ class TabularModel:
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
-    ):
+    ) -> TabularDatamodule:
         """Prepares the dataloaders for training and validation.
 
         Args:
@@ -454,6 +454,9 @@ class TabularModel:
                 a tuple of callables (transform_func, inverse_transform_func)
 
             seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
+
+        Returns:
+            TabularDatamodule: The prepared datamodule
         """
         if test is not None:
             warnings.warn(
@@ -482,7 +485,7 @@ class TabularModel:
         metrics: Optional[List[Callable]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
-    ):
+    ) -> BaseModel:
         """Prepares the model for training.
 
         Args:
@@ -498,14 +501,13 @@ class TabularModel:
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
+        Returns:
+            BaseModel: The prepared model
+
         """
         logger.info(f"Preparing the Model: {self.config._model_name}...")
         # Fetching the config as some data specific configs have been added in the datamodule
         self.inferred_config = self._read_parse_config(datamodule.update_config(self.config), InferredConfig)
-        # if hasattr(self, "model") and self.model is not None and not reset:
-        #     logger.debug("Using the trained model...")
-        # else:
-        # logger.debug("Re-initializing the model. Trained weights are ignored.")
         model = self.model_callable(
             self.config,
             custom_loss=loss,  # Unused in SSL tasks
@@ -518,8 +520,6 @@ class TabularModel:
         model.data_aware_initialization(datamodule)
         if self.model_state_dict_path is not None:
             self._load_weights(model, self.model_state_dict_path)
-            # if trained_backbone:
-            #     model.backbone = trained_backbone
         if self.track_experiment and self.config.log_target == "wandb":
             self.logger.watch(model, log=self.config.exp_watch, log_freq=self.config.exp_log_freq)
         return model
@@ -531,7 +531,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         max_epochs: int = None,
         min_epochs: int = None,
-    ):
+    ) -> pl.Trainer:
         """Trains the model.
 
         Args:
@@ -544,6 +544,9 @@ class TabularModel:
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
             min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
+
+        Returns:
+            pl.Trainer: The PyTorch Lightning Trainer instance
         """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs, min_epochs)
         train_loader, val_loader = (
@@ -578,7 +581,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
-    ) -> None:
+    ) -> pl.Trainer:
         """The fit method which takes in the data and triggers the training
 
         Args:
@@ -618,6 +621,9 @@ class TabularModel:
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters
                 like train, test etc and use the datamodule. Defaults to None.
+
+        Returns:
+            pl.Trainer: The PyTorch Lightning Trainer instance
         """
         assert (
             self.config.task != "ssl"
@@ -651,13 +657,13 @@ class TabularModel:
         validation: Optional[pd.DataFrame] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
+        # train_sampler: Optional[torch.utils.data.Sampler] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
-    ) -> None:
+    ) -> pl.Trainer:
         """The pretrained method which takes in the data and triggers the training
 
         Args:
@@ -671,9 +677,6 @@ class TabularModel:
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
-            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed
-                to the DataLoaders. Use samplers which do not use the `target` column
-
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
             min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
@@ -684,6 +687,9 @@ class TabularModel:
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
                 parameters like train, test etc and use the datamodule. Defaults to None.
+
+        Returns:
+            pl.Trainer: The PyTorch Lightning Trainer instance
         """
         assert (
             self.config.task == "ssl"
@@ -772,12 +778,15 @@ class TabularModel:
             target_range (Optional[Tuple[float, float]], optional): The target range for the regression task.
                 Is ignored for classification. Defaults to None.
         Returns:
-            TabularModel: The new TabularModel model for fine-tuning
+            TabularModel (TabularModel): The new TabularModel model for fine-tuning
         """
         config = self.config
         if target is None:
-            assert hasattr(config, "target"), "target should either be part of the initial data_config"
+            assert (
+                hasattr(config, "target") and config.target is not None
+            ), "`target` cannot be None if it was not set in the initial `DataConfig`"
         else:
+            assert isinstance(target, list), "`target` should be a list of strings"
             config.target = target
         config.task = task
         # Add code to update configs with newly provided ones
@@ -800,6 +809,10 @@ class TabularModel:
                 config["run_name"] = config["run_name"] + "_finetuned"
 
         datamodule = self.datamodule
+        # Setting the attributes from new config
+        datamodule.target = config.target
+        datamodule.batch_size = config.batch_size
+        datamodule.seed = config.seed
         if metrics is not None:
             assert len(metrics) == len(metrics_params), "Number of metrics and metrics_params should be same"
             metrics = [getattr(torchmetrics.functional, m) if isinstance(m, str) else m for m in metrics]
@@ -855,7 +868,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
         freeze_backbone: bool = False,
-    ):
+    ) -> pl.Trainer:
         """Finetunes the model on the provided data
         Args:
             train (pd.DataFrame): The training data with labels
@@ -882,6 +895,9 @@ class TabularModel:
 
             freeze_backbone (bool, optional): If True, will freeze the backbone by tirning off gradients.
                 Defaults to False, which means the pretrained weights are also further tuned during fine-tuning.
+
+        Returns:
+            pl.Trainer: The trainer object
         """
         assert (
             self._is_finetune_model
@@ -936,7 +952,7 @@ class TabularModel:
         early_stop_threshold: float = 4.0,
         plot=True,
         callbacks=None,
-    ) -> None:
+    ) -> Tuple[float, pd.DataFrame]:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
 
         Args:
@@ -963,7 +979,11 @@ class TabularModel:
 
             trained_backbone (pl.LightningModule): this module contains the weights for a pretrained backbone
 
-            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will
+                be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+
+        Returns:
+            The suggested learning rate and the learning rate finder results
 
         """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs=None, min_epochs=None)
@@ -1003,13 +1023,18 @@ class TabularModel:
 
             test_loader (Optional[torch.utils.data.DataLoader], optional): The dataloader to be used for evaluation.
                 If provided, will use the dataloader instead of the test dataframe or the test data provided during fit.
+                DEPRECATION: providing test data during fit is deprecated and will be removed in a future release.
                 Defaults to None.
 
             ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided, will try to use the
                 best checkpoint during training.
         Returns:
-            Union[dict, list]: The final test result dictionary.
+            The final test result dictionary.
         """
+        if test_loader is None and test is None:
+            warnings.warn(
+                "Providing test in fit is deprecated. Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+            )
         if test_loader is None:
             if test is not None:
                 test_loader = self.datamodule.prepare_inference_dataloader(test)
@@ -1128,7 +1153,7 @@ class TabularModel:
                         pred_df[f"{k}"] = v[:, i]
         return pred_df
 
-    def load_best_model(self):
+    def load_best_model(self) -> None:
         """Loads the best model after training is done"""
         if self.trainer.checkpoint_callback is not None:
             logger.info("Loading the best model...")
@@ -1142,14 +1167,20 @@ class TabularModel:
         else:
             logger.info("No best model available to load. Did you run it more than 1 epoch?...")
 
-    def save_datamodule(self, dir: str):
+    def save_datamodule(self, dir: str) -> None:
+        """Saves the datamodule in the specified directory
+
+        Args:
+            dir (str): The path to the directory to save the datamodule
+        """
         joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
 
-    def save_config(self, dir: str):
+    def save_config(self, dir: str) -> None:
+        """Saves the config in the specified directory"""
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
-    def save_model(self, dir: str):
+    def save_model(self, dir: str) -> None:
         """Saves the model and checkpoints in the specified directory
 
         Args:
@@ -1176,7 +1207,7 @@ class TabularModel:
         if self.custom_model:
             joblib.dump(self.model_callable, os.path.join(dir, "custom_model_callable.sav"))
 
-    def save_weights(self, path: Union[str, Path]):
+    def save_weights(self, path: Union[str, Path]) -> None:
         """Saves the model weights in the specified directory
 
         Args:
@@ -1184,7 +1215,7 @@ class TabularModel:
         """
         torch.save(self.model.state_dict(), path)
 
-    def load_weights(self, path: Union[str, Path]):
+    def load_weights(self, path: Union[str, Path]) -> None:
         """Loads the model weights in the specified directory
 
         Args:
@@ -1198,12 +1229,17 @@ class TabularModel:
         path: Union[str, Path],
         kind: str = "pytorch",
         onnx_export_params: Dict = dict(opset_version=12),
-    ):
+    ) -> bool:
         """Saves the model for inference
-        path (Union[str, Path]): path to save the model
-        kind (str): "pytorch" or "onnx" (Experimental)
-        onnx_export_params (Dict): parameters for onnx export to be
-            passed to torch.onnx.export
+
+        Args:
+            path (Union[str, Path]): path to save the model
+            kind (str): "pytorch" or "onnx" (Experimental)
+            onnx_export_params (Dict): parameters for onnx export to be
+                passed to torch.onnx.export
+
+        Returns:
+            bool: True if the model was saved successfully
         """
         if kind == "pytorch":
             torch.save(self.model, str(path))
@@ -1232,7 +1268,7 @@ class TabularModel:
         else:
             raise ValueError("`kind` must be either pytorch or onnx")
 
-    def summary(self, max_depth=-1):
+    def summary(self, max_depth: int = -1) -> None:
         """Prints a summary of the model
 
         Args:
