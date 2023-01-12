@@ -3,9 +3,9 @@
 # For license information, see LICENSE.TXT
 """Base Model"""
 import logging
+import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-import warnings
 
 import pytorch_lightning as pl
 import torch

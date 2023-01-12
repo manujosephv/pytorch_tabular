@@ -1,7 +1,8 @@
 Choosing which model to use and what parameters to set in those models is specific to a particular dataset. In PyTorch Tabular, a model has three components:
+
 1. Embedding Layer - This is the part of the model which processes the categorical and continuous features into a single tensor.
-2. Backbone - This is the real architecture of the model. It is the part of the model which takes the output of the embedding layer and does representation learning on it. The output is again a single tensor, which is the learned features from representation learning.
-3. Head - This is the part of the model which takes the output of the backbone and does the final classification/regression. The output of the head is the final prediction.
+1. Backbone - This is the real architecture of the model. It is the part of the model which takes the output of the embedding layer and does representation learning on it. The output is again a single tensor, which is the learned features from representation learning.
+1. Head - This is the part of the model which takes the output of the backbone and does the final classification/regression. The output of the head is the final prediction.
 
 We can choose the embedding layer, backbone, and head and their parameters using the model specific config classes.
 
@@ -9,30 +10,30 @@ We can choose the embedding layer, backbone, and head and their parameters using
 
 While there are separate config classes for each model, all of them share a few core parameters in a `ModelConfig` class.
 
-- `task`: str: This defines whether we are running the model for a `regression`, `classification` task, or as a `backbone` model. `backbone` task is used in Self-Supervised models and in Mixed Density Models.  
+- `task`: str: This defines whether we are running the model for a `regression`, `classification` task, or as a `backbone` model. `backbone` task is used in Self-Supervised models and in Mixed Density Models.
 
-**Head Configuration**  
+**Head Configuration**
 
-- `head`: Optional[str]: The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`. Defaults `LinearHead`.
-- `head_config`: Optional[Dict]: The config as a dict which defines the head. If left empty, will be initialized as default linear head.  
+- `head`: Optional\[str\]: The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`. Defaults `LinearHead`.
+- `head_config`: Optional\[Dict\]: The config as a dict which defines the head. If left empty, will be initialized as default linear head.
 
-**Embedding Configuration**  
+**Embedding Configuration**
 
-- `embedding_dims`: Optional[List]: The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule `min(50, (x + 1) // 2)`
+- `embedding_dims`: Optional\[List\]: The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule `min(50, (x + 1) // 2)`
 - `embedding_dropout`: float: Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 - `batch_norm_continuous_input`: bool: If True, we will normalize the continuous layer by passing it through a BatchNorm layer before combining with the categorical embeddings. Defaults to True
 
-**Other Configuration**  
+**Other Configuration**
 
 - `learning_rate`: float: The learning rate of the model. Defaults to 1e-3.
 
-- `loss`: Optional[str]: The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
+- `loss`: Optional\[str\]: The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
 
-- `metrics`: Optional[List[str]]: The list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in ``torchmetrics``. By default, it is `accuracy` if classification and `mean_squared_error` for regression
+- `metrics`: Optional\[List\[str\]\]: The list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in `torchmetrics`. By default, it is `accuracy` if classification and `mean_squared_error` for regression
 
-- `metrics_params`: Optional[List]: The parameters to be passed to the metrics function
+- `metrics_params`: Optional\[List\]: The parameters to be passed to the metrics function
 
-- `target_range`: Optional[List]: The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions
+- `target_range`: Optional\[List\]: The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions
 
 - `seed`: int: The seed for reproducibility. Defaults to 42
 
@@ -58,9 +59,11 @@ loss = "L1Loss
 
 PyTorch Tabular also accepts custom loss functions(which are drop in replacements for the standard loss functions) through the `fit` method in the `TabularModel`.
 
-!!! warning 
+!!! warning
 
-    **If you do not know what you are doing, leave the loss functions at default values.** Models return the raw logits and it is the responsibility of the Loss function to apply the right activations.
+```
+**If you do not know what you are doing, leave the loss functions at default values.** Models return the raw logits and it is the responsibility of the Loss function to apply the right activations.
+```
 
 While the Loss functions drive the gradient based optimization, we keep track of the metrics that we care about during training. By default, PyTorch Tabular tracks Accuracy for classification and Mean Squared Error for regression. You can choose any functional metrics (as a list of strings) from [TorchMetrics](https://torchmetrics.readthedocs.io/en/stable/references/metric.html).
 
@@ -88,6 +91,7 @@ target_range = [(train[target].min() * 0.8, train[target].max() * 1.2)]
 ## Available Models
 
 Now let's look at a few of the different models available in PyTorch Tabular and their configurations. For a complete list of implemented models:
+
 ```bash
 >>> [cl for cl in dir(models) if "config" in cl.lower()]
 ['AutoIntConfig', 'CategoryEmbeddingModelConfig', 'FTTransformerConfig', 'GatedAdditiveTreeEnsembleConfig', 'MDNConfig', 'NodeConfig', 'TabNetModelConfig', 'TabTransformerConfig']
@@ -96,7 +100,6 @@ Now let's look at a few of the different models available in PyTorch Tabular and
 ### Category Embedding Model
 
 This is the most basic model in the library. The architecture is pretty simple - a Feed Forward Network with the Categorical Features passed through an learnable embedding layer. You can use it by choosing `CategoryEmbeddingModelConfig`. The model is a good starting point for any tabular dataset. It is also a good baseline to compare against other models.
-
 
 All the parameters have intelligent default values. Let's look at few of them:
 
@@ -125,7 +128,6 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 - `tree_depth`: int: Depth of the tree. Defaults to 5
 
 - `num_trees`: int: Number of trees to use in the ensemble. Defaults to 20
-
 
 - `chain_trees`: bool: If True, we will chain the trees together, else they are processed parallel. Synonymous to boosting (chaining trees) or bagging (parallel trees). Defaults to False
 
@@ -156,16 +158,19 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 - `input_dropout`: float: Dropout which is applied to the input to the different layers in the Dense Architecture. The probability of the element to be zeroed. Defaults to `0.0`
 - `embed_categorical`: bool: Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder. Defaults to `False`
 
-!!! warning 
+!!! warning
 
-    `embed_categorical` is deprecated and will be removed in the next release. If you do not want to embed categorical columns, process then using a categorical encoder of your choice and present to Pytorch Tabular as continuous features.
-
+```
+`embed_categorical` is deprecated and will be removed in the next release. If you do not want to embed categorical columns, process then using a categorical encoder of your choice and present to Pytorch Tabular as continuous features.
+```
 
 **For a complete list of parameters refer to the API Docs**
 
 !!! note
 
-    NODE model has a lot of parameters and therefore takes up a lot of memory. Smaller batchsizes(like 64 or 128) makes the model manageable in a smaller GPU(~4GB).
+```
+NODE model has a lot of parameters and therefore takes up a lot of memory. Smaller batchsizes(like 64 or 128) makes the model manageable in a smaller GPU(~4GB).
+```
 
 ### TabNet
 
@@ -194,9 +199,9 @@ It handles all the major functions like decoding the config params and setting u
 
 If we look at the anatomy of a PyTorch Tabular model, there are three main components:
 
-1. **Embedding Layer** 
-2. **Backbone**
-3. **Head**
+1. **Embedding Layer**
+1. **Backbone**
+1. **Head**
 
 **Embedding Layer** takes the input from the dataloader, which is a dictionary with `categorical` and `continuous` tensors under those keys. The Embedding Layer converts this dictionary to a single tensor, handling the categorical tensors the right way. There are two Embedding Layers already implemented, EmbeddingLayer1d, EmbeddingLayer2d.
 
@@ -205,38 +210,44 @@ If we look at the anatomy of a PyTorch Tabular model, there are three main compo
 **Head** is the linear layers which takes the output of the backbone and converts it into the output we desire.
 
 To encapsulate and enforce this structure, `BaseModel` requires us to define three `property` methods:
+
 1. `def embedding_layer(self)`
-2. `def backbone(self)`
-3. `def head(self)`
+1. `def backbone(self)`
+1. `def head(self)`
 
 There is another method `def _build_network(self)` which also needs to be defined mandatorily. We can use this method to define the embedding, backbone, head, and whatever other layers or components we need to use in the model.
 
 For standard Feed Forward layers as the head, we can also use a handly method in `BaseModel` called `_get_head_from_config` which will use the `head` and `head_config` you have set in the `ModelConfig` to initialize the right head automatically for you.
 
 An example of using it:
+
 ```python
 self._head = self._get_head_from_config()
 ```
 
 For standard flows, the `forward` method that is already defined would be enough.
+
 ```python
 def forward(self, x: Dict):
-    x = self.embed_input(x) # Embeds the input dictionary and returns a tensor
-    x = self.compute_backbone(x) # Takes the tensor input and does representation learning
-    return self.compute_head(x) # transforms the backbone output to desired output, applies target range if necessary, and packs the output in the desired format.
+    x = self.embed_input(x)  # Embeds the input dictionary and returns a tensor
+    x = self.compute_backbone(
+        x
+    )  # Takes the tensor input and does representation learning
+    return self.compute_head(
+        x
+    )  # transforms the backbone output to desired output, applies target range if necessary, and packs the output in the desired format.
 ```
+
 What this allows us to do is to define any standard PyTorch model and use it as the **backbone**, and then use the rest of the PyTorch Tabular machinery to train, evaluate and log the model.
 
 While this is the bare minimum, you can redefine or use any of the Pytorch Lightning standard methods to tweak your model and training to your liking. The real beauty of this setup is that how much customization you need to do is really upto you. For standard workflows, you can change the minimum. And for highly unsual models, you can re-define any of the method in `BaseModel` (as long as the interfaces remain unchanged).
 
-
-In addition to the model, you will also need to define a config. Configs are python dataclasses and should inherit `ModelConfig` and will have all the parameters of the ModelConfig. by default. Any additional parameter should be defined in the dataclass. 
-
+In addition to the model, you will also need to define a config. Configs are python dataclasses and should inherit `ModelConfig` and will have all the parameters of the ModelConfig. by default. Any additional parameter should be defined in the dataclass.
 
 **Key things to note:**
 
 1. All the different parameters in the different configs(like TrainerConfig, OptimizerConfig, etc) are all available in `config` before calling `super()` and in `self.hparams` after.
-2. the input batch at the `forward` method is a dictionary with keys `continuous` and `categorical`
-3. In the `\_build_network` method, save every component that you want access in the `forward` to `self`
+1. the input batch at the `forward` method is a dictionary with keys `continuous` and `categorical`
+1. In the `\_build_network` method, save every component that you want access in the `forward` to `self`
 
 Please checkout the **Implementing New Architectures** tutorial for a working example.

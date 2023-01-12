@@ -1,4 +1,5 @@
 ## Layers
+
 ::: pytorch_tabular.models.common.layers.AddNorm
 ::: pytorch_tabular.models.common.layers.Embedding1dLayer
 ::: pytorch_tabular.models.common.layers.Embedding2dLayer
@@ -12,6 +13,7 @@
 ::: pytorch_tabular.models.common.layers.TransformerEncoderBlock
 
 ## Activations
+
 ::: pytorch_tabular.models.common.activations.Entmax15Function
 ::: pytorch_tabular.models.common.activations.Entmoid15
 ::: pytorch_tabular.models.common.activations.GEGLU

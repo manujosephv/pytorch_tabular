@@ -49,6 +49,7 @@ Once you have a copy of the source, you can install it with:
 ```bash
 pip install .
 ```
+
 or
 
 ```bash

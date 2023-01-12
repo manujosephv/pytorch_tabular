@@ -11,10 +11,9 @@ The parameters that you would set most frequently are:
 - `gpus`: int: The index of the GPU to be used. -1 will make use of all available GPUs If None, will use CPU. Defaults to `None`
 
 !!! warning
-    `gpus` will be deprecated in the next release. Please use `accelerator` and `devices` instead to confugure GPUs, TPUs etc.  
+`gpus` will be deprecated in the next release. Please use `accelerator` and `devices` instead to confugure GPUs, TPUs etc.
 
-
-- `accelerator`: Optional[str]: The accelerator to use for training. Can be one of 'cpu','gpu','tpu','ipu','auto'. Defaults to 'auto'.
+- `accelerator`: Optional\[str\]: The accelerator to use for training. Can be one of 'cpu','gpu','tpu','ipu','auto'. Defaults to 'auto'.
 - `load_best`: int: Flag to load the best model saved during training. This will be ignored if checkpoint saving is turned off. Defaults to True
 
 ### Usage Example
@@ -43,7 +42,7 @@ Checkpoint Saving is also turned on by default and to turn it off you can set th
 - `checkpoints_save_top_k`: int: The number of best models to save. If you want to save more than one best models, you can set this parameter to >1. Defaults to `1`
 
 !!!note
-    Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and check the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
+Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and check the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
 
 ### Learning Rate Finder
 

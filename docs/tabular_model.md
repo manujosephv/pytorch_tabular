@@ -38,53 +38,66 @@ tabular_model = TabularModel(
 # Training API (Supervised Learning)
 
 There are two APIs for training or 'fit'-ing a model.
+
 1. High-level API
-2. Low-level API
+1. Low-level API
 
 The low-level API is more flexible and allows you to customize the training loop. The high-level API is easier to use and is recommended for most use cases.
+
 ## High-Level API
+
 ::: pytorch_tabular.TabularModel.fit
 
 ## Low-Level API
+
 The low-level API is more flexible and allows you to write more complicated logic like cross validation, ensembling, etc. The low-level API is more verbose and requires you to write more code, but it comes with more control to the user.
 
-The `fit` method is split into three sub-methods:  
+The `fit` method is split into three sub-methods:
 
-1. `prepare_dataloader`  
+1. `prepare_dataloader`
 
-2. `prepare_model`  
+1. `prepare_model`
 
-3. `train`  
-
+1. `train`
 
 ### prepare_dataloader
+
 This method is responsible for setting up the `TabularDataModule` and returns the object. You can save this object using `save_dataloader` and load it later using `load_datamodule` to skip the data preparation step. This is useful when you are doing cross validation or ensembling.
 ::: pytorch_tabular.TabularModel.prepare_dataloader
 
 ### prepare_model
+
 This method is responsible for setting up and initializing the model and takes in the prepared datamodule as an input. It returns the model instance.
 ::: pytorch_tabular.TabularModel.prepare_model
 
 ### train
+
 This method is responsible for training the model and takes in the prepared datamodule and model as an input. It returns the trained model instance.
 ::: pytorch_tabular.TabularModel.train
 
 # Training API (Self-Supervised Learning)
+
 For self-supervised learning, there is a different API because the process is different.
 
 1. `pretrain`: This method is responsible for pretraining the model. It takes in the the input dataframes, and other parameters to pre-train on the provided data.
-2. `create_finetune_model`: If we want to use the pretrained model for finetuning, we need to create a new model with the pretrained weights. This method is responsible for creating a finetune model. It takes in the pre-trained model and returns a finetune model. The returned object is a separate instance of `TabularModel` and can be used to finetune the model.
-3. `finetune`: This method is responsible for finetuning the model and can only be used with a model which is created through `create_finetune_model`. It takes in the the input dataframes, and other parameters to finetune on the provided data.
+1. `create_finetune_model`: If we want to use the pretrained model for finetuning, we need to create a new model with the pretrained weights. This method is responsible for creating a finetune model. It takes in the pre-trained model and returns a finetune model. The returned object is a separate instance of `TabularModel` and can be used to finetune the model.
+1. `finetune`: This method is responsible for finetuning the model and can only be used with a model which is created through `create_finetune_model`. It takes in the the input dataframes, and other parameters to finetune on the provided data.
 
 !!! note
 
-    The dataframes passed to `pretrain` need not have the target column. But even if you defined the target column in `DataConfig`, it will be ignored. But the dataframes passed to `finetune` must have the target column.
+```
+The dataframes passed to `pretrain` need not have the target column. But even if you defined the target column in `DataConfig`, it will be ignored. But the dataframes passed to `finetune` must have the target column.
+```
 
 ## Model Evaluation
+
 ::: pytorch_tabular.TabularModel.predict
 ::: pytorch_tabular.TabularModel.evaluate
+
 ## Artifact Saving and Loading
+
 ### Saving the Model, Datamodule, and Configs
+
 ::: pytorch_tabular.TabularModel.save_config
 ::: pytorch_tabular.TabularModel.save_datamodule
 ::: pytorch_tabular.TabularModel.save_model
@@ -92,11 +105,13 @@ For self-supervised learning, there is a different API because the process is di
 ::: pytorch_tabular.TabularModel.save_weights
 
 ### Loading the Model and Datamodule
+
 ::: pytorch_tabular.TabularModel.load_best_model
 ::: pytorch_tabular.TabularModel.load_from_checkpoint
 ::: pytorch_tabular.TabularModel.load_model
 ::: pytorch_tabular.TabularModel.load_weights
+
 ## Other Functions
+
 ::: pytorch_tabular.TabularModel.find_learning_rate
 ::: pytorch_tabular.TabularModel.summary
-

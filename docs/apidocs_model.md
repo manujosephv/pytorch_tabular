@@ -1,4 +1,5 @@
 ## Configuration Classes
+
 ::: pytorch_tabular.models.AutoIntConfig
 ::: pytorch_tabular.models.CategoryEmbeddingModelConfig
 ::: pytorch_tabular.models.FTTransformerConfig
@@ -10,6 +11,7 @@
 ::: pytorch_tabular.config.ModelConfig
 
 ## Model Classes
+
 ::: pytorch_tabular.models.AutoIntModel
 ::: pytorch_tabular.models.CategoryEmbeddingModel
 ::: pytorch_tabular.models.FTTransformerModel
