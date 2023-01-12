@@ -100,11 +100,14 @@ class TabularDatamodule(pl.LightningDataModule):
             self.do_target_transform = False
         self.target_transform_template = target_transform
 
-    def update_config(self, config) -> None:
+    def update_config(self, config) -> InferredConfig:
         """Calculates and updates a few key information to the config object
 
-        Raises:
-            NotImplementedError: [description]
+        Args:
+            config (DictConfig): The config object
+
+        Returns:
+            InferredConfig: The updated config object
         """
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
@@ -134,9 +137,10 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def do_leave_one_out_encoder(self) -> bool:
         """Checks the special condition for NODE where we use a LeaveOneOutEncoder to encode categorical columns
+        DEPRECATED: Automatically encoding categorical columns using LeaveOneOutEncoder is deprecated.
 
         Returns:
-            bool
+            bool: True if LeaveOneOutEncoder is used
         """
         if hasattr(self.config, "_model_name"):
             return (self.config._model_name == "NODEModel") and (not self.config.embed_categorical)
@@ -237,7 +241,7 @@ class TabularDatamodule(pl.LightningDataModule):
             stage (str, optional): Internal parameter. Used to distinguisj between fit and inference. Defaults to "inference".
 
         Returns:
-            tuple[pd.DataFrame, list]: Returns the processed dataframe and the added features(list) as a tuple
+            Returns the processed dataframe and the added features(list) as a tuple
         """
         logger.info(f"Preprocessing data: Stage: {stage}...")
         added_features = None
@@ -301,12 +305,11 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         Returns a list of time features that will be appropriate for the given frequency string.
 
-        Parameters
-        ----------
+        Args:
+            freq_str (str): Frequency string of the form [multiple][granularity] such as "12H", "5min", "1D" etc.
 
-        freq_str
-            Frequency string of the form [multiple][granularity] such as "12H", "5min", "1D" etc.
-
+        Returns:
+            List of added features
         """
 
         features_by_offsets = {
@@ -416,8 +419,17 @@ class TabularDatamodule(pl.LightningDataModule):
 
     # adapted from fastai
     @classmethod
-    def make_date(cls, df: pd.DataFrame, date_field: str):
-        "Make sure `df[date_field]` is of the right date type."
+    def make_date(cls, df: pd.DataFrame, date_field: str) -> pd.DataFrame:
+        """Make sure `df[date_field]` is of the right date type.
+
+        Args:
+            df (pd.DataFrame): Dataframe
+
+            date_field (str): Date field name
+
+        Returns:
+            Dataframe with date field converted to datetime
+        """
         field_dtype = df[date_field].dtype
         if isinstance(field_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
             field_dtype = np.datetime64
@@ -434,8 +446,23 @@ class TabularDatamodule(pl.LightningDataModule):
         frequency: str,
         prefix: str = None,
         drop: bool = True,
-    ):
-        "Helper function that adds columns relevant to a date in the column `field_name` of `df`."
+    ) -> Tuple[pd.DataFrame, List[str]]:
+        """Helper function that adds columns relevant to a date in the column `field_name` of `df`.
+
+        Args:
+            df (pd.DataFrame): Dataframe
+
+            field_name (str): Date field name
+
+            frequency (str): Frequency string of the form [multiple][granularity] such as "12H", "5min", "1D" etc.
+
+            prefix (str, optional): Prefix to add to the new columns. Defaults to None.
+
+            drop (bool, optional): Drop the original column. Defaults to True.
+
+        Returns:
+            Dataframe with added columns and list of added columns
+        """
         field = df[field_name]
         prefix = (re.sub("[Dd]ate$", "", field_name) if prefix is None else prefix) + "_"
         attr = cls.time_features_from_frequency_str(frequency)
@@ -467,7 +494,14 @@ class TabularDatamodule(pl.LightningDataModule):
         return df, added_features
 
     def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
-        """Function that loads the train set."""
+        """Function that loads the train set.
+
+        Args:
+            batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
+
+        Returns:
+            DataLoader: Train dataloader
+        """
         dataset = TabularDataset(
             task=self.config.task,
             data=self.train,
@@ -485,8 +519,15 @@ class TabularDatamodule(pl.LightningDataModule):
             pin_memory=self.config.pin_memory,
         )
 
-    def val_dataloader(self) -> DataLoader:
-        """Function that loads the validation set."""
+    def val_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+        """Function that loads the validation set.
+
+        Args:
+            batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
+
+        Returns:
+            DataLoader: Validation dataloader
+        """
         dataset = TabularDataset(
             task=self.config.task,
             data=self.validation,
@@ -497,14 +538,21 @@ class TabularDatamodule(pl.LightningDataModule):
         )
         return DataLoader(
             dataset,
-            self.batch_size,
+            batch_size if batch_size is not None else self.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
             pin_memory=self.config.pin_memory,
         )
 
-    def test_dataloader(self) -> DataLoader:
-        """Function that loads the validation set."""
+    def test_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+        """Function that loads the validation set.
+
+        Args:
+            batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
+
+        Returns:
+            DataLoader: Test dataloader
+        """
         if self.test is not None:
             dataset = TabularDataset(
                 task=self.config.task,
@@ -516,7 +564,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             return DataLoader(
                 dataset,
-                self.batch_size,
+                batch_size if batch_size is not None else self.batch_size,
                 shuffle=False,
                 num_workers=self.config.num_workers,
                 pin_memory=self.config.pin_memory,
@@ -533,11 +581,12 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
         return df
 
-    def prepare_inference_dataloader(self, df: pd.DataFrame) -> DataLoader:
+    def prepare_inference_dataloader(self, df: pd.DataFrame, batch_size: Optional[int] = None) -> DataLoader:
         """Function that prepares and loads the new data.
 
         Args:
             df (pd.DataFrame): Dataframe with the features and target
+            batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
 
         Returns:
             DataLoader: The dataloader for the passed in dataframe
@@ -554,12 +603,17 @@ class TabularDatamodule(pl.LightningDataModule):
         )
         return DataLoader(
             dataset,
-            self.batch_size,
+            batch_size if batch_size is not None else self.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
         )
 
-    def save_dataloader(self, path):
+    def save_dataloader(self, path: Union[str, Path]) -> None:
+        """Saves the dataloader to a path.
+
+        Args:
+            path (Union[str, Path]): Path to save the dataloader
+        """
         if isinstance(path, str):
             path = Path(path)
         joblib.dump(self, path)
@@ -572,7 +626,7 @@ class TabularDatamodule(pl.LightningDataModule):
             path (Union[str, Path]): Path to the datamodule
 
         Returns:
-            DataModule: The datamodule loaded from the path
+            TabularDatamodule: The datamodule loaded from the path
         """
         if isinstance(path, str):
             path = Path(path)

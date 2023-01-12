@@ -9,6 +9,12 @@ The parameters that you would set most frequently are:
 - `batch_size`: int: Number of samples in each batch of training. Defaults to `64`
 - `max_epochs`: int: Maximum number of epochs to be run. The maximum is in case of Early Stopping where this becomes the maximum and without Early Stopping, this is the number of epochs that will be run Defaults to `10`
 - `gpus`: int: The index of the GPU to be used. -1 will make use of all available GPUs If None, will use CPU. Defaults to `None`
+
+!!! warning
+    `gpus` will be deprecated in the next release. Please use `accelerator` and `devices` instead to confugure GPUs, TPUs etc.  
+
+
+- `accelerator`: Optional[str]: The accelerator to use for training. Can be one of 'cpu','gpu','tpu','ipu','auto'. Defaults to 'auto'.
 - `load_best`: int: Flag to load the best model saved during training. This will be ignored if checkpoint saving is turned off. Defaults to True
 
 ### Usage Example
@@ -37,7 +43,7 @@ Checkpoint Saving is also turned on by default and to turn it off you can set th
 - `checkpoints_save_top_k`: int: The number of best models to save. If you want to save more than one best models, you can set this parameter to >1. Defaults to `1`
 
 !!!note
-Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and cehck the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
+    Make sure the name of the metric/loss you want to track exactly matches the ones in the logs. Recommended way is to run a model and check the results by evaluating the model. From the resulting dictionary, you can pick up a key to track during training.
 
 ### Learning Rate Finder
 
@@ -66,5 +72,9 @@ If the model is not learning properly:
 - `overfit_batches`: float: Uses this much data of the training set. If nonzero, will use the same training set for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it. Useful for quickly debugging or trying to overfit on purpose. Defaults to `0`
 
 - `track_grad_norm`: bool: This is only used if experiment tracking is setup. Track and Log Gradient Norms in the logger. -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc. Defaults to `False`. If the gradient norm falls to zero quickly, then we have a problem.
+
+## Using the entire PyTorch Lightning Trainer
+
+To unlock the full potential of the PyTorch Lightning Trainer, you can use the `trainer_kwargs` parameter. This will let you pass any parameter that is supported by the PyTorch Lightning Trainer.
 
 **For a complete list of parameters refer to the API Docs**

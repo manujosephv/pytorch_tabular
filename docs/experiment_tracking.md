@@ -37,6 +37,6 @@ Sometimes, it also helps to track the Logits of the model. As training progresse
 
 This can be done using the parameter `log_logits` in `ExperimentConfig`.
 
-![Gradient histograms](imgs/logits.gif)
+![Gradient histograms](imgs/log_logits.png)
 
 **For a complete list of parameters refer to the API Docs**

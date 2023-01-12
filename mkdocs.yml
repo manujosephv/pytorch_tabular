@@ -12,7 +12,8 @@ nav:
       - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
     - Configuration:
       - Data: data.md
-      - Models: models.md
+      - Supervised Models: models.md
+      - Self-Supervised Models: ssl_models.md
       - Training: training.md
       - Optimizer and Learning Rate Scheduler: optimizer.md
       - Experiment Tracking: experiment_tracking.md
@@ -25,8 +26,10 @@ nav:
     - API:
       - Core Classes: apidocs_coreclasses.md
       - Configuration Classes: apidocs_config.md
-      - Models: apidocs_models.md
+      - Supervised Models: apidocs_model.md
       - Self-Supervised Models: apidocs_ssl.md
+      - Heads: apidocs_head.md
+      - Common Modules: apidocs_common.md
       - Utilities: apidocs_utils.md
     - Contributions:
       - Contributing: contributing.md

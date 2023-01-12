@@ -4,7 +4,7 @@
 """Base Model"""
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import warnings
 
 import pytorch_lightning as pl
@@ -62,6 +62,16 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
+        """Base Model for PyTorch Tabular
+
+        Args:
+            config (DictConfig): The configuration for the model.
+            custom_loss (Optional[torch.nn.Module], optional): A custom loss function. Defaults to None.
+            custom_metrics (Optional[List[Callable]], optional): A list of custom metrics. Defaults to None.
+            custom_optimizer (Optional[torch.optim.Optimizer], optional): A custom optimizer. Defaults to None.
+            custom_optimizer_params (Dict, optional): A dictionary of custom optimizer parameters. Defaults to {}.
+            kwargs: Additional keyword arguments.
+        """
         super().__init__()
         assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
         inferred_config = kwargs["inferred_config"]
@@ -159,7 +169,17 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             self.metrics = self.custom_metrics
             self.hparams.metrics = [m.__name__ for m in self.custom_metrics]
 
-    def calculate_loss(self, output, y, tag):
+    def calculate_loss(self, output: Dict, y: torch.Tensor, tag: str) -> torch.Tensor:
+        """Calculates the loss for the model
+
+        Args:
+            output (Dict): The output dictionary from the model
+            y (torch.Tensor): The target tensor
+            tag (str): The tag to use for logging
+
+        Returns:
+            torch.Tensor: The loss value
+        """
         y_hat = output["logits"]
         reg_terms = [k for k, v in output.items() if "regularization" in k]
         reg_loss = 0
@@ -203,7 +223,19 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         )
         return computed_loss
 
-    def calculate_metrics(self, y, y_hat, tag):
+    def calculate_metrics(self, y: torch.Tensor, y_hat: torch.Tensor, tag: str) -> List[torch.Tensor]:
+        """Calculates the metrics for the model
+
+        Args:
+            y (torch.Tensor): The target tensor
+
+            y_hat (torch.Tensor): The predicted tensor
+
+            tag (str): The tag to use for logging
+
+        Returns:
+            List[torch.Tensor]: The list of metric values
+        """
         metrics = []
         for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if self.hparams.task == "regression":
@@ -244,17 +276,26 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return metrics
 
     def data_aware_initialization(self, datamodule):
+        """Performs data-aware initialization of the model when defined"""
         pass
 
-    def compute_backbone(self, x: Dict):
+    def compute_backbone(self, x: Dict) -> torch.Tensor:
         # Returns output
         x = self.backbone(x)
         return x
 
-    def embed_input(self, x: Dict):
+    def embed_input(self, x: Dict) -> torch.Tensor:
         return self.embedding_layer(x)
 
-    def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor):
+    def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor) -> torch.Tensor:
+        """Applies sigmoid scaling to the output of the model if the task is regression and the target range is defined
+
+        Args:
+            y_hat (torch.Tensor): The output of the model
+
+        Returns:
+            torch.Tensor: The output of the model with sigmoid scaling applied
+        """
         if (self.hparams.task == "regression") and (self.hparams.target_range is not None):
             for i in range(self.hparams.output_dim):
                 y_min, y_max = self.hparams.target_range[i]
@@ -262,6 +303,16 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return y_hat
 
     def pack_output(self, y_hat: torch.Tensor, backbone_features: torch.tensor) -> Dict[str, Any]:
+        """Packs the output of the model
+
+        Args:
+            y_hat (torch.Tensor): The output of the model
+
+            backbone_features (torch.tensor): The backbone features
+
+        Returns:
+            The packed output of the model
+        """
         # if self.head is the Identity function it means that we cannot extract backbone features,
         # because the model cannot be divide in backbone and head (i.e. TabNet)
         if type(self.head) == nn.Identity:
@@ -269,22 +320,41 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             return {"logits": y_hat, "backbone_features": backbone_features}
 
-    def compute_head(self, backbone_features: Tensor):
+    def compute_head(self, backbone_features: Tensor) -> Dict[str, Any]:
+        """Computes the head of the model
+
+        Args:
+            backbone_features (Tensor): The backbone features
+
+        Returns:
+            The output of the model
+        """
         y_hat = self.head(backbone_features)
         y_hat = self.apply_output_sigmoid_scaling(y_hat)
         return self.pack_output(y_hat, backbone_features)
 
-    # def compute_ssl_head(self, x: Dict):
-    #     return getattr(ssl_utils, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
-    #         x
-    #     )
+    def forward(self, x: Dict) -> Dict[str, Any]:
+        """The forward pass of the model
 
-    def forward(self, x: Dict):
+        Args:
+            x (Dict): The input of the model with 'continuous' and 'categorical' keys
+        """
         x = self.embed_input(x)
         x = self.compute_backbone(x)
         return self.compute_head(x)
 
-    def predict(self, x: Dict, ret_model_output: bool = False):
+    def predict(self, x: Dict, ret_model_output: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict]]:
+        """
+        Predicts the output of the model
+
+        Args:
+            x (Dict): The input of the model with 'continuous' and 'categorical' keys
+
+            ret_model_output (bool): If True, the method returns the output of the model
+
+        Returns:
+            The output of the model
+        """
         assert self.hparams.task != "ssl", "It's not allowed to use the method predict in case of ssl task"
         ret_value = self.forward(x)
         if ret_model_output:
@@ -296,6 +366,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self(batch), None
 
     def extract_embedding(self):
+        """Extracts the embedding of the model. This is used in `CategoricalEmbeddingTransformer`"""
         if self.hparams.categorical_dim > 0:
             if not isinstance(self.embedding_layer, PreEncoded1dLayer):
                 return self.embedding_layer.cat_embedding_layers

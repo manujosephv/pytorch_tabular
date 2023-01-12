@@ -1,12 +1,12 @@
 ![PyTorch Tabular](imgs/pytorch_tabular_logo.png)
 
 [![pypi](https://img.shields.io/pypi/v/pytorch_tabular.svg)](https://pypi.python.org/pypi/pytorch_tabular)
-[![travis](https://img.shields.io/travis/manujosephv/pytorch_tabular.svg)](https://travis-ci.com/manujosephv/pytorch_tabular)
+[![Testing](https://github.com/manujosephv/pytorch_tabular/actions/workflows/testing.yml/badge.svg?event=push)](https://github.com/manujosephv/pytorch_tabular/actions/workflows/testing.yml)
 [![documentation status](https://readthedocs.org/projects/pytorch_tabular/badge/?version=latest)](https://pytorch_tabular.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/manujosephv/pytorch_tabular/main.svg)](https://results.pre-commit.ci/latest/github/manujosephv/pytorch_tabular/main)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pytorch_tabular)
 [![DOI](https://zenodo.org/badge/321584367.svg)](https://zenodo.org/badge/latestdoi/321584367)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square)](https://github.com/manujosephv/pytorch_tabular/issues)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/manujosephv/pytorch_tabular/blob/main/docs/tutorials/01-Basic_Usage.ipynb)
 
 PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
 
@@ -22,15 +22,15 @@ Although the installation includes PyTorch, the best and recommended way is to f
 
 Once, you have got Pytorch installed, just use:
 
-```
- pip install pytorch_tabular[all]
+```bash
+ pip install pytorch_tabular[extra]
 ```
 
-to install the complete library with extra dependencies(Weights&Biases).
+to install the complete library with extra dependencies(Weights&Biases and Plotly).
 
 And :
 
-```
+```bash
  pip install pytorch_tabular
 ```
 
@@ -40,13 +40,18 @@ The sources for pytorch_tabular can be downloaded from the `Github repo`.
 
 You can either clone the public repository:
 
-```
+```bash
 git clone git://github.com/manujosephv/pytorch_tabular
 ```
 
 Once you have a copy of the source, you can install it with:
 
+```bash
+pip install .
 ```
+or
+
+```bash
 python setup.py install
 ```
 
