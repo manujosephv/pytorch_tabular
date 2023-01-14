@@ -79,7 +79,7 @@ class TabNetModel(BaseModel):
     def _build_network(self):
         # TabNet has its own embedding layer.
         # So we are not using the embedding layer from BaseModel
-        self._embedding_layer = lambda x: x
+        self._embedding_layer = nn.Identity()
         self._backbone = TabNetBackbone(self.hparams)
         setattr(self.backbone, "output_dim", self.hparams.output_dim)
         # TabNet has its own head
