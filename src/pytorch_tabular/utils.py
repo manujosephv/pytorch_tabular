@@ -1,16 +1,22 @@
 import logging
 import textwrap
+from pathlib import Path
+from typing import Any, Callable, Dict, IO, Optional, Union
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from lightning_lite.utilities.cloud_io import get_filesystem
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
 import pytorch_tabular as root_module
 
 logger = logging.getLogger(__name__)
+_PATH = Union[str, Path]
+_DEVICE = Union[torch.device, str, int]
+_MAP_LOCATION_TYPE = Optional[Union[_DEVICE, Callable[[_DEVICE], _DEVICE], Dict[_DEVICE, _DEVICE]]]
 
 
 def _make_smooth_weights_for_balanced_classes(y_train, mu=1.0):
@@ -133,3 +139,27 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
             h_str = f"\n{h_str}\n"
             doc_str += h_str
     return doc_str
+
+
+# Copied over pytorch_lightning.utilities.cloud_io.load as it was deprecated
+def pl_load(
+    path_or_url: Union[IO, _PATH],
+    map_location: _MAP_LOCATION_TYPE = None,
+) -> Any:
+    """Loads a checkpoint.
+
+    Args:
+        path_or_url: Path or URL of the checkpoint.
+        map_location: a function, ``torch.device``, string or a dict specifying how to remap storage locations.
+    """
+    if not isinstance(path_or_url, (str, Path)):
+        # any sort of BytesIO or similar
+        return torch.load(path_or_url, map_location=map_location)
+    if str(path_or_url).startswith("http"):
+        return torch.hub.load_state_dict_from_url(
+            str(path_or_url),
+            map_location=map_location,  # type: ignore[arg-type] # upstream annotation is not correct
+        )
+    fs = get_filesystem(path_or_url)
+    with fs.open(path_or_url, "rb") as f:
+        return torch.load(f, map_location=map_location)
