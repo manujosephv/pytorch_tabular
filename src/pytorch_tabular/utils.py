@@ -1,15 +1,16 @@
 import logging
-from pathlib import Path
 import textwrap
-from typing import IO, Any, Callable, Dict, Optional, Union
+from pathlib import Path
+from typing import Any, Callable, Dict, IO, Optional, Union
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from lightning_lite.utilities.cloud_io import get_filesystem
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
-from lightning_lite.utilities.cloud_io import get_filesystem
+
 import pytorch_tabular as root_module
 
 logger = logging.getLogger(__name__)

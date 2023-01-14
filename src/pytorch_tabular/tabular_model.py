@@ -22,7 +22,6 @@ from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
-from pytorch_tabular.utils import pl_load
 from pytorch_lightning.utilities.model_summary import summarize
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder
@@ -40,7 +39,7 @@ from pytorch_tabular.config import (
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import _GenericModel, BaseModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.utils import getattr_nested
+from pytorch_tabular.utils import getattr_nested, pl_load
 
 logger = logging.getLogger(__name__)
 
