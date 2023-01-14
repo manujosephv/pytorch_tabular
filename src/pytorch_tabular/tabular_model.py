@@ -4,7 +4,6 @@
 """Tabular Model"""
 import copy
 import inspect
-import logging
 import os
 import warnings
 from collections import defaultdict
@@ -39,9 +38,9 @@ from pytorch_tabular.config import (
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import _GenericModel, BaseModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.utils import getattr_nested, pl_load
+from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TabularModel:
@@ -260,7 +259,7 @@ class TabularModel:
         Returns:
             pl.Trainer: A PyTorch Lightning Trainer object
         """
-        logger.info("Preparing the Trainer...")
+        logger.info("Preparing the Trainer")
         if max_epochs is not None:
             self.config.max_epochs = max_epochs
         if min_epochs is not None:
@@ -461,7 +460,7 @@ class TabularModel:
             warnings.warn(
                 "Providing test data in `fit` is deprecated and will be removed in next major release. Plese use `evaluate` for evaluating on test data"
             )
-        logger.info("Preparing the DataLoaders...")
+        logger.info("Preparing the DataLoaders")
         target_transform = self._check_and_set_target_transform(target_transform)
 
         datamodule = TabularDatamodule(
@@ -504,7 +503,7 @@ class TabularModel:
             BaseModel: The prepared model
 
         """
-        logger.info(f"Preparing the Model: {self.config._model_name}...")
+        logger.info(f"Preparing the Model: {self.config._model_name}")
         # Fetching the config as some data specific configs have been added in the datamodule
         self.inferred_config = self._read_parse_config(datamodule.update_config(self.config), InferredConfig)
         model = self.model_callable(
@@ -554,12 +553,14 @@ class TabularModel:
         )
         self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
+            logger.info("Auto LR Find Started")
             self.trainer.tune(self.model, train_loader, val_loader)
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
         self.model.train()
+        logger.info("Training Started")
         self.trainer.fit(self.model, train_loader, val_loader)
-        logger.info("Training the model completed...")
+        logger.info("Training the model completed")
         if self.config.load_best:
             self.load_best_model()
         return self.trainer
@@ -805,6 +806,7 @@ class TabularModel:
         else:
             if self.track_experiment:
                 # Renaming the experiment run so that a different log is created for finetuning
+                logger.info(f"Renaming the experiment run for finetuning as {config['run_name'] + '_finetuned'}")
                 config["run_name"] = config["run_name"] + "_finetuned"
 
         datamodule = self.datamodule
@@ -1155,16 +1157,16 @@ class TabularModel:
     def load_best_model(self) -> None:
         """Loads the best model after training is done"""
         if self.trainer.checkpoint_callback is not None:
-            logger.info("Loading the best model...")
+            logger.info("Loading the best model")
             ckpt_path = self.trainer.checkpoint_callback.best_model_path
             if ckpt_path != "":
                 logger.debug(f"Model Checkpoint: {ckpt_path}")
                 ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["state_dict"])
             else:
-                logger.info("No best model available to load. Did you run it more than 1 epoch?...")
+                logger.warning("No best model available to load. Did you run it more than 1 epoch?...")
         else:
-            logger.info("No best model available to load. Did you run it more than 1 epoch?...")
+            logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
     def save_datamodule(self, dir: str) -> None:
         """Saves the datamodule in the specified directory

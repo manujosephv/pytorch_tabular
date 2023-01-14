@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Feature Tokenizer Transformer Model"""
-import logging
 import math
 from collections import OrderedDict
 
@@ -13,8 +12,6 @@ from omegaconf import DictConfig
 
 from ..base_model import BaseModel
 from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
-
-logger = logging.getLogger(__name__)
 
 
 def _initialize_kaiming(x, initialization, d_sqrt_inv):

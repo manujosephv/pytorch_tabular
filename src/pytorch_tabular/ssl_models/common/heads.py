@@ -2,11 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """SSL Heads"""
-import logging
-
 import torch.nn as nn
-
-logger = logging.getLogger(__name__)
 
 
 class MultiTaskHead(nn.Module):

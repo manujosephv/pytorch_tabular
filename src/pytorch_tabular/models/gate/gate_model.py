@@ -1,8 +1,6 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-import logging
-
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -10,11 +8,12 @@ from omegaconf import DictConfig
 from pytorch_tabular.models.common.activations import entmax15, entmoid15, sparsemax, sparsemoid
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import Embedding1dLayer
+from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel
 from .components import GatedFeatureLearningUnit, NeuralDecisionTree
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GatedAdditiveTreesBackbone(nn.Module):
@@ -219,13 +218,8 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
 
     def data_aware_initialization(self, datamodule):
         if self.hparams.task == "regression":
-            logger.info("Data Aware Initialization....")
+            logger.info("Data Aware Initialization of T0")
             # Need a big batch to initialize properly
             alt_loader = datamodule.train_dataloader(batch_size=2000)
             batch = next(iter(alt_loader))
-            for k, v in batch.items():
-                if isinstance(v, list) and (len(v) == 0):
-                    # Skipping empty list
-                    continue
-                batch[k] = v.to(self.device)
             self.head.T0.data = torch.mean(batch["target"], dim=0)

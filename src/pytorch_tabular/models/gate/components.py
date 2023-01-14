@@ -1,7 +1,6 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-import logging
 import random
 from typing import Callable
 
@@ -9,8 +8,6 @@ import torch
 import torch.nn as nn
 
 from pytorch_tabular.models.common.activations import entmax15
-
-logger = logging.getLogger(__name__)
 
 
 class NeuralDecisionStump(nn.Module):

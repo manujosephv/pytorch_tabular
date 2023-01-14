@@ -12,7 +12,6 @@
 # 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
 """TabTransformer Model"""
-import logging
 from collections import OrderedDict
 from typing import Dict
 
@@ -23,8 +22,6 @@ from omegaconf import DictConfig
 
 from ..base_model import BaseModel
 from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
-
-logger = logging.getLogger(__name__)
 
 
 class TabTransformerBackbone(nn.Module):

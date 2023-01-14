@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model"""
-import logging
 import warnings
 
 import torch
@@ -10,13 +9,14 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from pytorch_tabular.models.common.layers import Embedding1dLayer, PreEncoded1dLayer
+from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel
 from ..common import activations
 from ..common.layers import Lambda
 from .architecture_blocks import DenseODSTBlock
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class NODEBackbone(nn.Module):
@@ -79,7 +79,7 @@ class NODEModel(BaseModel):
 
     def data_aware_initialization(self, datamodule):
         """Performs data-aware initialization for NODE"""
-        logger.info("Data Aware Initialization....")
+        logger.info("Data Aware Initialization of NODE using a forward pass with 2000 batch size....")
         # Need a big batch to initialize properly
         alt_loader = datamodule.train_dataloader(batch_size=2000)
         batch = next(iter(alt_loader))

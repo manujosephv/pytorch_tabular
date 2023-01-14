@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Config"""
-import logging
 import os
 import re
 import warnings
@@ -12,8 +11,9 @@ from typing import Any, Dict, Iterable, List, Optional
 from omegaconf import OmegaConf
 
 from pytorch_tabular.models.common import heads
+from pytorch_tabular.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _read_yaml(filename):

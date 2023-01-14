@@ -3,13 +3,9 @@
 # For license information, see LICENSE.TXT
 # Inspired by implementation https://github.com/ryancheunggit/tabular_dae
 """DenoisingAutoEncoder Model"""
-import logging
-
 import numpy as np
 import torch
 import torch.nn as nn
-
-logger = logging.getLogger(__name__)
 
 
 class SwapNoiseCorrupter(nn.Module):

@@ -57,7 +57,7 @@ data_config = DataConfig(
 model_config = CategoryEmbeddingModelConfig(task="regression", dropout=0.2, head_config=dict(layers="32-16"))
 
 trainer_config = TrainerConfig(
-    checkpoints=None,
+    # checkpoints=None,
     max_epochs=2,
     profiler=None,
     fast_dev_run=False,

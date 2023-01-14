@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 # Inspired by implementation https://github.com/ryancheunggit/tabular_dae
 """DenoisingAutoEncoder Model"""
-import logging
 from collections import namedtuple
 from typing import Dict
 
@@ -15,8 +14,6 @@ from ..base_model import SSLBaseModel
 from ..common.heads import MultiTaskHead
 from ..common.layers import MixedEmbedding1dLayer
 from ..common.noise_generators import SwapNoiseCorrupter
-
-logger = logging.getLogger(__name__)
 
 
 class DenoisingAutoEncoderFeaturizer(nn.Module):

@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """TabNet Model"""
-import logging
 from typing import Dict
 
 import torch
@@ -11,8 +10,6 @@ from omegaconf import DictConfig
 from pytorch_tabnet.tab_network import TabNet
 
 from ..base_model import BaseModel
-
-logger = logging.getLogger(__name__)
 
 
 class TabNetBackbone(nn.Module):
