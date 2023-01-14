@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 
-from pytorch_tabular.utils import getattr_nested, get_logger
+from pytorch_tabular.utils import get_logger, getattr_nested
 
 logger = get_logger(__name__)
 
