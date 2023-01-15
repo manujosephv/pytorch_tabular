@@ -103,7 +103,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
         return self.hparams.noise_probabilities.get(name, self.hparams.default_noise_probability)
 
     @property
-    def embedding_layers(self):
+    def embedding_layer(self):
         return self._embedding
 
     @property
@@ -137,9 +137,9 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
     def _init_loss_weights(self):
         n_features = self.hparams.continuous_dim + len(self.hparams.embedding_dims)
         return [
-            len(self.embedding_layers._binary_feat_idx) / n_features,
-            len(self.embedding_layers._onehot_feat_idx) / n_features,
-            self.hparams.continuous_dim + len(self.embedding_layers._embedding_feat_idx) / n_features,
+            len(self.embedding_layer._binary_feat_idx) / n_features,
+            len(self.embedding_layer._onehot_feat_idx) / n_features,
+            self.hparams.continuous_dim + len(self.embedding_layer._embedding_feat_idx) / n_features,
             self.hparams.mask_loss_weight,
         ]
 
@@ -148,7 +148,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
 
     def forward(self, x: Dict):
         if self.mode == "pretrain":
-            x = self.embedding_layers(x)
+            x = self.embedding_layer(x)
             # (B, N, E)
             features = self.featurizer(x, perturb=True)
             z, mask = features.features, features.mask
@@ -216,7 +216,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
         pass
 
     def featurize(self, x: Dict):
-        x = self.embedding_layers(x)
+        x = self.embedding_layer(x)
         return self.featurizer(x, perturb=False).features
 
     @property

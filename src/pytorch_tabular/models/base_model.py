@@ -15,7 +15,7 @@ from torch import Tensor
 
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import PreEncoded1dLayer
-from pytorch_tabular.utils import get_logger
+from pytorch_tabular.utils import get_logger, reset_all_weights
 
 try:
     import wandb
@@ -488,6 +488,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 commit=False,
             )
 
+    def reset_weights(self):
+        reset_all_weights(self.backbone)
+        reset_all_weights(self.head)
+        reset_all_weights(self.embedding_layer)
+
 
 class _GenericModel(BaseModel):
     def __init__(
@@ -534,7 +539,7 @@ class _GenericModel(BaseModel):
 
     @property
     def embedding_layer(self):
-        return self.backbone.embedding_layers
+        return self.backbone.embedding_layer
 
     @property
     def head(self):
