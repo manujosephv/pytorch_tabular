@@ -1,4 +1,5 @@
 import logging
+import os
 import textwrap
 from pathlib import Path
 from typing import Any, Callable, Dict, IO, Optional, Union
@@ -13,10 +14,23 @@ from sklearn.preprocessing import LabelEncoder
 
 import pytorch_tabular as root_module
 
-logger = logging.getLogger(__name__)
 _PATH = Union[str, Path]
 _DEVICE = Union[torch.device, str, int]
 _MAP_LOCATION_TYPE = Optional[Union[_DEVICE, Callable[[_DEVICE], _DEVICE], Dict[_DEVICE, _DEVICE]]]
+
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(level=os.environ.get("PT_LOGLEVEL", "INFO"))
+    formatter = logging.Formatter("%(asctime)s - {%(name)s:%(lineno)d} - %(levelname)s - %(message)s")
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
+
+
+logger = logging.getLogger(__name__)
 
 
 def _make_smooth_weights_for_balanced_classes(y_train, mu=1.0):

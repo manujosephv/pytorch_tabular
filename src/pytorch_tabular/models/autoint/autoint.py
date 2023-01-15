@@ -3,8 +3,6 @@
 # For license information, see LICENSE.TXT
 # Inspired by https://github.com/rixwew/pytorch-fm/blob/master/torchfm/model/afi.py
 """AutomaticFeatureInteraction Model"""
-import logging
-
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -13,8 +11,6 @@ from pytorch_tabular.models.common.layers import Embedding2dLayer
 from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 from ..base_model import BaseModel
-
-logger = logging.getLogger(__name__)
 
 
 class AutoIntBackbone(nn.Module):

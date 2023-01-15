@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """SSL Base Model"""
-import logging
 import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
@@ -12,9 +11,9 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 
-from pytorch_tabular.utils import getattr_nested
+from pytorch_tabular.utils import get_logger, getattr_nested
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictConfig:

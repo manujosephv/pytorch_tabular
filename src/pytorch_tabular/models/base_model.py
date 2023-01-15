@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Base Model"""
-import logging
 import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -16,6 +15,7 @@ from torch import Tensor
 
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import PreEncoded1dLayer
+from pytorch_tabular.utils import get_logger
 
 try:
     import wandb
@@ -32,7 +32,7 @@ except ImportError:
     PLOTLY_INSTALLED = False
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictConfig:
@@ -545,49 +545,3 @@ class _GenericModel(BaseModel):
         # all components are initialized in the init function
         self._backbone = self.kwargs.get("backbone")
         self._head = self._get_head_from_config()
-
-
-# class SSLBaseModel(BaseModel):
-#     def __init__(
-#         self,
-#         config: DictConfig,
-#         custom_loss: Optional[torch.nn.Module] = None,
-#         custom_metrics: Optional[List[Callable]] = None,
-#         custom_optimizer: Optional[torch.optim.Optimizer] = None,
-#         custom_optimizer_params: Dict = {},
-#         **kwargs,
-#     ):
-#         super().__init__(
-#             config,
-#             custom_loss=custom_loss,
-#             custom_metrics=custom_metrics,
-#             custom_optimizer=custom_optimizer,
-#             custom_optimizer_params=custom_optimizer_params,
-#             **kwargs,
-#         )
-
-#     def _setup_loss(self):
-#         if self.custom_loss is None:
-#             try:
-#                 if self.hparams.loss.startswith("ssl"):
-#                     self._loss = getattr(ssl_losses, self.hparams.loss)
-#                 else:
-#                     self.loss = getattr(nn, self.hparams.loss)()
-#             except AttributeError as e:
-#                 logger.error(
-#                     f"{self.hparams.loss} is not a valid loss defined in the torch.nn module or in the ssl_losses module"
-#                 )
-#                 raise e
-#         else:
-#             self.loss = self.custom_loss
-
-#     # def compute_head(self, x: Dict):
-#     #     return getattr(ssl, self.hparams.ssl_task)(input_dim=self.backbone.output_dim)(
-#     #         x
-#     #     )
-
-#     def forward_pass(self, batch):
-#         y = self(batch)["logits"]
-#         batch_augmented = getattr(augmentations, self.hparams.aug_task)(batch)
-#         y_hat = self(batch_augmented)["logits"]
-#         return y, y_hat

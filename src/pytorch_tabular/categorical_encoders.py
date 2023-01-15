@@ -45,7 +45,7 @@ class BaseEncoder(object):
             ), "`handle_missing` = `error` and missing values found in columns to encode."
         X_encoded = X.copy(deep=True)
         for col, mapping in self._mapping.items():
-            X_encoded.loc[:, col] = X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
+            X_encoded[col] = X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
 
             if self.handle_unseen == "impute":
                 X_encoded[col].fillna(self._imputed, inplace=True)

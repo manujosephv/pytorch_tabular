@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Mixture Density Models"""
-import logging
 import warnings
 from typing import Dict, Optional, Union
 
@@ -16,6 +15,7 @@ from pytorch_tabular.config.config import ModelConfig
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.tab_transformer.tab_transformer import TabTransformerBackbone
 from pytorch_tabular.tabular_model import getattr_nested
+from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel, safe_merge_config
 
@@ -24,7 +24,7 @@ try:
 except ImportError:
     warnings.warn("Wandb not installed. WandbLogger will not work.")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class MDNModel(BaseModel):

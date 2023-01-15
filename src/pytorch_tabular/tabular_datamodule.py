@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Data Module"""
-import logging
 import re
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
@@ -27,10 +26,11 @@ from sklearn.preprocessing import (
 from torch.utils.data import DataLoader, Dataset
 
 from pytorch_tabular.config import InferredConfig
+from pytorch_tabular.utils import get_logger
 
 from .categorical_encoders import OrdinalEncoder
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TabularDatamodule(pl.LightningDataModule):
@@ -243,7 +243,6 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns:
             Returns the processed dataframe and the added features(list) as a tuple
         """
-        logger.info(f"Preprocessing data: Stage: {stage}...")
         added_features = None
         if self.config.encode_date_columns:
             data, added_features = self._encode_date_columns(data)
@@ -280,6 +279,7 @@ class TabularDatamodule(pl.LightningDataModule):
             stage (Optional[str], optional): Internal parameter to distinguish between fit and inference. Defaults to None.
         """
         if stage == "fit" or stage is None:
+            logger.info(f"Setting up the datamodule for {self.config.task} task")
             if self.validation is None:
                 logger.debug(
                     f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation"
