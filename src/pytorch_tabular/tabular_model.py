@@ -1084,7 +1084,7 @@ class TabularModel:
         quantile_predictions = []
         logits_predictions = defaultdict(list)
         is_probabilistic = hasattr(self.model.hparams, "_probabilistic") and self.model.hparams._probabilistic
-        for batch in track(inference_dataloader, desc="Generating Predictions..."):
+        for batch in track(inference_dataloader, description="Generating Predictions..."):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list

@@ -200,7 +200,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         X_encoded = X.copy(deep=True)
         for col, mapping in track(
             self._mapping.items(),
-            desc="Encoding the data...",
+            description="Encoding the data...",
             total=len(self._mapping.values()),
         ):
             for dim in range(mapping[self.NAN_CATEGORY].shape[0]):
