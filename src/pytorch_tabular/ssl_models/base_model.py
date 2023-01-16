@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 
-from pytorch_tabular.utils import get_logger, getattr_nested
+from pytorch_tabular.utils import get_logger, getattr_nested, reset_all_weights
 
 logger = get_logger(__name__)
 
@@ -106,12 +106,12 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         assert hasattr(self.decoder, "output_dim"), "A decoder must have an output_dim attribute"
 
     @property
-    def embedding_layers(self):
-        raise NotImplementedError("embedding_layer property needs to be implemented by inheriting classes")
+    def embedding_layer(self):
+        raise NotImplementedError("`embedding_layer` property needs to be implemented by inheriting classes")
 
     @property
     def featurizer(self):
-        raise NotImplementedError("embedding_layer property needs to be implemented by inheriting classes")
+        raise NotImplementedError("`featurizer` property needs to be implemented by inheriting classes")
 
     @abstractmethod
     def _setup_loss(self):
@@ -211,3 +211,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
                 }
         else:
             return opt
+
+    def reset_weights(self):
+        reset_all_weights(self.featurizer)
+        reset_all_weights(self.embedding_layer)

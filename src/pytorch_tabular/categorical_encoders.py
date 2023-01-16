@@ -15,6 +15,9 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm.autonotebook import tqdm
 
+from pytorch_tabular.utils import get_logger
+
+logger = get_logger(__name__)
 NAN_CATEGORY = 0
 
 
@@ -148,16 +151,17 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         self._extract_embedding(tabular_model.model)
 
     def _extract_embedding(self, model):
-        if hasattr(model, "embedding_layers"):
-            embedding_layers = model.embedding_layers
-        elif hasattr(model, "extract_embedding"):
-            embedding_layers = model.extract_embedding()
-        else:
-            embedding_layers = None
-        if embedding_layers is not None:
+        try:
+            embedding_layer = model.extract_embedding()
+        except ValueError as e:
+            logger.error(
+                f"Extracting embedding layer from model received this error: {e}. Some models do not support this feature."
+            )
+            embedding_layer = None
+        if embedding_layer is not None:
             for i, col in enumerate(self.cols):
                 self._mapping[col] = {}
-                embedding = embedding_layers[i]
+                embedding = embedding_layer[i]
                 self._mapping[col][self.NAN_CATEGORY] = embedding.weight[0, :].detach().cpu().numpy().ravel()
                 for key in self._categorical_encoder._mapping[col].index:
                     self._mapping[col][key] = (
@@ -167,6 +171,8 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
                         .numpy()
                         .ravel()
                     )
+        else:
+            raise ValueError("Passed model doesn't support this feature.")
 
     def fit(self, X, y=None):
         """Just for compatibility. Does not do anything"""

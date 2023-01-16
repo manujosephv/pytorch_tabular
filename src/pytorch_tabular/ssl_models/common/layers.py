@@ -45,7 +45,7 @@ class MixedEmbedding1dLayer(nn.Module):
 
         if self.categorical_dim > 0:
             # Embedding layers
-            self.embedding_layers = nn.ModuleDict(embd_layers)
+            self.embedding_layer = nn.ModuleDict(embd_layers)
             self.one_hot_layers = nn.ModuleDict(one_hot_layers)
         self._onehot_feat_idx = onehot_feat_idx
         self._binary_feat_idx = binary_feat_idx
@@ -98,7 +98,7 @@ class MixedEmbedding1dLayer(nn.Module):
                     x_cat.append(self.one_hot_layers[str(i)](categorical_data[:, i]))
                     x_cat_orig.append(categorical_data[:, i : i + 1])  # noqa: E203
                 else:
-                    x_embed.append(self.embedding_layers[str(i)](categorical_data[:, i]))
+                    x_embed.append(self.embedding_layer[str(i)](categorical_data[:, i]))
             # (B, N, E)
             x_cat = torch.cat(x_cat, 1) if len(x_cat) > 0 else None
             x_cat_orig = torch.cat(x_cat_orig, 1) if len(x_cat_orig) > 0 else None
