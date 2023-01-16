@@ -39,4 +39,7 @@ This can be done using the parameter `log_logits` in `ExperimentConfig`.
 
 ![Gradient histograms](imgs/log_logits.png)
 
-**For a complete list of parameters refer to the API Docs**
+
+::: pytorch_tabular.config.ExperimentConfig
+    options:
+        show_root_heading: yes

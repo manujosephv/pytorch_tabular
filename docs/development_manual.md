@@ -1,18 +1,8 @@
-# Authenticate Travis
-
-## Encrypt Password
-
-```
-travis encrypt <password>
-```
-
-- Copy the resuting encrypted password and add to travis.yml
-
 # Bump Version and Trigger Build
 
 ## Bump Version(Patch Update)
 
-```
+```bash
 #Commit all changes
 bump2version patch
 ```
@@ -23,7 +13,7 @@ bump2version patch
 
 ## Bump Version(Minor Update)
 
-```
+```bash
 #Commit all changes
 bump2version minor
 ```
@@ -34,7 +24,7 @@ bump2version minor
 
 ## Bump Version(Major Update)
 
-```
+```bash
 #Commit all changes
 bump2version major
 ```
@@ -45,7 +35,7 @@ bump2version major
 
 ## Bump Version(Release)
 
-```
+```bash
 # Add new Version and changelog to History.md
 # Commit all changes
 bump2version --tag release
@@ -66,10 +56,10 @@ git push --tags
   1. setup.cfg
   1. __init__.py
 - Delete the Git Tags in local
-  ```
+  ```bash
   git tag -d <tag_name>
   ```
 - Delete the tags from GitHub
-  ```
-  git push --delte origin <tag_name>
+  ```bash
+  git push --delete origin <tag_name>
   ```

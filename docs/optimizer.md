@@ -34,3 +34,8 @@ tabular_model.fit(
     optimizer_params={"nus": (0.7, 1.0), "betas": (0.95, 0.998)},
 )
 ```
+
+
+::: pytorch_tabular.config.OptimizerConfig
+    options:
+        show_root_heading: yes
