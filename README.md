@@ -151,8 +151,8 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 1. ~~Add Fourier Encoding for cyclic time variables~~
 1. ~~Add Text and Image Modalities for mixed modal problems~~
 
-
 <!-- readme: contributors -start -->
+
 <table>
 <tr>
     <td align="center">
@@ -228,7 +228,6 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
     </td></tr>
 </table>
 <!-- readme: contributors -end -->
-
 
 ## Citation
 
