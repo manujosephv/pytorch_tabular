@@ -68,16 +68,20 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Args:
             train (pd.DataFrame): The Training Dataframe
+
             config (DictConfig): Merged configuration object from ModelConfig, DataConfig,
-            TrainerConfig, OptimizerConfig & ExperimentConfig
+                TrainerConfig, OptimizerConfig & ExperimentConfig
+
             validation (pd.DataFrame, optional): Validation Dataframe.
-            If left empty, we use the validation split from DataConfig to split a random sample as validation.
-            Defaults to None.
+                If left empty, we use the validation split from DataConfig to split a random sample as validation.
+                Defaults to None.
+
             test (pd.DataFrame, optional): Holdout DataFrame to check final performance on.
-            Defaults to None.
+                Defaults to None.
+
             target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
-            and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
-            a tuple of callables (transform_func, inverse_transform_func)
+                and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+                a tuple of callables (transform_func, inverse_transform_func)
         """
         super().__init__()
         self.train = train.copy()
@@ -306,7 +310,7 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns a list of time features that will be appropriate for the given frequency string.
 
         Args:
-            freq_str (str): Frequency string of the form [multiple][granularity] such as "12H", "5min", "1D" etc.
+            freq_str (str): Frequency string of the form `[multiple][granularity]` such as "12H", "5min", "1D" etc.
 
         Returns:
             List of added features
@@ -454,7 +458,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
             field_name (str): Date field name
 
-            frequency (str): Frequency string of the form [multiple][granularity] such as "12H", "5min", "1D" etc.
+            frequency (str): Frequency string of the form `[multiple][granularity]` such as "12H", "5min", "1D" etc.
 
             prefix (str, optional): Prefix to add to the new columns. Defaults to None.
 
@@ -626,7 +630,7 @@ class TabularDatamodule(pl.LightningDataModule):
             path (Union[str, Path]): Path to the datamodule
 
         Returns:
-            TabularDatamodule: The datamodule loaded from the path
+            TabularDatamodule (TabularDatamodule): The datamodule loaded from the path
         """
         if isinstance(path, str):
             path = Path(path)

@@ -10,6 +10,9 @@ nav:
       - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
       - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
       - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
+      - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
+      - Low-level API Usecases: "tutorials/09-Low-level API Usecases.ipynb"
+      - Test Time Augumentation: "tutorials/10-Test Time Augmentation.ipynb"
     - Configuration:
       - Data: data.md
       - Supervised Models: models.md
@@ -71,9 +74,9 @@ plugins:
       handlers:
         python:
           paths: [src]  # search packages in the src folder
-          rendering:
-            show_root_heading: yes
-            show_category_heading: yes
+          # rendering:
+          show_root_heading: yes
+          show_category_heading: yes
             # docstring_section_style: spacy
 repo_url: https://github.com/manujosephv/pytorch_tabular
 extra:

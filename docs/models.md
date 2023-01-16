@@ -61,9 +61,7 @@ PyTorch Tabular also accepts custom loss functions(which are drop in replacement
 
 !!! warning
 
-```
-**If you do not know what you are doing, leave the loss functions at default values.** Models return the raw logits and it is the responsibility of the Loss function to apply the right activations.
-```
+    **If you do not know what you are doing, leave the loss functions at default values.** Models return the raw logits and it is the responsibility of the Loss function to apply the right activations.
 
 While the Loss functions drive the gradient based optimization, we keep track of the metrics that we care about during training. By default, PyTorch Tabular tracks Accuracy for classification and Mean Squared Error for regression. You can choose any functional metrics (as a list of strings) from [TorchMetrics](https://torchmetrics.readthedocs.io/en/stable/references/metric.html).
 
@@ -93,7 +91,7 @@ target_range = [(train[target].min() * 0.8, train[target].max() * 1.2)]
 Now let's look at a few of the different models available in PyTorch Tabular and their configurations. For a complete list of implemented models:
 
 ```bash
->>> [cl for cl in dir(models) if "config" in cl.lower()]
+>>> [cl for cl in dir(pytorch_tabular.models) if "config" in cl.lower()]
 ['AutoIntConfig', 'CategoryEmbeddingModelConfig', 'FTTransformerConfig', 'GatedAdditiveTreeEnsembleConfig', 'MDNConfig', 'NodeConfig', 'TabNetModelConfig', 'TabTransformerConfig']
 ```
 
@@ -108,6 +106,9 @@ All the parameters have intelligent default values. Let's look at few of them:
 - `initialization`: str: Initialization scheme for the linear layers. Choices are: `kaiming` `xavier` `random`. Defaults to `kaiming`
 - `use_batch_norm`: bool: Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to `False`
 - `dropout`: float: The probability of the element to be zeroed. This applies to all the linear layers. Defaults to `0.0`
+
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.CategoryEmbeddingModelConfig][]
 
 ## Gated Additive Tree Ensemble (GATE)
 
@@ -133,7 +134,8 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 - `share_head_weights`: bool: If True, we will share the weights between the heads. Defaults to True
 
-**For a complete list of parameters refer to the API Docs**
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.GatedAdditiveTreeEnsembleConfig][]
 
 ### Neural Oblivious Decision Ensembles (NODE)
 
@@ -160,17 +162,14 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 !!! warning
 
-```
-`embed_categorical` is deprecated and will be removed in the next release. If you do not want to embed categorical columns, process then using a categorical encoder of your choice and present to Pytorch Tabular as continuous features.
-```
+    `embed_categorical` is deprecated and will be removed in the next release. If you do not want to embed categorical columns, process then using a categorical encoder of your choice and present to Pytorch Tabular as continuous features.
 
-**For a complete list of parameters refer to the API Docs**
+**For a complete list of parameters refer to the API Docs**     
+[pytorch_tabular.models.NodeConfig][]
 
 !!! note
 
-```
-NODE model has a lot of parameters and therefore takes up a lot of memory. Smaller batchsizes(like 64 or 128) makes the model manageable in a smaller GPU(~4GB).
-```
+    NODE model has a lot of parameters and therefore takes up a lot of memory. Smaller batchsizes(like 64 or 128) makes the model manageable in a smaller GPU(~4GB).
 
 ### TabNet
 
@@ -189,7 +188,8 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 - `n_shared`: int: Number of independent GLU layer in each GLU block. Defaults to `2`
 - `virtual_batch_size`: int: Batch size for Ghost Batch Normalization. BatchNorm on large batches sometimes does not do very well and therefore Ghost Batch Normalization which does batch normalization in smaller virtual batches is implemented in TabNet. Defaults to `128`
 
-**For a complete list of parameters refer to the API Docs**
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.TabNetModelConfig][]
 
 ## Implementing New Architectures
 
@@ -250,4 +250,4 @@ In addition to the model, you will also need to define a config. Configs are pyt
 1. the input batch at the `forward` method is a dictionary with keys `continuous` and `categorical`
 1. In the `\_build_network` method, save every component that you want access in the `forward` to `self`
 
-Please checkout the **Implementing New Architectures** tutorial for a working example.
+Please checkout the [**Implementing New Architectures**](tutorials/04-Implementing%20New%20Architectures.ipynb) tutorial for a working example.

@@ -70,7 +70,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             custom_metrics (Optional[List[Callable]], optional): A list of custom metrics. Defaults to None.
             custom_optimizer (Optional[torch.optim.Optimizer], optional): A custom optimizer. Defaults to None.
             custom_optimizer_params (Dict, optional): A dictionary of custom optimizer parameters. Defaults to {}.
-            kwargs: Additional keyword arguments.
+            kwargs (Dict, optional): Additional keyword arguments.
         """
         super().__init__()
         assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
