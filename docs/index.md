@@ -14,7 +14,7 @@ PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible
 - **Easy Customization**
 - **Scalable and Easier to Deploy**
 
-It has been built on the shoulders of giants like [**PyTorch**](https://pytorch.org/)(obviously), and [**PyTorch Lightning**](https://www.pytorchlightning.ai/).
+It has been built on the shoulders of giants like [**PyTorch**](https://pytorch.org/)(obviously), [**PyTorch Lightning**](https://www.pytorchlightning.ai/), and [pandas](https://pandas.pydata.org/)
 
 ## Installation
 

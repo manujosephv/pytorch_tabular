@@ -110,7 +110,7 @@ All the parameters have intelligent default values. Let's look at few of them:
 **For a complete list of parameters refer to the API Docs**    
 [pytorch_tabular.models.CategoryEmbeddingModelConfig][]
 
-## Gated Additive Tree Ensemble (GATE)
+### Gated Additive Tree Ensemble (GATE)
 
 [Gated Additive Tree Ensemble](https://arxiv.org/pdf/2207.08548.pdf) is a a novel high-performance, parameter and computationally efficient deep learning architecture for tabular data, Gated Additive Tree Ensemble(GATE). GATE uses a gating mechanism, inspired from GRU, as a feature representation learning unit with an in-built feature selection mechanism. The authors combine it with an ensemble of differentiable, non-linear decision trees, re-weighted with simple self-attention to predict our desired output. The authors also demonstrate that GATE is a competitive alternative to SOTA approaches like GBDTs, NODE, FT Transformers, etc. by experiments on several public datasets (both classification and regression). You can use it by choosing `GatedAdditiveTreeEnsembleConfig`.
 
