@@ -73,12 +73,12 @@ class SparsemaxFunction(Function):
     """
 
     @staticmethod
-    def forward(ctx, input, dim=-1):
+    def forward(ctx, input, dim: int = -1):
         """sparsemax: normalizing sparse transform (a la softmax)
 
         Parameters:
             input (Tensor): any shape
-            dim: dimension along which to apply sparsemax
+            dim (int): dimension along which to apply sparsemax
 
         Returns:
             output (Tensor): same shape as input

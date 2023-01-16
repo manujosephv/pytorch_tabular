@@ -950,9 +950,9 @@ class TabularModel:
         max_lr: float = 1,
         num_training: int = 100,
         mode: str = "exponential",
-        early_stop_threshold: float = 4.0,
-        plot=True,
-        callbacks=None,
+        early_stop_threshold: Optional[float] = 4.0,
+        plot: bool = True,
+        callbacks: Optional[List] = None,
     ) -> Tuple[float, pd.DataFrame]:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
 
@@ -972,16 +972,13 @@ class TabularModel:
                 after each batch. If set to 'exponential', will increase learning
                 rate exponentially.
 
-            early_stop_threshold(Optional[float], optional): threshold for stopping the search. If the
+            early_stop_threshold (Optional[float], optional): threshold for stopping the search. If the
                 loss at any point is larger than early_stop_threshold*best_loss
                 then the search is stopped. To disable, set to None.
 
-            plot(bool, optional): If true, will plot using matplotlib
+            plot (bool, optional): If true, will plot using matplotlib
 
-            trained_backbone (pl.LightningModule): this module contains the weights for a pretrained backbone
-
-            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will
-                be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+            callbacks (Optional[List], optional): If provided, will be added to the callbacks for Trainer.
 
         Returns:
             The suggested learning rate and the learning rate finder results

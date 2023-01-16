@@ -645,7 +645,7 @@ class ExperimentRunManager:
 
         Args:
             exp_version_manager (str, optional): The path of the yml file which acts as version control.
-            Defaults to ".pt_tmp/exp_version_manager.yml".
+                Defaults to ".pt_tmp/exp_version_manager.yml".
         """
         super().__init__()
         self._exp_version_manager = exp_version_manager

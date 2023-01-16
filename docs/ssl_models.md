@@ -67,7 +67,7 @@ While supervised models had the loss and metrics as an argument in their configs
 These are the main steps to use a self-supervised model in PyTorch Tabular:
 
 1. Define all the configs and initialize [pytorch_tabular.TabularModel][]    
-2. Pretrain the model using un-labelled data with [pytorch.TabularModel.pretrain][]    
+2. Pretrain the model using un-labelled data with [pytorch_tabular.TabularModel.pretrain][]    
 3. Create a new fine-tune model with the pretrained weights using [pytorch_tabular.TabularModel.create_finetune_model][]   
 3. Finetune the model with labelled data using [pytorch_tabular.TabularModel.finetune][]   
 

@@ -38,7 +38,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
         """Just for compatibility. Does not do anything"""
         return self
 
-    def transform(self, X: pd.DataFrame, y=None):
+    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         """Transforms the categorical columns specified to the trained neural features from the model
 
         Args:
@@ -85,7 +85,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
             X_encoded.drop(columns=orig_features, inplace=True)
         return X_encoded
 
-    def fit_transform(self, X: pd.DataFrame, y=None):
+    def fit_transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         """Encode given columns of X based on the learned features.
 
         Args:

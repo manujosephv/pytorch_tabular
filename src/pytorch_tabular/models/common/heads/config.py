@@ -56,7 +56,6 @@ class LinearHeadConfig:
 class MixtureDensityHeadConfig:
     """MixtureDensityHead configuration
     Args:
-        Args:
         num_gaussian (int): Number of Gaussian Distributions in the mixture model. Defaults to 1
 
         sigma_bias_flag (bool): Whether to have a bias term in the sigma layer. Defaults to False
