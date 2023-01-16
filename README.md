@@ -151,6 +151,8 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 1. ~~Add Fourier Encoding for cyclic time variables~~
 1. ~~Add Text and Image Modalities for mixed modal problems~~
 
+## Contributors    
+
 ## Citation
 
 If you use PyTorch Tabular for a scientific publication, we would appreciate citations to the published software and the following paper:
