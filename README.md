@@ -153,6 +153,80 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 
 
 <!-- readme: contributors -start -->
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/manujosephv">
+            <img src="https://avatars.githubusercontent.com/u/10508493?v=4" width="100;" alt="manujosephv"/>
+            <br />
+            <sub><b>Null</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/wsad1">
+            <img src="https://avatars.githubusercontent.com/u/13963626?v=4" width="100;" alt="wsad1"/>
+            <br />
+            <sub><b>Jinu Sunil</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Borda">
+            <img src="https://avatars.githubusercontent.com/u/6035284?v=4" width="100;" alt="Borda"/>
+            <br />
+            <sub><b>Jirka Borovec</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/fonnesbeck">
+            <img src="https://avatars.githubusercontent.com/u/81476?v=4" width="100;" alt="fonnesbeck"/>
+            <br />
+            <sub><b>Chris Fonnesbeck</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/jxtrbtk">
+            <img src="https://avatars.githubusercontent.com/u/40494970?v=4" width="100;" alt="jxtrbtk"/>
+            <br />
+            <sub><b>Null</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/JulianRein">
+            <img src="https://avatars.githubusercontent.com/u/35046938?v=4" width="100;" alt="JulianRein"/>
+            <br />
+            <sub><b>Null</b></sub>
+        </a>
+    </td></tr>
+<tr>
+    <td align="center">
+        <a href="https://github.com/krshrimali">
+            <img src="https://avatars.githubusercontent.com/u/19997320?v=4" width="100;" alt="krshrimali"/>
+            <br />
+            <sub><b>Kushashwa Ravi Shrimali</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Actis92">
+            <img src="https://avatars.githubusercontent.com/u/46601193?v=4" width="100;" alt="Actis92"/>
+            <br />
+            <sub><b>Luca Actis Grosso</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/sgbaird">
+            <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
+            <br />
+            <sub><b>Sterling G. Baird</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/yinyunie">
+            <img src="https://avatars.githubusercontent.com/u/25686434?v=4" width="100;" alt="yinyunie"/>
+            <br />
+            <sub><b>Yinyu Nie</b></sub>
+        </a>
+    </td></tr>
+</table>
 <!-- readme: contributors -end -->
 
 
