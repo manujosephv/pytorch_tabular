@@ -191,6 +191,7 @@ def reset_all_weights(model: nn.Module) -> None:
         - https://stackoverflow.com/questions/63627997/reset-parameters-of-a-neural-network-in-pytorch
         - https://pytorch.org/docs/stable/generated/torch.nn.Module.html
     """
+
     @torch.no_grad()
     def weight_reset(m: nn.Module):
         # - check if the current module has reset_parameters & if it's callabed called it on m
