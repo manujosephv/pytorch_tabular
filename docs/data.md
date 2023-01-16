@@ -50,3 +50,5 @@ PyTorch Tabular offers 4 standard transformations using the `continuous_feature_
 `quantile_normal` and `quantile_uniform` are monotonic, non-parametric transformations which aims to transfom the features to a normal distribution or a uniform distribution, respectively.By performing a rank transformation, a quantile transform smooths out unusual distributions and is less influenced by outliers than scaling methods. It does, however, distort correlations and distances within and across features.
 
 ::: pytorch_tabular.config.DataConfig
+    options:
+        show_root_heading: yes

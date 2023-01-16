@@ -46,7 +46,9 @@ Checkpoint Saving is also turned on by default and to turn it off you can set th
 
 ### Learning Rate Finder
 
-First proposed in this paper [Cyclical Learning Rates for Training Neural Networks](https://arxiv.org/abs/1506.01186) and the subsequently popularized by fast.ai, is a technique to reach the neighbourhood of optimum learning rate without costly search. PyTorch Tabular let's you find the optimal learning rate(using the method proposed in the paper) and automatically use that for training the network. All this can be turned on with a sinple flag `auto_lr_find`
+First proposed in this paper [Cyclical Learning Rates for Training Neural Networks](https://arxiv.org/abs/1506.01186) and the subsequently popularized by fast.ai, is a technique to reach the neighbourhood of optimum learning rate without costly search. PyTorch Tabular let's you find the optimal learning rate(using the method proposed in the paper) and automatically use that for training the network. All this can be turned on with a simple flag `auto_lr_find`
+
+We can also run the learning rate finder as a separate step using [pytorch_tabular.TabularModel.find_learning_rate].
 
 ## Controlling the Gradients/Optimization
 
@@ -74,6 +76,9 @@ If the model is not learning properly:
 
 ## Using the entire PyTorch Lightning Trainer
 
-To unlock the full potential of the PyTorch Lightning Trainer, you can use the `trainer_kwargs` parameter. This will let you pass any parameter that is supported by the PyTorch Lightning Trainer.
+To unlock the full potential of the PyTorch Lightning Trainer, you can use the `trainer_kwargs` parameter. This will let you pass any parameter that is supported by the PyTorch Lightning Trainer. Full documentation can be found [here](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html)
 
-**For a complete list of parameters refer to the API Docs**
+
+::: pytorch_tabular.config.TrainerConfig
+    options:
+        show_root_heading: yes
