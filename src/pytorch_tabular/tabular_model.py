@@ -22,10 +22,10 @@ from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.utilities.model_summary import summarize
+from rich.progress import track
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder
 from torch import nn
-from tqdm.autonotebook import tqdm
 
 from pytorch_tabular.config import (
     DataConfig,
@@ -1084,7 +1084,7 @@ class TabularModel:
         quantile_predictions = []
         logits_predictions = defaultdict(list)
         is_probabilistic = hasattr(self.model.hparams, "_probabilistic") and self.model.hparams._probabilistic
-        for batch in tqdm(inference_dataloader, desc="Generating Predictions..."):
+        for batch in track(inference_dataloader, description="Generating Predictions..."):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
