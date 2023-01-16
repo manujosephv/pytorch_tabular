@@ -85,9 +85,8 @@ For self-supervised learning, there is a different API because the process is di
 
 !!! note
 
-```
-The dataframes passed to `pretrain` need not have the target column. But even if you defined the target column in `DataConfig`, it will be ignored. But the dataframes passed to `finetune` must have the target column.
-```
+    The dataframes passed to `pretrain` need not have the target column. But even if you defined the target column in `DataConfig`, it will be ignored. But the dataframes passed to `finetune` must have the target column.
+
 
 ## Model Evaluation
 

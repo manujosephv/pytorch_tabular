@@ -837,10 +837,10 @@ class ModelConfig:
 class SSLModelConfig:
     """Base SSLModel Configuration
     Args:
-        encoder_config (Optional[__main__.ModelConfig]): The config of the encoder to be used for the
+        encoder_config (Optional[ModelConfig]): The config of the encoder to be used for the
                 model. Should be one of the model configs defined in PyTorch Tabular
 
-        decoder_config (Optional[__main__.ModelConfig]): The config of decoder to be used for the model.
+        decoder_config (Optional[ModelConfig]): The config of decoder to be used for the model.
                 Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity
 
         embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
