@@ -12,8 +12,8 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
+from rich.progress import track
 from sklearn.base import BaseEstimator, TransformerMixin
-from tqdm.autonotebook import tqdm
 
 from pytorch_tabular.utils import get_logger
 
@@ -198,7 +198,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         assert all(c in X.columns for c in self.cols)
 
         X_encoded = X.copy(deep=True)
-        for col, mapping in tqdm(
+        for col, mapping in track(
             self._mapping.items(),
             desc="Encoding the data...",
             total=len(self._mapping.values()),

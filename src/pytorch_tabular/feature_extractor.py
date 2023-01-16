@@ -4,8 +4,8 @@
 from collections import defaultdict
 
 import pandas as pd
+from rich.progress import track
 from sklearn.base import BaseEstimator, TransformerMixin
-from tqdm.autonotebook import tqdm
 
 from pytorch_tabular.models import NODEModel, TabNetModel
 from pytorch_tabular.models.mixture_density import MDNModel
@@ -57,7 +57,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
         self.tabular_model.model.eval()
         inference_dataloader = self.tabular_model.datamodule.prepare_inference_dataloader(X_encoded)
         logits_predictions = defaultdict(list)
-        for batch in tqdm(inference_dataloader, desc="Generating Features..."):
+        for batch in track(inference_dataloader, desc="Generating Features..."):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
