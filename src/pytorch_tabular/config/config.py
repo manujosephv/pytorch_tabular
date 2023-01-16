@@ -608,7 +608,7 @@ class OptimizerConfig:
         },
     )
     optimizer_params: Dict = field(
-        default_factory=lambda: {"weight_decay": 0, "amsgrad": False},
+        default_factory=lambda: {},
         metadata={"help": "The parameters for the optimizer. If left blank, will use default parameters."},
     )
     lr_scheduler: Optional[str] = field(

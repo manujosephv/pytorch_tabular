@@ -1015,6 +1015,7 @@ class TabularModel:
         test: Optional[pd.DataFrame] = None,
         test_loader: Optional[torch.utils.data.DataLoader] = None,
         ckpt_path: Optional[Union[str, Path]] = None,
+        verbose: bool = True,
     ) -> Union[dict, list]:
         """Evaluates the dataframe using the loss and metrics already set in config
 
@@ -1029,6 +1030,8 @@ class TabularModel:
 
             ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided, will try to use the
                 best checkpoint during training.
+
+            verbose (bool, optional): If true, will print the results. Defaults to True.
         Returns:
             The final test result dictionary.
         """
@@ -1040,6 +1043,9 @@ class TabularModel:
             if test is not None:
                 test_loader = self.datamodule.prepare_inference_dataloader(test)
             elif self.datamodule.test is not None:
+                warnings.warn(
+                    "Providing test in fit is deprecated. Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                )
                 test_loader = self.datamodule.test_dataloader()
             else:
                 return {}
@@ -1047,6 +1053,7 @@ class TabularModel:
             model=self.model,
             dataloaders=test_loader,
             ckpt_path=ckpt_path,
+            verbose=verbose,
         )
         return result
 
@@ -1109,7 +1116,7 @@ class TabularModel:
             quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
             if quantile_predictions.ndim == 2:
                 quantile_predictions = quantile_predictions.unsqueeze(-1)
-        pred_df = test.copy()
+        pred_df = test.copy()  # TODO Add option to switch between including the entire input DF or not.
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
             # Probabilistic Models are only implemented for Regression
