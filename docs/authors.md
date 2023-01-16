@@ -7,4 +7,3 @@
 ## Contributors
 
 - [Jirka Borovec](https://github.com/Borda)
-

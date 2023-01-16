@@ -12,6 +12,7 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+        exclude: ^docs/
       - id: check-case-conflict
       - id: check-yaml
       - id: check-toml
@@ -44,14 +45,14 @@ repos:
       - id: black
         name: Black code
 
-  - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
-    hooks:
-      - id: mdformat
-        additional_dependencies:
-          - mdformat-gfm
-          - mdformat-black
-          - mdformat_frontmatter
+  # - repo: https://github.com/executablebooks/mdformat
+  #   rev: 0.7.16
+  #   hooks:
+  #     - id: mdformat
+  #       additional_dependencies:
+  #         - mdformat-gfm
+  #         - mdformat-black
+  #         - mdformat_frontmatter
 
 #  - repo: https://github.com/asottile/yesqa
 #    rev: v1.4.0
@@ -63,7 +64,7 @@ repos:
     hooks:
       - id: flake8
 
-exclude: ^docs/
+# exclude: ^docs/
 
 # exclude: |
 #     (?x)(
