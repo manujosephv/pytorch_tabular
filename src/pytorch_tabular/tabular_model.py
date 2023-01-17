@@ -1060,6 +1060,7 @@ class TabularModel:
         quantiles: Optional[List] = [0.25, 0.5, 0.75],
         n_samples: Optional[int] = 100,
         ret_logits=False,
+        include_input_features: bool = True,
     ) -> pd.DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe
 
@@ -1072,11 +1073,17 @@ class TabularModel:
                 Ignored for non-probabilistic models. Defaults to 100
             ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
                 with the dataframe. Defaults to False
+            include_input_features (bool): Flag to include the input features in the returned dataframe.
+                Defaults to True
 
         Returns:
-            pd.DataFrame: Returns a dataframe with predictions and features.
+            pd.DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
                 If classification, it returns probabilities and final prediction
         """
+        warnings.warn(
+            "Default for `include_input_features` will change from True to False in the next release. Please set it explicitly.",
+            DeprecationWarning,
+        )
         assert all([q <= 1 and q >= 0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
         self.model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
@@ -1113,7 +1120,10 @@ class TabularModel:
             quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
             if quantile_predictions.ndim == 2:
                 quantile_predictions = quantile_predictions.unsqueeze(-1)
-        pred_df = test.copy()  # TODO Add option to switch between including the entire input DF or not.
+        if include_input_features:
+            pred_df = test.copy()  # TODO Add option to switch between including the entire input DF or not.
+        else:
+            pred_df = pd.DataFrame(index=test.index)
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
             # Probabilistic Models are only implemented for Regression
