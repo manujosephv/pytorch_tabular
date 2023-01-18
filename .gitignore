@@ -150,3 +150,4 @@ exp_version_manager.yml
 compare.py
 checkpoints/
 docs/examples/basic/
+examples/test_save/

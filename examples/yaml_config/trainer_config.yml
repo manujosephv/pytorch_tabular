@@ -1,0 +1,7 @@
+batch_size: 512
+fast_dev_run: true
+max_epochs: 5 # Set this to more reasonable value in real
+accelerator: auto
+early_stopping: null
+checkpoints: valid_loss
+load_best: true

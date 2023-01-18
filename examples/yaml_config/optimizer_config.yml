@@ -1,0 +1,8 @@
+optimizer: AdamW
+optimizer_params:
+  weight_decay: 1e-5
+lr_scheduler: CosineAnnealingWarmRestarts
+lr_scheduler_params:
+  T_0: 100
+  T_mult: 1
+lr_scheduler_monitor_metric: val_loss

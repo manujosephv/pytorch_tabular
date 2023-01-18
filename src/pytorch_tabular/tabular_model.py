@@ -89,14 +89,14 @@ class TabularModel:
                 or (optimizer_config is not None)
                 or (trainer_config is not None)
             ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
-            if model_config.task != "ssl":
-                assert (
-                    data_config.target is not None
-                ), f"`target` in data_config should not be None for {model_config.task} task"
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
             optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
+            if model_config.task != "ssl":
+                assert (
+                    data_config.target is not None
+                ), f"`target` in data_config should not be None for {model_config.task} task"
             if experiment_config is None:
                 logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
