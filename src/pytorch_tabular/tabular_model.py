@@ -225,8 +225,8 @@ class TabularModel:
                 monitor=self.config.early_stopping,
                 min_delta=self.config.early_stopping_min_delta,
                 patience=self.config.early_stopping_patience,
-                verbose=False,
                 mode=self.config.early_stopping_mode,
+                **self.config.early_stopping_kwargs,
             )
             callbacks.append(early_stop_callback)
         if self.config.checkpoints:
@@ -239,6 +239,7 @@ class TabularModel:
                 save_top_k=self.config.checkpoints_save_top_k,
                 mode=self.config.checkpoints_mode,
                 every_n_epochs=self.config.checkpoints_every_n_epochs,
+                **self.config.checkpoints_kwargs,
             )
             callbacks.append(model_checkpoint)
             self.config.enable_checkpointing = True
@@ -1061,6 +1062,7 @@ class TabularModel:
         n_samples: Optional[int] = 100,
         ret_logits=False,
         include_input_features: bool = True,
+        device: Optional[torch.device] = None,
     ) -> pd.DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe
 
@@ -1085,26 +1087,35 @@ class TabularModel:
             DeprecationWarning,
         )
         assert all([q <= 1 and q >= 0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
-        self.model.eval()
+        if device is not None:
+            if isinstance(device, str):
+                device = torch.device(device)
+            if self.model.device != device:
+                model = self.model.to(device)
+            else:
+                model = self.model
+        else:
+            model = self.model
+        model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
         point_predictions = []
         quantile_predictions = []
         logits_predictions = defaultdict(list)
-        is_probabilistic = hasattr(self.model.hparams, "_probabilistic") and self.model.hparams._probabilistic
+        is_probabilistic = hasattr(model.hparams, "_probabilistic") and model.hparams._probabilistic
         for batch in track(inference_dataloader, description="Generating Predictions..."):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
                     # Skipping empty list
                     continue
-                batch[k] = v.to(self.model.device)
+                batch[k] = v.to(model.device)
             if is_probabilistic:
-                samples, ret_value = self.model.sample(batch, n_samples, ret_model_output=True)
+                samples, ret_value = model.sample(batch, n_samples, ret_model_output=True)
                 y_hat = torch.mean(samples, dim=-1)
                 quantile_preds = []
                 for q in quantiles:
                     quantile_preds.append(torch.quantile(samples, q=q, dim=-1).unsqueeze(1))
             else:
-                y_hat, ret_value = self.model.predict(batch, ret_model_output=True)
+                y_hat, ret_value = model.predict(batch, ret_model_output=True)
             if ret_logits:
                 for k, v in ret_value.items():
                     # if k == "backbone_features":
@@ -1121,7 +1132,7 @@ class TabularModel:
             if quantile_predictions.ndim == 2:
                 quantile_predictions = quantile_predictions.unsqueeze(-1)
         if include_input_features:
-            pred_df = test.copy()  # TODO Add option to switch between including the entire input DF or not.
+            pred_df = test.copy()
         else:
             pred_df = pd.DataFrame(index=test.index)
         if self.config.task == "regression":

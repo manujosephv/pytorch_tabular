@@ -220,6 +220,6 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
         if self.hparams.task == "regression":
             logger.info("Data Aware Initialization of T0")
             # Need a big batch to initialize properly
-            alt_loader = datamodule.train_dataloader(batch_size=2000)
+            alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
             batch = next(iter(alt_loader))
             self.head.T0.data = torch.mean(batch["target"], dim=0)

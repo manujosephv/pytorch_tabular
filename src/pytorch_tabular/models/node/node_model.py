@@ -81,7 +81,7 @@ class NODEModel(BaseModel):
         """Performs data-aware initialization for NODE"""
         logger.info("Data Aware Initialization of NODE using a forward pass with 2000 batch size....")
         # Need a big batch to initialize properly
-        alt_loader = datamodule.train_dataloader(batch_size=2000)
+        alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
         batch = next(iter(alt_loader))
         for k, v in batch.items():
             if isinstance(v, list) and (len(v) == 0):

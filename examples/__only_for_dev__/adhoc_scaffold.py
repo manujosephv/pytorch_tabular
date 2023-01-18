@@ -85,7 +85,11 @@ tabular_model = TabularModel(
 tabular_model.fit(train=train, validation=val)
 test.drop(columns=["target"], inplace=True)
 pred_df = tabular_model.predict(test)
+pred_df = tabular_model.predict(test, device="cpu")
+pred_df = tabular_model.predict(test, device="cuda")
+import torch  # noqa: E402
 
+pred_df = tabular_model.predict(test, device=torch.device("cuda"))
 # tabular_model.fit(train=train, validation=val)
 # tabular_model.fit(train=train, validation=val, max_epochs=5)
 # tabular_model.fit(train=train, validation=val, max_epochs=5, reset=True)

@@ -237,6 +237,8 @@ class TrainerConfig:
     Args:
         batch_size (int): Number of samples in each batch of training
 
+        data_aware_init_batch_size (int): Number of samples in each batch of training for the data-aware initialization, when applicable. Defaults to 2000
+
         fast_dev_run (bool): runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val
                 and test to find any bugs (ie: a sort of unit test).
 
@@ -296,6 +298,9 @@ class TrainerConfig:
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements
                 in loss/metric
 
+        early_stopping_kwargs (Optional[Dict]): Additional keyword arguments for the early stopping callback.
+                See the documentation for the PyTorch Lightning EarlyStopping callback for more details.
+
         checkpoints (Optional[str]): The loss/metric that needed to be monitored for checkpoints. If None,
                 there will be no checkpoints
 
@@ -310,6 +315,9 @@ class TrainerConfig:
         checkpoints_mode (str): The direction in which the loss/metric should be optimized
 
         checkpoints_save_top_k (int): The number of best models to save
+
+        checkpoints_kwargs (Optional[Dict]): Additional keyword arguments for the checkpoints callback.
+                See the documentation for the PyTorch Lightning ModelCheckpoint callback for more details.
 
         load_best (bool): Flag to load the best model saved during training
 
@@ -328,6 +336,12 @@ class TrainerConfig:
     """
 
     batch_size: int = field(default=64, metadata={"help": "Number of samples in each batch of training"})
+    data_aware_init_batch_size: int = field(
+        default=2000,
+        metadata={
+            "help": "Number of samples in each batch of training for the data-aware initialization, when applicable. Defaults to 2000"
+        },
+    )
     fast_dev_run: bool = field(
         default=False,
         metadata={
@@ -429,6 +443,12 @@ class TrainerConfig:
         default=3,
         metadata={"help": "The number of epochs to wait until there is no further improvements in loss/metric"},
     )
+    early_stopping_kwargs: Optional[Dict[str, Any]] = field(
+        default_factory=lambda: dict(),
+        metadata={
+            "help": "Additional keyword arguments for the early stopping callback. See the documentation for the PyTorch Lightning EarlyStopping callback for more details."
+        },
+    )
     checkpoints: Optional[str] = field(
         default="valid_loss",
         metadata={
@@ -456,6 +476,12 @@ class TrainerConfig:
     checkpoints_save_top_k: int = field(
         default=1,
         metadata={"help": "The number of best models to save"},
+    )
+    checkpoints_kwargs: Optional[Dict[str, Any]] = field(
+        default_factory=lambda: dict(),
+        metadata={
+            "help": "Additional keyword arguments for the checkpoints callback. See the documentation for the PyTorch Lightning ModelCheckpoint callback for more details."
+        },
     )
     load_best: bool = field(
         default=True,
@@ -508,6 +534,16 @@ class TrainerConfig:
             warnings.warn("Ignoring devices in favor of devices_list")
             self.devices = self.devices_list
         delattr(self, "devices_list")
+        for key in self.early_stopping_kwargs.keys():
+            if key in ["min_delta", "mode", "patience"]:
+                raise ValueError(
+                    f"Cannot override {key} in early_stopping_kwargs. Please use the appropriate argument in `TrainerConfig`"
+                )
+        for key in self.checkpoints_kwargs.keys():
+            if key in ["dirpath", "filename", "monitor", "save_top_k", "mode", "every_n_epochs"]:
+                raise ValueError(
+                    f"Cannot override {key} in checkpoints_kwargs. Please use the appropriate argument in `TrainerConfig`"
+                )
 
 
 @dataclass
