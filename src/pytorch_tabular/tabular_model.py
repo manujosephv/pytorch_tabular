@@ -7,6 +7,7 @@ import inspect
 import os
 import warnings
 from collections import defaultdict
+from functools import partial
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -370,7 +371,7 @@ class TabularModel:
             model_args["loss"] = "MSELoss"  # For compatibility. Not Used
         if custom_params.get("custom_metrics") is not None:
             model_args["metrics"] = ["mean_squared_error"]  # For compatibility. Not Used
-            model_args["metric_params"] = [{}]  # For compatibility. Not Used
+            model_args["metrics_params"] = [{}]  # For compatibility. Not Used
         if custom_params.get("custom_optimizer") is not None:
             model_args["optimizer"] = "Adam"  # For compatibility. Not Used
         if custom_params.get("custom_optimizer_params") is not None:
@@ -815,6 +816,14 @@ class TabularModel:
         datamodule.target = config.target
         datamodule.batch_size = config.batch_size
         datamodule.seed = config.seed
+        model_callable = _GenericModel
+        inferred_config = self.datamodule.update_config(config)
+        inferred_config = OmegaConf.structured(inferred_config)
+        # Adding dummy attributes for compatibility. Not used because custom metrics are provided
+        if not hasattr(config, "metrics"):
+            config.metrics = "dummy"
+        if not hasattr(config, "metrics_params"):
+            config.metrics_params = {}
         if metrics is not None:
             assert len(metrics) == len(metrics_params), "Number of metrics and metrics_params should be same"
             metrics = [getattr(torchmetrics.functional, m) if isinstance(m, str) else m for m in metrics]
@@ -827,11 +836,21 @@ class TabularModel:
             loss = loss if loss is not None else torch.nn.CrossEntropyLoss()
             if metrics is None:
                 metrics = [torchmetrics.functional.accuracy]
-                metrics_params = [{}]
-
-        model_callable = _GenericModel
-        inferred_config = self.datamodule.update_config(config)
-        inferred_config = OmegaConf.structured(inferred_config)
+                metrics_params = [
+                    {
+                        "task": "binary" if inferred_config.output_dim == 2 else "multiclass",
+                        "num_classes": inferred_config.output_dim,
+                    }
+                ]
+            else:
+                for i, mp in enumerate(metrics_params):
+                    if "task" not in mp:
+                        # For classification task, output_dim == number of classses
+                        metrics_params[i]["task"] = "binary" if inferred_config.output_dim == 2 else "multiclass"
+                    if "num_classes" not in mp:
+                        metrics_params[i]["num_classes"] = inferred_config.output_dim
+        # Forming partial callables using metrics and metric params
+        metrics = [partial(m, **mp) for m, mp in zip(metrics, metrics_params)]
         self.model.mode = "finetune"
         if learning_rate is not None:
             config.learning_rate = learning_rate

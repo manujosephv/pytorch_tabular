@@ -181,7 +181,7 @@ class FTTransformerConfig(ModelConfig):
         default=4,
         metadata={"help": "Multiple by which the Positionwise FF layer scales the input. Defaults to 4"},
     )
-    # TODO improve documentation
+
     transformer_activation: str = field(
         default="GEGLU",
         metadata={

@@ -43,3 +43,31 @@
 - Made the temp folder pytorch tabular specific to avoid conflicts with other tmp folders.
 - Some bug fixes
 - Edited an error out of Advanced Tutorial in docs
+
+## 1.0.0 (2023-01-18)
+
+- Added a new task - Self Supervised Learning (SSL) and a separate training API for it.
+- Added new SOTA model - Gated Additive Tree Ensembles (GATE).
+- Added one SSL model - Denoising AutoEncoder.
+- Added lots of new tutorials and updated entire documentation.
+- Improved code documentation and type hints.
+- Separated a Model into separate Embedding, Backbone, and Head.
+- Refactored all models to separate Backbone as native PyTorch Model(nn.Module).
+- Refactored commonly used modules (layers, activations etc. to a common module).
+- Changed MixedDensityNetworks completely (breaking change). Now MDN is a head you can use with any model.
+- Enabled a low level api for training model.
+- Enabled saving and loading of datamodule.
+- Added trainer_kwargs to pass any trainer argument PyTorch Lightning supports.
+- Added Early Stopping and Model Checkpoint kwargs to use all the arguments in PyTorch Lightining.
+- Enabled prediction using GPUs in predict method.
+- Added `reset_model` to reset model weights to random.
+- Added many save and load functions including ONNX(experimental).
+- Added random seed as a parameter.
+- Switched over completely to Rich progressbars from tqdm.
+- Fixed class-balancing / mu propagation and set default to 1.0.
+- Added PyTorch Profiler for debugging performance issues.
+- Fixed bugs with FTTransformer and TabTransformer.
+- Updated MixedDensityNetworks fixing a bug with lambda_pi.
+- Many CI/CD improvements including complete integration with GitHub Actions.
+- Upgraded all dependencies, including PyTorch Lightning, pandas, to latest versions and added dependabot to manage it going forward.
+- Added pre-commit to ensure code integrity and standardization.
