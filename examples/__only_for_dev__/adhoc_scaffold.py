@@ -88,6 +88,7 @@ pred_df = tabular_model.predict(test)
 pred_df = tabular_model.predict(test, device="cpu")
 pred_df = tabular_model.predict(test, device="cuda")
 import torch
+
 pred_df = tabular_model.predict(test, device=torch.device("cuda"))
 # tabular_model.fit(train=train, validation=val)
 # tabular_model.fit(train=train, validation=val, max_epochs=5)
