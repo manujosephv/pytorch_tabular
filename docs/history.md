@@ -71,4 +71,3 @@
 - Many CI/CD improvements including complete integration with GitHub Actions.
 - Upgraded all dependencies, including PyTorch Lightning, pandas, to latest versions and added dependabot to manage it going forward.
 - Added pre-commit to ensure code integrity and standardization.
-

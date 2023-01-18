@@ -4,6 +4,7 @@
 """Base Model"""
 import warnings
 from abc import ABCMeta, abstractmethod
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import pytorch_lightning as pl
@@ -86,8 +87,27 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         if self.custom_loss is not None:
             config.loss = str(self.custom_loss)
         if self.custom_metrics is not None:
-            config.metrics = [str(m) for m in self.custom_metrics]
-            config.metrics_params = [vars(m) for m in self.custom_metrics]
+            # Adding metrics to config for hparams logging and tracking
+            config.metrics = []
+            config.metrics_params = []
+            for metric in self.custom_metrics:
+                if isinstance(metric, partial):
+                    # extracting func names from partial functions
+                    config.metrics.append(metric.func.__name__)
+                    config.metrics_params.append(metric.keywords)
+                else:
+                    config.metrics.append(metric.__name__)
+                    config.metrics_params.append(vars(metric))
+        else:  # Updating default metrics in config
+            if config.task == "classification":
+                # Adding metric_params to config for classification task
+                for i, metric_params in enumerate(config.metrics_params):
+                    if "task" not in metric_params:
+                        # For classification task, output_dim == number of classses
+                        config.metrics_params[i]["task"] = "binary" if inferred_config.output_dim == 2 else "multiclass"
+                    if "num_classes" not in metric_params:
+                        config.metrics_params[i]["num_classes"] = inferred_config.output_dim
+
         if self.custom_optimizer is not None:
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
         if len(self.custom_optimizer_params) > 0:
@@ -167,7 +187,6 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     raise e
         else:
             self.metrics = self.custom_metrics
-            self.hparams.metrics = [m.__name__ for m in self.custom_metrics]
 
     def calculate_loss(self, output: Dict, y: torch.Tensor, tag: str) -> torch.Tensor:
         """Calculates the loss for the model
@@ -241,7 +260,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
-                    if metric.__name__ == torchmetrics.functional.mean_squared_log_error.__name__:
+                    if isinstance(metric, partial):
+                        name = metric.func.__name__
+                    else:
+                        name = metric.__name__
+                    if name == torchmetrics.functional.mean_squared_log_error.__name__:
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
                         _metric = metric(
                             torch.clamp(y_hat[:, i], min=0),

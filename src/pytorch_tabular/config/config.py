@@ -193,6 +193,9 @@ class InferredConfig:
 
         embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
                 list of tuples (cardinality, embedding_dim).
+
+        embedded_cat_dim (int): The number of features or dimensions of the embedded categorical features
+
     """
 
     categorical_dim: int = field(

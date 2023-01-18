@@ -140,7 +140,7 @@ from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig  #
 from pytorch_tabular.models import CategoryEmbeddingModelConfig  # noqa: E402
 from pytorch_tabular.ssl_models.dae import DenoisingAutoEncoderConfig  # noqa: E402
 
-max_epochs = 5
+max_epochs = 1
 batch_size = 1024
 lr = 1e-3
 
@@ -159,7 +159,7 @@ trainer_config = TrainerConfig(
     auto_lr_find=False,  # Runs the LRFinder to automatically derive a learning rate
     batch_size=batch_size,
     max_epochs=max_epochs,
-    fast_dev_run=False,
+    fast_dev_run=True,
 )
 optimizer_config = OptimizerConfig()
 encoder_config = CategoryEmbeddingModelConfig(
