@@ -237,6 +237,8 @@ class TrainerConfig:
     Args:
         batch_size (int): Number of samples in each batch of training
 
+        data_aware_init_batch_size (int): Number of samples in each batch of training for the data-aware initialization, when applicable. Defaults to 2000
+
         fast_dev_run (bool): runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val
                 and test to find any bugs (ie: a sort of unit test).
 
@@ -295,7 +297,7 @@ class TrainerConfig:
 
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements
                 in loss/metric
-        
+
         early_stopping_kwargs (Optional[Dict]): Additional keyword arguments for the early stopping callback.
                 See the documentation for the PyTorch Lightning EarlyStopping callback for more details.
 
@@ -331,6 +333,12 @@ class TrainerConfig:
     """
 
     batch_size: int = field(default=64, metadata={"help": "Number of samples in each batch of training"})
+    data_aware_init_batch_size: int = field(
+        default=2000,
+        metadata={
+            "help": "Number of samples in each batch of training for the data-aware initialization, when applicable. Defaults to 2000"
+        },
+    )
     fast_dev_run: bool = field(
         default=False,
         metadata={
