@@ -9,7 +9,6 @@ from pytorch_tabular.models import CategoryEmbeddingModelConfig
 from pytorch_tabular.models.common.heads import LinearHeadConfig
 from pytorch_tabular.tabular_model import TabularModel
 
-
 BASE_DIR = Path.home().joinpath("data")
 datafile = BASE_DIR.joinpath("covtype.data.gz")
 datafile.parent.mkdir(parents=True, exist_ok=True)
