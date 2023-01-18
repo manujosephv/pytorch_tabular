@@ -295,6 +295,9 @@ class TrainerConfig:
 
         early_stopping_patience (int): The number of epochs to wait until there is no further improvements
                 in loss/metric
+        
+        early_stopping_kwargs (Optional[Dict]): Additional keyword arguments for the early stopping callback.
+                See the documentation for the PyTorch Lightning EarlyStopping callback for more details.
 
         checkpoints (Optional[str]): The loss/metric that needed to be monitored for checkpoints. If None,
                 there will be no checkpoints
@@ -428,6 +431,12 @@ class TrainerConfig:
     early_stopping_patience: int = field(
         default=3,
         metadata={"help": "The number of epochs to wait until there is no further improvements in loss/metric"},
+    )
+    early_stopping_kwargs: Optional[Dict[str, Any]] = field(
+        default_factory=lambda: dict(),
+        metadata={
+            "help": "Additional keyword arguments for the early stopping callback. See the documentation for the PyTorch Lightning EarlyStopping callback for more details."
+        },
     )
     checkpoints: Optional[str] = field(
         default="valid_loss",

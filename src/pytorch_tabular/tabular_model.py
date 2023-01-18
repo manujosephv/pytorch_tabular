@@ -225,8 +225,8 @@ class TabularModel:
                 monitor=self.config.early_stopping,
                 min_delta=self.config.early_stopping_min_delta,
                 patience=self.config.early_stopping_patience,
-                verbose=False,
                 mode=self.config.early_stopping_mode,
+                **self.config.early_stopping_kwargs,
             )
             callbacks.append(early_stop_callback)
         if self.config.checkpoints:
