@@ -239,6 +239,7 @@ class TabularModel:
                 save_top_k=self.config.checkpoints_save_top_k,
                 mode=self.config.checkpoints_mode,
                 every_n_epochs=self.config.checkpoints_every_n_epochs,
+                **self.config.checkpoints_kwargs,
             )
             callbacks.append(model_checkpoint)
             self.config.enable_checkpointing = True

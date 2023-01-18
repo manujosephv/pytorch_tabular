@@ -316,6 +316,9 @@ class TrainerConfig:
 
         checkpoints_save_top_k (int): The number of best models to save
 
+        checkpoints_kwargs (Optional[Dict]): Additional keyword arguments for the checkpoints callback.
+                See the documentation for the PyTorch Lightning ModelCheckpoint callback for more details.
+
         load_best (bool): Flag to load the best model saved during training
 
         track_grad_norm (int): Track and Log Gradient Norms in the logger. -1 by default means no tracking.
@@ -474,6 +477,12 @@ class TrainerConfig:
         default=1,
         metadata={"help": "The number of best models to save"},
     )
+    checkpoints_kwargs: Optional[Dict[str, Any]] = field(
+        default_factory=lambda: dict(),
+        metadata={
+            "help": "Additional keyword arguments for the checkpoints callback. See the documentation for the PyTorch Lightning ModelCheckpoint callback for more details."
+        },
+    )
     load_best: bool = field(
         default=True,
         metadata={"help": "Flag to load the best model saved during training"},
@@ -525,6 +534,16 @@ class TrainerConfig:
             warnings.warn("Ignoring devices in favor of devices_list")
             self.devices = self.devices_list
         delattr(self, "devices_list")
+        for key in self.early_stopping_kwargs.keys():
+            if key in ["min_delta", "mode", "patience"]:
+                raise ValueError(
+                    f"Cannot override {key} in early_stopping_kwargs. Please use the appropriate argument in `TrainerConfig`"
+                )
+        for key in self.checkpoints_kwargs.keys():
+            if key in ["dirpath", "filename", "monitor", "save_top_k", "mode", "every_n_epochs"]:
+                raise ValueError(
+                    f"Cannot override {key} in checkpoints_kwargs. Please use the appropriate argument in `TrainerConfig`"
+                )
 
 
 @dataclass
