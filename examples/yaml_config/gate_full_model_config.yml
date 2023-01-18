@@ -1,0 +1,15 @@
+task: classification
+gflu_stages: 6
+num_trees: 20
+tree_depth: 5
+chain_trees: True
+head: LinearHead
+head_config:
+  layers: ''
+  activation: LeakyRelu
+  dropout: 0.1
+learning_rate: 0.001
+_module_src: models.gate
+_model_name: GatedAdditiveTreeEnsembleModel
+_backbone_name: GatedAdditiveTreesBackbone
+_config_name: GatedAdditiveTreeEnsembleConfig
