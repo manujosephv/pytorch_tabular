@@ -104,7 +104,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 for i, metric_params in enumerate(config.metrics_params):
                     if "task" not in metric_params:
                         # For classification task, output_dim == number of classses
-                        config.metrics_params[i]["task"] = "binary" if inferred_config.output_dim == 2 else "multiclass"
+                        config.metrics_params[i]["task"] = "multiclass"
                     if "num_classes" not in metric_params:
                         config.metrics_params[i]["num_classes"] = inferred_config.output_dim
 
