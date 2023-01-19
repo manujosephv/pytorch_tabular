@@ -37,16 +37,17 @@ bump2version major
 
 ```bash
 # Add new Version and changelog to History.md
-# Commit all changes
+# Commit all changes and run
 bump2version --tag release
-
-git push
-git push --tags
+# Check if the tag is present
+git tags
+# Push the changes to GitHub
+git push origin <tag_name>
 
 ```
 
 - eg: 0.1.1-dev0 to 0.1.1
-- To trigger Travis CI build
+- To trigger GitHub Actions to push to PyPi
 - Tags are created
 
 # Revert Version and Delete a Tag
