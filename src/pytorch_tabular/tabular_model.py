@@ -838,7 +838,7 @@ class TabularModel:
                 metrics = [torchmetrics.functional.accuracy]
                 metrics_params = [
                     {
-                        "task": "binary" if inferred_config.output_dim == 2 else "multiclass",
+                        "task": "multiclass",
                         "num_classes": inferred_config.output_dim,
                     }
                 ]
@@ -846,7 +846,7 @@ class TabularModel:
                 for i, mp in enumerate(metrics_params):
                     if "task" not in mp:
                         # For classification task, output_dim == number of classses
-                        metrics_params[i]["task"] = "binary" if inferred_config.output_dim == 2 else "multiclass"
+                        metrics_params[i]["task"] = "multiclass"
                     if "num_classes" not in mp:
                         metrics_params[i]["num_classes"] = inferred_config.output_dim
         # Forming partial callables using metrics and metric params
