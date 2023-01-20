@@ -191,13 +191,20 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/ndrsfel">
+            <img src="https://avatars.githubusercontent.com/u/21068727?v=4" width="100;" alt="ndrsfel"/>
+            <br />
+            <sub><b>Andreas</b></sub>
+        </a>
+    </td></tr>
+<tr>
+    <td align="center">
         <a href="https://github.com/JulianRein">
             <img src="https://avatars.githubusercontent.com/u/35046938?v=4" width="100;" alt="JulianRein"/>
             <br />
             <sub><b>Null</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/krshrimali">
             <img src="https://avatars.githubusercontent.com/u/19997320?v=4" width="100;" alt="krshrimali"/>
