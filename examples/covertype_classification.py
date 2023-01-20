@@ -98,7 +98,7 @@ head_config = LinearHeadConfig(
 model_config = CategoryEmbeddingModelConfig(
     task="classification", metrics=["f1_score", "accuracy"], metrics_params=[{"num_classes": num_classes}, {}]
 )
-trainer_config = TrainerConfig(auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
+trainer_config = TrainerConfig(auto_lr_find=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 optimizer_config = OptimizerConfig()
 tabular_model = TabularModel(
     data_config=data_config,

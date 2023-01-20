@@ -58,13 +58,7 @@ git clone git://github.com/manujosephv/pytorch_tabular
 Once you have a copy of the source, you can install it with:
 
 ```bash
-pip install .
-```
-
-or
-
-```bash
-python setup.py install
+pip install .[extra]
 ```
 
 ## Documentation
@@ -142,11 +136,11 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 
 ## Future Roadmap(Contributions are Welcome)
 
-1. Add GaussRank as Feature Transformation
 1. Integrate Optuna Hyperparameter Tuning
 1. Integrate SHAP for interpretability
 1. Add Variable Importance
 1. Add ability to use custom activations in CategoryEmbeddingModel
+1. Add GaussRank as Feature Transformation
 1. ~~Add differential dropouts(layer-wise) in CategoryEmbeddingModel~~
 1. ~~Add Fourier Encoding for cyclic time variables~~
 1. ~~Add Text and Image Modalities for mixed modal problems~~
