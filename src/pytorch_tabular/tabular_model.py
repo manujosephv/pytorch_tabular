@@ -557,7 +557,9 @@ class TabularModel:
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             logger.info("Auto LR Find Started")
             result = self.trainer.tune(self.model, train_loader, val_loader)
-            logger.info(f"Suggested LR: {result['lr_find'].suggestion()}. For plot and detailed analysis, use `find_learning_rate` method.")
+            logger.info(
+                f"Suggested LR: {result['lr_find'].suggestion()}. For plot and detailed analysis, use `find_learning_rate` method."
+            )
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
         self.model.train()
