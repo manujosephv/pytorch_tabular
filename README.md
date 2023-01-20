@@ -34,7 +34,7 @@ Although the installation includes PyTorch, the best and recommended way is to f
 Once, you have got Pytorch installed, just use:
 
 ```bash
-pip install pytorch_tabular[extra]
+pip install -U pytorch_tabular[extra]
 ```
 
 to install the complete library with extra dependencies (Weights&Biases & Plotly).
@@ -42,7 +42,7 @@ to install the complete library with extra dependencies (Weights&Biases & Plotly
 And :
 
 ```bash
-pip install pytorch_tabular
+pip install -U pytorch_tabular
 ```
 
 for the bare essentials.
@@ -58,7 +58,7 @@ git clone git://github.com/manujosephv/pytorch_tabular
 Once you have a copy of the source, you can install it with:
 
 ```bash
-pip install .[extra]
+cd pytorch_tabular && pip install .[extra]
 ```
 
 ## Documentation

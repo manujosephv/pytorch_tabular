@@ -59,10 +59,11 @@ git clone git@github.com:your_name_here/pytorch_tabular.git
 
 * Fork the pytorch_tabular repo on GitHub.
 
-* Clone your fork locally:
+* Clone your fork locally and change directory to the checked out folder:
 
       ```bash
       git clone git@github.com:your_name_here/pytorch_tabular.git
+      cd pytorch_tabular
       ```
 
 * Setup a local environment (preferably in a virtual environment). 
@@ -106,7 +107,11 @@ git clone git@github.com:your_name_here/pytorch_tabular.git
       ```bash
       pre-commit run --all-files
       ```
-   Accept the changes if any after reviewing.
+   Accept the changes if any after reviewing. 
+   
+!!!warning   
+
+      Do not commit pre-commit changes to to `setup.cfg`. The file has been excluded from one hook for bump2version compatibility. For a complet and uptodate list of excluded files, please check `.pre-commit-config.yaml` file.
 
 * Commit your changes and push your branch to GitHub:
       ```bash
