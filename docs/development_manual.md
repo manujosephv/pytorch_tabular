@@ -40,7 +40,7 @@ bump2version major
 # Commit all changes and run
 bump2version --tag release
 # Check if the tag is present
-git tags
+git tag
 # Push the changes to GitHub
 git push origin <tag_name>
 

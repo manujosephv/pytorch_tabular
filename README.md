@@ -250,15 +250,24 @@ If you use PyTorch Tabular for a scientific publication, we would appreciate cit
 - Zenodo Software Citation
 
 ```
-@article{manujosephv_2021,
-    title={manujosephv/pytorch_tabular: v0.7.0-alpha},
-    DOI={10.5281/zenodo.5359010},
-    abstractNote={<p>Added a few more SOTA models - TabTransformer, FTTransformer
-        Made improvements in the model save and load capability
-        Made installation less restrictive by unfreezing some dependencies.</p>},
-    publisher={Zenodo},
-    author={manujosephv},
-    year={2021},
-    month={May}
+@software{manu_joseph_2023_7554473,
+  author       = {Manu Joseph and
+                  Jinu Sunil and
+                  Jirka Borovec and
+                  Chris Fonnesbeck and
+                  jxtrbtk and
+                  Andreas and
+                  JulianRein and
+                  Kushashwa Ravi Shrimali and
+                  Luca Actis Grosso and
+                  Sterling G. Baird and
+                  Yinyu Nie},
+  title        = {manujosephv/pytorch\_tabular: v1.0.1},
+  month        = jan,
+  year         = 2023,
+  publisher    = {Zenodo},
+  version      = {v1.0.1},
+  doi          = {10.5281/zenodo.7554473},
+  url          = {https://doi.org/10.5281/zenodo.7554473}
 }
 ```
