@@ -253,7 +253,7 @@ If you use PyTorch Tabular for a scientific publication, we would appreciate cit
 @software{manu_joseph_2023_7554473,
   author       = {Manu Joseph and
                   Jinu Sunil and
-                  Jirka Borovec and
+                  Jiri Borovec and
                   Chris Fonnesbeck and
                   jxtrbtk and
                   Andreas and
