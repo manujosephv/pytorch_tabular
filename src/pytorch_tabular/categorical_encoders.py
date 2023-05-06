@@ -134,7 +134,6 @@ class OrdinalEncoder(BaseEncoder):
 
 
 class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
-
     NAN_CATEGORY = 0
 
     def __init__(self, tabular_model):
