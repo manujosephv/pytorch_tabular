@@ -34,7 +34,6 @@ logger = get_logger(__name__)
 
 
 class TabularDatamodule(pl.LightningDataModule):
-
     CONTINUOUS_TRANSFORMS = {
         "quantile_uniform": {
             "callable": QuantileTransformer,

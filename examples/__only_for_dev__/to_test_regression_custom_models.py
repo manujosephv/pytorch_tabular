@@ -20,7 +20,6 @@ from pytorch_tabular.tabular_model import TabularModel
 
 @dataclass
 class MultiStageModelConfig(ModelConfig):
-
     num_layers: int = field(
         default=1,
         metadata={"help": "Number of Oblivious Decision Tree Layers in the Dense Architecture"},
