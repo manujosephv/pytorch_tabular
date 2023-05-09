@@ -314,10 +314,7 @@ class TabularModel:
             None
         """
         ckpt = pl_load(path, map_location=lambda storage, loc: storage)
-        if "state_dict" in ckpt.keys():
-            model.load_state_dict(ckpt["state_dict"])
-        else:
-            model.load_state_dict(ckpt)
+        model.load_state_dict(ckpt.get("state_dict") or ckpt)
 
     @classmethod
     def load_model(cls, dir: str, map_location=None, strict=True):

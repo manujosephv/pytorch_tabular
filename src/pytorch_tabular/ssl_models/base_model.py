@@ -27,8 +27,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
         The merged configuration.
     """
     # using base config values if exist
-    if "embedding_dims" in config.keys() and config.embedding_dims is not None:
-        inferred_config.embedding_dims = config.embedding_dims
+    inferred_config.embedding_dims = config.get("embedding_dims") or inferred_config.embedding_dims
     merged_config = OmegaConf.merge(OmegaConf.to_container(config), OmegaConf.to_container(inferred_config))
     return merged_config
 
