@@ -20,6 +20,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set min. dependencies
+        if: matrix.requires == 'oldest'
+        run: |
+          import os
+          fname = 'requirements.txt'
+          lines = [line.replace('>=', '==') for line in open(fname).readlines()]
+          open(fname, 'w').writelines(lines)
+        shell: python
+
       - name: Install main package
         run: |
           pip install -e .[extra]
