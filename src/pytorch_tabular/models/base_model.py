@@ -212,7 +212,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     on_epoch=True,
                     on_step=False,
                     logger=True,
-                    prog_bar=False,
+                    prog_bar=False
                 )
         if self.hparams.task == "regression":
             computed_loss = reg_loss
@@ -226,7 +226,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                         on_epoch=True,
                         on_step=False,
                         logger=True,
-                        prog_bar=False,
+                        prog_bar=False
                     )
         else:
             # TODO loss fails with batch size of 1?
@@ -326,8 +326,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         # because the model cannot be divide in backbone and head (i.e. TabNet)
         if type(self.head) == nn.Identity:
             return {"logits": y_hat}
-        else:
-            return {"logits": y_hat, "backbone_features": backbone_features}
+        return {"logits": y_hat, "backbone_features": backbone_features}
 
     def compute_head(self, backbone_features: Tensor) -> Dict[str, Any]:
         """Computes the head of the model
@@ -368,8 +367,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         ret_value = self.forward(x)
         if ret_model_output:
             return ret_value.get("logits"), ret_value
-        else:
-            return ret_value.get("logits")
+        return ret_value.get("logits")
 
     def forward_pass(self, batch):
         return self(batch), None
@@ -455,12 +453,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     "optimizer": opt,
                     "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                 }
-            else:
-                return {
-                    "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
-                    "monitor": self.hparams.lr_scheduler_monitor_metric,
-                }
+            return {
+                "optimizer": opt,
+                "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
+                "monitor": self.hparams.lr_scheduler_monitor_metric,
+            }
         else:
             return opt
 
@@ -492,7 +489,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             wandb.log(
                 {
                     "valid_logits": wandb.Plotly(fig),
-                    "global_step": self.global_step,
+                    "global_step": self.global_step
                 },
                 commit=False,
             )

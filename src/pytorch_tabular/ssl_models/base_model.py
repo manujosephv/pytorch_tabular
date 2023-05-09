@@ -188,7 +188,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             opt = self._optimizer(
                 self.parameters(),
                 lr=self.hparams.learning_rate,
-                **self.custom_optimizer_params,
+                **self.custom_optimizer_params
             )
         if self.hparams.lr_scheduler is not None:
             try:
@@ -203,12 +203,11 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
                     "optimizer": opt,
                     "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                 }
-            else:
-                return {
-                    "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
-                    "monitor": self.hparams.lr_scheduler_monitor_metric,
-                }
+            return {
+                "optimizer": opt,
+                "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
+                "monitor": self.hparams.lr_scheduler_monitor_metric,
+            }
         else:
             return opt
 

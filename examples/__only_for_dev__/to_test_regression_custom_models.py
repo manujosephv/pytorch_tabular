@@ -14,7 +14,6 @@ from pytorch_tabular.config import DataConfig, ModelConfig, OptimizerConfig, Tra
 #     DeepGaussianMixtureModelConfig,
 # )
 from pytorch_tabular.models.node import NODEBackbone
-from pytorch_tabular.models.node import utils as utils
 from pytorch_tabular.tabular_model import TabularModel
 
 
