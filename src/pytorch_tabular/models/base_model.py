@@ -260,17 +260,10 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
-                    if isinstance(metric, partial):
-                        name = metric.func.__name__
-                    else:
-                        name = metric.__name__
+                    name = metric.func.__name__ if isinstance(metric, partial) else metric.__name__
                     if name == torchmetrics.functional.mean_squared_log_error.__name__:
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
-                        _metric = metric(
-                            torch.clamp(y_hat[:, i], min=0),
-                            torch.clamp(y[:, i], min=0),
-                            **metric_params,
-                        )
+                        _metric = metric(torch.clamp(y_hat[:, i], min=0), torch.clamp(y[:, i], min=0), **metric_params)
                     else:
                         _metric = metric(y_hat[:, i], y[:, i], **metric_params)
                     if self.hparams.output_dim > 1:
@@ -288,14 +281,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 y_hat = nn.Softmax(dim=-1)(y_hat.squeeze())
                 avg_metric = metric(y_hat, y.squeeze(), **metric_params)
             metrics.append(avg_metric)
-            self.log(
-                f"{tag}_{metric_str}",
-                avg_metric,
-                on_epoch=True,
-                on_step=False,
-                logger=True,
-                prog_bar=True,
-            )
+            self.log(f"{tag}_{metric_str}", avg_metric, on_epoch=True, on_step=False, logger=True, prog_bar=True)
         return metrics
 
     def data_aware_initialization(self, datamodule):
@@ -409,7 +395,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         y = batch["target"] if y is None else y
         y_hat = output["logits"]
         loss = self.calculate_loss(output, y, tag="train")
-        _ = self.calculate_metrics(y, y_hat, tag="train")
+        self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -419,8 +405,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             # fetched from the batch
             y = batch["target"] if y is None else y
             y_hat = output["logits"]
-            _ = self.calculate_loss(output, y, tag="valid")
-            _ = self.calculate_metrics(y, y_hat, tag="valid")
+            self.calculate_loss(output, y, tag="valid")
+            self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
@@ -430,8 +416,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             # fetched from the batch
             y = batch["target"] if y is None else y
             y_hat = output["logits"]
-            _ = self.calculate_loss(output, y, tag="test")
-            _ = self.calculate_metrics(y, y_hat, tag="test")
+            self.calculate_loss(output, y, tag="test")
+            self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
 
     def configure_optimizers(self):

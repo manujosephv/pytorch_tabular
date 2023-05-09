@@ -843,6 +843,7 @@ class TabularModel:
                     {
                         "task": "multiclass",
                         "num_classes": inferred_config.output_dim,
+                        "top_k": 1,
                     }
                 ]
             else:

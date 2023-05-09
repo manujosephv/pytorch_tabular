@@ -196,21 +196,21 @@ class MultiStageModel(BaseModel):
         y = batch["target"]
         ret_value = self(batch)
         loss = self.calculate_loss(y, ret_value["clf_logits"], ret_value["logits"], tag="train")
-        _ = self.calculate_metrics(y, ret_value["logits"], tag="train")
+        self.calculate_metrics(y, ret_value["logits"], tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
-        _ = self.calculate_loss(y, ret_value["clf_logits"], ret_value["logits"], tag="valid")
-        _ = self.calculate_metrics(y, ret_value["logits"], tag="valid")
+        self.calculate_loss(y, ret_value["clf_logits"], ret_value["logits"], tag="valid")
+        self.calculate_metrics(y, ret_value["logits"], tag="valid")
         return ret_value["logits"], y
 
     def test_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
-        _ = self.calculate_loss(y, ret_value["clf_logits"], ret_value["logits"], tag="test")
-        _ = self.calculate_metrics(y, ret_value["logits"], tag="test")
+        self.calculate_loss(y, ret_value["clf_logits"], ret_value["logits"], tag="test")
+        self.calculate_metrics(y, ret_value["logits"], tag="test")
         return ret_value["logits"], y
 
     def calculate_loss(self, y, classification_logits, y_hat, tag):
@@ -248,18 +248,17 @@ class MultiStageModel(BaseModel):
         for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
             if metric.__name__ == pl.metrics.functional.mean_squared_log_error.__name__:
                 # MSLE should only be used in strictly positive targets. It is undefined otherwise
-                metrics = metric(torch.clamp(y_hat, min=0), torch.clamp(y[:, 1], min=0), **metric_params)
+                metric_ = metric(torch.clamp(y_hat, min=0), torch.clamp(y[:, 1], min=0), **metric_params)
             else:
-                metrics = metric(y_hat, y[:, 1], **metric_params)
+                metric_ = metric(y_hat, y[:, 1], **metric_params)
             self.log(
                 f"{tag}_{metric_str}",
-                metrics,
+                metric_,
                 on_epoch=True,
                 on_step=False,
                 logger=True,
                 prog_bar=True,
             )
-        return metrics
 
 
 dataset = fetch_california_housing(data_home="data", as_frame=True)
