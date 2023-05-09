@@ -1,7 +1,6 @@
 pip==23.1.2
 wget
 bump2version==1.0.1
-flake8>=3.7.8
 # coverage>=4.5.4
 mkdocs-material==9.0.*
 mkdocstrings[python]==0.21.*

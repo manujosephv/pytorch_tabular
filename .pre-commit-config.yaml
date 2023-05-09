@@ -55,15 +55,16 @@ repos:
   #         - mdformat-black
   #         - mdformat_frontmatter
 
-#  - repo: https://github.com/asottile/yesqa
-#    rev: v1.4.0
-#    hooks:
-#      - id: yesqa
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
+  - repo: https://github.com/asottile/yesqa
+    rev: v1.4.0
     hooks:
-      - id: flake8
+      - id: yesqa
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.264
+    hooks:
+      - id: ruff
+        args: ["--fix"]
 
 # exclude: ^docs/
 
