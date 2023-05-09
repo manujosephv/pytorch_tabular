@@ -21,7 +21,7 @@ class Residual(nn.Module):
 
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/master/labml_nn/transformers/feed_forward.py
 class PositionWiseFeedForward(nn.Module):
-    """
+    r"""
     title: Position-wise Feed-Forward Network (FFN)
     summary: Documented reusable implementation of the position wise feedforward network.
 
@@ -115,7 +115,7 @@ class AddNorm(nn.Module):
     """
 
     def __init__(self, input_dim: int, dropout: float):
-        super(AddNorm, self).__init__()
+        super().__init__()
         self.dropout = nn.Dropout(dropout)
         self.ln = nn.LayerNorm(input_dim)
 
@@ -176,7 +176,7 @@ class SharedEmbeddings(nn.Module):
         add_shared_embed: bool = False,
         frac_shared_embed: float = 0.25,
     ):
-        super(SharedEmbeddings, self).__init__()
+        super().__init__()
         assert frac_shared_embed < 1, "'frac_shared_embed' must be less than 1"
 
         self.add_shared_embed = add_shared_embed
@@ -231,7 +231,7 @@ class PreEncoded1dLayer(nn.Module):
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
     ):
-        super(PreEncoded1dLayer, self).__init__()
+        super().__init__()
         self.continuous_dim = continuous_dim
         self.categorical_dim = categorical_dim
         self.batch_norm_continuous_input = batch_norm_continuous_input
@@ -286,7 +286,7 @@ class Embedding1dLayer(nn.Module):
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
     ):
-        super(Embedding1dLayer, self).__init__()
+        super().__init__()
         self.continuous_dim = continuous_dim
         self.categorical_embedding_dims = categorical_embedding_dims
         self.batch_norm_continuous_input = batch_norm_continuous_input
@@ -366,7 +366,7 @@ class Embedding2dLayer(nn.Module):
             batch_norm_continuous_input: whether to use batch norm on continuous features
             embedding_dropout: dropout to apply to embeddings
             initialization: initialization strategy to use for embedding layers"""
-        super(Embedding2dLayer, self).__init__()
+        super().__init__()
         self.continuous_dim = continuous_dim
         self.categorical_cardinality = categorical_cardinality
         self.embedding_dim = embedding_dim

@@ -36,7 +36,7 @@ def _read_yaml(filename):
         ),
         list("-+0123456789."),
     )
-    with open(filename, "r") as file:
+    with open(filename) as file:
         config = yaml.load(file, loader)
     return config
 
