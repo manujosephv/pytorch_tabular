@@ -12,6 +12,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.8, 3.9]
+        requires: ['oldest', 'latest']
 
     steps:
       - uses: actions/checkout@v3
