@@ -11,8 +11,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8, 3.9]
-        requires: ['oldest', 'latest']
+        python-version: ["3.8", "3.9", "3.10"]
+        include:
+          - { os: 'ubuntu-latest', python-version: 3.7, requires: 'oldest'}
 
     steps:
       - uses: actions/checkout@v3
