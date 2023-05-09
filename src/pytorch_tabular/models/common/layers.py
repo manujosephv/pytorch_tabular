@@ -1,4 +1,4 @@
-# noqa W605
+# W605
 import math
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -33,13 +33,13 @@ class PositionWiseFeedForward(nn.Module):
     four times that of the token embedding $d_{model}$.
     So it is sometime also called the expand-and-contract network.
     There is an activation at the hidden layer, which is
-    usually set to ReLU (Rectified Linear Unit) activation, $$\max(0, x)$$
+    usually set to ReLU (Rectified Linear Unit) activation, $$\\max(0, x)$$
     That is, the FFN function is,
-    $$FFN(x, W_1, W_2, b_1, b_2) = \max(0, x W_1 + b_1) W_2 + b_2$$
+    $$FFN(x, W_1, W_2, b_1, b_2) = \\max(0, x W_1 + b_1) W_2 + b_2$$
     where $W_1$, $W_2$, $b_1$ and $b_2$ are learnable parameters.
     Sometimes the
     GELU (Gaussian Error Linear Unit) activation is also used instead of ReLU.
-    $$x \Phi(x)$$ where $\Phi(x) = P(X \le x), X \sim \mathcal{N}(0,1)$
+    $$x \\Phi(x)$$ where $\\Phi(x) = P(X \\le x), X \\sim \\mathcal{N}(0,1)$
     ### Gated Linear Units
     This is a generic implementation that supports different variants including
     [Gated Linear Units](https://arxiv.org/abs/2002.05202) (GLU).

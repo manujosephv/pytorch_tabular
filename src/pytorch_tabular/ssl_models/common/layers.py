@@ -1,4 +1,4 @@
-# noqa W605
+# W605
 from collections import OrderedDict
 from typing import Any, Dict, Tuple
 

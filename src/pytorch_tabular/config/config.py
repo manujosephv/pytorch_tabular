@@ -240,7 +240,8 @@ class TrainerConfig:
     Args:
         batch_size (int): Number of samples in each batch of training
 
-        data_aware_init_batch_size (int): Number of samples in each batch of training for the data-aware initialization, when applicable. Defaults to 2000
+        data_aware_init_batch_size (int): Number of samples in each batch of training for the data-aware initialization,
+            when applicable. Defaults to 2000
 
         fast_dev_run (bool): runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val
                 and test to find any bugs (ie: a sort of unit test).
@@ -342,13 +343,15 @@ class TrainerConfig:
     data_aware_init_batch_size: int = field(
         default=2000,
         metadata={
-            "help": "Number of samples in each batch of training for the data-aware initialization, when applicable. Defaults to 2000"
+            "help": "Number of samples in each batch of training for the data-aware initialization,"
+            " when applicable. Defaults to 2000"
         },
     )
     fast_dev_run: bool = field(
         default=False,
         metadata={
-            "help": "runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train, val and test to find any bugs (ie: a sort of unit test)."
+            "help": "runs n if set to ``n`` (int) else 1 if set to ``True`` batch(es) of train,"
+            " val and test to find any bugs (ie: a sort of unit test)."
         },
     )
     max_epochs: int = field(default=10, metadata={"help": "Maximum number of epochs to be run"})
@@ -363,45 +366,53 @@ class TrainerConfig:
     gpus: Optional[int] = field(
         default=None,
         metadata={
-            "help": "DEPRECATED: Number of gpus to train on (int). -1 uses all available GPUs. By default uses CPU (None)"
+            "help": "DEPRECATED: Number of gpus to train on (int). -1 uses all available GPUs."
+            " By default uses CPU (None)"
         },
     )
     accelerator: Optional[str] = field(
         default="auto",
         metadata={
-            "help": "The accelerator to use for training. Can be one of 'cpu','gpu','tpu','ipu','auto'. Defaults to 'auto'",
+            "help": "The accelerator to use for training. Can be one of 'cpu','gpu','tpu','ipu','auto'."
+            " Defaults to 'auto'",
             "choices": ["cpu", "gpu", "tpu", "ipu", "auto"],
         },
     )
     devices: Optional[int] = field(
         default=None,
         metadata={
-            "help": "Number of devices to train on (int). -1 uses all available devices. By default uses all available devices (-1)",
+            "help": "Number of devices to train on (int). -1 uses all available devices."
+            " By default uses all available devices (-1)",
         },
     )
     devices_list: Optional[List[int]] = field(
         default=None,
         metadata={
-            "help": "List of devices to train on (list). If specified, takes precedence over `devices` argument. Defaults to None",
+            "help": "List of devices to train on (list). If specified, takes precedence over `devices` argument."
+            " Defaults to None",
         },
     )
 
     accumulate_grad_batches: int = field(
         default=1,
         metadata={
-            "help": "Accumulates grads every k batches or as set up in the dict. Trainer also calls optimizer.step() for the last indivisible step number."
+            "help": "Accumulates grads every k batches or as set up in the dict."
+            " Trainer also calls optimizer.step() for the last indivisible step number."
         },
     )
     auto_lr_find: bool = field(
         default=False,
         metadata={
-            "help": "Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(), to find optimal initial learning rate."
+            "help": "Runs a learning rate finder algorithm (see this paper) when calling trainer.tune(),"
+            " to find optimal initial learning rate."
         },
     )
     auto_select_gpus: bool = field(
         default=True,
         metadata={
-            "help": "If enabled and `devices` is an integer, pick available gpus automatically. This is especially useful when GPUs are configured to be in 'exclusive mode', such that only one process at a time can access them."
+            "help": "If enabled and `devices` is an integer, pick available gpus automatically."
+            " This is especially useful when GPUs are configured to be in 'exclusive mode',"
+            " such that only one process at a time can access them."
         },
     )
     check_val_every_n_epoch: int = field(default=1, metadata={"help": "Check val every n train epochs."})
@@ -409,7 +420,10 @@ class TrainerConfig:
     overfit_batches: float = field(
         default=0.0,
         metadata={
-            "help": "Uses this much data of the training set. If nonzero, will use the same training set for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it. Useful for quickly debugging or trying to overfit on purpose."
+            "help": "Uses this much data of the training set. If nonzero, will use the same training set"
+            " for validation and testing. If the training dataloaders have shuffle=True,"
+            " Lightning will automatically disable it."
+            " Useful for quickly debugging or trying to overfit on purpose."
         },
     )
     deterministic: bool = field(
@@ -421,14 +435,16 @@ class TrainerConfig:
     profiler: Optional[str] = field(
         default=None,
         metadata={
-            "help": "To profile individual steps during training and assist in identifying bottlenecks. None, simple or advanced, pytorch",
+            "help": "To profile individual steps during training and assist in identifying bottlenecks."
+            " None, simple or advanced, pytorch",
             "choices": [None, "simple", "advanced", "pytorch"],
         },
     )
     early_stopping: Optional[str] = field(
         default="valid_loss",
         metadata={
-            "help": "The loss/metric that needed to be monitored for early stopping. If None, there will be no early stopping"
+            "help": "The loss/metric that needed to be monitored for early stopping."
+            " If None, there will be no early stopping"
         },
     )
     early_stopping_min_delta: float = field(
@@ -449,7 +465,8 @@ class TrainerConfig:
     early_stopping_kwargs: Optional[Dict[str, Any]] = field(
         default_factory=lambda: dict(),
         metadata={
-            "help": "Additional keyword arguments for the early stopping callback. See the documentation for the PyTorch Lightning EarlyStopping callback for more details."
+            "help": "Additional keyword arguments for the early stopping callback."
+            " See the documentation for the PyTorch Lightning EarlyStopping callback for more details."
         },
     )
     checkpoints: Optional[str] = field(
@@ -469,7 +486,9 @@ class TrainerConfig:
     checkpoints_name: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The name under which the models will be saved. If left blank, first it will look for `run_name` in experiment_config and if that is also None then it will use a generic name like task_version."
+            "help": "The name under which the models will be saved. If left blank,"
+            " first it will look for `run_name` in experiment_config and if that is also None"
+            " then it will use a generic name like task_version."
         },
     )
     checkpoints_mode: str = field(
@@ -483,7 +502,8 @@ class TrainerConfig:
     checkpoints_kwargs: Optional[Dict[str, Any]] = field(
         default_factory=lambda: dict(),
         metadata={
-            "help": "Additional keyword arguments for the checkpoints callback. See the documentation for the PyTorch Lightning ModelCheckpoint callback for more details."
+            "help": "Additional keyword arguments for the checkpoints callback. See the documentation"
+            " for the PyTorch Lightning ModelCheckpoint callback for more details."
         },
     )
     load_best: bool = field(
@@ -493,7 +513,8 @@ class TrainerConfig:
     track_grad_norm: int = field(
         default=-1,
         metadata={
-            "help": "Track and Log Gradient Norms in the logger. -1 by default means no tracking. 1 for the L1 norm, 2 for L2 norm, etc."
+            "help": "Track and Log Gradient Norms in the logger. -1 by default means no tracking. "
+            "1 for the L1 norm, 2 for L2 norm, etc."
         },
     )
     progress_bar: str = field(
@@ -513,16 +534,15 @@ class TrainerConfig:
     )
     trainer_kwargs: Dict[str, Any] = field(
         default_factory=dict,
-        metadata={
-            "help": "Additional kwargs to be passed to PyTorch Lightning Trainer. See https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer"
-        },
+        metadata={"help": "Additional kwargs to be passed to PyTorch Lightning Trainer."},
     )
 
     def __post_init__(self):
         _validate_choices(self)
         if self.gpus is not None:
             warnings.warn(
-                "The `gpus` argument is deprecated in favor of `accelerator` and will be removed in a future version of PyTorch Tabular. Please use `accelerator='gpu'` instead.",
+                "The `gpus` argument is deprecated in favor of `accelerator` and will be removed in a future version"
+                " of PyTorch Tabular. Please use `accelerator='gpu'` instead.",
                 DeprecationWarning,
             )
             if self.devices is None:
@@ -540,12 +560,14 @@ class TrainerConfig:
         for key in self.early_stopping_kwargs.keys():
             if key in ["min_delta", "mode", "patience"]:
                 raise ValueError(
-                    f"Cannot override {key} in early_stopping_kwargs. Please use the appropriate argument in `TrainerConfig`"
+                    f"Cannot override {key} in early_stopping_kwargs."
+                    f" Please use the appropriate argument in `TrainerConfig`"
                 )
         for key in self.checkpoints_kwargs.keys():
             if key in ["dirpath", "filename", "monitor", "save_top_k", "mode", "every_n_epochs"]:
                 raise ValueError(
-                    f"Cannot override {key} in checkpoints_kwargs. Please use the appropriate argument in `TrainerConfig`"
+                    f"Cannot override {key} in checkpoints_kwargs."
+                    f" Please use the appropriate argument in `TrainerConfig`"
                 )
 
 
@@ -573,20 +595,24 @@ class ExperimentConfig:
     project_name: str = field(
         default=MISSING,
         metadata={
-            "help": "The name of the project under which all runs will be logged. For Tensorboard this defines the folder under which the logs will be saved and for W&B it defines the project name"
+            "help": "The name of the project under which all runs will be logged."
+            " For Tensorboard this defines the folder under which the logs will be saved"
+            " and for W&B it defines the project name"
         },
     )
 
     run_name: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The name of the run; a specific identifier to recognize the run. If left blank, will be assigned a auto-generated name"
+            "help": "The name of the run; a specific identifier to recognize the run."
+            " If left blank, will be assigned a auto-generated name"
         },
     )
     exp_watch: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The level of logging required.  Can be `gradients`, `parameters`, `all` or `None`. Defaults to None",
+            "help": "The level of logging required.  Can be `gradients`, `parameters`, `all` or `None`."
+            " Defaults to None",
             "choices": ["gradients", "parameters", "all", None],
         },
     )
@@ -643,7 +669,8 @@ class OptimizerConfig:
     optimizer: str = field(
         default="Adam",
         metadata={
-            "help": "Any of the standard optimizers from [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."
+            "help": "Any of the standard optimizers from"
+            " [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."
         },
     )
     optimizer_params: Dict = field(
@@ -653,7 +680,9 @@ class OptimizerConfig:
     lr_scheduler: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The name of the LearningRateScheduler to use, if any, from [torch.optim.lr_scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate). If None, will not use any scheduler. Defaults to `None`",
+            "help": "The name of the LearningRateScheduler to use, if any, from"
+            " https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate."
+            " If None, will not use any scheduler. Defaults to `None`",
         },
     )
     lr_scheduler_params: Optional[Dict] = field(
@@ -680,7 +709,8 @@ class ExperimentRunManager:
         exp_version_manager: str = ".pt_tmp/exp_version_manager.yml",
     ) -> None:
         """The manages the versions of the experiments based on the name. It is a simple dictionary(yaml) based lookup.
-        Primary purpose is to avoid overwriting of saved models while runing the training without changing the experiment name.
+        Primary purpose is to avoid overwriting of saved models while runing the training without changing
+        the experiment name.
 
         Args:
             exp_version_manager (str, optional): The path of the yml file which acts as version control.
@@ -752,7 +782,9 @@ class ModelConfig:
 
     task: str = field(
         metadata={
-            "help": "Specify whether the problem is regression or classification. `backbone` is a task which considers the model as a backbone to generate features. Mostly used internally for SSL and related tasks.",
+            "help": "Specify whether the problem is regression or classification."
+            " `backbone` is a task which considers the model as a backbone to generate features."
+            " Mostly used internally for SSL and related tasks.",
             "choices": ["regression", "classification", "backbone"],
         }
     )
@@ -760,7 +792,8 @@ class ModelConfig:
     head: Optional[str] = field(
         default="LinearHead",
         metadata={
-            "help": "The head to be used for the model. Should be one of the heads defined in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead",
+            "help": "The head to be used for the model. Should be one of the heads defined"
+            " in `pytorch_tabular.models.common.heads`. Defaults to  LinearHead",
             "choices": [None, "LinearHead", "MixtureDensityHead"],
         },
     )
@@ -768,7 +801,8 @@ class ModelConfig:
     head_config: Optional[Dict] = field(
         default_factory=lambda: {"layers": ""},
         metadata={
-            "help": "The config as a dict which defines the head. If left empty, will be initialized as default linear head."
+            "help": "The config as a dict which defines the head."
+            " If left empty, will be initialized as default linear head."
         },
     )
     embedding_dims: Optional[List] = field(
@@ -901,14 +935,16 @@ class SSLModelConfig:
     encoder_config: Optional[ModelConfig] = field(
         default=None,
         metadata={
-            "help": "The config of the encoder to be used for the model. Should be one of the model configs defined in PyTorch Tabular",
+            "help": "The config of the encoder to be used for the model."
+            " Should be one of the model configs defined in PyTorch Tabular",
         },
     )
 
     decoder_config: Optional[ModelConfig] = field(
         default=None,
         metadata={
-            "help": "The config of decoder to be used for the model. Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity",
+            "help": "The config of decoder to be used for the model."
+            " Should be one of the model configs defined in PyTorch Tabular. Defaults to nn.Identity",
         },
     )
 
@@ -927,7 +963,8 @@ class SSLModelConfig:
     batch_norm_continuous_input: bool = field(
         default=True,
         metadata={
-            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer. DEPRECATED - Use head and head_config instead"
+            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer."
+            " DEPRECATED - Use head and head_config instead"
         },
     )
     learning_rate: float = field(

@@ -674,11 +674,12 @@ class TabularModel:
         Args:
             train (pd.DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while
+                training. Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
+                Defaults to None.
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
-                standard PyToch optimizers. This should be the Class and not the initialized object
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements
+                for standard PyToch optimizers. This should be the Class and not the initialized object
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
@@ -688,7 +689,8 @@ class TabularModel:
 
             seed: (int): Random seed for reproducibility. Defaults to 42.
 
-            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training.
+                Defaults to None.
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
                 parameters like train, test etc and use the datamodule. Defaults to None.
@@ -713,7 +715,8 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                    "train data is provided but datamodule is provided."
+                    " Ignoring the train data and using the datamodule"
                 )
         model = self.prepare_model(
             datamodule,
@@ -754,14 +757,14 @@ class TabularModel:
             target (Optional[str], optional): The target column name if not provided in the initial pretraining stage.
                 Defaults to None.
 
-            optimizer_config (Optional[OptimizerConfig], optional): If provided, will redefine the optimizer for fine-tuning
-                stage. Defaults to None.
+            optimizer_config (Optional[OptimizerConfig], optional):
+                If provided, will redefine the optimizer for fine-tuning stage. Defaults to None.
 
-            trainer_config (Optional[TrainerConfig], optional): If provided, will redefine the trainer for fine-tuning stage.
-                Defaults to None.
+            trainer_config (Optional[TrainerConfig], optional):
+                If provided, will redefine the trainer for fine-tuning stage. Defaults to None.
 
-            experiment_config (Optional[ExperimentConfig], optional): If provided, will redefine the experiment for fine-tuning
-                stage. Defaults to None.
+            experiment_config (Optional[ExperimentConfig], optional):
+                If provided, will redefine the experiment for fine-tuning stage. Defaults to None.
 
             loss (Optional[torch.nn.Module], optional): If provided, will be used as the loss function for the fine-tuning.
                 By Default it is MSELoss for regression and CrossEntropyLoss for classification.
@@ -902,8 +905,8 @@ class TabularModel:
             train_sampler (Optional[torch.utils.data.Sampler], optional): If provided, will be used as a batch sampler
                 for training. Defaults to None.
 
-            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used to transform
-                the target before training and inverse transform the predictions.
+            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used
+                to transform the target before training and inverse transform the predictions.
 
             max_epochs (Optional[int], optional): The maximum number of epochs to train for. Defaults to None.
 
@@ -914,8 +917,8 @@ class TabularModel:
             callbacks (Optional[List[pl.Callback]], optional): If provided, will be added to the callbacks for Trainer.
                 Defaults to None.
 
-            datamodule (Optional[TabularDatamodule], optional): If provided, will be used as the datamodule for training.
-                Defaults to None.
+            datamodule (Optional[TabularDatamodule], optional): If provided, will be used as the datamodule
+                for training. Defaults to None.
 
             freeze_backbone (bool, optional): If True, will freeze the backbone by tirning off gradients.
                 Defaults to False, which means the pretrained weights are also further tuned during fine-tuning.
@@ -952,7 +955,8 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                    "train data is provided but datamodule is provided."
+                    " Ignoring the train data and using the datamodule"
                 )
         if freeze_backbone:
             for param in self.model.backbone.parameters():
@@ -977,7 +981,8 @@ class TabularModel:
         plot: bool = True,
         callbacks: Optional[List] = None,
     ) -> Tuple[float, pd.DataFrame]:
-        """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
+        """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork
+        in picking a good starting learning rate.
 
         Args:
             model (pl.LightningModule): The PyTorch Lightning model to be trained.
@@ -1048,8 +1053,8 @@ class TabularModel:
                 DEPRECATION: providing test data during fit is deprecated and will be removed in a future release.
                 Defaults to None.
 
-            ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided, will try to use the
-                best checkpoint during training.
+            ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided,
+                will try to use the best checkpoint during training.
 
             verbose (bool, optional): If true, will print the results. Defaults to True.
         Returns:
@@ -1057,14 +1062,16 @@ class TabularModel:
         """
         if test_loader is None and test is None:
             warnings.warn(
-                "Providing test in fit is deprecated. Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                "Providing test in fit is deprecated."
+                " Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
             )
         if test_loader is None:
             if test is not None:
                 test_loader = self.datamodule.prepare_inference_dataloader(test)
             elif self.datamodule.test is not None:
                 warnings.warn(
-                    "Providing test in fit is deprecated. Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                    "Providing test in fit is deprecated."
+                    " Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
                 )
                 test_loader = self.datamodule.test_dataloader()
             else:
@@ -1105,7 +1112,8 @@ class TabularModel:
                 If classification, it returns probabilities and final prediction
         """
         warnings.warn(
-            "Default for `include_input_features` will change from True to False in the next release. Please set it explicitly.",
+            "Default for `include_input_features` will change from True to False in the next release."
+            " Please set it explicitly.",
             DeprecationWarning,
         )
         assert all([q <= 1 and q >= 0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
