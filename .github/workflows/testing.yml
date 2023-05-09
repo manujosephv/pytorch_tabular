@@ -30,15 +30,10 @@ jobs:
           open(fname, 'w').writelines(lines)
         shell: python
 
-      - name: Install main package
+      - name: Install main package & dependencies
         run: |
-          pip install -e .[extra]
-
-      - name: Install test dependencies
-        run: |
-          pip install -r requirements_dev.txt
+          pip install -e .[extra] -r requirements_dev.txt -f https://download.pytorch.org/whl/cpu/torch_stable.html
           pip list
 
       - name: Run test-suite
-        run: |
-          python -m pytest
+        run: python -m pytest -v
