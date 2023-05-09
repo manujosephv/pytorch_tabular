@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Config"""
+"""Config."""
 import os
 import re
 import warnings
@@ -179,8 +179,7 @@ class DataConfig:
 
 @dataclass
 class InferredConfig:
-    """
-    Configuration inferred from the data during `fit` of the TabularDatamodule
+    """Configuration inferred from the data during `fit` of the TabularDatamodule.
 
     Args:
         categorical_dim (int): The number of categorical features
@@ -195,7 +194,6 @@ class InferredConfig:
                 list of tuples (cardinality, embedding_dim).
 
         embedded_cat_dim (int): The number of features or dimensions of the embedded categorical features
-
     """
 
     categorical_dim: int = field(
@@ -680,7 +678,8 @@ class ExperimentRunManager:
         exp_version_manager: str = ".pt_tmp/exp_version_manager.yml",
     ) -> None:
         """The manages the versions of the experiments based on the name. It is a simple dictionary(yaml) based lookup.
-        Primary purpose is to avoid overwriting of saved models while runing the training without changing the experiment name.
+        Primary purpose is to avoid overwriting of saved models while runing the training without changing the
+        experiment name.
 
         Args:
             exp_version_manager (str, optional): The path of the yml file which acts as version control.

@@ -110,8 +110,9 @@ class PositionWiseFeedForward(nn.Module):
 
 
 class AddNorm(nn.Module):
-    """
-    Applies LayerNorm, Dropout and adds to input. Standard AddNorm operations in Transformers
+    """Applies LayerNorm, Dropout and adds to input.
+
+    Standard AddNorm operations in Transformers
     """
 
     def __init__(self, input_dim: int, dropout: float):
@@ -124,9 +125,7 @@ class AddNorm(nn.Module):
 
 
 class MultiHeadedAttention(nn.Module):
-    """
-    Multi Headed Attention Block in Transformers
-    """
+    """Multi Headed Attention Block in Transformers."""
 
     def __init__(
         self,
@@ -165,9 +164,7 @@ class MultiHeadedAttention(nn.Module):
 
 # Slight adaptation from https://github.com/jrzaurin/pytorch-widedeep which in turn adapted from AutoGluon
 class SharedEmbeddings(nn.Module):
-    """
-    Enables different values in a categorical feature to share some embeddings across
-    """
+    """Enables different values in a categorical feature to share some embeddings across."""
 
     def __init__(
         self,
@@ -219,10 +216,8 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
 
 
 class PreEncoded1dLayer(nn.Module):
-    """
-    Takes in pre-encoded categorical variables and just concatenates with continuous variables
-    No learnable component
-    """
+    """Takes in pre-encoded categorical variables and just concatenates with continuous variables No learnable
+    component."""
 
     def __init__(
         self,
@@ -275,9 +270,7 @@ class PreEncoded1dLayer(nn.Module):
 
 
 class Embedding1dLayer(nn.Module):
-    """
-    Enables different values in a categorical features to have different embeddings
-    """
+    """Enables different values in a categorical features to have different embeddings."""
 
     def __init__(
         self,
@@ -339,9 +332,7 @@ class Embedding1dLayer(nn.Module):
 
 
 class Embedding2dLayer(nn.Module):
-    """
-    Embeds categorical and continuous features into a 2D tensor
-    """
+    """Embeds categorical and continuous features into a 2D tensor."""
 
     def __init__(
         self,
@@ -480,7 +471,7 @@ class Embedding2dLayer(nn.Module):
 
 
 class TransformerEncoderBlock(nn.Module):
-    """A single Transformer Encoder Block"""
+    """A single Transformer Encoder Block."""
 
     def __init__(
         self,
@@ -539,7 +530,7 @@ class TransformerEncoderBlock(nn.Module):
 
 
 class Lambda(nn.Module):
-    """A wrapper for a lambda function as a pytorch module"""
+    """A wrapper for a lambda function as a pytorch module."""
 
     def __init__(self, func: Callable):
         """Initialize lambda module
@@ -554,7 +545,7 @@ class Lambda(nn.Module):
 
 
 class ModuleWithInit(nn.Module):
-    """Base class for pytorch module with data-aware initializer on first batch"""
+    """Base class for pytorch module with data-aware initializer on first batch."""
 
     def __init__(self):
         super().__init__()
@@ -566,7 +557,7 @@ class ModuleWithInit(nn.Module):
         # please DO NOT use these flags in child modules
 
     def initialize(self, *args, **kwargs):
-        """initialize module tensors using first batch of data"""
+        """Initialize module tensors using first batch of data."""
         raise NotImplementedError("Please implement ")
 
     def __call__(self, *args, **kwargs):

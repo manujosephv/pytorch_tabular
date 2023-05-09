@@ -2,15 +2,15 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 # Inspired by implementation https://github.com/ryancheunggit/tabular_dae
-"""DenoisingAutoEncoder Model"""
+"""DenoisingAutoEncoder Model."""
 import numpy as np
 import torch
 import torch.nn as nn
 
 
 class SwapNoiseCorrupter(nn.Module):
-    """
-    Apply swap noise on the input data.
+    """Apply swap noise on the input data.
+
     Each data point has specified chance be replaced by a random value from the same column.
     """
 

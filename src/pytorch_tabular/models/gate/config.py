@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""AutomaticFeatureInteraction Config"""
+"""AutomaticFeatureInteraction Config."""
 from dataclasses import dataclass, field
 
 from pytorch_tabular.config import ModelConfig
@@ -9,7 +9,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class GatedAdditiveTreeEnsembleConfig(ModelConfig):
-    """Gated Additive Tree Ensemble Config
+    """Gated Additive Tree Ensemble Config.
 
     Args:
         gflu_stages (int): Number of layers in the feature abstraction layer. Defaults to 6

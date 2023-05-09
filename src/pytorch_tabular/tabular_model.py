@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Tabular Model"""
+"""Tabular Model."""
 import copy
 import inspect
 import os
@@ -144,7 +144,7 @@ class TabularModel:
         self._run_validation()
 
     def _run_validation(self):
-        """Validates the Config params and throws errors if something is wrong"""
+        """Validates the Config params and throws errors if something is wrong."""
         if self.config.task == "classification":
             if len(self.config.target) > 1:
                 raise NotImplementedError("Multi-Target Classification is not implemented.")
@@ -185,7 +185,7 @@ class TabularModel:
         return config
 
     def _get_run_name_uid(self) -> Tuple[str, int]:
-        """Gets the name of the experiment and increments version by 1
+        """Gets the name of the experiment and increments version by 1.
 
         Returns:
             tuple[str, int]: Returns the name and version number
@@ -200,7 +200,7 @@ class TabularModel:
         return name, uid
 
     def _setup_experiment_tracking(self):
-        """Sets up the Experiment Tracking Framework according to the choices made in the Experimentconfig"""
+        """Sets up the Experiment Tracking Framework according to the choices made in the Experimentconfig."""
         if self.config.log_target == "tensorboard":
             self.logger = pl.loggers.TensorBoardLogger(
                 name=self.name, save_dir=self.config.project_name, version=self.uid
@@ -215,7 +215,7 @@ class TabularModel:
             raise NotImplementedError(f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]")
 
     def _prepare_callbacks(self, callbacks=None) -> List:
-        """Prepares the necesary callbacks to the Trainer based on the configuration
+        """Prepares the necesary callbacks to the Trainer based on the configuration.
 
         Returns:
             List: A list of callbacks
@@ -305,7 +305,7 @@ class TabularModel:
 
     @classmethod
     def _load_weights(cls, model, path: Union[str, Path]) -> None:
-        """Loads the model weights in the specified directory
+        """Loads the model weights in the specified directory.
 
         Args:
             path (str): The path to the file to load the model from
@@ -321,7 +321,7 @@ class TabularModel:
 
     @classmethod
     def load_model(cls, dir: str, map_location=None, strict=True):
-        """Loads a saved model from the directory
+        """Loads a saved model from the directory.
 
         Args:
             dir (str): The directory where the model wa saved, along with the checkpoints
@@ -503,7 +503,6 @@ class TabularModel:
 
         Returns:
             BaseModel: The prepared model
-
         """
         logger.info(f"Preparing the Model: {self.config._model_name}")
         # Fetching the config as some data specific configs have been added in the datamodule
@@ -587,7 +586,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
     ) -> pl.Trainer:
-        """The fit method which takes in the data and triggers the training
+        """The fit method which takes in the data and triggers the training.
 
         Args:
             train (pd.DataFrame): Training Dataframe
@@ -669,7 +668,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
     ) -> pl.Trainer:
-        """The pretrained method which takes in the data and triggers the training
+        """The pretrained method which takes in the data and triggers the training.
 
         Args:
             train (pd.DataFrame): Training Dataframe
@@ -977,7 +976,8 @@ class TabularModel:
         plot: bool = True,
         callbacks: Optional[List] = None,
     ) -> Tuple[float, pd.DataFrame]:
-        """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in picking a good starting learning rate.
+        """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in
+        picking a good starting learning rate.
 
         Args:
             model (pl.LightningModule): The PyTorch Lightning model to be trained.
@@ -1005,7 +1005,6 @@ class TabularModel:
 
         Returns:
             The suggested learning rate and the learning rate finder results
-
         """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs=None, min_epochs=None)
         train_loader, _ = datamodule.train_dataloader(), datamodule.val_dataloader()
@@ -1037,7 +1036,7 @@ class TabularModel:
         ckpt_path: Optional[Union[str, Path]] = None,
         verbose: bool = True,
     ) -> Union[dict, list]:
-        """Evaluates the dataframe using the loss and metrics already set in config
+        """Evaluates the dataframe using the loss and metrics already set in config.
 
         Args:
             test (Optional[pd.DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
@@ -1086,7 +1085,7 @@ class TabularModel:
         include_input_features: bool = True,
         device: Optional[torch.device] = None,
     ) -> pd.DataFrame:
-        """Uses the trained model to predict on new data and return as a dataframe
+        """Uses the trained model to predict on new data and return as a dataframe.
 
         Args:
             test (pd.DataFrame): The new dataframe with the features defined during training
@@ -1202,7 +1201,7 @@ class TabularModel:
         return pred_df
 
     def load_best_model(self) -> None:
-        """Loads the best model after training is done"""
+        """Loads the best model after training is done."""
         if self.trainer.checkpoint_callback is not None:
             logger.info("Loading the best model")
             ckpt_path = self.trainer.checkpoint_callback.best_model_path
@@ -1216,7 +1215,7 @@ class TabularModel:
             logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
     def save_datamodule(self, dir: str) -> None:
-        """Saves the datamodule in the specified directory
+        """Saves the datamodule in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the datamodule
@@ -1224,12 +1223,12 @@ class TabularModel:
         joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
 
     def save_config(self, dir: str) -> None:
-        """Saves the config in the specified directory"""
+        """Saves the config in the specified directory."""
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
     def save_model(self, dir: str) -> None:
-        """Saves the model and checkpoints in the specified directory
+        """Saves the model and checkpoints in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the model
@@ -1256,7 +1255,7 @@ class TabularModel:
             joblib.dump(self.model_callable, os.path.join(dir, "custom_model_callable.sav"))
 
     def save_weights(self, path: Union[str, Path]) -> None:
-        """Saves the model weights in the specified directory
+        """Saves the model weights in the specified directory.
 
         Args:
             path (str): The path to the file to save the model
@@ -1264,7 +1263,7 @@ class TabularModel:
         torch.save(self.model.state_dict(), path)
 
     def load_weights(self, path: Union[str, Path]) -> None:
-        """Loads the model weights in the specified directory
+        """Loads the model weights in the specified directory.
 
         Args:
             path (str): The path to the file to load the model from
@@ -1278,7 +1277,7 @@ class TabularModel:
         kind: str = "pytorch",
         onnx_export_params: Dict = dict(opset_version=12),
     ) -> bool:
-        """Saves the model for inference
+        """Saves the model for inference.
 
         Args:
             path (Union[str, Path]): path to save the model
@@ -1317,7 +1316,7 @@ class TabularModel:
             raise ValueError("`kind` must be either pytorch or onnx")
 
     def summary(self, max_depth: int = -1) -> None:
-        """Prints a summary of the model
+        """Prints a summary of the model.
 
         Args:
             max_depth (int): The maximum depth to traverse the modules and displayed in the summary.

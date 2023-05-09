@@ -9,9 +9,7 @@ from pytorch_tabular.ssl_models.common.utils import OneHot
 
 
 class MixedEmbedding1dLayer(nn.Module):
-    """
-    Enables different values in a categorical features to have different embeddings
-    """
+    """Enables different values in a categorical features to have different embeddings."""
 
     def __init__(
         self,

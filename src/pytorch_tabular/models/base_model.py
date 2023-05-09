@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Base Model"""
+"""Base Model."""
 import warnings
 from abc import ABCMeta, abstractmethod
 from functools import partial
@@ -63,7 +63,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
-        """Base Model for PyTorch Tabular
+        """Base Model for PyTorch Tabular.
 
         Args:
             config (DictConfig): The configuration for the model.
@@ -189,7 +189,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             self.metrics = self.custom_metrics
 
     def calculate_loss(self, output: Dict, y: torch.Tensor, tag: str) -> torch.Tensor:
-        """Calculates the loss for the model
+        """Calculates the loss for the model.
 
         Args:
             output (Dict): The output dictionary from the model
@@ -243,7 +243,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return computed_loss
 
     def calculate_metrics(self, y: torch.Tensor, y_hat: torch.Tensor, tag: str) -> List[torch.Tensor]:
-        """Calculates the metrics for the model
+        """Calculates the metrics for the model.
 
         Args:
             y (torch.Tensor): The target tensor
@@ -299,7 +299,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return metrics
 
     def data_aware_initialization(self, datamodule):
-        """Performs data-aware initialization of the model when defined"""
+        """Performs data-aware initialization of the model when defined."""
         pass
 
     def compute_backbone(self, x: Dict) -> torch.Tensor:
@@ -311,7 +311,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.embedding_layer(x)
 
     def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor) -> torch.Tensor:
-        """Applies sigmoid scaling to the output of the model if the task is regression and the target range is defined
+        """Applies sigmoid scaling to the output of the model if the task is regression and the target range is defined.
 
         Args:
             y_hat (torch.Tensor): The output of the model
@@ -326,7 +326,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return y_hat
 
     def pack_output(self, y_hat: torch.Tensor, backbone_features: torch.tensor) -> Dict[str, Any]:
-        """Packs the output of the model
+        """Packs the output of the model.
 
         Args:
             y_hat (torch.Tensor): The output of the model
@@ -344,7 +344,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             return {"logits": y_hat, "backbone_features": backbone_features}
 
     def compute_head(self, backbone_features: Tensor) -> Dict[str, Any]:
-        """Computes the head of the model
+        """Computes the head of the model.
 
         Args:
             backbone_features (Tensor): The backbone features
@@ -357,7 +357,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.pack_output(y_hat, backbone_features)
 
     def forward(self, x: Dict) -> Dict[str, Any]:
-        """The forward pass of the model
+        """The forward pass of the model.
 
         Args:
             x (Dict): The input of the model with 'continuous' and 'categorical' keys
@@ -367,8 +367,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.compute_head(x)
 
     def predict(self, x: Dict, ret_model_output: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict]]:
-        """
-        Predicts the output of the model
+        """Predicts the output of the model.
 
         Args:
             x (Dict): The input of the model with 'continuous' and 'categorical' keys
@@ -389,7 +388,10 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self(batch), None
 
     def extract_embedding(self):
-        """Extracts the embedding of the model. This is used in `CategoricalEmbeddingTransformer`"""
+        """Extracts the embedding of the model.
+
+        This is used in `CategoricalEmbeddingTransformer`
+        """
         if self.hparams.categorical_dim > 0:
             if not isinstance(self.embedding_layer, PreEncoded1dLayer):
                 return self.embedding_layer.cat_embedding_layers
