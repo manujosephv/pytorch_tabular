@@ -18,10 +18,12 @@ import pytorch_lightning as pl
 import torch
 import torchmetrics
 from pytorch_lightning.utilities.imports import package_available
+
 if package_available("lightning_fabric"):
     from lightning_fabric.utilities.seed import seed_everything
 elif package_available("lightning_fabric"):
     from lightning_lite.utilities.seed import seed_everything
+
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
