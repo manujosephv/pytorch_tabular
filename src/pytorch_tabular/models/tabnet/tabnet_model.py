@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""TabNet Model"""
+"""TabNet Model."""
 from typing import Dict
 
 import torch

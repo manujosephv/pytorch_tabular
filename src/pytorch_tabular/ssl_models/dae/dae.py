@@ -2,7 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 # Inspired by implementation https://github.com/ryancheunggit/tabular_dae
-"""DenoisingAutoEncoder Model"""
+"""DenoisingAutoEncoder Model."""
 from collections import namedtuple
 from typing import Dict
 

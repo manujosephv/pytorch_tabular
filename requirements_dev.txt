@@ -1,10 +1,9 @@
-pip==23.1.2
+pip ==23.1.2
 wget
-bump2version==1.0.1
-# coverage>=4.5.4
-mkdocs-material==9.0.*
-mkdocstrings[python]==0.21.*
-mknotebooks==0.7.*
-pytest>=5.3.2
-pytest-runner>=5.1
-pre-commit==3.1.*
+bump2version ==1.0.1
+# coverage >=4.5.4
+mkdocs-material ==9.0.*
+mkdocstrings[python] ==0.21.*
+mknotebooks ==0.7.*
+pytest >=5.3.2
+pytest-runner >=5.1

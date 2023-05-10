@@ -11,9 +11,7 @@ from pytorch_tabular.utils import _initialize_layers, _linear_dropout_bn
 
 
 def config_link(r):
-    """
-    This is a helper function decorator to link the config to the head.
-    """
+    """This is a helper function decorator to link the config to the head."""
 
     def wrapper(f):
         f.config_template = r

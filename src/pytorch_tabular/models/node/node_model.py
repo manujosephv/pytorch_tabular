@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Tabular Model"""
+"""Tabular Model."""
 import warnings
 
 import torch
@@ -78,7 +78,7 @@ class NODEModel(BaseModel):
         return x[..., : self.hparams.output_dim].mean(dim=-2)
 
     def data_aware_initialization(self, datamodule):
-        """Performs data-aware initialization for NODE"""
+        """Performs data-aware initialization for NODE."""
         logger.info("Data Aware Initialization of NODE using a forward pass with 2000 batch size....")
         # Need a big batch to initialize properly
         alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)

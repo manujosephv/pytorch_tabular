@@ -2,7 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 # Inspired by https://github.com/rixwew/pytorch-fm/blob/master/torchfm/model/afi.py
-"""AutomaticFeatureInteraction Model"""
+"""AutomaticFeatureInteraction Model."""
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig

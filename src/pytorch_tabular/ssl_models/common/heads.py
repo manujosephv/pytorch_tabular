@@ -1,13 +1,13 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""SSL Heads"""
+"""SSL Heads."""
 import torch.nn as nn
 
 
 class MultiTaskHead(nn.Module):
-    """
-    Simple Linear transformation to take last hidden representation to reconstruct inputs.
+    """Simple Linear transformation to take last hidden representation to reconstruct inputs.
+
     Output is dictionary of variable type to tensor mapping.
     """
 

@@ -22,18 +22,18 @@ repos:
       - id: check-docstring-first
       - id: detect-private-key
 
-#  - repo: https://github.com/asottile/pyupgrade
-#    rev: v3.3.1
-#    hooks:
-#      - id: pyupgrade
-#        args: [--py37-plus]
-#        name: Upgrade code
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
+    hooks:
+      - id: pyupgrade
+        args: [--py37-plus]
+        name: Upgrade code
 
-#  - repo: https://github.com/PyCQA/docformatter
-#    rev: v1.5.1
-#    hooks:
-#      - id: docformatter
-#        args: [--in-place, --wrap-summaries=120, --wrap-descriptions=120]
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.6.5
+    hooks:
+      - id: docformatter
+        args: [--in-place, --wrap-summaries=120, --wrap-descriptions=120]
 
   - repo: https://github.com/PyCQA/isort
     rev: 5.12.0
@@ -46,14 +46,15 @@ repos:
       - id: black
         name: Black code
 
-  # - repo: https://github.com/executablebooks/mdformat
-  #   rev: 0.7.16
-  #   hooks:
-  #     - id: mdformat
-  #       additional_dependencies:
-  #         - mdformat-gfm
-  #         - mdformat-black
-  #         - mdformat_frontmatter
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-black
+          - mdformat_frontmatter
+        exclude: docs
 
   - repo: https://github.com/asottile/yesqa
     rev: v1.4.0
