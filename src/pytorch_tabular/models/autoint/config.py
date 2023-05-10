@@ -145,20 +145,28 @@ class AutoIntConfig(ModelConfig):
     share_embedding: bool = field(
         default=False,
         metadata={
-            "help": "The flag turns on shared embeddings in the input embedding process. The key idea here is to have an embedding for the feature as a whole along with embeddings of each unique values of that column. For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
+            "help": "The flag turns on shared embeddings in the input embedding process."
+            " The key idea here is to have an embedding for the feature as a whole along with embeddings"
+            " of each unique values of that column."
+            " For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
         },
     )
     share_embedding_strategy: Optional[str] = field(
         default="fraction",
         metadata={
-            "help": "There are two strategies in adding shared embeddings. 1. `add` - A separate embedding for the feature is added to the embedding of the unique values of the feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of the feature. Defaults to fraction.",
+            "help": "There are two strategies in adding shared embeddings."
+            " 1. `add` - A separate embedding for the feature is added to the embedding"
+            " of the unique values of the feature."
+            " 2. `fraction` - A fraction of the input embedding is reserved"
+            " for the shared embedding of the feature. Defaults to fraction.",
             "choices": ["add", "fraction"],
         },
     )
     shared_embedding_fraction: float = field(
         default=0.25,
         metadata={
-            "help": "Fraction of the input_embed_dim to be reserved by the shared embedding. Should be less than one. Defaults to 0.25"
+            "help": "Fraction of the input_embed_dim to be reserved by the shared embedding."
+            " Should be less than one. Defaults to 0.25"
         },
     )
     deep_layers: bool = field(
@@ -172,13 +180,17 @@ class AutoIntConfig(ModelConfig):
     activation: str = field(
         default="ReLU",
         metadata={
-            "help": "The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
+            "help": "The activation type in the deep MLP. The default activaion in PyTorch"
+            " like ReLU, TanH, LeakyReLU, etc."
+            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity."
+            " Defaults to ReLU"
         },
     )
     use_batch_norm: bool = field(
         default=False,
         metadata={
-            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut in the deep MLP. Defaults to False"
+            "help": "Flag to include a BatchNorm layer after each Linear Layer+DropOut in the deep MLP."
+            " Defaults to False"
         },
     )
     initialization: str = field(

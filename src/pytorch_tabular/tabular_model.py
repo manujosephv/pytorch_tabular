@@ -62,34 +62,37 @@ class TabularModel:
             config (Optional[Union[DictConfig, str]], optional): Single OmegaConf DictConfig object or
                 the path to the yaml file holding all the config parameters. Defaults to None.
 
-            data_config (Optional[Union[DataConfig, str]], optional): DataConfig object or path to the yaml file. Defaults to None.
+            data_config (Optional[Union[DataConfig, str]], optional):
+                DataConfig object or path to the yaml file. Defaults to None.
 
-            model_config (Optional[Union[ModelConfig, str]], optional): A subclass of ModelConfig or path to the yaml file.
+            model_config (Optional[Union[ModelConfig, str]], optional):
+                A subclass of ModelConfig or path to the yaml file.
                 Determines which model to run from the type of config. Defaults to None.
 
-            optimizer_config (Optional[Union[OptimizerConfig, str]], optional): OptimizerConfig object or path to the yaml file.
-                Defaults to None.
+            optimizer_config (Optional[Union[OptimizerConfig, str]], optional):
+                OptimizerConfig object or path to the yaml file. Defaults to None.
 
-            trainer_config (Optional[Union[TrainerConfig, str]], optional): TrainerConfig object or path to the yaml file.
-                Defaults to None.
+            trainer_config (Optional[Union[TrainerConfig, str]], optional):
+                TrainerConfig object or path to the yaml file. Defaults to None.
 
-            experiment_config (Optional[Union[ExperimentConfig, str]], optional): ExperimentConfig object or path to the yaml file.
+            experiment_config (Optional[Union[ExperimentConfig, str]], optional):
+                ExperimentConfig object or path to the yaml file.
                 If Provided configures the experiment tracking. Defaults to None.
 
-            model_callable (Optional[Callable], optional): If provided, will override the model callable that will be loaded from the config.
+            model_callable (Optional[Callable], optional):
+                If provided, will override the model callable that will be loaded from the config.
                 Typically used when providing Custom Models
 
-            model_state_dict_path (Optional[Union[str, Path]], optional): If provided, will load the state dict after initializing the model from config.
+            model_state_dict_path (Optional[Union[str, Path]], optional):
+                If provided, will load the state dict after initializing the model from config.
         """
         super().__init__()
         self.exp_manager = ExperimentRunManager()
         if config is None:
-            assert (
-                (data_config is not None)
-                or (model_config is not None)
-                or (optimizer_config is not None)
-                or (trainer_config is not None)
-            ), "If `config` is None, `data_config`, `model_config`, `trainer_config`, and `optimizer_config` cannot be None"
+            assert any(c is not None for c in (data_config, model_config, optimizer_config, trainer_config)), (
+                "If `config` is None, `data_config`, `model_config`, `trainer_config`,"
+                " and `optimizer_config` cannot be None"
+            )
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
@@ -156,7 +159,8 @@ class TabularModel:
                     or any([range_[0] > range_[1] for range_ in self.config.target_range])
                 ):
                     raise ValueError(
-                        "Targe Range, if defined, should be list tuples of length two(min,max). The length of the list should be equal to hte length of target columns"
+                        "Targe Range, if defined, should be list tuples of length two(min,max)."
+                        " The length of the list should be equal to hte length of target columns"
                     )
         if self.config.task == "ssl":
             assert (
@@ -438,16 +442,21 @@ class TabularModel:
         Args:
             train (pd.DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+            validation (Optional[pd.DataFrame], optional):
+                If provided, will use this dataframe as the validation while training.
+                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
+                Defaults to None.
 
             test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
                 which you'll be able to check performance after the model is trained. Defaults to None.
 
-            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
+            train_sampler (Optional[torch.utils.data.Sampler], optional):
+                Custom PyTorch batch samplers which will be passed to the DataLoaders.
+                Useful for dealing with imbalanced data and other custom batching strategies
 
-            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
-                and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional):
+                If provided, applies the transform to the target before modelling and inverse the transform during
+                prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
                 a tuple of callables (transform_func, inverse_transform_func)
 
             seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
@@ -457,7 +466,8 @@ class TabularModel:
         """
         if test is not None:
             warnings.warn(
-                "Providing test data in `fit` is deprecated and will be removed in next major release. Plese use `evaluate` for evaluating on test data"
+                "Providing test data in `fit` is deprecated and will be removed in next major release."
+                " Plese use `evaluate` for evaluating on test data"
             )
         logger.info("Preparing the DataLoaders")
         target_transform = self._check_and_set_target_transform(target_transform)
@@ -493,7 +503,8 @@ class TabularModel:
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
                 signature metric_fn(y_hat, y) and works on torch tensor inputs
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for standard PyToch optimizers.
+            optimizer (Optional[torch.optim.Optimizer], optional):
+                Custom optimizers which are a drop in replacements for standard PyToch optimizers.
                 This should be the Class and not the initialized object
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
@@ -535,7 +546,8 @@ class TabularModel:
 
             datamodule (TabularDatamodule): The datamodule
 
-            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+            callbacks (Optional[List[pl.Callback]], optional):
+                List of callbacks to be used during training. Defaults to None.
 
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
@@ -554,7 +566,8 @@ class TabularModel:
             logger.info("Auto LR Find Started")
             result = self.trainer.tune(self.model, train_loader, val_loader)
             logger.info(
-                f"Suggested LR: {result['lr_find'].suggestion()}. For plot and detailed analysis, use `find_learning_rate` method."
+                f"Suggested LR: {result['lr_find'].suggestion()}."
+                f" For plot and detailed analysis, use `find_learning_rate` method."
             )
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
@@ -588,8 +601,10 @@ class TabularModel:
         Args:
             train (pd.DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+            validation (Optional[pd.DataFrame], optional):
+                If provided, will use this dataframe as the validation while training.
+                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
+                Defaults to None.
 
             test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
                 which you'll be able to check performance after the model is trained. Defaults to None.
@@ -600,16 +615,19 @@ class TabularModel:
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
                 signature metric_fn(y_hat, y) and works on torch tensor inputs
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
+            optimizer (Optional[torch.optim.Optimizer], optional):
+                Custom optimizers which are a drop in replacements for
                 standard PyToch optimizers. This should be the Class and not the initialized object
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
-            train_sampler (Optional[torch.utils.data.Sampler], optional): Custom PyTorch batch samplers which will be passed
+            train_sampler (Optional[torch.utils.data.Sampler], optional):
+                Custom PyTorch batch samplers which will be passed
                 to the DataLoaders. Useful for dealing with imbalanced data and other custom batching strategies
 
-            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the
-                target before modelling and inverse the transform during prediction. The parameter can either be a sklearn Transformer
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional):
+                If provided, applies the transform to the target before modelling and inverse the transform during
+                prediction. The parameter can either be a sklearn Transformer
                 which has an inverse_transform method, or a tuple of callables (transform_func, inverse_transform_func)
 
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
@@ -618,10 +636,12 @@ class TabularModel:
 
             seed: (int): Random seed for reproducibility. Defaults to 42.
 
-            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+            callbacks (Optional[List[pl.Callback]], optional):
+                List of callbacks to be used during training. Defaults to None.
 
-            datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the parameters
-                like train, test etc and use the datamodule. Defaults to None.
+            datamodule (Optional[TabularDatamodule], optional): The datamodule.
+                If provided, will ignore the rest of the parameters like train, test etc and use the datamodule.
+                Defaults to None.
 
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
@@ -636,11 +656,13 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                    "train data is provided but datamodule is provided."
+                    " Ignoring the train data and using the datamodule"
                 )
             if test is not None:
                 warnings.warn(
-                    "Providing test data in `fit` is deprecated and will be removed in next major release. Plese use `evaluate` for evaluating on test data"
+                    "Providing test data in `fit` is deprecated and will be removed in next major release."
+                    " Plese use `evaluate` for evaluating on test data"
                 )
         model = self.prepare_model(
             datamodule,
@@ -670,11 +692,12 @@ class TabularModel:
         Args:
             train (pd.DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while training.
-                Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation. Defaults to None.
+            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while
+                training. Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
+                Defaults to None.
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
-                standard PyToch optimizers. This should be the Class and not the initialized object
+            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements
+                for standard PyToch optimizers. This should be the Class and not the initialized object
 
             optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
 
@@ -684,7 +707,8 @@ class TabularModel:
 
             seed: (int): Random seed for reproducibility. Defaults to 42.
 
-            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training. Defaults to None.
+            callbacks (Optional[List[pl.Callback]], optional): List of callbacks to be used during training.
+                Defaults to None.
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
                 parameters like train, test etc and use the datamodule. Defaults to None.
@@ -709,7 +733,8 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                    "train data is provided but datamodule is provided."
+                    " Ignoring the train data and using the datamodule"
                 )
         model = self.prepare_model(
             datamodule,
@@ -750,27 +775,30 @@ class TabularModel:
             target (Optional[str], optional): The target column name if not provided in the initial pretraining stage.
                 Defaults to None.
 
-            optimizer_config (Optional[OptimizerConfig], optional): If provided, will redefine the optimizer for fine-tuning
-                stage. Defaults to None.
+            optimizer_config (Optional[OptimizerConfig], optional):
+                If provided, will redefine the optimizer for fine-tuning stage. Defaults to None.
 
-            trainer_config (Optional[TrainerConfig], optional): If provided, will redefine the trainer for fine-tuning stage.
-                Defaults to None.
+            trainer_config (Optional[TrainerConfig], optional):
+                If provided, will redefine the trainer for fine-tuning stage. Defaults to None.
 
-            experiment_config (Optional[ExperimentConfig], optional): If provided, will redefine the experiment for fine-tuning
-                stage. Defaults to None.
+            experiment_config (Optional[ExperimentConfig], optional):
+                If provided, will redefine the experiment for fine-tuning stage. Defaults to None.
 
-            loss (Optional[torch.nn.Module], optional): If provided, will be used as the loss function for the fine-tuning.
+            loss (Optional[torch.nn.Module], optional):
+                If provided, will be used as the loss function for the fine-tuning.
                 By Default it is MSELoss for regression and CrossEntropyLoss for classification.
 
             metrics (Optional[List[Callable]], optional): List of metrics (either callables or str) to be used for the
-                fine-tuning stage. If str, it should be one of the functional metrics implemented in ``torchmetrics.functional``
-                Defaults to None.
+                fine-tuning stage. If str, it should be one of the functional metrics implemented in
+                ``torchmetrics.functional``. Defaults to None.
 
             metrics_params (Optional[Dict], optional): The parameters for the metrics in the same order as metrics.
-                For eg. f1_score for multi-class needs a parameter `average` to fully define the metric. Defaults to None.
+                For eg. f1_score for multi-class needs a parameter `average` to fully define the metric.
+                Defaults to None.
 
-            optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements for
-                standard PyTorch optimizers. If provided, the OptimizerConfig is ignored in favor of this. Defaults to None.
+            optimizer (Optional[torch.optim.Optimizer], optional):
+                Custom optimizers which are a drop in replacements for standard PyTorch optimizers. If provided,
+                the OptimizerConfig is ignored in favor of this. Defaults to None.
 
             optimizer_params (Dict, optional): The parameters for the optimizer. Defaults to {}.
 
@@ -892,8 +920,8 @@ class TabularModel:
             train_sampler (Optional[torch.utils.data.Sampler], optional): If provided, will be used as a batch sampler
                 for training. Defaults to None.
 
-            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used to transform
-                the target before training and inverse transform the predictions.
+            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used
+                to transform the target before training and inverse transform the predictions.
 
             max_epochs (Optional[int], optional): The maximum number of epochs to train for. Defaults to None.
 
@@ -904,8 +932,8 @@ class TabularModel:
             callbacks (Optional[List[pl.Callback]], optional): If provided, will be added to the callbacks for Trainer.
                 Defaults to None.
 
-            datamodule (Optional[TabularDatamodule], optional): If provided, will be used as the datamodule for training.
-                Defaults to None.
+            datamodule (Optional[TabularDatamodule], optional): If provided, will be used as the datamodule
+                for training. Defaults to None.
 
             freeze_backbone (bool, optional): If True, will freeze the backbone by tirning off gradients.
                 Defaults to False, which means the pretrained weights are also further tuned during fine-tuning.
@@ -942,7 +970,8 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided. Ignoring the train data and using the datamodule"
+                    "train data is provided but datamodule is provided."
+                    " Ignoring the train data and using the datamodule"
                 )
         if freeze_backbone:
             for param in self.model.backbone.parameters():
@@ -1038,8 +1067,8 @@ class TabularModel:
                 DEPRECATION: providing test data during fit is deprecated and will be removed in a future release.
                 Defaults to None.
 
-            ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided, will try to use the
-                best checkpoint during training.
+            ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided,
+                will try to use the best checkpoint during training.
 
             verbose (bool, optional): If true, will print the results. Defaults to True.
         Returns:
@@ -1047,14 +1076,16 @@ class TabularModel:
         """
         if test_loader is None and test is None:
             warnings.warn(
-                "Providing test in fit is deprecated. Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                "Providing test in fit is deprecated."
+                " Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
             )
         if test_loader is None:
             if test is not None:
                 test_loader = self.datamodule.prepare_inference_dataloader(test)
             elif self.datamodule.test is not None:
                 warnings.warn(
-                    "Providing test in fit is deprecated. Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                    "Providing test in fit is deprecated."
+                    " Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
                 )
                 test_loader = self.datamodule.test_dataloader()
             else:
@@ -1095,7 +1126,8 @@ class TabularModel:
                 If classification, it returns probabilities and final prediction
         """
         warnings.warn(
-            "Default for `include_input_features` will change from True to False in the next release. Please set it explicitly.",
+            "Default for `include_input_features` will change from True to False in the next release."
+            " Please set it explicitly.",
             DeprecationWarning,
         )
         assert all([q <= 1 and q >= 0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"

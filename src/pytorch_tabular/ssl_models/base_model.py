@@ -74,7 +74,8 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         assert (encoder is not None) or (
             encoder_config is not None
         ), "Either encoder or encoder_config must be provided"
-        # assert (decoder is not None) or (decoder_config is not None), "Either decoder or decoder_config must be provided"
+        # assert (decoder is not None) or (decoder_config is not None),
+        # "Either decoder or decoder_config must be provided"
         if encoder is not None:
             self.encoder = encoder
             self._custom_decoder = True
@@ -190,7 +191,8 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
                 self._lr_scheduler = getattr(torch.optim.lr_scheduler, self.hparams.lr_scheduler)
             except AttributeError as e:
                 logger.error(
-                    f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined in the torch.optim.lr_scheduler module"
+                    f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined"
+                    f" in the torch.optim.lr_scheduler module"
                 )
                 raise e
             if isinstance(self._lr_scheduler, torch.optim.lr_scheduler._LRScheduler):

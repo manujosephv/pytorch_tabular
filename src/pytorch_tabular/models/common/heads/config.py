@@ -6,7 +6,9 @@ from typing import List, Optional
 
 @dataclass
 class LinearHeadConfig:
-    """A model class for Linear Head configuration; serves as a template and documentation. The models take a dictionary as input, but if there are keys which are not present in this model class, it'll throw an exception.
+    """A model class for Linear Head configuration; serves as a template and documentation. The models take a dictionary
+    as input, but if there are keys which are not present in this model class, it'll throw an exception.
+
     Args:
         layers (str): Hyphen-separated number of layers and units in the classification/regression head.
                 eg. 32-64-32. Default is just a mapping from intput dimension to output dimension
@@ -26,13 +28,16 @@ class LinearHeadConfig:
     layers: str = field(
         default="",
         metadata={
-            "help": "Hyphen-separated number of layers and units in the classification/regression head. eg. 32-64-32. Default is just a mapping from intput dimension to output dimension"
+            "help": "Hyphen-separated number of layers and units in the classification/regression head. eg. 32-64-32."
+            " Default is just a mapping from intput dimension to output dimension"
         },
     )
     activation: str = field(
         default="ReLU",
         metadata={
-            "help": "The activation type in the classification head. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
+            "help": "The activation type in the classification head. The default activaion in PyTorch"
+            " like ReLU, TanH, LeakyReLU, etc."
+            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
         },
     )
     dropout: float = field(
@@ -111,7 +116,9 @@ class MixtureDensityHeadConfig:
     mu_bias_init: Optional[List] = field(
         default=None,
         metadata={
-            "help": "To initialize the bias parameter of the mu layer to predefined cluster centers. Should be a list with the same length as number of gaussians in the mixture model. It is highly recommended to set the parameter to combat mode collapse. Defaults to None",
+            "help": "To initialize the bias parameter of the mu layer to predefined cluster centers."
+            " Should be a list with the same length as number of gaussians in the mixture model."
+            " It is highly recommended to set the parameter to combat mode collapse. Defaults to None",
         },
     )
 
@@ -144,7 +151,8 @@ class MixtureDensityHeadConfig:
     softmax_temperature: Optional[float] = field(
         default=1,
         metadata={
-            "help": "The temperature to be used in the gumbel softmax of the mixing coefficients. Values less than one leads to sharper transition between the multiple components. Defaults to 1",
+            "help": "The temperature to be used in the gumbel softmax of the mixing coefficients."
+            " Values less than one leads to sharper transition between the multiple components. Defaults to 1",
         },
     )
     n_samples: int = field(
@@ -163,19 +171,22 @@ class MixtureDensityHeadConfig:
     speedup_training: bool = field(
         default=False,
         metadata={
-            "help": "Turning on this parameter does away with sampling during training which speeds up training, but also doesn't give you visibility on train metrics. Defaults to False",
+            "help": "Turning on this parameter does away with sampling during training which speeds up training,"
+            " but also doesn't give you visibility on train metrics. Defaults to False",
         },
     )
     log_debug_plot: bool = field(
         default=False,
         metadata={
-            "help": "Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition to the logits(if log_logits is turned on in experment config). Defaults to False",
+            "help": "Turning on this parameter plots histograms of the mu, sigma, and pi layers in addition"
+            " to the logits(if log_logits is turned on in experment config). Defaults to False",
         },
     )
     input_dim: int = field(
         default=None,
         metadata={
-            "help": "The input dimensions to the head. This will be automatically filled in while initializing from the `backbone.output_dim`",
+            "help": "The input dimensions to the head. This will be automatically filled in while initializing"
+            " from the `backbone.output_dim`",
         },
     )
     _probabilistic: bool = field(default=True)

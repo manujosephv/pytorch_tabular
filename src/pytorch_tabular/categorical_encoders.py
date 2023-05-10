@@ -155,7 +155,8 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
             embedding_layer = model.extract_embedding()
         except ValueError as e:
             logger.error(
-                f"Extracting embedding layer from model received this error: {e}. Some models do not support this feature."
+                f"Extracting embedding layer from model received this error: {e}."
+                f" Some models do not support this feature."
             )
             embedding_layer = None
         if embedding_layer is not None:
@@ -196,7 +197,8 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         """
         if not self._mapping:
             raise ValueError(
-                "Passed model should either have an attribute `embeddng_layers` or a method `extract_embedding` defined for `transform`."
+                "Passed model should either have an attribute `embeddng_layers`"
+                " or a method `extract_embedding` defined for `transform`."
             )
         assert all(c in X.columns for c in self.cols)
 
