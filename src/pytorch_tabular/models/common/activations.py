@@ -12,9 +12,7 @@ from .utils import _make_ix_like
 
 # GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
 class GEGLU(nn.Module):
-    """
-    Gated Exponential Linear Unit (GEGLU)
-    """
+    """Gated Exponential Linear Unit (GEGLU)"""
 
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         """
@@ -31,9 +29,7 @@ class GEGLU(nn.Module):
 
 
 class ReGLU(nn.Module):
-    """
-    ReGLU
-    """
+    """ReGLU."""
 
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         """
@@ -105,7 +101,7 @@ class SparsemaxFunction(Function):
 
     @staticmethod
     def _threshold_and_support(input, dim=-1):
-        """Sparsemax building block: compute the threshold
+        """Sparsemax building block: compute the threshold.
 
         Args:
             input: any dimension
@@ -139,8 +135,9 @@ def sparsemoid(input):
 
 
 class Entmax15Function(Function):
-    """
-    An implementation of exact Entmax with alpha=1.5 (B. Peters, V. Niculae, A. Martins). See
+    """An implementation of exact Entmax with alpha=1.5 (B.
+
+    Peters, V. Niculae, A. Martins). See
     :cite:`https://arxiv.org/abs/1905.05702 for detailed description.
     Source: https://github.com/deep-spin/entmax
     """

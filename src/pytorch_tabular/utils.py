@@ -180,8 +180,7 @@ def pl_load(
 
 
 def reset_all_weights(model: nn.Module) -> None:
-    """
-    Resets all parameters in a network.
+    """Resets all parameters in a network.
 
     Args:
         model: The model to reset the parameters of.

@@ -5,8 +5,8 @@ import torch
 
 
 def mixup(batch: Dict, lam: float = 0.5) -> Dict:
-    """It apply mixup augmentation, making a weighted average between a tensor
-    and some random element of the tensor taking random rows
+    """It apply mixup augmentation, making a weighted average between a tensor and some random element of the tensor
+    taking random rows.
 
     :param batch: Tensor on which apply the mixup augmentation
     :param lam: weight in the linear combination between the original values
@@ -21,7 +21,7 @@ def mixup(batch: Dict, lam: float = 0.5) -> Dict:
 
 
 def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
-    """Define how apply cutmix to a tensor
+    """Define how apply cutmix to a tensor.
 
     :param batch: Tensor on which apply the cutmix augmentation
     :param lam: probability values have 0 in a binary random mask,
@@ -40,7 +40,7 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
 
 
 def _get_random_index(x: torch.Tensor) -> torch.Tensor:
-    """Given a tensor it compute random indices between 0 and the number of the first dimension
+    """Given a tensor it compute random indices between 0 and the number of the first dimension.
 
     :param x: Tensor used to get the number of rows
     """

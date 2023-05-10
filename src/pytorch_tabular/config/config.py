@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Config"""
+"""Config."""
 import os
 import re
 import warnings
@@ -36,7 +36,7 @@ def _read_yaml(filename):
         ),
         list("-+0123456789."),
     )
-    with open(filename, "r") as file:
+    with open(filename) as file:
         config = yaml.load(file, loader)
     return config
 
@@ -44,12 +44,11 @@ def _read_yaml(filename):
 def _validate_choices(cls):
     for key in cls.__dataclass_fields__.keys():
         atr = cls.__dataclass_fields__[key]
-        if atr.init:
-            if "choices" in atr.metadata.keys():
-                if getattr(cls, key) not in atr.metadata.get("choices"):
-                    raise ValueError(
-                        f"{getattr(cls, key)} is not a valid choice for {key}. Please choose from on of the following: {atr.metadata['choices']}"
-                    )
+        if atr.init and "choices" in atr.metadata.keys():
+            if getattr(cls, key) not in atr.metadata.get("choices"):
+                raise ValueError(
+                    f"{getattr(cls, key)} is not a valid choice for {key}. Please choose from on of the following: {atr.metadata['choices']}"
+                )
 
 
 @dataclass
@@ -179,8 +178,7 @@ class DataConfig:
 
 @dataclass
 class InferredConfig:
-    """
-    Configuration inferred from the data during `fit` of the TabularDatamodule
+    """Configuration inferred from the data during `fit` of the TabularDatamodule.
 
     Args:
         categorical_dim (int): The number of categorical features
@@ -195,7 +193,6 @@ class InferredConfig:
                 list of tuples (cardinality, embedding_dim).
 
         embedded_cat_dim (int): The number of features or dimensions of the embedded categorical features
-
     """
 
     categorical_dim: int = field(
@@ -680,7 +677,8 @@ class ExperimentRunManager:
         exp_version_manager: str = ".pt_tmp/exp_version_manager.yml",
     ) -> None:
         """The manages the versions of the experiments based on the name. It is a simple dictionary(yaml) based lookup.
-        Primary purpose is to avoid overwriting of saved models while runing the training without changing the experiment name.
+        Primary purpose is to avoid overwriting of saved models while runing the training without changing the
+        experiment name.
 
         Args:
             exp_version_manager (str, optional): The path of the yml file which acts as version control.
@@ -832,12 +830,12 @@ class ModelConfig:
 
     def __post_init__(self):
         if self.task == "regression":
-            self.loss = "MSELoss" if self.loss is None else self.loss
-            self.metrics = ["mean_squared_error"] if self.metrics is None else self.metrics
+            self.loss = self.loss or "MSELoss"
+            self.metrics = self.metrics or ["mean_squared_error"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         elif self.task == "classification":
-            self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
-            self.metrics = ["accuracy"] if self.metrics is None else self.metrics
+            self.loss = self.loss or "CrossEntropyLoss"
+            self.metrics = self.metrics or ["accuracy"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         elif self.task == "backbone":
             self.loss = None

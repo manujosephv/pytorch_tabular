@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Category Embedding Model Config"""
+"""Category Embedding Model Config."""
 from dataclasses import dataclass, field
 
 from pytorch_tabular.config import ModelConfig

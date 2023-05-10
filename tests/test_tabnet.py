@@ -82,9 +82,7 @@ def test_regression(
 
 @pytest.mark.parametrize(
     "continuous_cols",
-    [
-        [f"feature_{i}" for i in range(54)],
-    ],
+    [[f"feature_{i}" for i in range(54)]],
 )
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])

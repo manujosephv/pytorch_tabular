@@ -20,7 +20,7 @@ import torch
 
 class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
     def __init__(self, tabular_model, extract_keys=["backbone_features"], drop_original=True):
-        """Initializes the Transformer and extracts the neural features
+        """Initializes the Transformer and extracts the neural features.
 
         Args:
             tabular_model (TabularModel): The trained TabularModel object
@@ -35,11 +35,14 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
         self.drop_original = drop_original
 
     def fit(self, X, y=None):
-        """Just for compatibility. Does not do anything"""
+        """Just for compatibility.
+
+        Does not do anything
+        """
         return self
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
-        """Transforms the categorical columns specified to the trained neural features from the model
+        """Transforms the categorical columns specified to the trained neural features from the model.
 
         Args:
             X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.

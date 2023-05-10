@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Tabular Data Module"""
+"""Tabular Data Module."""
 import re
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
@@ -63,7 +63,7 @@ class TabularDatamodule(pl.LightningDataModule):
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         seed: Optional[int] = 42,
     ):
-        """The Pytorch Lightning Datamodule for Tabular Data
+        """The Pytorch Lightning Datamodule for Tabular Data.
 
         Args:
             train (pd.DataFrame): The Training Dataframe
@@ -104,7 +104,7 @@ class TabularDatamodule(pl.LightningDataModule):
         self.target_transform_template = target_transform
 
     def update_config(self, config) -> InferredConfig:
-        """Calculates and updates a few key information to the config object
+        """Calculates and updates a few key information to the config object.
 
         Args:
             config (DictConfig): The config object
@@ -237,7 +237,8 @@ class TabularDatamodule(pl.LightningDataModule):
         return data
 
     def preprocess_data(self, data: pd.DataFrame, stage: str = "inference") -> Tuple[pd.DataFrame, list]:
-        """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before feeding into the dataloder
+        """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before
+        feeding into the dataloder.
 
         Args:
             data (pd.DataFrame): A dataframe with the features and target
@@ -275,8 +276,8 @@ class TabularDatamodule(pl.LightningDataModule):
         return data, added_features
 
     def setup(self, stage: Optional[str] = None) -> None:
-        """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc.
-        This is called before accessing the dataloaders
+        """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc. This is called
+        before accessing the dataloaders.
 
         Args:
             stage (Optional[str], optional): Internal parameter to distinguish between fit and inference. Defaults to None.
@@ -305,8 +306,7 @@ class TabularDatamodule(pl.LightningDataModule):
     # adapted from gluonts
     @classmethod
     def time_features_from_frequency_str(cls, freq_str: str) -> List[str]:
-        """
-        Returns a list of time features that will be appropriate for the given frequency string.
+        """Returns a list of time features that will be appropriate for the given frequency string.
 
         Args:
             freq_str (str): Frequency string of the form `[multiple][granularity]` such as "12H", "5min", "1D" etc.
@@ -649,7 +649,7 @@ class TabularDataset(Dataset):
         embed_categorical: bool = True,
         target: List[str] = None,
     ):
-        """Dataset to Load Tabular Data
+        """Dataset to Load Tabular Data.
 
         Args:
             data (pd.DataFrame): Pandas DataFrame to load during training
@@ -688,15 +688,11 @@ class TabularDataset(Dataset):
                 self.categorical_X = self.categorical_X.astype(np.float32).values
 
     def __len__(self):
-        """
-        Denotes the total number of samples.
-        """
+        """Denotes the total number of samples."""
         return self.n
 
     def __getitem__(self, idx):
-        """
-        Generates one sample of data.
-        """
+        """Generates one sample of data."""
         return {
             "target": self.y[idx],
             "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
