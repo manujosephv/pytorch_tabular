@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from lightning_lite.utilities.cloud_io import get_filesystem
+from lightning_fabric.utilities.cloud_io import get_filesystem
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
