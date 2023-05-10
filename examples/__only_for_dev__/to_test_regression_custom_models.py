@@ -14,6 +14,8 @@ from pytorch_tabular.config import DataConfig, ModelConfig, OptimizerConfig, Tra
 #     DeepGaussianMixtureModelConfig,
 # )
 from pytorch_tabular.models.node import NODEBackbone
+
+# from pytorch_tabular.models.node import utils as utils
 from pytorch_tabular.tabular_model import TabularModel
 
 
@@ -150,8 +152,8 @@ class MultiStageModel(BaseModel):
         def subset_rg(x):
             return x[..., 2:4].mean(dim=-2)
 
-        self.clf_out = utils.Lambda(subset_clf)
-        self.rg_out = utils.Lambda(subset_rg)
+        # self.clf_out = utils.Lambda(subset_clf)
+        # self.rg_out = utils.Lambda(subset_rg)
         self.classification_loss = nn.CrossEntropyLoss()
 
     def unpack_input(self, x: Dict):

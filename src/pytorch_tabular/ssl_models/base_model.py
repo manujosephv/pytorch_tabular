@@ -185,11 +185,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             # Loading from custom fit arguments
             self._optimizer = self.custom_optimizer
 
-            opt = self._optimizer(
-                self.parameters(),
-                lr=self.hparams.learning_rate,
-                **self.custom_optimizer_params
-            )
+            opt = self._optimizer(self.parameters(), lr=self.hparams.learning_rate, **self.custom_optimizer_params)
         if self.hparams.lr_scheduler is not None:
             try:
                 self._lr_scheduler = getattr(torch.optim.lr_scheduler, self.hparams.lr_scheduler)

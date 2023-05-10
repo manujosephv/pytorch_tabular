@@ -98,15 +98,23 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 else:
                     config.metrics.append(metric.__name__)
                     config.metrics_params.append(vars(metric))
-        else:  # Updating default metrics in config
-            if config.task == "classification":
-                # Adding metric_params to config for classification task
-                for i, metric_params in enumerate(config.metrics_params):
-                    if "task" not in metric_params:
-                        # For classification task, output_dim == number of classses
-                        config.metrics_params[i]["task"] = "multiclass"
-                    if "num_classes" not in metric_params:
-                        config.metrics_params[i]["num_classes"] = inferred_config.output_dim
+        # Updating default metrics in config
+        elif config.task == "classification":
+            # Adding metric_params to config for classification task
+            for i, mp in enumerate(config.metrics_params):
+                # For classification task, output_dim == number of classses
+                config.metrics_params[i]["task"] = mp.get("task", "multiclass")
+                config.metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
+                if config.metrics[i] in (
+                    "accuracy",
+                    "precision",
+                    "recall",
+                    "precision_recall",
+                    "specificity",
+                    "f1_score",
+                    "fbeta_score",
+                ):
+                    config.metrics_params[i]["top_k"] = mp.get("top_k", 1)
 
         if self.custom_optimizer is not None:
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
@@ -206,28 +214,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             # Log only if non-zero
             if output[t] != 0:
                 reg_loss += output[t]
-                self.log(
-                    f"{tag}_{t}_loss",
-                    output[t],
-                    on_epoch=True,
-                    on_step=False,
-                    logger=True,
-                    prog_bar=False
-                )
+                self.log(f"{tag}_{t}_loss", output[t], on_epoch=True, on_step=False, logger=True, prog_bar=False)
         if self.hparams.task == "regression":
             computed_loss = reg_loss
             for i in range(self.hparams.output_dim):
                 _loss = self.loss(y_hat[:, i], y[:, i])
                 computed_loss += _loss
                 if self.hparams.output_dim > 1:
-                    self.log(
-                        f"{tag}_loss_{i}",
-                        _loss,
-                        on_epoch=True,
-                        on_step=False,
-                        logger=True,
-                        prog_bar=False
-                    )
+                    self.log(f"{tag}_loss_{i}", _loss, on_epoch=True, on_step=False, logger=True, prog_bar=False)
         else:
             # TODO loss fails with batch size of 1?
             computed_loss = self.loss(y_hat.squeeze(), y.squeeze()) + reg_loss
@@ -487,10 +481,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             logits = torch.cat(logits).detach().cpu()
             fig = self.create_plotly_histogram(logits, "logits")
             wandb.log(
-                {
-                    "valid_logits": wandb.Plotly(fig),
-                    "global_step": self.global_step
-                },
+                {"valid_logits": wandb.Plotly(fig), "global_step": self.global_step},
                 commit=False,
             )
 

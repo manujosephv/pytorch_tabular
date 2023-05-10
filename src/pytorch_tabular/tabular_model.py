@@ -845,7 +845,7 @@ class TabularModel:
                     # For classification task, output_dim == number of classses
                     metrics_params[i]["task"] = mp.get("task", "multiclass")
                     metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
-                    # metrics_params[i]["top_k"] = mp.get("top_k", 1)
+                    metrics_params[i]["top_k"] = mp.get("top_k", 1)
         # Forming partial callables using metrics and metric params
         metrics = [partial(m, **mp) for m, mp in zip(metrics, metrics_params)]
         self.model.mode = "finetune"
