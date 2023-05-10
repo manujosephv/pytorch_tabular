@@ -46,14 +46,15 @@ repos:
       - id: black
         name: Black code
 
-  # - repo: https://github.com/executablebooks/mdformat
-  #   rev: 0.7.16
-  #   hooks:
-  #     - id: mdformat
-  #       additional_dependencies:
-  #         - mdformat-gfm
-  #         - mdformat-black
-  #         - mdformat_frontmatter
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-black
+          - mdformat_frontmatter
+        exclude: docs
 
 #  - repo: https://github.com/asottile/yesqa
 #    rev: v1.4.0
