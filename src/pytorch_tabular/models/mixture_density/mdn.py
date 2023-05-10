@@ -158,23 +158,23 @@ class MDNModel(BaseModel):
             pass
         else:
             y_hat = self.head.generate_point_predictions(ret_value["pi"], ret_value["sigma"], ret_value["mu"])
-            _ = self.calculate_metrics(y, y_hat, tag="train")
+            self.calculate_metrics(y, y_hat, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
-        _ = self.calculate_loss(y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="valid")
+        self.calculate_loss(y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="valid")
         y_hat = self.head.generate_point_predictions(ret_value["pi"], ret_value["sigma"], ret_value["mu"])
-        _ = self.calculate_metrics(y, y_hat, tag="valid")
+        self.calculate_metrics(y, y_hat, tag="valid")
         return y_hat, y, ret_value
 
     def test_step(self, batch, batch_idx):
         y = batch["target"]
         ret_value = self(batch)
-        _ = self.calculate_loss(y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="test")
+        self.calculate_loss(y, ret_value["pi"], ret_value["sigma"], ret_value["mu"], tag="test")
         y_hat = self.head.generate_point_predictions(ret_value["pi"], ret_value["sigma"], ret_value["mu"])
-        _ = self.calculate_metrics(y, y_hat, tag="test")
+        self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
 
     def validation_epoch_end(self, outputs) -> None:

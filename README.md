@@ -146,7 +146,9 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 1. ~~Add Text and Image Modalities for mixed modal problems~~
 
 ## Contributors
+
 <!-- readme: contributors -start -->
+
 <table>
 <tr>
     <td align="center">
