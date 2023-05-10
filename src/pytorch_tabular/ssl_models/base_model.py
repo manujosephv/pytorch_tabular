@@ -27,8 +27,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
         The merged configuration.
     """
     # using base config values if exist
-    if "embedding_dims" in config.keys() and config.embedding_dims is not None:
-        inferred_config.embedding_dims = config.embedding_dims
+    inferred_config.embedding_dims = config.get("embedding_dims") or inferred_config.embedding_dims
     merged_config = OmegaConf.merge(OmegaConf.to_container(config), OmegaConf.to_container(inferred_config))
     return merged_config
 
@@ -147,21 +146,21 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     def training_step(self, batch, batch_idx):
         output = self.forward(batch)
         loss = self.calculate_loss(output, tag="train")
-        _ = self.calculate_metrics(output, tag="train")
+        self.calculate_metrics(output, tag="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
         with torch.no_grad():
             output = self.forward(batch)
-            _ = self.calculate_loss(output, tag="valid")
-            _ = self.calculate_metrics(output, tag="valid")
+            self.calculate_loss(output, tag="valid")
+            self.calculate_metrics(output, tag="valid")
         return output
 
     def test_step(self, batch, batch_idx):
         with torch.no_grad():
             output = self.forward(batch)
-            _ = self.calculate_loss(output, tag="test")
-            _ = self.calculate_metrics(output, tag="test")
+            self.calculate_loss(output, tag="test")
+            self.calculate_metrics(output, tag="test")
         return output
 
     def validation_epoch_end(self, outputs) -> None:
@@ -185,11 +184,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             # Loading from custom fit arguments
             self._optimizer = self.custom_optimizer
 
-            opt = self._optimizer(
-                self.parameters(),
-                lr=self.hparams.learning_rate,
-                **self.custom_optimizer_params,
-            )
+            opt = self._optimizer(self.parameters(), lr=self.hparams.learning_rate, **self.custom_optimizer_params)
         if self.hparams.lr_scheduler is not None:
             try:
                 self._lr_scheduler = getattr(torch.optim.lr_scheduler, self.hparams.lr_scheduler)
@@ -203,12 +198,11 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
                     "optimizer": opt,
                     "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
                 }
-            else:
-                return {
-                    "optimizer": opt,
-                    "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
-                    "monitor": self.hparams.lr_scheduler_monitor_metric,
-                }
+            return {
+                "optimizer": opt,
+                "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
+                "monitor": self.hparams.lr_scheduler_monitor_metric,
+            }
         else:
             return opt
 

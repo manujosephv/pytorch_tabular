@@ -36,7 +36,7 @@ def _read_yaml(filename):
         ),
         list("-+0123456789."),
     )
-    with open(filename, "r") as file:
+    with open(filename) as file:
         config = yaml.load(file, loader)
     return config
 
@@ -44,12 +44,11 @@ def _read_yaml(filename):
 def _validate_choices(cls):
     for key in cls.__dataclass_fields__.keys():
         atr = cls.__dataclass_fields__[key]
-        if atr.init:
-            if "choices" in atr.metadata.keys():
-                if getattr(cls, key) not in atr.metadata.get("choices"):
-                    raise ValueError(
-                        f"{getattr(cls, key)} is not a valid choice for {key}. Please choose from on of the following: {atr.metadata['choices']}"
-                    )
+        if atr.init and "choices" in atr.metadata.keys():
+            if getattr(cls, key) not in atr.metadata.get("choices"):
+                raise ValueError(
+                    f"{getattr(cls, key)} is not a valid choice for {key}. Please choose from on of the following: {atr.metadata['choices']}"
+                )
 
 
 @dataclass
@@ -831,12 +830,12 @@ class ModelConfig:
 
     def __post_init__(self):
         if self.task == "regression":
-            self.loss = "MSELoss" if self.loss is None else self.loss
-            self.metrics = ["mean_squared_error"] if self.metrics is None else self.metrics
+            self.loss = self.loss or "MSELoss"
+            self.metrics = self.metrics or ["mean_squared_error"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         elif self.task == "classification":
-            self.loss = "CrossEntropyLoss" if self.loss is None else self.loss
-            self.metrics = ["accuracy"] if self.metrics is None else self.metrics
+            self.loss = self.loss or "CrossEntropyLoss"
+            self.metrics = self.metrics or ["accuracy"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
         elif self.task == "backbone":
             self.loss = None

@@ -19,7 +19,7 @@ class MixedEmbedding1dLayer(nn.Module):
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
     ):
-        super(MixedEmbedding1dLayer, self).__init__()
+        super().__init__()
         self.continuous_dim = continuous_dim
         self.categorical_embedding_dims = categorical_embedding_dims
         self.categorical_dim = len(categorical_embedding_dims)

@@ -87,7 +87,7 @@ class NeuralDecisionTree(nn.Module):
         for d in range(self.depth):
             for n in range(max(2 ** (d), 1)):
                 self.add_module(
-                    "decision_stump_{}_{}".format(d, n),
+                    f"decision_stump_{d}_{n}",
                     NeuralDecisionStump(
                         self.n_features + (2 ** (d) if d > 0 else 0),
                         self.binning_activation,
@@ -103,7 +103,7 @@ class NeuralDecisionTree(nn.Module):
             layer_nodes = []
             layer_feature_masks = []
             for n in range(max(2 ** (d), 1)):
-                leaf_nodes, feature_mask = self._modules["decision_stump_{}_{}".format(d, n)](tree_input)
+                leaf_nodes, feature_mask = self._modules[f"decision_stump_{d}_{n}"](tree_input)
                 layer_nodes.append(leaf_nodes)
                 layer_feature_masks.append(feature_mask)
             layer_nodes = torch.cat(layer_nodes, dim=1)
