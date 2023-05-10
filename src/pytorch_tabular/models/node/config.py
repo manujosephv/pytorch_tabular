@@ -116,7 +116,8 @@ class NodeConfig(ModelConfig):
     additional_tree_output_dim: int = field(
         default=3,
         metadata={
-            "help": "The additional output dimensions which is only used to pass through different layers of the architectures. Only the first output_dim outputs will be used for prediction"
+            "help": "The additional output dimensions which is only used to pass through different layers"
+            " of the architectures. Only the first output_dim outputs will be used for prediction"
         },
     )
     depth: int = field(
@@ -126,7 +127,8 @@ class NodeConfig(ModelConfig):
     choice_function: str = field(
         default="entmax15",
         metadata={
-            "help": "Generates a sparse probability distribution to be used as feature weights(aka, soft feature selection)",
+            "help": "Generates a sparse probability distribution to be used"
+            " as feature weights(aka, soft feature selection)",
             "choices": ["entmax15", "sparsemax"],
         },
     )
@@ -140,7 +142,8 @@ class NodeConfig(ModelConfig):
     max_features: Optional[int] = field(
         default=None,
         metadata={
-            "help": "If not None, sets a max limit on the number of features to be carried forward from layer to layer in the Dense Architecture"
+            "help": "If not None, sets a max limit on the number of features to be carried forward"
+            " from layer to layer in the Dense Architecture"
         },
     )
     input_dropout: float = field(
@@ -150,7 +153,8 @@ class NodeConfig(ModelConfig):
     initialize_response: str = field(
         default="normal",
         metadata={
-            "help": "Initializing the response variable in the Oblivious Decision Trees. By default, it is a standard normal distribution",
+            "help": "Initializing the response variable in the Oblivious Decision Trees."
+            " By default, it is a standard normal distribution",
             "choices": ["normal", "uniform"],
         },
     )
@@ -186,8 +190,8 @@ class NodeConfig(ModelConfig):
                 By default(1.0), log-temperatures are initialized in such a way that all bin selectors
                 end up in the linear region of sparse-sigmoid. The temperatures are then scaled by this parameter.
                 Setting this value > 1.0 will result in some margin between data points and sparse-sigmoid cutoff value
-                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid region
-                For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
+                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid
+                region. For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
                 Setting this value > 1.0 will result in a margin between data points and sparse-sigmoid cutoff value
                 All points will be between (0.5 - 0.5 / threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
             """
@@ -196,14 +200,17 @@ class NodeConfig(ModelConfig):
     cat_embedding_dropout: float = field(
         default=0.0,
         metadata={
-            "help": "DEPRECATED: Please use `embedding_dropout` instead. probability of an embedding element to be zeroed."
+            "help": "DEPRECATED: Please use `embedding_dropout` instead."
+            " probability of an embedding element to be zeroed."
         },
     )
 
     embed_categorical: bool = field(
         default=False,
         metadata={
-            "help": "Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder. This is DEPRECATED and will always be `True` from next release."
+            "help": "Flag to embed categorical columns using an Embedding Layer."
+            " If turned off, the categorical columns are encoded using LeaveOneOutEncoder."
+            " This is DEPRECATED and will always be `True` from next release."
         },
     )
 
@@ -216,11 +223,14 @@ class NodeConfig(ModelConfig):
         if not self.embed_categorical:
             # raise deprecation warning
             warnings.warn(
-                "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features. This is deprecated and will be removed in future versions and categorical columns will be embedded by default."
+                "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features."
+                " This is deprecated and will be removed in future versions and categorical columns"
+                " will be embedded by default."
             )
         if self.cat_embedding_dropout > 0:
             warnings.warn(
-                "`cat_embedding_dropout` is deprecated and will be removed in the next release. Please use `embedding_dropout` instead"
+                "`cat_embedding_dropout` is deprecated and will be removed in the next release."
+                " Please use `embedding_dropout` instead"
             )
             self.embedding_dropout = self.cat_embedding_dropout
         super().__post_init__()

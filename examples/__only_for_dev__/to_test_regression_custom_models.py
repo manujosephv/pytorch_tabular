@@ -106,8 +106,8 @@ class MultiStageModelConfig(ModelConfig):
                 By default(1.0), log-temperatures are initialized in such a way that all bin selectors
                 end up in the linear region of sparse-sigmoid. The temperatures are then scaled by this parameter.
                 Setting this value > 1.0 will result in some margin between data points and sparse-sigmoid cutoff value
-                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid region
-                For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
+                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid
+                region. For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
                 Setting this value > 1.0 will result in a margin between data points and sparse-sigmoid cutoff value
                 All points will be between (0.5 - 0.5 / threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
             """
@@ -314,7 +314,8 @@ model_config = MultiStageModelConfig(
     num_layers=1,  # Number of Dense Layers
     num_trees=2048,  # Number of Trees in each layer
     depth=6,  # Depth of each Tree
-    embed_categorical=True,  # If True, will use a learned embedding, else it will use LeaveOneOutEncoding for categorical columns
+    # If True, will use a learned embedding, else it will use LeaveOneOutEncoding for categorical columns
+    embed_categorical=True,
     learning_rate=0.02,
     additional_tree_output_dim=25,
 )

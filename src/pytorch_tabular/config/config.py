@@ -47,7 +47,8 @@ def _validate_choices(cls):
         if atr.init and "choices" in atr.metadata.keys():
             if getattr(cls, key) not in atr.metadata.get("choices"):
                 raise ValueError(
-                    f"{getattr(cls, key)} is not a valid choice for {key}. Please choose from on of the following: {atr.metadata['choices']}"
+                    f"{getattr(cls, key)} is not a valid choice for {key}."
+                    f" Please choose from on of the following: {atr.metadata['choices']}"
                 )
 
 
@@ -98,7 +99,8 @@ class DataConfig:
     target: Optional[List[str]] = field(
         default=None,
         metadata={
-            "help": "A list of strings with the names of the target column(s). It is mandatory for all except SSL tasks."
+            "help": "A list of strings with the names of the target column(s)."
+            " It is mandatory for all except SSL tasks."
         },
     )
     continuous_cols: List = field(
@@ -112,7 +114,8 @@ class DataConfig:
     date_columns: List = field(
         default_factory=list,
         metadata={
-            "help": "(Column names, Freq) tuples of the date fields. For eg. a field named introduction_date and with a monthly frequency should have an entry ('intro_date','M'}"
+            "help": "(Column names, Freq) tuples of the date fields. For eg. a field named"
+            " `introduction_date` and with a monthly frequency should have an entry ('intro_date','M'}"
         },
     )
 
@@ -123,7 +126,8 @@ class DataConfig:
     validation_split: Optional[float] = field(
         default=0.2,
         metadata={
-            "help": "Percentage of Training rows to keep aside as validation. Used only if Validation Data is not given separately"
+            "help": "Percentage of Training rows to keep aside as validation."
+            " Used only if Validation Data is not given separately"
         },
     )
     continuous_feature_transform: Optional[str] = field(
@@ -146,7 +150,10 @@ class DataConfig:
     quantile_noise: int = field(
         default=0,
         metadata={
-            "help": "NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable. Please not that this transformation does NOT apply gaussian noise to the resulting data, the noise is only applied for QuantileTransformer"
+            "help": "NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added gaussian noise"
+            " with std = :quantile_noise: * data.std ; this will cause discrete values to be more separable."
+            " Please not that this transformation does NOT apply gaussian noise to the resulting data,"
+            " the noise is only applied for QuantileTransformer"
         },
     )
     num_workers: Optional[int] = field(

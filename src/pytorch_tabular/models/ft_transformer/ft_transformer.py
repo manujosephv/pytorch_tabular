@@ -47,7 +47,10 @@ class FTTransformerBackbone(nn.Module):
         assert config.share_embedding_strategy in [
             "add",
             "fraction",
-        ], f"`share_embedding_strategy` should be one of `add` or `fraction`, not {self.hparams.share_embedding_strategy}"
+        ], (
+            "`share_embedding_strategy` should be one of `add` or `fraction`,"
+            f" not {self.hparams.share_embedding_strategy}"
+        )
         self.hparams = config
         self._build_network()
 
@@ -140,14 +143,6 @@ class FTTransformerModel(BaseModel):
         self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
         self._head = self._get_head_from_config()
-
-    # def extract_embedding(self):
-    #     if self.hparams.categorical_dim > 0:
-    #         return self.embedding_layer.cat_embedding_layers
-    #     else:
-    #         raise ValueError(
-    #             "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
-    #         )
 
     def feature_importance(self):
         if self.hparams.attn_feature_importance:

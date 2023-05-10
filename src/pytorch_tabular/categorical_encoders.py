@@ -197,7 +197,8 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         """
         if not self._mapping:
             raise ValueError(
-                "Passed model should either have an attribute `embeddng_layers` or a method `extract_embedding` defined for `transform`."
+                "Passed model should either have an attribute `embeddng_layers`"
+                " or a method `extract_embedding` defined for `transform`."
             )
         assert all(c in X.columns for c in self.cols)
 

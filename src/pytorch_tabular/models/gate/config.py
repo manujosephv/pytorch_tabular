@@ -117,7 +117,8 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     chain_trees: bool = field(
         default=True,
         metadata={
-            "help": "If True, we will chain the trees together. Synonymous to boosting (chaining trees) or bagging (parallel trees). Defaults to True"
+            "help": "If True, we will chain the trees together."
+            " Synonymous to boosting (chaining trees) or bagging (parallel trees). Defaults to True"
         },
     )
     tree_wise_attention: bool = field(

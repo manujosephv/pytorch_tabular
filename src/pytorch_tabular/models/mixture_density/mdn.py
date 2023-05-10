@@ -66,7 +66,9 @@ class MDNModel(BaseModel):
             callable = getattr(models, callable)
         except ModuleNotFoundError as e:
             logger.error(
-                "`config class` in `backbone_config` is not valid. The config class should be a valid module path from `models`. e.g. `ft_transformer.FTTransformerConfig`."
+                "`config class` in `backbone_config` is not valid."
+                " The config class should be a valid module path from `models`."
+                " e.g. `ft_transformer.FTTransformerConfig`."
             )
             raise e
         assert issubclass(callable, ModelConfig), "`config_class` should be a subclass of `ModelConfig`"
