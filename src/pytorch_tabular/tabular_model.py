@@ -828,27 +828,21 @@ class TabularModel:
             assert len(metrics) == len(metrics_params), "Number of metrics and metrics_params should be same"
             metrics = [getattr(torchmetrics.functional, m) if isinstance(m, str) else m for m in metrics]
         if task == "regression":
-            loss = loss if loss is not None else torch.nn.MSELoss()
+            loss = loss or torch.nn.MSELoss()
             if metrics is None:
                 metrics = [torchmetrics.functional.mean_squared_error]
                 metrics_params = [{}]
         elif task == "classification":
-            loss = loss if loss is not None else torch.nn.CrossEntropyLoss()
+            loss = loss or torch.nn.CrossEntropyLoss()
             if metrics is None:
                 metrics = [torchmetrics.functional.accuracy]
-                metrics_params = [
-                    {
-                        "task": "multiclass",
-                        "num_classes": inferred_config.output_dim,
-                    }
-                ]
+                metrics_params = [{"task": "multiclass", "num_classes": inferred_config.output_dim, "top_k": 1}]
             else:
                 for i, mp in enumerate(metrics_params):
-                    if "task" not in mp:
-                        # For classification task, output_dim == number of classses
-                        metrics_params[i]["task"] = "multiclass"
-                    if "num_classes" not in mp:
-                        metrics_params[i]["num_classes"] = inferred_config.output_dim
+                    # For classification task, output_dim == number of classses
+                    metrics_params[i]["task"] = mp.get("task", "multiclass")
+                    metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
+                    metrics_params[i]["top_k"] = mp.get("top_k", 1)
         # Forming partial callables using metrics and metric params
         metrics = [partial(m, **mp) for m, mp in zip(metrics, metrics_params)]
         self.model.mode = "finetune"
