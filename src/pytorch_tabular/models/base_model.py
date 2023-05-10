@@ -132,13 +132,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             self.do_log_logits = False
             warnings.warn(
                 "Wandb is not installed. Please install wandb to log logits. "
-                "You can install wandb using pip install wandb or install PyTorch Tabular using pip install pytorch-tabular[all]"
+                "You can install wandb using pip install wandb or install PyTorch Tabular"
+                " using pip install pytorch-tabular[all]"
             )
         if not PLOTLY_INSTALLED:
             self.do_log_logits = False
             warnings.warn(
                 "Plotly is not installed. Please install plotly to log logits. "
-                "You can install plotly using pip install plotly or install PyTorch Tabular using pip install pytorch-tabular[all]"
+                "You can install plotly using pip install plotly or install PyTorch Tabular"
+                " using pip install pytorch-tabular[all]"
             )
 
     @abstractmethod
@@ -378,7 +380,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 )
         else:
             raise ValueError(
-                "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
+                "Model has been trained with no categorical feature and therefore can't be used"
+                " as a Categorical Encoder"
             )
 
     def training_step(self, batch, batch_idx):
@@ -440,7 +443,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 self._lr_scheduler = getattr(torch.optim.lr_scheduler, self.hparams.lr_scheduler)
             except AttributeError as e:
                 logger.error(
-                    f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined in the torch.optim.lr_scheduler module"
+                    f"{self.hparams.lr_scheduler} is not a valid learning rate sheduler defined"
+                    f" in the torch.optim.lr_scheduler module"
                 )
                 raise e
             if isinstance(self._lr_scheduler, torch.optim.lr_scheduler._LRScheduler):

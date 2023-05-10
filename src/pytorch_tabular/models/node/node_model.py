@@ -23,7 +23,8 @@ class NODEBackbone(nn.Module):
     def __init__(self, config: DictConfig, **kwargs):
         super().__init__()
         self.hparams = config
-        # self.hparams.output_dim = (0 if self.hparams.output_dim is None else self.hparams.output_dim)  # For SSL cases where output_dim will be None
+        # self.hparams.output_dim = (0 if self.hparams.output_dim is None else self.hparams.output_dim)
+        # For SSL cases where output_dim will be None
         self._build_network()
 
     def _build_network(self):
@@ -115,12 +116,3 @@ class NODEModel(BaseModel):
         # Not using config head because NODE has a specific head
         warnings.warn("Ignoring head config because NODE has a specific head which subsets the tree outputs")
         self._head = Lambda(self.subset)
-
-    # def extract_embedding(self):
-    #     if self.hparams.embed_categorical:
-    #         if self.hparams.embedded_cat_dim != 0:
-    #             return self.embedding_layer.cat_embedding_layers
-    #     else:
-    #         raise ValueError(
-    #             "Model has been trained with no categorical feature and therefore can't be used as a Categorical Encoder"
-    #         )

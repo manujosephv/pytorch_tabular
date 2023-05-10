@@ -32,7 +32,8 @@ class MultiStageModelConfig(ModelConfig):
     additional_tree_output_dim: int = field(
         default=3,
         metadata={
-            "help": "The additional output dimensions which is only used to pass through different layers of the architectures. Only the first output_dim outputs will be used for prediction"
+            "help": "The additional output dimensions which is only used to pass through different layers"
+            " of the architectures. Only the first output_dim outputs will be used for prediction"
         },
     )
     depth: int = field(
@@ -42,7 +43,8 @@ class MultiStageModelConfig(ModelConfig):
     choice_function: str = field(
         default="entmax15",
         metadata={
-            "help": "Generates a sparse probability distribution to be used as feature weights(aka, soft feature selection)",
+            "help": "Generates a sparse probability distribution to be used as feature weights"
+            " (aka, soft feature selection)",
             "choices": ["entmax15", "sparsemax"],
         },
     )
@@ -56,7 +58,8 @@ class MultiStageModelConfig(ModelConfig):
     max_features: Optional[int] = field(
         default=None,
         metadata={
-            "help": "If not None, sets a max limit on the number of features to be carried forward from layer to layer in the Dense Architecture"
+            "help": "If not None, sets a max limit on the number of features to be carried forward"
+            " from layer to layer in the Dense Architecture"
         },
     )
     input_dropout: float = field(
@@ -66,7 +69,8 @@ class MultiStageModelConfig(ModelConfig):
     initialize_response: str = field(
         default="normal",
         metadata={
-            "help": "Initializing the response variable in the Oblivious Decision Trees. By default, it is a standard normal distribution",
+            "help": "Initializing the response variable in the Oblivious Decision Trees."
+            " By default, it is a standard normal distribution",
             "choices": ["normal", "uniform"],
         },
     )
@@ -102,8 +106,8 @@ class MultiStageModelConfig(ModelConfig):
                 By default(1.0), log-temperatures are initialized in such a way that all bin selectors
                 end up in the linear region of sparse-sigmoid. The temperatures are then scaled by this parameter.
                 Setting this value > 1.0 will result in some margin between data points and sparse-sigmoid cutoff value
-                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid region
-                For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
+                Setting this value < 1.0 will cause (1 - value) part of data points to end up in flat sparse-sigmoid
+                region. For instance, threshold_init_cutoff = 0.9 will set 10% points equal to 0.0 or 1.0
                 Setting this value > 1.0 will result in a margin between data points and sparse-sigmoid cutoff value
                 All points will be between (0.5 - 0.5 / threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
             """
@@ -112,13 +116,16 @@ class MultiStageModelConfig(ModelConfig):
     embed_categorical: bool = field(
         default=False,
         metadata={
-            "help": "Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder"
+            "help": "Flag to embed categorical columns using an Embedding Layer. If turned off,"
+            " the categorical columns are encoded using LeaveOneOutEncoder"
         },
     )
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
-            "help": "The dimensions of the embedding for each categorical column as a list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of the categorical column using the rule min(50, (x + 1) // 2)"
+            "help": "The dimensions of the embedding for each categorical column as a list of tuples"
+            " (cardinality, embedding_dim). If left empty, will infer using the cardinality"
+            " of the categorical column using the rule min(50, (x + 1) // 2)"
         },
     )
     embedding_dropout: float = field(
@@ -307,7 +314,8 @@ model_config = MultiStageModelConfig(
     num_layers=1,  # Number of Dense Layers
     num_trees=2048,  # Number of Trees in each layer
     depth=6,  # Depth of each Tree
-    embed_categorical=True,  # If True, will use a learned embedding, else it will use LeaveOneOutEncoding for categorical columns
+    # If True, will use a learned embedding, else it will use LeaveOneOutEncoding for categorical columns
+    embed_categorical=True,
     learning_rate=0.02,
     additional_tree_output_dim=25,
 )

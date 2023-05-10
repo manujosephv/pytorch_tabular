@@ -59,7 +59,8 @@ class MDNConfig(ModelConfig):
     backbone_config_class: str = field(
         default=None,
         metadata={
-            "help": "The config class for defining the Backbone. The config class should be a valid module path from `models`. e.g. `FTTransformerConfig`"
+            "help": "The config class for defining the Backbone."
+            " The config class should be a valid module path from `models`. e.g. `FTTransformerConfig`"
         },
     )
     backbone_config_params: Dict = field(

@@ -110,7 +110,8 @@ data_config = DataConfig(
     continuous_feature_transform=None,  # "quantile_normal",
     normalize_continuous_features=False,
 )
-# model_config = CategoryEmbeddingModelConfig(task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
+# model_config = CategoryEmbeddingModelConfig(
+#       task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
 # model_config = NodeConfig(
 #     task="classification",
 #     depth=4,

@@ -53,9 +53,9 @@ from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig  #
 from pytorch_tabular.models import CategoryEmbeddingModelConfig  # noqa: E402
 
 data_config = DataConfig(
-    target=[
-        "target"
-    ],  # target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
+    # target should always be a list. Multi-targets are only supported for regression.
+    # Multi-Task Classification is not implemented
+    target=["target"],
     continuous_cols=num_col_names,
     categorical_cols=cat_col_names,
     continuous_feature_transform="quantile_normal",

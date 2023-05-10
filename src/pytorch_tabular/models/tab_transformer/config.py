@@ -126,20 +126,28 @@ class TabTransformerConfig(ModelConfig):
     share_embedding: bool = field(
         default=False,
         metadata={
-            "help": "The flag turns on shared embeddings in the input embedding process. The key idea here is to have an embedding for the feature as a whole along with embeddings of each unique values of that column. For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
+            "help": "The flag turns on shared embeddings in the input embedding process."
+            " The key idea here is to have an embedding for the feature as a whole along with embeddings"
+            " of each unique values of that column. For more details refer"
+            " to Appendix A of the TabTransformer paper. Defaults to False"
         },
     )
     share_embedding_strategy: Optional[str] = field(
         default="fraction",
         metadata={
-            "help": "There are two strategies in adding shared embeddings. 1. `add` - A separate embedding for the feature is added to the embedding of the unique values of the feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of the feature. Defaults to fraction.",
+            "help": "There are two strategies in adding shared embeddings."
+            " 1. `add` - A separate embedding for the feature is added to the embedding"
+            " of the unique values of the feature."
+            " 2. `fraction` - A fraction of the input embedding is reserved"
+            " for the shared embedding of the feature. Defaults to fraction.",
             "choices": ["add", "fraction"],
         },
     )
     shared_embedding_fraction: float = field(
         default=0.25,
         metadata={
-            "help": "Fraction of the input_embed_dim to be reserved by the shared embedding. Should be less than one. Defaults to 0.25"
+            "help": "Fraction of the input_embed_dim to be reserved by the shared embedding."
+            " Should be less than one. Defaults to 0.25"
         },
     )
     num_heads: int = field(
@@ -153,7 +161,8 @@ class TabTransformerConfig(ModelConfig):
     transformer_head_dim: Optional[int] = field(
         default=None,
         metadata={
-            "help": "The number of hidden units in the Multi-Headed Attention layers. Defaults to None and will be same as input_dim."
+            "help": "The number of hidden units in the Multi-Headed Attention layers."
+            " Defaults to None and will be same as input_dim."
         },
     )
     attn_dropout: float = field(
@@ -175,7 +184,11 @@ class TabTransformerConfig(ModelConfig):
     transformer_activation: str = field(
         default="GEGLU",
         metadata={
-            "help": "The activation type in the transformer feed forward layers. In addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU, ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU",
+            "help": "The activation type in the transformer feed forward layers."
+            " In addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc."
+            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity,"
+            " GEGLU, ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf)."
+            " Defaults to GEGLU",
         },
     )
     out_ff_layers: Optional[str] = field(
@@ -187,7 +200,10 @@ class TabTransformerConfig(ModelConfig):
     out_ff_activation: Optional[str] = field(
         default=None,
         metadata={
-            "help": "DEPRECATED: The activation type in the deep MLP. The default activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity. Defaults to ReLU"
+            "help": "DEPRECATED: The activation type in the deep MLP. The default activaion in PyTorch"
+            " like ReLU, TanH, LeakyReLU, etc."
+            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity."
+            " Defaults to ReLU"
         },
     )
     out_ff_dropout: Optional[float] = field(
@@ -217,12 +233,15 @@ class TabTransformerConfig(ModelConfig):
         ]
         if self.head_config != {"layers": ""}:  # If the user has passed a head_config
             warnings.warn(
-                "Ignoring the deprecated arguments, `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` as head_config is passed."
+                "Ignoring the deprecated arguments, `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`,"
+                " and `out_ff_initialization` as head_config is passed."
             )
         else:
             if any([p is not None for p in deprecated_args]):
                 warnings.warn(
-                    "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization` arguments are deprecated and will be removed next release. Please use head and head_config as an alternative.",
+                    "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization`"
+                    " arguments are deprecated and will be removed next release."
+                    " Please use head and head_config as an alternative.",
                     DeprecationWarning,
                 )
                 # TODO: Remove this once we deprecate the old config

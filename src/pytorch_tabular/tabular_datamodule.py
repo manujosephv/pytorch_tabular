@@ -78,8 +78,9 @@ class TabularDatamodule(pl.LightningDataModule):
             test (pd.DataFrame, optional): Holdout DataFrame to check final performance on.
                 Defaults to None.
 
-            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional): If provided, applies the transform to the target before modelling
-                and inverse the transform during prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
+            target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional):
+                If provided, applies the transform to the target before modelling and inverse the transform during
+                prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
                 a tuple of callables (transform_func, inverse_transform_func)
         """
         super().__init__()
@@ -168,7 +169,8 @@ class TabularDatamodule(pl.LightningDataModule):
                 # Multi-Target Regression uses the first target to encode the categorical columns
                 if len(self.config.target) > 1:
                     logger.warning(
-                        f"Multi-Target Regression: using the first target({self.config.target[0]}) to encode the categorical columns"
+                        f"Multi-Target Regression: using the first target({self.config.target[0]})"
+                        f" to encode the categorical columns"
                     )
                 data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
             else:
@@ -242,7 +244,8 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Args:
             data (pd.DataFrame): A dataframe with the features and target
-            stage (str, optional): Internal parameter. Used to distinguisj between fit and inference. Defaults to "inference".
+            stage (str, optional): Internal parameter. Used to distinguisj between fit and inference.
+                Defaults to "inference".
 
         Returns:
             Returns the processed dataframe and the added features(list) as a tuple
@@ -280,13 +283,15 @@ class TabularDatamodule(pl.LightningDataModule):
         before accessing the dataloaders.
 
         Args:
-            stage (Optional[str], optional): Internal parameter to distinguish between fit and inference. Defaults to None.
+            stage (Optional[str], optional):
+                Internal parameter to distinguish between fit and inference. Defaults to None.
         """
         if stage == "fit" or stage is None:
             logger.info(f"Setting up the datamodule for {self.config.task} task")
             if self.validation is None:
                 logger.debug(
-                    f"No validation data provided. Using {self.config.validation_split*100}% of train data as validation"
+                    f"No validation data provided."
+                    f" Using {self.config.validation_split*100}% of train data as validation"
                 )
                 val_idx = self.train.sample(
                     int(self.config.validation_split * len(self.train)),
@@ -653,12 +658,15 @@ class TabularDataset(Dataset):
 
         Args:
             data (pd.DataFrame): Pandas DataFrame to load during training
-            task (str): Whether it is a classification or regression task. If classification, it returns a LongTensor as target
+            task (str):
+                Whether it is a classification or regression task. If classification, it returns a LongTensor as target
             continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.
             categorical_cols (List[str], optional): A list of names of categorical columns.
-            These columns must be ordinal encoded beforehand. Defaults to None.
-            embed_categorical (bool): Flag to tell the dataset whether to convert categorical columns to LongTensor or retain as float.
-            If we are going to embed categorical cols with an embedding layer, we need to convert the columns to LongTensor
+                These columns must be ordinal encoded beforehand. Defaults to None.
+            embed_categorical (bool):
+                Flag to tell the dataset whether to convert categorical columns to LongTensor or retain as float.
+                If we are going to embed categorical cols with an embedding layer,
+                we need to convert the columns to LongTensor
             target (List[str], optional): A list of strings with target column name(s). Defaults to None.
         """
 
