@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Utilities"""
+"""Utilities."""
 import torch.nn as nn
 import torch.nn.functional as F
 

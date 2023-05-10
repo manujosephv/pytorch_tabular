@@ -2,7 +2,7 @@
 # Author: Sergey Popov, Julian Qian
 # https://github.com/Qwicen/node
 # For license information, see https://github.com/Qwicen/node/blob/master/LICENSE.md
-"""Dense ODST Block"""
+"""Dense ODST Block."""
 from warnings import warn
 
 import numpy as np
@@ -14,7 +14,7 @@ from ..common.layers import ModuleWithInit
 
 
 def check_numpy(x):
-    """Makes sure x is a numpy array"""
+    """Makes sure x is a numpy array."""
     if isinstance(x, torch.Tensor):
         x = x.detach().cpu().numpy()
     x = np.asarray(x)
@@ -37,9 +37,9 @@ class ODST(ModuleWithInit):
         threshold_init_beta=1.0,
         threshold_init_cutoff=1.0,
     ):
-        """
-        Oblivious Differentiable Sparsemax Trees. http://tinyurl.com/odst-readmore
-        One can drop (sic!) this module anywhere instead of nn.Linear
+        """Oblivious Differentiable Sparsemax Trees. http://tinyurl.com/odst-readmore One can drop (sic!) this module
+        anywhere instead of nn.Linear.
+
         :param in_features: number of features in the input tensor
         :param num_trees: number of trees in this layer
         :param tree_dim: number of response channels in the response of individual tree

@@ -11,7 +11,7 @@
 # AutoGluon is an AuttoML library which supports Tabular data as well. it is from Amazon Research and is in MXNet
 # 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
-"""TabTransformer Model"""
+"""TabTransformer Model."""
 from collections import OrderedDict
 from typing import Dict
 

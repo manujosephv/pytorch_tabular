@@ -128,7 +128,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
 
 
 class CustomHead(nn.Module):
-    """Custom Head for GATE
+    """Custom Head for GATE.
 
     Args:
         input_dim (int): Input dimension of the head

@@ -2,7 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
-"""Category Encoders"""
+"""Category Encoders."""
 
 try:
     import cPickle as pickle
@@ -33,6 +33,7 @@ class BaseEncoder:
 
     def transform(self, X):
         """Transform categorical data based on mapping learnt at fitting time.
+
         :param pandas.DataFrame X: DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
         :return: encoded DataFrame of shape (n_samples, n_features), initial categorical columns are dropped, and
             replaced with encoded columns. DataFrame passed in argument is unchanged.
@@ -59,6 +60,7 @@ class BaseEncoder:
 
     def fit_transform(self, X, y=None):
         """Encode given columns of X according to y, and transform X based on the learnt mapping.
+
         :param pandas.DataFrame X: DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
         :param pandas.Series y: pandas Series of target values, shape (n_samples,).
             Required only for encoders that need it: TargetEncoder, WeightOfEvidenceEncoder
@@ -95,12 +97,11 @@ class BaseEncoder:
 
 
 class OrdinalEncoder(BaseEncoder):
-    """
-    Target Encoder for categorical features.
-    """
+    """Target Encoder for categorical features."""
 
     def __init__(self, cols=None, handle_unseen="impute", handle_missing="impute"):
-        """Instantiation
+        """Instantiation.
+
         :param [str] cols: list of columns to encode, or None (then all dataset columns will be encoded at fitting time)
         :param str handle_unseen:
             'error'  - raise an error if a category unseen at fitting time is found
@@ -114,6 +115,7 @@ class OrdinalEncoder(BaseEncoder):
 
     def fit(self, X, y=None):
         """Label Encode given columns of X.
+
         :param pandas.DataFrame X: DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
         :return: None
         """
@@ -136,7 +138,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
     NAN_CATEGORY = 0
 
     def __init__(self, tabular_model):
-        """Initializes the Transformer and extracts the neural embeddings
+        """Initializes the Transformer and extracts the neural embeddings.
 
         Args:
             tabular_model (TabularModel): The trained TabularModel object
@@ -173,11 +175,14 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
             raise ValueError("Passed model doesn't support this feature.")
 
     def fit(self, X, y=None):
-        """Just for compatibility. Does not do anything"""
+        """Just for compatibility.
+
+        Does not do anything
+        """
         return self
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
-        """Transforms the categorical columns specified to the trained neural embedding from the model
+        """Transforms the categorical columns specified to the trained neural embedding from the model.
 
         Args:
             X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.

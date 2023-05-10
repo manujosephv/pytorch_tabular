@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""Feature Tokenizer Transformer Model"""
+"""Feature Tokenizer Transformer Model."""
 import math
 from collections import OrderedDict
 

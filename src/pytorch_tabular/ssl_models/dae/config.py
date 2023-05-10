@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""DenoisingAutoEncoder Config"""
+"""DenoisingAutoEncoder Config."""
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -10,7 +10,8 @@ from pytorch_tabular.config import SSLModelConfig
 
 @dataclass
 class DenoisingAutoEncoderConfig(SSLModelConfig):
-    """DeNoising AutoEncoder configuration
+    """DeNoising AutoEncoder configuration.
+
     Args:
         noise_strategy (str): Defines what kind of noise we are introducing to samples. `swap` - Swap noise
                 is when we replace values of a feature with random permutations of the same feature. `zero` - Zero
