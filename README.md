@@ -148,7 +148,6 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ## Contributors
 
 <!-- readme: contributors -start -->
-
 <table>
 <tr>
     <td align="center">
@@ -159,17 +158,17 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/wsad1">
-            <img src="https://avatars.githubusercontent.com/u/13963626?v=4" width="100;" alt="wsad1"/>
-            <br />
-            <sub><b>Jinu Sunil</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/Borda">
             <img src="https://avatars.githubusercontent.com/u/6035284?v=4" width="100;" alt="Borda"/>
             <br />
             <sub><b>Jirka Borovec</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/wsad1">
+            <img src="https://avatars.githubusercontent.com/u/13963626?v=4" width="100;" alt="wsad1"/>
+            <br />
+            <sub><b>Jinu Sunil</b></sub>
         </a>
     </td>
     <td align="center">
