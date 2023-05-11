@@ -148,6 +148,7 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ## Contributors
 
 <!-- readme: contributors -start -->
+
 <table>
 <tr>
     <td align="center">
