@@ -20,10 +20,10 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
 
         num_trees (int): Number of trees to use in the ensemble. Defaults to 20
 
-        binning_activation (str): The binning function to use. Defaults to entmoid. Defaults to entmoid.
+        binning_activation (str): The binning function to use. Defaults to entmoid. Defaults to sparsemoid.
                 Choices are: [`entmoid`,`sparsemoid`,`sigmoid`].
 
-        feature_mask_function (str): The feature mask function to use. Defaults to entmax. Choices are:
+        feature_mask_function (str): The feature mask function to use. Defaults to sparsemax. Choices are:
                 [`entmax`,`sparsemax`,`softmax`].
 
         tree_dropout (float): probability of dropout in tree binning transformation. Defaults to 0.0
@@ -96,14 +96,14 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     )
 
     binning_activation: str = field(
-        default="entmoid",
+        default="sparsemoid",
         metadata={
             "help": "The binning function to use. Defaults to entmoid. Defaults to entmoid",
             "choices": ["entmoid", "sparsemoid", "sigmoid"],
         },
     )
     feature_mask_function: str = field(
-        default="entmax",
+        default="sparsemax",
         metadata={
             "help": "The feature mask function to use. Defaults to entmax",
             "choices": ["entmax", "sparsemax", "softmax"],
