@@ -210,8 +210,6 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             feature_mask_function=self.hparams.feature_mask_function,
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             chain_trees=self.hparams.chain_trees,
-            tree_wise_attention=self.hparams.tree_wise_attention,
-            tree_wise_attention_dropout=self.hparams.tree_wise_attention_dropout,
         )
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()
