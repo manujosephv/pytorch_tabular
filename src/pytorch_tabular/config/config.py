@@ -863,9 +863,10 @@ class ModelConfig:
     )
     metrics_params: Optional[List] = field(
         default=None,
-        metadata={"help": "The parameters like `task` to be passed to the metrics function. Although Pytorch Tabular "
-                  "tries to infer the `task`, it is better to explicity define the `task`."
-                  },
+        metadata={
+            "help": "The parameters like `task` to be passed to the metrics function. Although Pytorch Tabular "
+            "tries to infer the `task`, it is better to explicity define the `task`."
+        },
     )
     target_range: Optional[List] = field(
         default=None,
@@ -895,7 +896,9 @@ class ModelConfig:
             self.loss = self.loss or "CrossEntropyLoss"
             self.metrics = self.metrics or ["accuracy"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
-            self.metric_prob_input = [False for _ in self.metrics] if self.metric_prob_input is None else self.metric_prob_input
+            self.metric_prob_input = (
+                [False for _ in self.metrics] if self.metric_prob_input is None else self.metric_prob_input
+            )
         elif self.task == "backbone":
             self.loss = None
             self.metrics = None
