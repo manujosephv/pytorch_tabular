@@ -853,7 +853,7 @@ class ModelConfig:
             "and mean_squared_error for regression"
         },
     )
-    metric_prob_input: List[Optional[bool]] = field(
+    metric_prob_input: Optional[List[bool]] = field(
         default=None,
         metadata={
             "help": "Is a mandatory parameter for classification metrics defined in the config. This defines "
