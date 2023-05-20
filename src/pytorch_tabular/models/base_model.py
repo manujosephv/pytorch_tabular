@@ -101,9 +101,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         elif config.task == "classification":
             # Adding metric_params to config for classification task
             for i, mp in enumerate(config.metrics_params):
-                # For classification task, output_dim == number of classses
-                config.metrics_params[i]["task"] = mp.get("task", "multiclass")
-                config.metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
+                # For classification task, output_dim == number of classses #TODO change this based on output_dim
+                config.metrics_params[i]["task"] = mp.get(
+                    "task", "multiclass" if inferred_config.output_dim > 2 else "binary"
+                )
+                if inferred_config.output_dim > 2:
+                    config.metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
                 if config.metrics[i] in (
                     "accuracy",
                     "precision",
@@ -251,7 +254,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             List[torch.Tensor]: The list of metric values
         """
         metrics = []
-        for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
+        for metric, metric_str, prob_inp, metric_params in zip(
+            self.metrics, self.hparams.metrics, self.hparams.metric_prob_input, self.hparams.metrics_params
+        ):
             if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
@@ -274,7 +279,10 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
                 y_hat = nn.Softmax(dim=-1)(y_hat.squeeze())
-                avg_metric = metric(y_hat, y.squeeze(), **metric_params)
+                if prob_inp:
+                    avg_metric = metric(y_hat, y.squeeze(), **metric_params)
+                else:
+                    avg_metric = metric(torch.argmax(y_hat, dim=-1), y.squeeze(), **metric_params)
             metrics.append(avg_metric)
             self.log(f"{tag}_{metric_str}", avg_metric, on_epoch=True, on_step=False, logger=True, prog_bar=True)
         return metrics

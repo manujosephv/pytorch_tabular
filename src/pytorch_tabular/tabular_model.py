@@ -613,7 +613,9 @@ class TabularModel:
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
-                signature metric_fn(y_hat, y) and works on torch tensor inputs
+                signature metric_fn(y_hat, y) and works on torch tensor inputs. y_hat is expected to be of shape
+                (batch_size, num_classes) for classification and (batch_size, 1) for regression and y is expected to be
+                of shape (batch_size, 1)
 
             optimizer (Optional[torch.optim.Optimizer], optional):
                 Custom optimizers which are a drop in replacements for
@@ -649,6 +651,7 @@ class TabularModel:
         assert (
             self.config.task != "ssl"
         ), "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
+
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:

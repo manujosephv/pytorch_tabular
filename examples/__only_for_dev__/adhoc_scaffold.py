@@ -50,7 +50,7 @@ train, val = train_test_split(train, random_state=42)
 
 from pytorch_tabular import TabularModel  # noqa: E402
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig  # noqa: E402
-from pytorch_tabular.models import CategoryEmbeddingModelConfig  # noqa: E402
+from pytorch_tabular.models import GatedAdditiveTreeEnsembleConfig  # noqa: E402
 
 data_config = DataConfig(
     # target should always be a list. Multi-targets are only supported for regression.
@@ -63,17 +63,19 @@ data_config = DataConfig(
 )
 trainer_config = TrainerConfig(
     auto_lr_find=True,  # Runs the LRFinder to automatically derive a learning rate
-    batch_size=1024,
+    batch_size=32,
     max_epochs=10,
     fast_dev_run=True,
 )
 optimizer_config = OptimizerConfig()
-model_config = CategoryEmbeddingModelConfig(
+model_config = GatedAdditiveTreeEnsembleConfig(
     task="classification",
-    layers="4096-4096-512",  # Number of nodes in each layer
-    activation="LeakyReLU",  # Activation between each layers
+    gflu_stages=3,
+    tree_depth=2,
+    # layers="4096-4096-512",  # Number of nodes in each layer
+    # activation="LeakyReLU",  # Activation between each layers
     learning_rate=1e-3,
-    metrics=["accuracy"],
+    # metrics=["accuracy"],
 )
 tabular_model = TabularModel(
     data_config=data_config,
