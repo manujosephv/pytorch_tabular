@@ -261,7 +261,8 @@ class TrainerConfig:
                 default uses CPU (None)
 
         accelerator (Optional[str]): The accelerator to use for training. Can be one of
-                'cpu','gpu','tpu','ipu', 'mps', 'auto'. Defaults to 'auto'. Choices are: [`cpu`,`gpu`,`tpu`,`ipu`,'mps',`auto`].
+                'cpu','gpu','tpu','ipu', 'mps', 'auto'. Defaults to 'auto'. 
+                Choices are: [`cpu`,`gpu`,`tpu`,`ipu`,'mps',`auto`].
 
         devices (Optional[int]): Number of devices to train on (int). -1 uses all available devices. By
                 default uses all available devices (-1)
