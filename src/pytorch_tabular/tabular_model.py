@@ -250,7 +250,7 @@ class TabularModel:
             self.config.enable_checkpointing = True
         else:
             self.config.enable_checkpointing = False
-        if self.config.progress_bar == "rich":
+        if self.config.progress_bar == "rich" and self.config.enable_progress_bar:
             callbacks.append(RichProgressBar())
         logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
