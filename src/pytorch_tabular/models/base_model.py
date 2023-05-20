@@ -101,12 +101,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         elif config.task == "classification":
             # Adding metric_params to config for classification task
             for i, mp in enumerate(config.metrics_params):
-                # For classification task, output_dim == number of classses #TODO change this based on output_dim
-                config.metrics_params[i]["task"] = mp.get(
-                    "task", "multiclass" if inferred_config.output_dim > 2 else "binary"
-                )
-                if inferred_config.output_dim > 2:
-                    config.metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
+                # For classification task, output_dim == number of classses
+                config.metrics_params[i]["task"] = mp.get("task", "multiclass")
+                config.metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
                 if config.metrics[i] in (
                     "accuracy",
                     "precision",
