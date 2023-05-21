@@ -111,7 +111,11 @@ data_config = DataConfig(
     normalize_continuous_features=False,
 )
 # model_config = CategoryEmbeddingModelConfig(
-#       task="classification", metrics=["f1","accuracy"], metrics_params=[{"num_classes":num_classes},{}])
+#     task="classification",
+#     metrics=["f1", "accuracy"],
+#     metrics_params=[{"num_classes": num_classes}, {}],
+#     metrics_prob_input=[False, False],
+# )
 # model_config = NodeConfig(
 #     task="classification",
 #     depth=4,
@@ -119,6 +123,7 @@ data_config = DataConfig(
 #     input_dropout=0.0,
 #     metrics=["f1", "accuracy"],
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+#     metrics_prob_input=[False,False]
 # )
 # model_config = TabTransformerConfig(
 #     task="classification",
@@ -127,6 +132,7 @@ data_config = DataConfig(
 #     share_embedding_strategy="add",
 #     shared_embedding_fraction=0.25,
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+#     metrics_prob_input=[False,False]
 # )
 # model_config = FTTransformerConfig(
 #     task="classification",
@@ -137,6 +143,7 @@ data_config = DataConfig(
 #     share_embedding_strategy="fraction",
 #     shared_embedding_fraction=0.25,
 #     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+#     metrics_prob_input=[False,False]
 # )
 # model_config_params = dict(
 #             task="regression",
@@ -148,6 +155,7 @@ model_config = GatedAdditiveTreeEnsembleConfig(
     task="classification",
     metrics=["f1_score", "accuracy"],
     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
+    metrics_prob_input=[False, False],
 )
 trainer_config = TrainerConfig(auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 # experiment_config = ExperimentConfig(project_name="PyTorch Tabular Example",

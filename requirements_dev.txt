@@ -7,3 +7,4 @@ mkdocstrings[python] ==0.21.*
 mknotebooks ==0.7.*
 pytest >=5.3.2
 pytest-runner >=5.1
+pre-commit>=3.3.2

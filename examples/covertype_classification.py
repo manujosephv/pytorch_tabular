@@ -96,7 +96,10 @@ head_config = LinearHeadConfig(
     layers="", dropout=0.1, initialization="kaiming"  # No additional layer in head, just a mapping layer to output_dim
 ).__dict__  # Convert to dict to pass to the model config (OmegaConf doesn't accept objects)
 model_config = CategoryEmbeddingModelConfig(
-    task="classification", metrics=["f1_score", "accuracy"], metrics_params=[{"num_classes": num_classes}, {}]
+    task="classification",
+    metrics=["f1_score", "accuracy"],
+    metrics_params=[{"num_classes": num_classes}, {}],
+    metrics_prob_input=[True, False],
 )
 trainer_config = TrainerConfig(auto_lr_find=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 optimizer_config = OptimizerConfig()

@@ -39,7 +39,7 @@ def fake_metric(y_hat, y):
 )
 @pytest.mark.parametrize(
     "custom_args",
-    [(None, None, None), ([fake_metric], torch.nn.L1Loss(), torch.optim.Adagrad)],
+    [(None, None, None, None), ([fake_metric], [False], torch.nn.L1Loss(), torch.optim.Adagrad)],
 )
 def test_regression(
     regression_data,
@@ -54,7 +54,7 @@ def test_regression(
     custom_args,
 ):
     (train, test, target) = regression_data
-    (custom_metrics, custom_loss, custom_optimizer) = custom_args
+    (custom_metrics, metrics_prob_input, custom_loss, custom_optimizer) = custom_args
     ssl, finetune = train_test_split(train, random_state=42)
     ssl_train, ssl_val = train_test_split(ssl, random_state=42)
     finetune_train, finetune_val = train_test_split(finetune, random_state=42)
@@ -126,6 +126,7 @@ def test_regression(
             loss=custom_loss,
             metrics=custom_metrics,
             metrics_params=[{}],
+            metrics_prob_input=metrics_prob_input,
             optimizer=custom_optimizer,
         )
         finetune_model.finetune(

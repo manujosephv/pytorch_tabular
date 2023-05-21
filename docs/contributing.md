@@ -102,7 +102,7 @@ git clone git@github.com:your_name_here/pytorch_tabular.git
 
       If you are adding a new feature, please add a test for it.
 
-* When you are done making changes and all test cases are passing, crun `pre-commit` to make sure all the linting and formatting is done correctly.
+* When you are done making changes and all test cases are passing, run `pre-commit` to make sure all the linting and formatting is done correctly.
 
       ```bash
       pre-commit run --all-files

@@ -76,7 +76,7 @@ model_config = CategoryEmbeddingModelConfig(
     # activation="LeakyReLU",  # Activation between each layers
     learning_rate=1e-3,
     metrics=["auroc"],
-    metric_prob_input=[True],
+    metrics_prob_input=[True],
 )
 tabular_model = TabularModel(
     data_config=data_config,

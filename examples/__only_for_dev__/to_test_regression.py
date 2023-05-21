@@ -91,6 +91,7 @@ tabular_model.fit(
     train=train,
     test=test,
     metrics=[fake_metric],
+    metrics_prob_inputs=[False],
     target_transform=tr,
     loss=torch.nn.L1Loss(),
     optimizer=torch.optim.Adagrad,

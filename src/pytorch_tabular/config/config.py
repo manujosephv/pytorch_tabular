@@ -776,12 +776,13 @@ class ModelConfig:
                 should be one of the functional metrics implemented in ``torchmetrics``. By default, it is
                 accuracy if classification and mean_squared_error for regression
 
-        metric_prob_input (Optional[bool]): Is a mandatory parameter for classification metrics defined in
+        metrics_prob_input (Optional[bool]): Is a mandatory parameter for classification metrics defined in
                 the config. This defines whether the input to the metric function is the probability or the class.
                 Length should be same as the number of metrics. Defaults to None.
 
-        metrics_params (Optional[List]): The parameters like `task` to be passed to the metrics function.
-                Although Pytorch Tabular tries to infer the `task`, it is better to explicity define the `task`.
+        metrics_params (Optional[List]): The parameters to be passed to the metrics function. `task` is forced to
+                be `multiclass` because the multiclass version can handle binary as well and for simplicity we are
+                only using `multiclass`.
 
         target_range (Optional[List]): The range in which we should limit the output variable. Currently
                 ignored for multi-target regression. Typically used for Regression problems. If left empty, will
@@ -853,7 +854,7 @@ class ModelConfig:
             "and mean_squared_error for regression"
         },
     )
-    metric_prob_input: Optional[List[bool]] = field(
+    metrics_prob_input: Optional[List[bool]] = field(
         default=None,
         metadata={
             "help": "Is a mandatory parameter for classification metrics defined in the config. This defines "
@@ -864,8 +865,9 @@ class ModelConfig:
     metrics_params: Optional[List] = field(
         default=None,
         metadata={
-            "help": "The parameters like `task` to be passed to the metrics function. Although Pytorch Tabular "
-            "tries to infer the `task`, it is better to explicity define the `task`."
+            "help": "The parameters to be passed to the metrics function. `task` is forced to be `multiclass`` "
+            "because the multiclass version can handle binary as well and for simplicity we are only using "
+            "`multiclass`."
         },
     )
     target_range: Optional[List] = field(
@@ -891,13 +893,13 @@ class ModelConfig:
             self.loss = self.loss or "MSELoss"
             self.metrics = self.metrics or ["mean_squared_error"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
-            self.metric_prob_input = [False for _ in self.metrics]  # not used in Regression. just for compatibility
+            self.metrics_prob_input = [False for _ in self.metrics]  # not used in Regression. just for compatibility
         elif self.task == "classification":
             self.loss = self.loss or "CrossEntropyLoss"
             self.metrics = self.metrics or ["accuracy"]
             self.metrics_params = [{} for _ in self.metrics] if self.metrics_params is None else self.metrics_params
-            self.metric_prob_input = (
-                [False for _ in self.metrics] if self.metric_prob_input is None else self.metric_prob_input
+            self.metrics_prob_input = (
+                [False for _ in self.metrics] if self.metrics_prob_input is None else self.metrics_prob_input
             )
         elif self.task == "backbone":
             self.loss = None
