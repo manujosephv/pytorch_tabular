@@ -373,6 +373,7 @@ class TabularModel:
         if custom_params.get("custom_metrics") is not None:
             model_args["metrics"] = ["mean_squared_error"]  # For compatibility. Not Used
             model_args["metrics_params"] = [{}]  # For compatibility. Not Used
+            model_args["metrics_prob_inputs"] = [False]  # For compatibility. Not Used
         if custom_params.get("custom_optimizer") is not None:
             model_args["optimizer"] = "Adam"  # For compatibility. Not Used
         if custom_params.get("custom_optimizer_params") is not None:
@@ -490,6 +491,7 @@ class TabularModel:
         datamodule: TabularDatamodule,
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
+        metrics_prob_inputs: Optional[List[bool]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
     ) -> BaseModel:
@@ -502,6 +504,10 @@ class TabularModel:
 
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
                 signature metric_fn(y_hat, y) and works on torch tensor inputs
+
+            metrics_prob_inputs (Optional[List[bool]], optional): This is a mandatory parameter for
+                classification metrics. If the metric function requires probabilities as inputs, set this to True.
+                The length of the list should be equal to the number of metrics. Defaults to None.
 
             optimizer (Optional[torch.optim.Optimizer], optional):
                 Custom optimizers which are a drop in replacements for standard PyToch optimizers.
@@ -519,6 +525,7 @@ class TabularModel:
             self.config,
             custom_loss=loss,  # Unused in SSL tasks
             custom_metrics=metrics,  # Unused in SSL tasks
+            custom_metrics_prob_inputs=metrics_prob_inputs,  # Unused in SSL tasks
             custom_optimizer=optimizer,
             custom_optimizer_params=optimizer_params,
             inferred_config=self.inferred_config,
@@ -586,6 +593,7 @@ class TabularModel:
         test: Optional[pd.DataFrame] = None,  # TODO: Deprecate test in next version
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
+        metrics_prob_inputs: Optional[List[bool]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
         train_sampler: Optional[torch.utils.data.Sampler] = None,
@@ -613,7 +621,13 @@ class TabularModel:
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
             metrics (Optional[List[Callable]], optional): Custom metric functions(Callable) which has the
-                signature metric_fn(y_hat, y) and works on torch tensor inputs
+                signature metric_fn(y_hat, y) and works on torch tensor inputs. y_hat is expected to be of shape
+                (batch_size, num_classes) for classification and (batch_size, 1) for regression and y is expected to be
+                of shape (batch_size, 1)
+
+            metrics_prob_inputs (Optional[List[bool]], optional): This is a mandatory parameter for
+                classification metrics. If the metric function requires probabilities as inputs, set this to True.
+                The length of the list should be equal to the number of metrics. Defaults to None.
 
             optimizer (Optional[torch.optim.Optimizer], optional):
                 Custom optimizers which are a drop in replacements for
@@ -649,6 +663,10 @@ class TabularModel:
         assert (
             self.config.task != "ssl"
         ), "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
+        if metrics is not None:
+            assert len(metrics) == len(
+                metrics_prob_inputs
+            ), "The length of `metrics` and `metrics_prob_inputs` should be equal"
         seed = seed if seed is not None else self.config.seed
         seed_everything(seed)
         if datamodule is None:
@@ -668,6 +686,7 @@ class TabularModel:
             datamodule,
             loss,
             metrics,
+            metrics_prob_inputs,
             optimizer,
             optimizer_params,
         )
@@ -755,6 +774,7 @@ class TabularModel:
         experiment_config: Optional[ExperimentConfig] = None,
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Union[Callable, str]]] = None,
+        metrics_prob_input: Optional[List[bool]] = None,
         metrics_params: Optional[Dict] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
@@ -791,6 +811,10 @@ class TabularModel:
             metrics (Optional[List[Callable]], optional): List of metrics (either callables or str) to be used for the
                 fine-tuning stage. If str, it should be one of the functional metrics implemented in
                 ``torchmetrics.functional``. Defaults to None.
+
+            metrics_prob_input (Optional[List[bool]], optional): Is a mandatory parameter for classification metrics
+                This defines whether the input to the metric function is the probability or the class.
+                Length should be same as the number of metrics. Defaults to None.
 
             metrics_params (Optional[Dict], optional): The parameters for the metrics in the same order as metrics.
                 For eg. f1_score for multi-class needs a parameter `average` to fully define the metric.
@@ -851,8 +875,11 @@ class TabularModel:
             config.metrics = "dummy"
         if not hasattr(config, "metrics_params"):
             config.metrics_params = {}
+        if not hasattr(config, "metrics_prob_input"):
+            config.metrics_prob_input = metrics_prob_input or [False]
         if metrics is not None:
             assert len(metrics) == len(metrics_params), "Number of metrics and metrics_params should be same"
+            assert len(metrics) == len(metrics_prob_input), "Number of metrics and metrics_prob_input should be same"
             metrics = [getattr(torchmetrics.functional, m) if isinstance(m, str) else m for m in metrics]
         if task == "regression":
             loss = loss or torch.nn.MSELoss()
@@ -864,6 +891,7 @@ class TabularModel:
             if metrics is None:
                 metrics = [torchmetrics.functional.accuracy]
                 metrics_params = [{"task": "multiclass", "num_classes": inferred_config.output_dim, "top_k": 1}]
+                metrics_prob_input = [False]
             else:
                 for i, mp in enumerate(metrics_params):
                     # For classification task, output_dim == number of classses
@@ -884,6 +912,7 @@ class TabularModel:
             "inferred_config": inferred_config,
             "custom_loss": loss,
             "custom_metrics": metrics,
+            "custom_metrics_prob_inputs": metrics_prob_input,
             "custom_optimizer": optimizer,
             "custom_optimizer_params": optimizer_params,
         }
@@ -1271,6 +1300,7 @@ class TabularModel:
         custom_params = {}
         custom_params["custom_loss"] = self.model.custom_loss
         custom_params["custom_metrics"] = self.model.custom_metrics
+        custom_params["custom_metrics_prob_inputs"] = self.model.custom_metrics_prob_inputs
         custom_params["custom_optimizer"] = self.model.custom_optimizer
         custom_params["custom_optimizer_params"] = self.model.custom_optimizer_params
         joblib.dump(custom_params, os.path.join(dir, "custom_params.sav"))

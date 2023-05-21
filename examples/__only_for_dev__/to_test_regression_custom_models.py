@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import pandas as pd
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -252,21 +251,10 @@ class MultiStageModel(BaseModel):
         )
         return computed_loss
 
+    # Escaping metric calculation for cause default calculation would fail and not make sense
+    # for this type of combined classification and regression task
     def calculate_metrics(self, y, y_hat, tag):
-        for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
-            if metric.__name__ == pl.metrics.functional.mean_squared_log_error.__name__:
-                # MSLE should only be used in strictly positive targets. It is undefined otherwise
-                metric_ = metric(torch.clamp(y_hat, min=0), torch.clamp(y[:, 1], min=0), **metric_params)
-            else:
-                metric_ = metric(y_hat, y[:, 1], **metric_params)
-            self.log(
-                f"{tag}_{metric_str}",
-                metric_,
-                on_epoch=True,
-                on_step=False,
-                logger=True,
-                prog_bar=True,
-            )
+        pass
 
 
 dataset = fetch_california_housing(data_home="data", as_frame=True)

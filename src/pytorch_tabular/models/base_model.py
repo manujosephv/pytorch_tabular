@@ -58,6 +58,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         config: DictConfig,
         custom_loss: Optional[torch.nn.Module] = None,
         custom_metrics: Optional[List[Callable]] = None,
+        custom_metrics_prob_inputs: Optional[List[bool]] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
         custom_optimizer_params: Dict = {},
         **kwargs,
@@ -68,6 +69,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             config (DictConfig): The configuration for the model.
             custom_loss (Optional[torch.nn.Module], optional): A custom loss function. Defaults to None.
             custom_metrics (Optional[List[Callable]], optional): A list of custom metrics. Defaults to None.
+            custom_metrics_prob_inputs (Optional[List[bool]], optional): A list of boolean values indicating whether the
+                metric requires probability inputs. Defaults to None.
             custom_optimizer (Optional[torch.optim.Optimizer], optional): A custom optimizer. Defaults to None.
             custom_optimizer_params (Dict, optional): A dictionary of custom optimizer parameters. Defaults to {}.
             kwargs (Dict, optional): Additional keyword arguments.
@@ -79,6 +82,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         config = safe_merge_config(config, inferred_config)
         self.custom_loss = custom_loss
         self.custom_metrics = custom_metrics
+        self.custom_metrics_prob_inputs = custom_metrics_prob_inputs
         self.custom_optimizer = custom_optimizer
         self.custom_optimizer_params = custom_optimizer_params
         self.kwargs = kwargs
@@ -97,6 +101,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 else:
                     config.metrics.append(metric.__name__)
                     config.metrics_params.append(vars(metric))
+            if config.task == "classification":
+                config.metrics_prob_inputs = self.custom_metrics_prob_inputs
         # Updating default metrics in config
         elif config.task == "classification":
             # Adding metric_params to config for classification task
@@ -251,7 +257,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             List[torch.Tensor]: The list of metric values
         """
         metrics = []
-        for metric, metric_str, metric_params in zip(self.metrics, self.hparams.metrics, self.hparams.metrics_params):
+        for metric, metric_str, prob_inp, metric_params in zip(
+            self.metrics, self.hparams.metrics, self.hparams.metrics_prob_input, self.hparams.metrics_params
+        ):
             if self.hparams.task == "regression":
                 _metrics = []
                 for i in range(self.hparams.output_dim):
@@ -274,7 +282,10 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
                 y_hat = nn.Softmax(dim=-1)(y_hat.squeeze())
-                avg_metric = metric(y_hat, y.squeeze(), **metric_params)
+                if prob_inp:
+                    avg_metric = metric(y_hat, y.squeeze(), **metric_params)
+                else:
+                    avg_metric = metric(torch.argmax(y_hat, dim=-1), y.squeeze(), **metric_params)
             metrics.append(avg_metric)
             self.log(f"{tag}_{metric_str}", avg_metric, on_epoch=True, on_step=False, logger=True, prog_bar=True)
         return metrics
@@ -505,6 +516,7 @@ class _GenericModel(BaseModel):
         config: DictConfig,
         custom_loss: Optional[torch.nn.Module] = None,
         custom_metrics: Optional[List[Callable]] = None,
+        custom_metrics_prob_inputs: Optional[List[bool]] = None,
         custom_optimizer: Optional[torch.optim.Optimizer] = None,
         custom_optimizer_params: Dict = {},
         **kwargs,
@@ -514,6 +526,7 @@ class _GenericModel(BaseModel):
             config,
             custom_loss,
             custom_metrics,
+            custom_metrics_prob_inputs,
             custom_optimizer,
             custom_optimizer_params,
             head=head,

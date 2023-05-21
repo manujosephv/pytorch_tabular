@@ -98,6 +98,10 @@ class AutoIntConfig(ModelConfig):
 
         metrics_params (Optional[List]): The parameters to be passed to the metrics function
 
+        metrics_prob_input (Optional[List]): Is a mandatory parameter for classification metrics defined in the config.
+            This defines whether the input to the metric function is the probability or the class. Length should be
+            same as the number of metrics. Defaults to None.
+
         target_range (Optional[List]): The range in which we should limit the output variable. Currently
                 ignored for multi-target regression. Typically used for Regression problems. If left empty, will
                 not apply any restrictions
