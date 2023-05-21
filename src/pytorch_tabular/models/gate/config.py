@@ -94,10 +94,10 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
         default=0.0, metadata={"help": "Dropout rate for the feature abstraction layer. Defaults to 0.0"}
     )
 
-    tree_depth: int = field(default=5, metadata={"help": "Depth of the tree. Defaults to 5"})
+    tree_depth: int = field(default=4, metadata={"help": "Depth of the tree. Defaults to 5"})
 
     num_trees: int = field(
-        default=20,
+        default=10,
         metadata={"help": "Number of trees to use in the ensemble. Defaults to 20"},
     )
 

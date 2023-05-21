@@ -95,8 +95,9 @@ class GatedAdditiveTreesBackbone(nn.Module):
         )
         if self.tree_wise_attention:
             self.tree_attention = nn.MultiheadAttention(
-                self.output_dim,
-                1,
+                embed_dim=self.output_dim,
+                num_heads=1,
+                batch_first=False,
                 dropout=self.tree_wise_attention_dropout,
             )
 
@@ -123,7 +124,9 @@ class GatedAdditiveTreesBackbone(nn.Module):
                 tree_input = torch.cat([tree_input, tree_output], 1)
         tree_outputs = torch.cat(tree_outputs, dim=-1)
         if self.tree_wise_attention:
-            tree_outputs, _ = self.tree_attention(tree_outputs)
+            tree_outputs = tree_outputs.permute(2, 0, 1)
+            tree_outputs, _ = self.tree_attention(tree_outputs, tree_outputs, tree_outputs)
+            tree_outputs = tree_outputs.permute(1, 2, 0)
         return tree_outputs
 
 
@@ -210,6 +213,8 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             feature_mask_function=self.hparams.feature_mask_function,
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             chain_trees=self.hparams.chain_trees,
+            tree_wise_attention=self.hparams.tree_wise_attention,
+            tree_wise_attention_dropout=self.hparams.tree_wise_attention_dropout,
         )
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()
