@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.activations import entmax15, entmoid15, sparsemax, sparsemoid
+from pytorch_tabular.models.common.activations import entmax15, entmoid15, sparsemax, sparsemoid, t_softmax
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import Embedding1dLayer
 from pytorch_tabular.utils import get_logger
@@ -21,6 +21,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         "entmax": entmax15,
         "sparsemax": sparsemax,
         "softmax": nn.functional.softmax,
+        "t-softmax": t_softmax,
     }
 
     BINARY_ACTIVATION_MAP = {
@@ -228,3 +229,10 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
             batch = next(iter(alt_loader))
             self.head.T0.data = torch.mean(batch["target"], dim=0)
+
+    # def on_after_backward(self):
+    #     if self.trainer.global_step % 1 == 0:
+    #         grad_vec = None
+    #         for n, p in self.backbone.trees.named_parameters():
+    #             if n.endswith("t"):
+    #                 grad = p.grad.data.view(-1)

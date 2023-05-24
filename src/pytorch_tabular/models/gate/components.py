@@ -26,18 +26,17 @@ class NeuralDecisionStump(nn.Module):
         self._build_network()
 
     def _build_network(self):
-        if self.feature_mask_function is not None:
-            # sampling a random beta distribution
-            # random distribution helps with diversity in trees and feature splits
-            alpha = random.uniform(0.5, 10.0)
-            beta = random.uniform(0.5, 10.0)
-            # with torch.no_grad():
-            feature_mask = (
-                torch.distributions.Beta(torch.tensor([alpha]), torch.tensor([beta]))
-                .sample((self.n_features,))
-                .squeeze(-1)
-            )
-            self.feature_mask = nn.Parameter(feature_mask, requires_grad=True)
+        # sampling a random beta distribution
+        # random distribution helps with diversity in trees and feature splits
+        alpha = random.uniform(0.5, 10.0)
+        beta = random.uniform(0.5, 10.0)
+        # with torch.no_grad():
+        feature_mask = (
+            torch.distributions.Beta(torch.tensor([alpha]), torch.tensor([beta])).sample((self.n_features,)).squeeze(-1)
+        )
+        self.feature_mask = nn.Parameter(feature_mask, requires_grad=True)
+        if self.feature_mask_function.__name__ == "t_softmax":
+            self.t = nn.Parameter(torch.rand(1), requires_grad=True)
         W = torch.linspace(
             1.0,
             self._num_cutpoints + 1.0,
@@ -53,7 +52,10 @@ class NeuralDecisionStump(nn.Module):
         self.leaf_responses = nn.Parameter(torch.rand(self.n_features, self._num_leaf), requires_grad=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.feature_mask_function is not None:
+        if self.feature_mask_function.__name__ == "t_softmax":
+            t = torch.relu(self.t)
+            feature_mask = self.feature_mask_function(self.feature_mask, t)
+        else:
             feature_mask = self.feature_mask_function(self.feature_mask)
         # Repeat W for each batch size using broadcasting
         W = torch.ones(x.size(0), 1, 1, device=x.device) * self.W
@@ -154,12 +156,18 @@ class GatedFeatureLearningUnit(nn.Module):
         )
 
         self.feature_masks = self._create_feature_mask()
+        if self.feature_mask_function.__name__ == "t_softmax":
+            self.t = nn.Parameter(torch.rand(self.n_stages), requires_grad=True)
         self.dropout = nn.Dropout(self._dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h = x
+        t = torch.relu(self.t) if self.feature_mask_function.__name__ == "t_softmax" else None
         for d in range(self.n_stages):
-            feature = self.feature_mask_function(self.feature_masks[d]) * x
+            if self.feature_mask_function.__name__ == "t_softmax":
+                feature = self.feature_mask_function(self.feature_masks[d], t[d]) * x
+            else:
+                feature = self.feature_mask_function(self.feature_masks[d]) * x
             h_in = self.W_in[d](torch.cat([feature, h], dim=-1))
             z = torch.sigmoid(h_in[:, : self.n_features_in])
             r = torch.sigmoid(h_in[:, self.n_features_in :])  # noqa: E203

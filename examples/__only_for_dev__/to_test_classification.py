@@ -4,12 +4,12 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # from torch.utils import data
-from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig, ExperimentConfig
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.gate.config import GatedAdditiveTreeEnsembleConfig
 from pytorch_tabular.tabular_model import TabularModel
 
 # import wget
-from pytorch_tabular.utils import get_balanced_sampler, get_class_weighted_cross_entropy
+from pytorch_tabular.utils import get_class_weighted_cross_entropy
 
 # torch.manual_seed(0)
 # np.random.seed(0)
@@ -156,22 +156,18 @@ model_config = GatedAdditiveTreeEnsembleConfig(
     gflu_stages=6,
     tree_depth=3,
     num_trees=15,
-    binning_activation="relu15",
-    feature_mask_function="relu15",
+    binning_activation="entmoid",
+    feature_mask_function="t-softmax",
     metrics=["f1_score", "accuracy"],
     metrics_params=[{"num_classes": num_classes, "average": "macro"}, {}],
     metrics_prob_input=[False, False],
 )
-trainer_config = TrainerConfig(
-    auto_select_gpus=True, 
-    fast_dev_run=False, 
-    max_epochs=5, 
-    batch_size=512)
-experiment_config = ExperimentConfig(project_name="GATE Dev",
-                                     run_name="gate_w_relu_tau_init_ind",
-                                     exp_watch="gradients",
-                                     log_target="wandb",
-                                     log_logits=True)
+trainer_config = TrainerConfig(auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
+# experiment_config = ExperimentConfig(project_name="GATE Dev",
+#                                      run_name="gate_w_t_softmax_learnable",
+#                                      exp_watch="gradients",
+#                                      log_target="wandb",
+#                                      log_logits=True)
 optimizer_config = OptimizerConfig()
 
 # tabular_model = TabularModel(
@@ -186,7 +182,7 @@ tabular_model = TabularModel(
     model_config=model_config,
     optimizer_config=optimizer_config,
     trainer_config=trainer_config,
-    experiment_config=experiment_config,
+    # experiment_config=experiment_config,
 )
 # sampler = get_balanced_sampler(train[target_name].values.ravel())
 cust_loss = get_class_weighted_cross_entropy(train[target_name].values.ravel())
@@ -197,7 +193,7 @@ tabular_model.fit(
     # train_sampler=sampler,
 )
 tabular_model.evaluate(test)
-# from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer  # noqa: E402
+# from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 
 # transformer = CategoricalEmbeddingTransformer(tabular_model)
 # train_transform = transformer.fit_transform(train)

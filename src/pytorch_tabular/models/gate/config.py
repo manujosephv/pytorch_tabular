@@ -112,7 +112,7 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
         default="sparsemax",
         metadata={
             "help": "The feature mask function to use. Defaults to entmax",
-            "choices": ["entmax", "sparsemax", "softmax"],
+            "choices": ["entmax", "sparsemax", "softmax", "t-softmax"],
         },
     )
 
