@@ -44,6 +44,8 @@ class GatedAdditiveTreesBackbone(nn.Module):
         tree_dropout: float = 0.0,
         binning_activation: str = "entmoid",
         feature_mask_function: str = "softmax",
+        gflu_feature_init_sparsity: float = 0.3,
+        tree_feature_init_sparsity: float = 0.8,
         batch_norm_continuous_input: bool = True,
         embedding_dropout: float = 0.0,
     ):
@@ -72,6 +74,8 @@ class GatedAdditiveTreesBackbone(nn.Module):
         self.n_features = self._embedded_cat_features + n_continuous_features
         self.embedding_dropout = embedding_dropout
         self.output_dim = 2**self.tree_depth
+        self.gflu_feature_init_sparsity = gflu_feature_init_sparsity
+        self.tree_feature_init_sparsity = tree_feature_init_sparsity
         self._build_network()
 
     def _build_network(self):
@@ -81,6 +85,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
                 n_stages=self.gflu_stages,
                 feature_mask_function=self.feature_mask_function,
                 dropout=self.gflu_dropout,
+                feature_sparsity=self.gflu_feature_init_sparsity
             )
         self.trees = nn.ModuleList(
             [
@@ -90,6 +95,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
                     dropout=self.tree_dropout,
                     binning_activation=self.binning_activation,
                     feature_mask_function=self.feature_mask_function,
+                    feature_sparsity=self.tree_feature_init_sparsity
                 )
                 for t in range(self.num_trees)
             ]
@@ -216,6 +222,8 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             chain_trees=self.hparams.chain_trees,
             tree_wise_attention=self.hparams.tree_wise_attention,
             tree_wise_attention_dropout=self.hparams.tree_wise_attention_dropout,
+            gflu_feature_init_sparsity=self.hparams.gflu_feature_init_sparsity,
+            tree_feature_init_sparsity=self.hparams.tree_feature_init_sparsity,
         )
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()

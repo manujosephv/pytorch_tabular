@@ -161,9 +161,11 @@ class RSoftmax(torch.nn.Module):
 
         q = torch.clamp((r - zeros_frac) / (1 - zeros_frac), min=0.0, max=1.0)
         x_minus_maxes = input_minus_maxes * (~zeros_mask).float()
-        t = -torch.quantile(x_minus_maxes, q.view(-1), dim=dim, keepdim=True).detach()
-        t = t.squeeze(dim).diagonal(dim1=-2, dim2=-1).unsqueeze(-1) + eps
-
+        if q.ndim>1:
+            t = -torch.quantile(x_minus_maxes, q.view(-1), dim=dim, keepdim=True).detach()
+            t = t.squeeze(dim).diagonal(dim1=-2, dim2=-1).unsqueeze(-1) + eps
+        else:
+            t = -torch.quantile(x_minus_maxes, q, dim=dim).detach() + eps
         return t
 
     def forward(self, input: Tensor, r: Tensor):

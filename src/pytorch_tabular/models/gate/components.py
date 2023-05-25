@@ -7,7 +7,7 @@ from typing import Callable
 import torch
 import torch.nn as nn
 
-from pytorch_tabular.models.common.activations import entmax15
+from pytorch_tabular.models.common.activations import entmax15, RSoftmax
 
 
 class NeuralDecisionStump(nn.Module):
@@ -16,6 +16,7 @@ class NeuralDecisionStump(nn.Module):
         n_features: int,
         binning_activation: Callable = entmax15,
         feature_mask_function: Callable = entmax15,
+        feature_sparsity: float = 0.8
     ):
         super().__init__()
         self._num_cutpoints = 1
@@ -23,6 +24,7 @@ class NeuralDecisionStump(nn.Module):
         self.n_features = n_features
         self.binning_activation = binning_activation
         self.feature_mask_function = feature_mask_function
+        self.feature_sparsity = feature_sparsity
         self._build_network()
 
     def _build_network(self):
@@ -36,7 +38,8 @@ class NeuralDecisionStump(nn.Module):
         )
         self.feature_mask = nn.Parameter(feature_mask, requires_grad=True)
         if self.feature_mask_function.__name__ == "t_softmax":
-            self.t = nn.Parameter(torch.rand(1), requires_grad=True)
+            t = RSoftmax.calculate_t(self.feature_mask, r=torch.tensor([self.feature_sparsity]))
+            self.t = nn.Parameter(t, requires_grad=True)
         W = torch.linspace(
             1.0,
             self._num_cutpoints + 1.0,
@@ -75,6 +78,7 @@ class NeuralDecisionTree(nn.Module):
         dropout: float = 0,
         binning_activation: Callable = entmax15,
         feature_mask_function: Callable = entmax15,
+        feature_sparsity: float = 0.8
     ):
         super().__init__()
         self.depth = depth
@@ -83,6 +87,7 @@ class NeuralDecisionTree(nn.Module):
         self._dropout = dropout
         self.binning_activation = binning_activation
         self.feature_mask_function = feature_mask_function
+        self.feature_sparsity = feature_sparsity
         self._build_network()
 
     def _build_network(self):
@@ -94,6 +99,7 @@ class NeuralDecisionTree(nn.Module):
                         self.n_features + (2 ** (d) if d > 0 else 0),
                         self.binning_activation,
                         self.feature_mask_function,
+                        self.feature_sparsity,
                     ),
                 )
         self.dropout = nn.Dropout(self._dropout)
@@ -120,6 +126,7 @@ class GatedFeatureLearningUnit(nn.Module):
         n_features_in: int,
         n_stages: int,
         feature_mask_function: Callable = entmax15,
+        feature_sparsity: float = 0.3,
         dropout: float = 0.0,
     ):
         super().__init__()
@@ -128,6 +135,7 @@ class GatedFeatureLearningUnit(nn.Module):
         self.feature_mask_function = feature_mask_function
         self._dropout = dropout
         self.n_stages = n_stages
+        self.feature_sparsity = feature_sparsity
         self._build_network()
 
     def _create_feature_mask(self):
@@ -157,7 +165,8 @@ class GatedFeatureLearningUnit(nn.Module):
 
         self.feature_masks = self._create_feature_mask()
         if self.feature_mask_function.__name__ == "t_softmax":
-            self.t = nn.Parameter(torch.rand(self.n_stages), requires_grad=True)
+            t = RSoftmax.calculate_t(self.feature_masks, r=torch.tensor([self.feature_sparsity]), dim=-1)
+            self.t = nn.Parameter(t, requires_grad=True)
         self.dropout = nn.Dropout(self._dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

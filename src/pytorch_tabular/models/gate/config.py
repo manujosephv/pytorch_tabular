@@ -115,6 +115,20 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
             "choices": ["entmax", "sparsemax", "softmax", "t-softmax"],
         },
     )
+    gflu_feature_init_sparsity: float = field(
+        default=0.3,
+        metadata={
+            "help": "Only valid for t-softmax. The perecentge of features to be selected in "
+            "each GFLU stage. This is just initialized and during learning it may change"
+        },
+    )
+    tree_feature_init_sparsity: float = field(
+        default=0.8,
+        metadata={
+            "help": "Only valid for t-softmax. The perecentge of features to be selected in "
+            "each split in the tree. This is just initialized and during learning it may change"
+        },
+    )
 
     tree_dropout: float = field(
         default=0.0,
