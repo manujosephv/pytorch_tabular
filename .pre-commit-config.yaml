@@ -54,8 +54,11 @@ repos:
           - mdformat-gfm
           - mdformat-black
           - mdformat_frontmatter
-        exclude: docs
-
+        exclude: |
+              (?x)(
+                  docs/|
+                  README.md
+                  )
   - repo: https://github.com/asottile/yesqa
     rev: v1.4.0
     hooks:
