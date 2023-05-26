@@ -24,9 +24,8 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
     """Define how apply cutmix to a tensor.
 
     :param batch: Tensor on which apply the cutmix augmentation
-    :param lam: probability values have 0 in a binary random mask,
-        so it means probability original values will
-    be updated
+    :param lam: probability values have 0 in a binary random mask, so it means probability original values will     be
+        updated
     """
     result = {}
     for key, value in batch.items():
