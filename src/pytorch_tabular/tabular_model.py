@@ -1379,3 +1379,6 @@ class TabularModel:
 
     def __str__(self) -> str:
         return self.summary()
+
+    def feature_importance(self):
+        return self.model.feature_importance()
