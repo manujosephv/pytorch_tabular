@@ -129,6 +129,10 @@ class GatedAdditiveTreesBackbone(nn.Module):
             tree_outputs = tree_outputs.permute(1, 2, 0)
         return tree_outputs
 
+    @property
+    def feature_importance_(self):
+        return self.gflus.feature_mask_function(self.gflus.feature_masks).sum(dim=0).detach().cpu().numpy()
+
 
 class CustomHead(nn.Module):
     """Custom Head for GATE.
