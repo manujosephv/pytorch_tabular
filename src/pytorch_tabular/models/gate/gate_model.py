@@ -88,7 +88,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
                 feature_mask_function=self.feature_mask_function,
                 dropout=self.gflu_dropout,
                 feature_sparsity=self.gflu_feature_init_sparsity,
-                learnable_sparsity=self.learnable_sparsity
+                learnable_sparsity=self.learnable_sparsity,
             )
         self.trees = nn.ModuleList(
             [
@@ -98,8 +98,8 @@ class GatedAdditiveTreesBackbone(nn.Module):
                     dropout=self.tree_dropout,
                     binning_activation=self.binning_activation,
                     feature_mask_function=self.feature_mask_function,
-                    feature_sparsity=self.tree_feature_init_sparsity
-                    learnable_sparsity=self.learnable_sparsity
+                    feature_sparsity=self.tree_feature_init_sparsity,
+                    learnable_sparsity=self.learnable_sparsity,
                 )
                 for t in range(self.num_trees)
             ]

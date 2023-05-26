@@ -136,6 +136,7 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
             "If False, the sparsity parameters will be fixed to the initial values specified in "
             "`gflu_feature_init_sparsity` and `tree_feature_init_sparsity`"
         },
+    )
 
     tree_dropout: float = field(
         default=0.0,

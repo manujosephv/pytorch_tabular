@@ -104,7 +104,7 @@ class NeuralDecisionTree(nn.Module):
                         self.binning_activation,
                         self.feature_mask_function,
                         self.feature_sparsity,
-                        self.learnable_sparsity
+                        self.learnable_sparsity,
                     ),
                 )
         self.dropout = nn.Dropout(self._dropout)

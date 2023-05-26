@@ -104,8 +104,6 @@ tabular_model.fit(train=train, validation=val)
 # tabular_model.fit(train=train, validation=val, max_epochs=5, reset=True)
 
 
-
-
 # t = torch.rand(128,200)
 # a = t.numpy()
 

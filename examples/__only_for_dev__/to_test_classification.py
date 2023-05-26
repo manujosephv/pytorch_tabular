@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # from torch.utils import data
-from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig, ExperimentConfig
+from pytorch_tabular.config import DataConfig, ExperimentConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.gate.config import GatedAdditiveTreeEnsembleConfig
 from pytorch_tabular.tabular_model import TabularModel
 
@@ -163,11 +163,13 @@ model_config = GatedAdditiveTreeEnsembleConfig(
     metrics_prob_input=[False, False],
 )
 trainer_config = TrainerConfig(auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
-experiment_config = ExperimentConfig(project_name="GATE Dev",
-                                     run_name="gate_w_t_softmax_w_init",
-                                     exp_watch="gradients",
-                                     log_target="wandb",
-                                     log_logits=True)
+experiment_config = ExperimentConfig(
+    project_name="GATE Dev",
+    run_name="gate_w_t_softmax_w_init",
+    exp_watch="gradients",
+    log_target="wandb",
+    log_logits=True,
+)
 optimizer_config = OptimizerConfig()
 
 # tabular_model = TabularModel(
