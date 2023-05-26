@@ -409,7 +409,7 @@ class TabularModel:
 
     @classmethod
     def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
-        """(Deprecated: Use `load_model` instead) Loads a saved model from the directory
+        """(Deprecated: Use `load_model` instead) Loads a saved model from the directory.
 
         Args:
             dir (str): The directory where the model was saved, along with the checkpoints
@@ -1379,3 +1379,6 @@ class TabularModel:
 
     def __str__(self) -> str:
         return self.summary()
+
+    def feature_importance(self):
+        return self.model.feature_importance()
