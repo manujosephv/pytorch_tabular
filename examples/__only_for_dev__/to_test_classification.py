@@ -164,7 +164,7 @@ model_config = GatedAdditiveTreeEnsembleConfig(
 )
 trainer_config = TrainerConfig(auto_select_gpus=True, fast_dev_run=False, max_epochs=5, batch_size=512)
 experiment_config = ExperimentConfig(project_name="GATE Dev",
-                                     run_name="gate_w_t_softmax_learnable_w_init",
+                                     run_name="gate_w_t_softmax_w_init",
                                      exp_watch="gradients",
                                      log_target="wandb",
                                      log_logits=True)

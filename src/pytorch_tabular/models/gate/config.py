@@ -129,6 +129,13 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
             "each split in the tree. This is just initialized and during learning it may change"
         },
     )
+    learnable_sparsity: bool = field(
+        default=True,
+        metadata={
+            "help": "Only valid for t-softmax. If True, the sparsity parameters will be learned."
+            "If False, the sparsity parameters will be fixed to the initial values specified in "
+            "`gflu_feature_init_sparsity` and `tree_feature_init_sparsity`"
+        },
 
     tree_dropout: float = field(
         default=0.0,

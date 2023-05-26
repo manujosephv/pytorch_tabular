@@ -46,6 +46,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         feature_mask_function: str = "softmax",
         gflu_feature_init_sparsity: float = 0.3,
         tree_feature_init_sparsity: float = 0.8,
+        learnable_sparsity: bool = True,
         batch_norm_continuous_input: bool = True,
         embedding_dropout: float = 0.0,
     ):
@@ -76,6 +77,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         self.output_dim = 2**self.tree_depth
         self.gflu_feature_init_sparsity = gflu_feature_init_sparsity
         self.tree_feature_init_sparsity = tree_feature_init_sparsity
+        self.learnable_sparsity = learnable_sparsity
         self._build_network()
 
     def _build_network(self):
@@ -85,7 +87,8 @@ class GatedAdditiveTreesBackbone(nn.Module):
                 n_stages=self.gflu_stages,
                 feature_mask_function=self.feature_mask_function,
                 dropout=self.gflu_dropout,
-                feature_sparsity=self.gflu_feature_init_sparsity
+                feature_sparsity=self.gflu_feature_init_sparsity,
+                learnable_sparsity=self.learnable_sparsity
             )
         self.trees = nn.ModuleList(
             [
@@ -96,6 +99,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
                     binning_activation=self.binning_activation,
                     feature_mask_function=self.feature_mask_function,
                     feature_sparsity=self.tree_feature_init_sparsity
+                    learnable_sparsity=self.learnable_sparsity
                 )
                 for t in range(self.num_trees)
             ]
