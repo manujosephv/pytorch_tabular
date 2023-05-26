@@ -61,16 +61,15 @@ class SwiGLU(nn.Module):
 
 
 class SparsemaxFunction(Function):
-    """
-    An implementation of sparsemax (Martins & Astudillo, 2016). See
-    :cite:`DBLP:journals/corr/MartinsA16` for detailed description.
+    """An implementation of sparsemax (Martins & Astudillo, 2016). See :cite:`DBLP:journals/corr/MartinsA16` for
+    detailed description.
 
     By Ben Peters and Vlad Niculae
     """
 
     @staticmethod
     def forward(ctx, input, dim: int = -1):
-        """sparsemax: normalizing sparse transform (a la softmax)
+        """Sparsemax: normalizing sparse transform (a la softmax)
 
         Parameters:
             input (Tensor): any shape
