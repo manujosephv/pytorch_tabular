@@ -5,7 +5,6 @@
 import math
 from collections import OrderedDict
 
-import pandas as pd
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig

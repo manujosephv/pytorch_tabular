@@ -7,8 +7,8 @@ from abc import ABCMeta, abstractmethod
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import pytorch_lightning as pl
 import pandas as pd
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
@@ -506,7 +506,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         reset_all_weights(self.backbone)
         reset_all_weights(self.head)
         reset_all_weights(self.embedding_layer)
-    
+
     def feature_importance(self):
         if hasattr(self.backbone, "feature_importance_"):
             importance_df = pd.DataFrame(
