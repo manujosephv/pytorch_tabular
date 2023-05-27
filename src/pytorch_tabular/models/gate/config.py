@@ -167,6 +167,12 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     _backbone_name: str = field(default="GatedAdditiveTreesBackbone")
     _config_name: str = field(default="GatedAdditiveTreeEnsembleConfig")
 
+    def __post_init__(self):
+        assert self.tree_depth > 0, "tree_depth should be greater than 0"
+        # Either gflu_stages or num_trees should be greater than 0
+        assert self.gflu_stages > 0 or self.num_trees > 0, "Either gflu_stages or num_trees should be greater than 0"
+        super().__post_init__()
+
 
 if __name__ == "__main__":
     from pytorch_tabular.utils import generate_doc_dataclass

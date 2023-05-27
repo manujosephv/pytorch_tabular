@@ -74,7 +74,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         self._embedded_cat_features = sum([y for x, y in cat_embedding_dims])
         self.n_features = self._embedded_cat_features + n_continuous_features
         self.embedding_dropout = embedding_dropout
-        self.output_dim = 2**self.tree_depth
+        self.output_dim = 2**self.tree_depth if self.num_trees > 0 else self.n_features
         self.gflu_feature_init_sparsity = gflu_feature_init_sparsity
         self.tree_feature_init_sparsity = tree_feature_init_sparsity
         self.learnable_sparsity = learnable_sparsity
@@ -90,27 +90,28 @@ class GatedAdditiveTreesBackbone(nn.Module):
                 feature_sparsity=self.gflu_feature_init_sparsity,
                 learnable_sparsity=self.learnable_sparsity,
             )
-        self.trees = nn.ModuleList(
-            [
-                NeuralDecisionTree(
-                    depth=self.tree_depth,
-                    n_features=self.n_features + 2**self.tree_depth * t if self.chain_trees else self.n_features,
-                    dropout=self.tree_dropout,
-                    binning_activation=self.binning_activation,
-                    feature_mask_function=self.feature_mask_function,
-                    feature_sparsity=self.tree_feature_init_sparsity,
-                    learnable_sparsity=self.learnable_sparsity,
-                )
-                for t in range(self.num_trees)
-            ]
-        )
-        if self.tree_wise_attention:
-            self.tree_attention = nn.MultiheadAttention(
-                embed_dim=self.output_dim,
-                num_heads=1,
-                batch_first=False,
-                dropout=self.tree_wise_attention_dropout,
+        if self.num_trees > 0:
+            self.trees = nn.ModuleList(
+                [
+                    NeuralDecisionTree(
+                        depth=self.tree_depth,
+                        n_features=self.n_features + 2**self.tree_depth * t if self.chain_trees else self.n_features,
+                        dropout=self.tree_dropout,
+                        binning_activation=self.binning_activation,
+                        feature_mask_function=self.feature_mask_function,
+                        feature_sparsity=self.tree_feature_init_sparsity,
+                        learnable_sparsity=self.learnable_sparsity,
+                    )
+                    for t in range(self.num_trees)
+                ]
             )
+            if self.tree_wise_attention:
+                self.tree_attention = nn.MultiheadAttention(
+                    embed_dim=self.output_dim,
+                    num_heads=1,
+                    batch_first=False,
+                    dropout=self.tree_wise_attention_dropout,
+                )
 
     def _build_embedding_layer(self):
         return Embedding1dLayer(
@@ -123,22 +124,25 @@ class GatedAdditiveTreesBackbone(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.gflu_stages > 0:
             x = self.gflus(x)
-        # Decision Tree
-        tree_outputs = []
-        tree_feature_masks = []  # TODO make this optional and create feat importance
-        tree_input = x
-        for i in range(self.num_trees):
-            tree_output, feat_masks = self.trees[i](tree_input)
-            tree_outputs.append(tree_output.unsqueeze(-1))
-            tree_feature_masks.append(feat_masks)
-            if self.chain_trees:
-                tree_input = torch.cat([tree_input, tree_output], 1)
-        tree_outputs = torch.cat(tree_outputs, dim=-1)
-        if self.tree_wise_attention:
-            tree_outputs = tree_outputs.permute(2, 0, 1)
-            tree_outputs, _ = self.tree_attention(tree_outputs, tree_outputs, tree_outputs)
-            tree_outputs = tree_outputs.permute(1, 2, 0)
-        return tree_outputs
+        if self.num_trees > 0:
+            # Decision Tree
+            tree_outputs = []
+            tree_feature_masks = []  # TODO make this optional and create feat importance
+            tree_input = x
+            for i in range(self.num_trees):
+                tree_output, feat_masks = self.trees[i](tree_input)
+                tree_outputs.append(tree_output.unsqueeze(-1))
+                tree_feature_masks.append(feat_masks)
+                if self.chain_trees:
+                    tree_input = torch.cat([tree_input, tree_output], 1)
+            tree_outputs = torch.cat(tree_outputs, dim=-1)
+            if self.tree_wise_attention:
+                tree_outputs = tree_outputs.permute(2, 0, 1)
+                tree_outputs, _ = self.tree_attention(tree_outputs, tree_outputs, tree_outputs)
+                tree_outputs = tree_outputs.permute(1, 2, 0)
+            return tree_outputs
+        else:
+            return x
 
     @property
     def feature_importance_(self):
@@ -236,15 +240,19 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
-        self._head = CustomHead(self.backbone.output_dim, self.hparams)
+        if self.hparams.num_trees == 0:
+            self._head = self._get_head_from_config()
+        else:
+            self._head = CustomHead(self.backbone.output_dim, self.hparams)
 
     def data_aware_initialization(self, datamodule):
-        if self.hparams.task == "regression":
-            logger.info("Data Aware Initialization of T0")
-            # Need a big batch to initialize properly
-            alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
-            batch = next(iter(alt_loader))
-            self.head.T0.data = torch.mean(batch["target"], dim=0)
+        if self.hparams.num_trees == 0:
+            if self.hparams.task == "regression":
+                logger.info("Data Aware Initialization of T0")
+                # Need a big batch to initialize properly
+                alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
+                batch = next(iter(alt_loader))
+                self.head.T0.data = torch.mean(batch["target"], dim=0)
 
     # def on_after_backward(self):
     #     if self.trainer.global_step % 1 == 0:

@@ -75,6 +75,7 @@ optimizer_config = OptimizerConfig()
 model_config = GatedAdditiveTreeEnsembleConfig(
     task="classification",
     gflu_stages=3,
+    num_trees=0,
     tree_depth=2,
     binning_activation="sigmoid",
     feature_mask_function="t-softmax",
