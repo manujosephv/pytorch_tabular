@@ -137,13 +137,12 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ## Future Roadmap(Contributions are Welcome)
 
 1. Integrate Optuna Hyperparameter Tuning
-1. Integrate SHAP for interpretability
-1. Add Variable Importance
-1. Add ability to use custom activations in CategoryEmbeddingModel
+1. Integrate Captum for interpretability
+1. Have a scikit-learn compatible API
 1. Add GaussRank as Feature Transformation
-1. ~~Add differential dropouts(layer-wise) in CategoryEmbeddingModel~~
-1. ~~Add Fourier Encoding for cyclic time variables~~
-1. ~~Add Text and Image Modalities for mixed modal problems~~
+1. Enable support for multi-label classification
+1. Migrate Datamodule to Polars or Vaex for faster data loading and to handle larger than RAM datasets.
+1. Keep adding more architectures
 
 ## Contributors
 
