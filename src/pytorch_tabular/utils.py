@@ -8,9 +8,13 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from lightning_lite.utilities.cloud_io import get_filesystem
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
+
+try:  # for 1.8
+    from pytorch_lightning.utilities.cloud_io import get_filesystem
+except ImportError:  # for 1.9
+    from pytorch_lightning.core.saving import get_filesystem
 
 import pytorch_tabular as root_module
 
