@@ -150,7 +150,7 @@ class MultiHeadedAttention(nn.Module):
     def forward(self, x):
         h = self.n_heads
         q, k, v = self.to_qkv(x).chunk(3, dim=-1)
-        q, k, v = map(lambda t: rearrange(t, "b n (h d) -> b h n d", h=h), (q, k, v))
+        q, k, v = (rearrange(t, "b n (h d) -> b h n d", h=h) for t in (q, k, v))
         sim = einsum("b h i d, b h j d -> b h i j", q, k) * self.scale
 
         attn = sim.softmax(dim=-1)

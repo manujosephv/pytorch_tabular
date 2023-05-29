@@ -81,10 +81,10 @@ def test_regression(
             activation="LeakyReLU",  # Activation between each layers
         )
 
-        model_config_params = dict(
-            encoder_config=encoder_config,
-            decoder_config=decoder_config,
-        )
+        model_config_params = {
+            "encoder_config": encoder_config,
+            "decoder_config": decoder_config,
+        }
         model_config = DenoisingAutoEncoderConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=1,
@@ -188,10 +188,10 @@ def test_classification(
             layers="512-2048-4096",  # Number of nodes in each layer
             activation="LeakyReLU",  # Activation between each layers
         )
-        model_config_params = dict(
-            encoder_config=encoder_config,
-            decoder_config=decoder_config,
-        )
+        model_config_params = {
+            "encoder_config": encoder_config,
+            "decoder_config": decoder_config,
+        }
         model_config = DenoisingAutoEncoderConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=1,

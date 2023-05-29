@@ -42,7 +42,7 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression")
+        model_config_params = {"task": "regression"}
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -112,7 +112,7 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="classification")
+        model_config_params = {"task": "classification"}
         model_config_params["deep_layers"] = deep_layers
         model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
         model_config = AutoIntConfig(**model_config_params)

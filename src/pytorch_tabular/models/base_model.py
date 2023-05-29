@@ -486,7 +486,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         # Overlay both histograms
         fig.update_layout(
             barmode="overlay",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
         )
         # Reduce opacity to see both histograms
         fig.update_traces(opacity=0.5)

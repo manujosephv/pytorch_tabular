@@ -71,7 +71,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
     )
     # Union not supported by omegaconf. Currently Union[float, Dict[str, float]]
     noise_probabilities: Dict[str, float] = field(
-        default_factory=lambda: dict(),
+        default_factory=lambda: {},
         metadata={
             "help": "Dict of individual probabilities to corrupt the input features with swap/zero noise."
             " Key should be the feature name and if any feature is missing,"
