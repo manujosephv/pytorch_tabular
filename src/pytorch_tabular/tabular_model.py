@@ -17,7 +17,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
-from lightning_lite.utilities.seed import seed_everything
+from pytorch_lightning import seed_everything
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import RichProgressBar
