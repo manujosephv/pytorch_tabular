@@ -73,7 +73,7 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression")
+        model_config_params = {"task": "regression"}
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -86,7 +86,7 @@ def test_regression(
             model_config_params["target_range"] = _target_range
         if custom_head_config is not None:
             model_config_params["head"] = "LinearHead"
-            model_config_params["head_config"] = dict(layers=custom_head_config)
+            model_config_params["head_config"] = {"layers": custom_head_config}
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=3,
@@ -152,7 +152,7 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="classification")
+        model_config_params = {"task": "classification"}
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=3,
@@ -192,7 +192,7 @@ def test_embedding_transformer(regression_data):
         ],
         categorical_cols=["HouseAgeBin"],
     )
-    model_config_params = dict(task="regression")
+    model_config_params = {"task": "regression"}
     model_config = CategoryEmbeddingModelConfig(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=1,
@@ -215,4 +215,4 @@ def test_embedding_transformer(regression_data):
     train_transform = transformer.fit_transform(train)
     embed_cols = [col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col]
     assert len(train["HouseAgeBin"].unique()) + 1 == len(transformer._mapping["HouseAgeBin"].keys())
-    assert all([val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values()])
+    assert all(val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values())

@@ -114,10 +114,10 @@ class TabTransformerModel(BaseModel):
     # Redefining forward because this model flow is slightly different
     def forward(self, x: Dict):
         if self.hparams.categorical_dim > 0:
-            x_cat = self.embed_input(dict(categorical=x["categorical"]))
+            x_cat = self.embed_input({"categorical": x["categorical"]})
         else:
             x_cat = None
-        x = self.compute_backbone(dict(categorical=x_cat, continuous=x["continuous"]))
+        x = self.compute_backbone({"categorical": x_cat, "continuous": x["continuous"]})
         return self.compute_head(x)
 
     # Redefining compute_backbone because this model flow is slightly different

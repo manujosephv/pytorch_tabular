@@ -16,20 +16,20 @@ from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
 
 MODEL_CONFIG_SAVE_TEST = [
-    (CategoryEmbeddingModelConfig, dict(layers="10-20")),
-    (AutoIntConfig, dict(num_heads=1, num_attn_blocks=1)),
-    (NodeConfig, dict(num_trees=100, depth=2)),
-    (TabNetModelConfig, dict(n_a=2, n_d=2)),
+    (CategoryEmbeddingModelConfig, {"layers": "10-20"}),
+    (AutoIntConfig, {"num_heads": 1, "num_attn_blocks": 1}),
+    (NodeConfig, {"num_trees": 100, "depth": 2}),
+    (TabNetModelConfig, {"n_a": 2, "n_d": 2}),
 ]
 
 MODEL_CONFIG_SAVE_ONNX_TEST = [
-    (CategoryEmbeddingModelConfig, dict(layers="10-20")),
+    (CategoryEmbeddingModelConfig, {"layers": "10-20"}),
     (
         AutoIntConfig,
-        dict(
-            num_heads=1,
-            num_attn_blocks=1,
-        ),
+        {
+            "num_heads": 1,
+            "num_attn_blocks": 1,
+        },
     ),
 ]
 MODEL_CONFIG_FEATURE_EXT_TEST = [
@@ -126,7 +126,7 @@ def test_feature_extractor(
         handle_missing_values=False if is_ssl else True,
         handle_unknown_categories=False if is_ssl else True,
     )
-    model_config_params = dict()
+    model_config_params = {}
     if not is_ssl:
         model_config_params["task"] = "regression"
     else:
@@ -170,7 +170,7 @@ def test_feature_extractor(
         )
     dt = DeepFeatureExtractor(tabular_model)
     enc_df = dt.fit_transform(test)
-    assert any([col for col in enc_df.columns if "backbone" in col])
+    assert any(col for col in enc_df.columns if "backbone" in col)
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_TEST)
@@ -345,7 +345,7 @@ def test_model_reset(
         handle_missing_values=False if is_ssl else True,
         handle_unknown_categories=False if is_ssl else True,
     )
-    model_config_params = dict()
+    model_config_params = {}
     if not is_ssl:
         model_config_params["task"] = "regression"
     else:

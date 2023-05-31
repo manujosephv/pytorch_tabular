@@ -26,7 +26,7 @@ class TabNetBackbone(nn.Module):
             n_a=self.hparams.n_a,
             n_steps=self.hparams.n_steps,
             gamma=self.hparams.gamma,
-            cat_idxs=[i for i in range(self.hparams.categorical_dim)],
+            cat_idxs=list(range(self.hparams.categorical_dim)),
             cat_dims=[cardinality for cardinality, _ in self.hparams.embedding_dims],
             cat_emb_dim=[embed_dim for _, embed_dim in self.hparams.embedding_dims],
             n_independent=self.hparams.n_independent,

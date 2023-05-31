@@ -63,7 +63,7 @@ def test_dataloader(
             normalize_continuous_features=normalize_continuous_features,
             validation_split=validation_split,
         )
-        model_config_params = dict(task="regression", embedding_dims=embedding_dims)
+        model_config_params = {"task": "regression", "embedding_dims": embedding_dims}
         model_config = CategoryEmbeddingModelConfig(**model_config_params)
         trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
         optimizer_config = OptimizerConfig()
@@ -117,7 +117,7 @@ def test_date_encoding(timeseries_data, freq):
         date_columns=[("date", freq)],
         encode_date_columns=True,
     )
-    model_config_params = dict(task="regression")
+    model_config_params = {"task": "regression"}
     model_config = CategoryEmbeddingModelConfig(**model_config_params)
     trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
     optimizer_config = OptimizerConfig()

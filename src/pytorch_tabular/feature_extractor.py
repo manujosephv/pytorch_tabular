@@ -67,7 +67,7 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
                     continue
                 batch[k] = v.to(self.tabular_model.model.device)
             if self.tabular_model.config.task == "ssl":
-                ret_value = dict(backbone_features=self.tabular_model.model.predict(batch, ret_model_output=True))
+                ret_value = {"backbone_features": self.tabular_model.model.predict(batch, ret_model_output=True)}
             else:
                 _, ret_value = self.tabular_model.model.predict(batch, ret_model_output=True)
             for k in self.extract_keys:

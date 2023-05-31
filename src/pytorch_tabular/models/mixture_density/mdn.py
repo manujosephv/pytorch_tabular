@@ -86,8 +86,8 @@ class MDNModel(BaseModel):
     def forward(self, x: Dict):
         if isinstance(self.backbone, TabTransformerBackbone):
             if self.hparams.categorical_dim > 0:
-                x_cat = self.embed_input(dict(categorical=x["categorical"]))
-            x = self.compute_backbone(dict(categorical=x_cat, continuous=x["continuous"]))
+                x_cat = self.embed_input({"categorical": x["categorical"]})
+            x = self.compute_backbone({"categorical": x_cat, "continuous": x["continuous"]})
         else:
             x = self.embedding_layer(x)
             x = self.compute_backbone(x)
@@ -230,7 +230,7 @@ class MDNModel(BaseModel):
                 commit=False,
             )
             if self.head.hparams.log_debug_plot:
-                fig = self.create_plotly_histogram(pi, "pi", bin_dict=dict(start=0.0, end=1.0, size=0.1))
+                fig = self.create_plotly_histogram(pi, "pi", bin_dict={"start": 0.0, "end": 1.0, "size": 0.1})
                 wandb.log(
                     {
                         "valid_pi": fig,
