@@ -1,5 +1,28 @@
 # History
 
+## 1.0.2 (2023-05-31)
+
+### New Features:
+
+- Added Feature Importance: The library now includes a new method in TabularModel and BaseModel for enabling feature importance. Feature Importance has been enabled for FTTransformer and GATE models. [Commit: dc2a49e]
+### Enhancements:
+
+- Enabled two more parameters in the GATE model. [Commit: 3680413]
+- Included metric_prob_input parameter in the library configuration. This update allows for better control over metrics in the models. [Commit: 0612db5]
+- Slight improvements to the GATE model, including changes to defaults for better performance. [Commit: c30a6c3]
+- Minor bug fixes and improvements, including accelerator options in the configuration and progress bar enhancements. [Commit: f932230, bdd9adb, f932230]
+### Dependency Updates:
+
+- Updated dependencies, including docformatter, pyupgrade, and ruff-pre-commit. [Commits: 4aae9a8, b3df4ce, bdd9adb, 55e800c, c6c4679, c01154b, 107cd2f]
+### Documentation Updates:
+
+- Updated the library's README.md file. [Commits: db8f3b2, cab6bf1, 669faec, 1e6c400, 3097799, 7fabf6b]
+### Other Improvements:
+
+- Various code optimizations, bug fixes, and CI enhancements. [Commits: 5637020, e5171bf, 812b40f]
+
+For more details, you can refer to the respective commits on the library's GitHub repository.
+
 ## 1.0.1 (2023-01-20)
 
 - Bugfix for default metric for binary classification
