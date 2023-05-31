@@ -2,7 +2,7 @@
 
 __author__ = """Manu Joseph"""
 __email__ = "manujosephv@gmail.com"
-__version__ = "1.0.2-dev0"
+__version__ = "1.0.2"
 
 from . import models, ssl_models
 from .categorical_encoders import CategoricalEmbeddingTransformer
