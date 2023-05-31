@@ -37,19 +37,19 @@ class TabularDatamodule(pl.LightningDataModule):
     CONTINUOUS_TRANSFORMS = {
         "quantile_uniform": {
             "callable": QuantileTransformer,
-            "params": dict(output_distribution="uniform", random_state=None),
+            "params": {"output_distribution": "uniform", "random_state": None},
         },
         "quantile_normal": {
             "callable": QuantileTransformer,
-            "params": dict(output_distribution="normal", random_state=None),
+            "params": {"output_distribution": "normal", "random_state": None},
         },
         "box-cox": {
             "callable": PowerTransformer,
-            "params": dict(method="box-cox", standardize=False),
+            "params": {"method": "box-cox", "standardize": False},
         },
         "yeo-johnson": {
             "callable": PowerTransformer,
-            "params": dict(method="yeo-johnson", standardize=False),
+            "params": {"method": "yeo-johnson", "standardize": False},
         },
     }
 
@@ -224,7 +224,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def _target_transform(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
         if self.config.task == "regression":
             # target transform only for regression
-            if all([col in data.columns for col in self.config.target]):
+            if all(col in data.columns for col in self.config.target):
                 if self.do_target_transform:
                     if stage == "fit":
                         target_transforms = []
@@ -607,7 +607,7 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
             embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target if all([col in df.columns for col in self.target]) else None,
+            target=self.target if all(col in df.columns for col in self.target) else None,
         )
         return DataLoader(
             dataset,

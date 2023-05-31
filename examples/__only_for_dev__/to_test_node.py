@@ -55,7 +55,7 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression", depth=2, embed_categorical=embed_categorical)
+        model_config_params = {"task": "regression", "depth": 2, "embed_categorical": embed_categorical}
         model_config = NodeConfig(**model_config_params)
         # model_config_params = dict(task="regression")
         # model_config = NodeConfig(**model_config_params)
@@ -98,7 +98,7 @@ def test_classification(
         continuous_feature_transform=continuous_feature_transform,
         normalize_continuous_features=normalize_continuous_features,
     )
-    model_config_params = dict(task="classification", depth=2, embed_categorical=embed_categorical)
+    model_config_params = {"task": "classification", "depth": 2, "embed_categorical": embed_categorical}
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
     optimizer_config = OptimizerConfig()

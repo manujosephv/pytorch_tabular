@@ -158,7 +158,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             reconstructed_in = self.reconstruction(z_hat)
             # mask reconstruction
             reconstructed_mask = self.mask_reconstruction(z_hat)
-            output_dict = dict(mask=self.output_tuple(mask, reconstructed_mask))
+            output_dict = {"mask": self.output_tuple(mask, reconstructed_mask)}
             if "continuous" in reconstructed_in.keys():
                 output_dict["continuous"] = self.output_tuple(
                     torch.cat(
