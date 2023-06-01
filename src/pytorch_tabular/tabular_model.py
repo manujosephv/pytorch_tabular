@@ -1380,5 +1380,7 @@ class TabularModel:
     def __str__(self) -> str:
         return self.summary()
 
-    def feature_importance(self):
+    def feature_importance(self) -> pd.DataFrame:
+        """ Returns the feature importance of the model as a pandas DataFrame. 
+        """
         return self.model.feature_importance()

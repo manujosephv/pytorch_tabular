@@ -507,7 +507,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         reset_all_weights(self.head)
         reset_all_weights(self.embedding_layer)
 
-    def feature_importance(self):
+    def feature_importance(self) -> pd.DataFrame:
+        """ Returns a dataframe with feature importance for the model
+        """
         if hasattr(self.backbone, "feature_importance_"):
             importance_df = pd.DataFrame(
                 {
