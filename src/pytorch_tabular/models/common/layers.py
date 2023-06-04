@@ -1,7 +1,7 @@
 # W605
 import math
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 from einops import rearrange
@@ -568,3 +568,18 @@ class ModuleWithInit(nn.Module):
             self._is_initialized_tensor.data[...] = 1
             self._is_initialized_bool = True
         return super().__call__(*args, **kwargs)
+
+
+class Add(nn.Module):
+    """A module that adds a constant/parameter value to the input."""
+
+    def __init__(self, add_value: Union[float, torch.Tensor]):
+        """Initialize the module.
+        Args:
+            add_value: The value to add to the input
+        """
+        super().__init__()
+        self.add_value = add_value
+
+    def forward(self, x):
+        return x+self.add_value
