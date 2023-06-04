@@ -246,7 +246,7 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             self._head = CustomHead(self.backbone.output_dim, self.hparams)
 
     def data_aware_initialization(self, datamodule):
-        if self.hparams.num_trees == 0:
+        if self.hparams.num_trees != 0:
             if self.hparams.task == "regression":
                 logger.info("Data Aware Initialization of T0")
                 # Need a big batch to initialize properly
