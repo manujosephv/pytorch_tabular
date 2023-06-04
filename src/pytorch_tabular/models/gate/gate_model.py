@@ -273,7 +273,7 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             self.T0 = nn.Parameter(
                 torch.rand(self.hparams.output_dim), requires_grad=True
             )
-            self._head = nn.Sequential([self._get_head_from_config(), Add(self.T0)])
+            self._head = nn.Sequential(self._get_head_from_config(), Add(self.T0))
         else:
             self._head = CustomHead(self.backbone.output_dim, self.hparams)
 
