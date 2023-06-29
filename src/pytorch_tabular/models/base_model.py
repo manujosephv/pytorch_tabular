@@ -103,7 +103,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     config.metrics.append(metric.__name__)
                     config.metrics_params.append(vars(metric))
             if config.task == "classification":
-                config.metrics_prob_inputs = self.custom_metrics_prob_inputs
+                config.metrics_prob_input = self.custom_metrics_prob_inputs
         # Updating default metrics in config
         elif config.task == "classification":
             # Adding metric_params to config for classification task
