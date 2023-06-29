@@ -259,7 +259,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         """
         metrics = []
         for metric, metric_str, prob_inp, metric_params in zip(
-            self.metrics, self.hparams.metrics, self.hparams.metrics_prob_inputs, self.hparams.metrics_params
+            self.metrics, self.hparams.metrics, self.hparams.metrics_prob_input, self.hparams.metrics_params
         ):
             if self.hparams.task == "regression":
                 _metrics = []
