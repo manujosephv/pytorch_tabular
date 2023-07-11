@@ -36,7 +36,7 @@ class BaseEncoder:
 
         :param pandas.DataFrame X: DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
         :return: encoded DataFrame of shape (n_samples, n_features), initial categorical columns are dropped, and
-                replaced with encoded columns. DataFrame passed in argument is unchanged.
+            replaced with encoded columns. DataFrame passed in argument is unchanged.
         :rtype: pandas.DataFrame
         """
         if not self._mapping:
