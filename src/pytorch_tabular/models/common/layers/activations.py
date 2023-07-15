@@ -6,57 +6,9 @@ from torch import nn, Tensor
 from torch.autograd import Function
 from torch.jit import script
 
-from pytorch_tabular.models.common.layers import PositionWiseFeedForward
+from .transformers import PositionWiseFeedForward
 
 
-# GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
-class GEGLU(nn.Module):
-    """Gated Exponential Linear Unit (GEGLU)"""
-
-    def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
-        """
-        Args:
-            d_model: dimension of the model
-            d_ff: dimension of the feedforward layer
-            dropout: dropout probability
-        """
-        super().__init__()
-        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.GELU(), True, False, False, False)
-
-    def forward(self, x: torch.Tensor):
-        return self.ffn(x)
-
-
-class ReGLU(nn.Module):
-    """ReGLU."""
-
-    def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
-        """
-        Args:
-            d_model: dimension of the model
-            d_ff: dimension of the feedforward layer
-            dropout: dropout probability
-        """
-        super().__init__()
-        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.ReLU(), True, False, False, False)
-
-    def forward(self, x: torch.Tensor):
-        return self.ffn(x)
-
-
-class SwiGLU(nn.Module):
-    def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
-        """
-        Args:
-            d_model: dimension of the model
-            d_ff: dimension of the feedforward layer
-            dropout: dropout probability
-        """
-        super().__init__()
-        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.SiLU(), True, False, False, False)
-
-    def forward(self, x: torch.Tensor):
-        return self.ffn(x)
 
 
 class Entmoid15(Function):
@@ -100,20 +52,6 @@ entmax15 = entmax15
 sparsemax = sparsemax
 
 
-# def t_softmax(input: Tensor, t: Tensor = None, dim: int = -1) -> Tensor:
-#     if t is None:
-#         t = torch.tensor(0.5, device=input.device)
-#     assert (t > 0.0).all()
-#     maxes = torch.max(input, dim=dim, keepdim=True).values
-#     input_minus_maxes = input - maxes
-
-#     w = torch.relu(input_minus_maxes + t)
-#     x_exp = w * torch.exp(input_minus_maxes)
-#     x_exp_sum = torch.sum(x_exp, dim=dim, keepdim=True)
-#     out = x_exp / x_exp_sum
-#     return out
-
-
 def t_softmax(input: Tensor, t: Tensor = None, dim: int = -1) -> Tensor:
     if t is None:
         t = torch.tensor(0.5, device=input.device)
@@ -123,13 +61,6 @@ def t_softmax(input: Tensor, t: Tensor = None, dim: int = -1) -> Tensor:
 
     w = torch.relu(input_minus_maxes + t) + 1e-8
     return torch.softmax(input_minus_maxes + torch.log(w), dim=dim)
-
-
-# def t_softmax(input: Tensor, t: Tensor = None, dim: int = -1) -> Tensor:
-#     if t is None:
-#         t = torch.tensor(0.5, device=input.device)
-#     assert (t > 0.0).all()
-#     return torch.softmax(input+torch.log(t), dim=dim)
 
 
 class TSoftmax(torch.nn.Module):

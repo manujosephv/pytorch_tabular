@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.activations import (
+from pytorch_tabular.models.common.layers.activations import (
     entmax15,
     entmoid15,
     sparsemax,

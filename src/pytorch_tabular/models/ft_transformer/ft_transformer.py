@@ -10,34 +10,7 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from ..base_model import BaseModel
-from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
-
-
-def _initialize_kaiming(x, initialization, d_sqrt_inv):
-    if initialization == "kaiming_uniform":
-        nn.init.uniform_(x, a=-d_sqrt_inv, b=d_sqrt_inv)
-    elif initialization == "kaiming_normal":
-        nn.init.normal_(x, std=d_sqrt_inv)
-    elif initialization is None:
-        pass
-    else:
-        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
-
-
-class AppendCLSToken(nn.Module):
-    """Appends the [CLS] token for BERT-like inference."""
-
-    def __init__(self, d_token: int, initialization: str) -> None:
-        """Initialize self."""
-        super().__init__()
-        self.weight = nn.Parameter(torch.Tensor(d_token))
-        d_sqrt_inv = 1 / math.sqrt(d_token)
-        _initialize_kaiming(self.weight, initialization, d_sqrt_inv)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform the forward pass."""
-        assert x.ndim == 3
-        return torch.cat([x, self.weight.view(1, 1, -1).repeat(len(x), 1, 1)], dim=1)
+from ..common.layers import Embedding2dLayer, TransformerEncoderBlock, AppendCLSToken
 
 
 class FTTransformerBackbone(nn.Module):
@@ -114,8 +87,12 @@ class FTTransformerBackbone(nn.Module):
         self.local_feature_importance = torch.zeros((n, f), device=device)
         for attn_weights in self.attention_weights_:
             self.local_feature_importance += attn_weights[:, :, :, -1].sum(dim=1)
-        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[:, :-1]
-        self.feature_importance_ = self.local_feature_importance.mean(dim=0).detach().cpu().numpy()
+        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[
+            :, :-1
+        ]
+        self.feature_importance_ = (
+            self.local_feature_importance.mean(dim=0).detach().cpu().numpy()
+        )
         # self.feature_importance_count_+=attn_weights.shape[0]
 
 
@@ -147,4 +124,6 @@ class FTTransformerModel(BaseModel):
         if self.hparams.attn_feature_importance:
             return super().feature_importance()
         else:
-            raise ValueError("If you want Feature Importance, `attn_feature_weights` should be `True`.")
+            raise ValueError(
+                "If you want Feature Importance, `attn_feature_weights` should be `True`."
+            )
