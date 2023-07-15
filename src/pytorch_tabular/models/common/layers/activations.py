@@ -2,12 +2,9 @@
 import torch
 import torch.nn.functional as F
 from entmax import entmax15, sparsemax
-from torch import nn, Tensor
+from torch import Tensor
 from torch.autograd import Function
 from torch.jit import script
-
-from .transformers import PositionWiseFeedForward
-
 
 
 

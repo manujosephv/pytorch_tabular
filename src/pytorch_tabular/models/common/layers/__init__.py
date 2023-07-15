@@ -11,18 +11,21 @@ from .misc import (
     ModuleWithInit,
 )
 from .transformers import (
-    PositionWiseFeedForward,
     AddNorm,
     MultiHeadedAttention,
     TransformerEncoderBlock,
     AppendCLSToken,
+)
+from .gated_units import (
     GEGLU,
     ReGLU,
-    SwiGLU
+    SwiGLU,
+    PositionWiseFeedForward,
+    GatedFeatureLearningUnit,
 )
 
 from . import activations
-from .tabular_processing import ODST
+from .soft_trees import ODST, NeuralDecisionTree
 
 __all__ = [
     "PreEncoded1dLayer",
@@ -42,5 +45,7 @@ __all__ = [
     "activations",
     "GEGLU",
     "ReGLU",
-    "SwiGLU"
+    "SwiGLU",
+    "NeuralDecisionTree",
+    "GatedFeatureLearningUnit",
 ]

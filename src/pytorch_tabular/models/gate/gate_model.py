@@ -17,7 +17,7 @@ from pytorch_tabular.models.common.layers import Embedding1dLayer, Add
 from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel
-from .components import GatedFeatureLearningUnit, NeuralDecisionTree
+from pytorch_tabular.models.common.layers import GatedFeatureLearningUnit, NeuralDecisionTree
 
 logger = get_logger(__name__)
 

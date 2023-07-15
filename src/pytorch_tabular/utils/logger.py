@@ -1,4 +1,5 @@
 import logging
+from rich.logging import RichHandler
 import os
 
 
@@ -8,7 +9,8 @@ def get_logger(name):
     formatter = logging.Formatter(
         "%(asctime)s - {%(name)s:%(lineno)d} - %(levelname)s - %(message)s"
     )
-    ch = logging.StreamHandler()
+    # ch = logging.StreamHandler()
+    ch = RichHandler(show_level=False, show_time=False, show_path=False, rich_tracebacks=True)
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
