@@ -1,7 +1,7 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""AutomaticFeatureInteraction Config."""
+"""GatedAdditiveTreeEnsembleConfig Config."""
 from dataclasses import dataclass, field
 
 from pytorch_tabular.config import ModelConfig
@@ -109,7 +109,7 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
         },
     )
     feature_mask_function: str = field(
-        default="sparsemax",
+        default="t-softmax",
         metadata={
             "help": "The feature mask function to use. Defaults to entmax",
             "choices": ["entmax", "sparsemax", "softmax", "t-softmax"],
@@ -118,14 +118,14 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     gflu_feature_init_sparsity: float = field(
         default=0.3,
         metadata={
-            "help": "Only valid for t-softmax. The perecentge of features to be selected in "
+            "help": "Only valid for t-softmax. The percentage of features to be dropped in "
             "each GFLU stage. This is just initialized and during learning it may change"
         },
     )
     tree_feature_init_sparsity: float = field(
         default=0.8,
         metadata={
-            "help": "Only valid for t-softmax. The perecentge of features to be selected in "
+            "help": "Only valid for t-softmax. The perecentge of features to be dropped in "
             "each split in the tree. This is just initialized and during learning it may change"
         },
     )
@@ -170,7 +170,8 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     def __post_init__(self):
         assert self.tree_depth > 0, "tree_depth should be greater than 0"
         # Either gflu_stages or num_trees should be greater than 0
-        assert self.gflu_stages > 0 or self.num_trees > 0, "Either gflu_stages or num_trees should be greater than 0"
+        assert self.num_trees > 0, ("`num_trees` must be greater than 0."
+            "If you want a lighter model which performs better, use GANDALF.")
         super().__post_init__()
 
 

@@ -290,10 +290,3 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
                 self.head.T0.data = t0
             else:
                 self.T0.data = t0
-
-    # def on_after_backward(self):
-    #     if self.trainer.global_step % 1 == 0:
-    #         grad_vec = None
-    #         for n, p in self.backbone.trees.named_parameters():
-    #             if n.endswith("t"):
-    #                 grad = p.grad.data.view(-1)
