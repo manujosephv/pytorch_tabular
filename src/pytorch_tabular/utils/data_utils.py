@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 
 def _make_smooth_weights_for_balanced_classes(y_train, mu=1.0):
-    labels_dict = {label: count for label, count in zip(np.unique(y_train), np.bincount(y_train))}
+    labels_dict = dict(zip(np.unique(y_train), np.bincount(y_train)))
     total = np.sum(list(labels_dict.values()))
     keys = sorted(labels_dict.keys())
     weight = []

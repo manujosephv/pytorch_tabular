@@ -47,9 +47,9 @@ MODEL_CONFIG_FEATURE_EXT_TEST = [
 ]
 
 MODEL_CONFIG_FEATURE_IMP_TEST = [
-    (FTTransformerConfig, dict(num_heads=1, num_attn_blocks=1)),
-    (GANDALFConfig, dict()),
-    (GatedAdditiveTreeEnsembleConfig, dict(num_trees=1, tree_depth=2, gflu_stages=1)),
+    (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
+    (GANDALFConfig, {}),
+    (GatedAdditiveTreeEnsembleConfig, {"num_trees": 1, "tree_depth": 2, "gflu_stages": 1}),
 ]
 
 DATASET_CONTINUOUS_COLUMNS = (

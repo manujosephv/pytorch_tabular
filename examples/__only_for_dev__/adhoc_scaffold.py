@@ -69,7 +69,7 @@ trainer_config = TrainerConfig(
     # profiler="simple",
     early_stopping=None,
     checkpoints=None,
-    trainer_kwargs=dict(limit_train_batches=10),
+    trainer_kwargs={"limit_train_batches": 10},
 )
 optimizer_config = OptimizerConfig()
 model_config = GatedAdditiveTreeEnsembleConfig(
