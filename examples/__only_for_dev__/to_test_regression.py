@@ -54,7 +54,7 @@ data_config = DataConfig(
 #     batch_norm_continuous_input=True,
 #     attention_pooling=True,
 # )
-model_config = CategoryEmbeddingModelConfig(task="regression", dropout=0.2, head_config=dict(layers="32-16"))
+model_config = CategoryEmbeddingModelConfig(task="regression", dropout=0.2, head_config={"layers": "32-16"})
 
 trainer_config = TrainerConfig(
     # checkpoints=None,

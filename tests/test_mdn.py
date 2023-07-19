@@ -48,11 +48,11 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="regression")
-        mdn_config = dict(num_gaussian=num_gaussian)
+        model_config_params = {"task": "regression"}
+        mdn_config = {"num_gaussian": num_gaussian}
         model_config_params["head_config"] = mdn_config
         model_config_params["backbone_config_class"] = variant
-        model_config_params["backbone_config_params"] = dict(task="backbone")
+        model_config_params["backbone_config_params"] = {"task": "backbone"}
 
         model_config = MDNConfig(**model_config_params)
         trainer_config = TrainerConfig(
@@ -109,11 +109,11 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(task="classification")
-        mdn_config = dict(num_gaussian=num_gaussian)
+        model_config_params = {"task": "classification"}
+        mdn_config = {"num_gaussian": num_gaussian}
         model_config_params["head_config"] = mdn_config
         model_config_params["backbone_config_class"] = "CategoryEmbeddingMDNConfig"
-        model_config_params["backbone_config_params"] = dict(task="backbone")
+        model_config_params["backbone_config_params"] = {"task": "backbone"}
 
         model_config = MDNConfig(**model_config_params)
         trainer_config = TrainerConfig(

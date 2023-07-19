@@ -17,9 +17,9 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
-from lightning_lite.utilities.seed import seed_everything
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
+from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.utilities.model_summary import summarize
@@ -155,8 +155,8 @@ class TabularModel:
             if self.config.target_range is not None:
                 if (
                     (len(self.config.target_range) != len(self.config.target))
-                    or any([len(range_) != 2 for range_ in self.config.target_range])
-                    or any([range_[0] > range_[1] for range_ in self.config.target_range])
+                    or any(len(range_) != 2 for range_ in self.config.target_range)
+                    or any(range_[0] > range_[1] for range_ in self.config.target_range)
                 ):
                     raise ValueError(
                         "Targe Range, if defined, should be list tuples of length two(min,max)."
@@ -1159,7 +1159,7 @@ class TabularModel:
             " Please set it explicitly.",
             DeprecationWarning,
         )
-        assert all([q <= 1 and q >= 0 for q in quantiles]), "Quantiles should be a decimal between 0 and 1"
+        assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
         if device is not None:
             if isinstance(device, str):
                 device = torch.device(device)
@@ -1328,7 +1328,7 @@ class TabularModel:
         self,
         path: Union[str, Path],
         kind: str = "pytorch",
-        onnx_export_params: Dict = dict(opset_version=12),
+        onnx_export_params: Dict = {"opset_version": 12},
     ) -> bool:
         """Saves the model for inference.
 
@@ -1362,7 +1362,7 @@ class TabularModel:
                 len(self.config.continuous_cols),
                 requires_grad=True,
             )
-            x = dict(continuous=cont, categorical=cat)
+            x = {"continuous": cont, "categorical": cat}
             torch.onnx.export(self.model, x, str(path), **onnx_export_params)
             return True
         else:
@@ -1380,5 +1380,6 @@ class TabularModel:
     def __str__(self) -> str:
         return self.summary()
 
-    def feature_importance(self):
+    def feature_importance(self) -> pd.DataFrame:
+        """Returns the feature importance of the model as a pandas DataFrame."""
         return self.model.feature_importance()

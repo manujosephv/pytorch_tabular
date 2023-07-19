@@ -179,3 +179,7 @@ For self-supervised learning, there is a different API because the process is di
     options:
         show_root_heading: yes
         heading_level: 4
+::: pytorch_tabular.TabularModel.feature_importance
+    options:
+        show_root_heading: yes
+        heading_level: 4

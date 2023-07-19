@@ -9,8 +9,7 @@ def mixup(batch: Dict, lam: float = 0.5) -> Dict:
     taking random rows.
 
     :param batch: Tensor on which apply the mixup augmentation
-    :param lam: weight in the linear combination between the original values
-        and the random permutation
+    :param lam: weight in the linear combination between the original values and the random permutation
     """
     result = {}
     for key, value in batch.items():
@@ -24,7 +23,7 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
     """Define how apply cutmix to a tensor.
 
     :param batch: Tensor on which apply the cutmix augmentation
-    :param lam: probability values have 0 in a binary random mask, so it means probability original values will     be
+    :param lam: probability values have 0 in a binary random mask, so it means probability original values will be
         updated
     """
     result = {}

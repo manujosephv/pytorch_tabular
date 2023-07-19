@@ -24,7 +24,7 @@ class MultiTaskHead(nn.Module):
         self.numerical_linear = nn.Linear(in_features, n_numerical) if n_numerical else None
 
     def forward(self, features):
-        outputs = dict()
+        outputs = {}
 
         if self.binary_linear:
             outputs["binary"] = self.binary_linear(features)

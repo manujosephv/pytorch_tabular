@@ -13,7 +13,11 @@ repos:
       - id: end-of-file-fixer
         exclude: 'setup.cfg'
       - id: trailing-whitespace
-        exclude: ^docs/
+        exclude: |
+              (?x)(
+                  docs/|
+                  setup.cfg
+                  )
       - id: check-case-conflict
       - id: check-yaml
       - id: check-toml
@@ -23,14 +27,14 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.4.0
+    rev: v3.9.0
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
         name: Upgrade code
 
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.1
+    rev: v1.7.5
     hooks:
       - id: docformatter
         args: [--in-place, --wrap-summaries=120, --wrap-descriptions=120]
@@ -41,7 +45,7 @@ repos:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.7.0
     hooks:
       - id: black
         name: Black code
@@ -60,12 +64,12 @@ repos:
                   README.md
                   )
   - repo: https://github.com/asottile/yesqa
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: yesqa
 
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.269
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.278
     hooks:
       - id: ruff
         args: ["--fix"]

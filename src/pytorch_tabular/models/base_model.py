@@ -104,7 +104,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     config.metrics.append(metric.__name__)
                     config.metrics_params.append(vars(metric))
             if config.task == "classification":
-                config.metrics_prob_inputs = self.custom_metrics_prob_inputs
+                config.metrics_prob_input = self.custom_metrics_prob_inputs
         # Updating default metrics in config
         elif config.task == "classification":
             # Adding metric_params to config for classification task
@@ -515,7 +515,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         # Overlay both histograms
         fig.update_layout(
             barmode="overlay",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
         )
         # Reduce opacity to see both histograms
         fig.update_traces(opacity=0.5)
@@ -536,7 +536,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         reset_all_weights(self.head)
         reset_all_weights(self.embedding_layer)
 
-    def feature_importance(self):
+    def feature_importance(self) -> pd.DataFrame:
+        """Returns a dataframe with feature importance for the model."""
         if hasattr(self.backbone, "feature_importance_"):
             imp = self.backbone.feature_importance_
             n_feat = len(self.hparams.categorical_cols + self.hparams.continuous_cols)

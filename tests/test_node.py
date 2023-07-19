@@ -48,12 +48,12 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(
-            task="regression",
-            depth=2,
-            num_trees=50,
-            embed_categorical=embed_categorical,
-        )
+        model_config_params = {
+            "task": "regression",
+            "depth": 2,
+            "num_trees": 50,
+            "embed_categorical": embed_categorical,
+        }
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -117,12 +117,12 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(
-            task="classification",
-            depth=2,
-            num_trees=50,
-            embed_categorical=embed_categorical,
-        )
+        model_config_params = {
+            "task": "classification",
+            "depth": 2,
+            "num_trees": 50,
+            "embed_categorical": embed_categorical,
+        }
         model_config = NodeConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=1,
@@ -161,7 +161,7 @@ def test_embedding_transformer(regression_data):
         ],
         categorical_cols=["HouseAgeBin"],
     )
-    model_config_params = dict(task="regression", depth=2, num_trees=50, embed_categorical=True)
+    model_config_params = {"task": "regression", "depth": 2, "num_trees": 50, "embed_categorical": True}
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=1,
@@ -184,4 +184,4 @@ def test_embedding_transformer(regression_data):
     train_transform = transformer.fit_transform(train)
     embed_cols = [col for col in train_transform.columns if "HouseAgeBin_embed_dim" in col]
     assert len(train["HouseAgeBin"].unique()) + 1 == len(transformer._mapping["HouseAgeBin"].keys())
-    assert all([val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values()])
+    assert all(val.shape[0] == len(embed_cols) for val in transformer._mapping["HouseAgeBin"].values())

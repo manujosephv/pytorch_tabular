@@ -231,7 +231,7 @@ class InferredConfig:
     def __post_init__(self):
         if self.embedding_dims is not None:
             assert all(
-                [(isinstance(t, Iterable) and len(t) == 2) for t in self.embedding_dims]
+                (isinstance(t, Iterable) and len(t) == 2) for t in self.embedding_dims
             ), "embedding_dims must be a list of tuples (cardinality, embedding_dim)"
             self.embedded_cat_dim = sum([t[1] for t in self.embedding_dims])
         else:
@@ -468,7 +468,7 @@ class TrainerConfig:
         metadata={"help": "The number of epochs to wait until there is no further improvements in loss/metric"},
     )
     early_stopping_kwargs: Optional[Dict[str, Any]] = field(
-        default_factory=lambda: dict(),
+        default_factory=lambda: {},
         metadata={
             "help": "Additional keyword arguments for the early stopping callback."
             " See the documentation for the PyTorch Lightning EarlyStopping callback for more details."
@@ -505,7 +505,7 @@ class TrainerConfig:
         metadata={"help": "The number of best models to save"},
     )
     checkpoints_kwargs: Optional[Dict[str, Any]] = field(
-        default_factory=lambda: dict(),
+        default_factory=lambda: {},
         metadata={
             "help": "Additional keyword arguments for the checkpoints callback. See the documentation"
             " for the PyTorch Lightning ModelCheckpoint callback for more details."
