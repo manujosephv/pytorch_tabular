@@ -12,9 +12,7 @@ from .logger import get_logger
 
 _PATH = Union[str, Path]
 _DEVICE = Union[torch.device, str, int]
-_MAP_LOCATION_TYPE = Optional[
-    Union[_DEVICE, Callable[[_DEVICE], _DEVICE], Dict[_DEVICE, _DEVICE]]
-]
+_MAP_LOCATION_TYPE = Optional[Union[_DEVICE, Callable[[_DEVICE], _DEVICE], Dict[_DEVICE, _DEVICE]]]
 
 
 logger = get_logger(__name__)
@@ -41,12 +39,7 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
             continue
         atr = dataclass.__dataclass_fields__[key]
         if atr.init:
-            type = (
-                str(atr.type)
-                .replace("<class '", "")
-                .replace("'>", "")
-                .replace("typing.", "")
-            )
+            type = str(atr.type).replace("<class '", "").replace("'>", "").replace("typing.", "")
             help_str = atr.metadata.get("help", "")
             if "choices" in atr.metadata.keys():
                 help_str += f'. Choices are: [{",".join(["`"+str(ch)+"`" for ch in atr.metadata["choices"]])}].'

@@ -5,11 +5,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.layers import (
-    Add,
-    Embedding1dLayer,
-    GatedFeatureLearningUnit,
-)
+from pytorch_tabular.models.common.layers import Add, Embedding1dLayer, GatedFeatureLearningUnit
 from pytorch_tabular.models.common.layers.activations import t_softmax
 from pytorch_tabular.utils import get_logger
 
@@ -67,13 +63,7 @@ class GANDALFBackbone(nn.Module):
 
     @property
     def feature_importance_(self):
-        return (
-            self.gflus.feature_mask_function(self.gflus.feature_masks)
-            .sum(dim=0)
-            .detach()
-            .cpu()
-            .numpy()
-        )
+        return self.gflus.feature_mask_function(self.gflus.feature_masks).sum(dim=0).detach().cpu().numpy()
 
 
 class GANDALFModel(BaseModel):
@@ -107,17 +97,13 @@ class GANDALFModel(BaseModel):
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
-        self.T0 = nn.Parameter(
-            torch.rand(self.hparams.output_dim), requires_grad=True
-        )
+        self.T0 = nn.Parameter(torch.rand(self.hparams.output_dim), requires_grad=True)
         self._head = nn.Sequential(self._get_head_from_config(), Add(self.T0))
 
     def data_aware_initialization(self, datamodule):
         if self.hparams.task == "regression":
             logger.info("Data Aware Initialization of T0")
             # Need a big batch to initialize properly
-            alt_loader = datamodule.train_dataloader(
-                batch_size=self.hparams.data_aware_init_batch_size
-            )
+            alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
             batch = next(iter(alt_loader))
             self.T0.data = torch.mean(batch["target"], dim=0)

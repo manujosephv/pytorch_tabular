@@ -47,10 +47,7 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(
-            task="regression",
-            gflu_stages=1
-        )
+        model_config_params = dict(task="regression", gflu_stages=1)
         if target_range:
             _target_range = []
             for target in data_config.target:
@@ -112,10 +109,7 @@ def test_classification(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = dict(
-            task="classification",
-            gflu_stages=1
-        )
+        model_config_params = dict(task="classification", gflu_stages=1)
         model_config = GANDALFConfig(**model_config_params)
         trainer_config = TrainerConfig(
             max_epochs=1,

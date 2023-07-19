@@ -34,9 +34,7 @@ class ModuleWithInit(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self._is_initialized_tensor = nn.Parameter(
-            torch.tensor(0, dtype=torch.uint8), requires_grad=False
-        )
+        self._is_initialized_tensor = nn.Parameter(torch.tensor(0, dtype=torch.uint8), requires_grad=False)
         self._is_initialized_bool = None
         # Note: this module uses a separate flag self._is_initialized so as to achieve both
         # * persistence: is_initialized is saved alongside model in state_dict
@@ -62,6 +60,7 @@ class Add(nn.Module):
 
     def __init__(self, add_value: Union[float, torch.Tensor]):
         """Initialize the module.
+
         Args:
             add_value: The value to add to the input
         """

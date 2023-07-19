@@ -12,11 +12,11 @@ from pytorch_tabular.feature_extractor import DeepFeatureExtractor
 from pytorch_tabular.models import (
     AutoIntConfig,
     CategoryEmbeddingModelConfig,
-    NodeConfig,
-    TabNetModelConfig,
     FTTransformerConfig,
     GANDALFConfig,
     GatedAdditiveTreeEnsembleConfig,
+    NodeConfig,
+    TabNetModelConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
@@ -192,6 +192,7 @@ def test_feature_extractor(
     dt = DeepFeatureExtractor(tabular_model)
     enc_df = dt.fit_transform(test)
     assert any([col for col in enc_df.columns if "backbone" in col])
+
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_IMP_TEST)
 @pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
@@ -388,9 +389,7 @@ def test_save_for_inference(
         sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx",
         kind=save_type,
     )
-    assert os.path.exists(
-        sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx"
-    )
+    assert os.path.exists(sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx")
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_EXT_TEST)

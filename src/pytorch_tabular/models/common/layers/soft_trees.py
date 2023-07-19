@@ -75,14 +75,10 @@ class ODST(ModuleWithInit):
             threshold_init_cutoff,
         )
 
-        self.response = nn.Parameter(
-            torch.zeros([num_trees, tree_output_dim, 2**depth]), requires_grad=True
-        )
+        self.response = nn.Parameter(torch.zeros([num_trees, tree_output_dim, 2**depth]), requires_grad=True)
         initialize_response_(self.response)
 
-        self.feature_selection_logits = nn.Parameter(
-            torch.zeros([in_features, num_trees, depth]), requires_grad=True
-        )
+        self.feature_selection_logits = nn.Parameter(torch.zeros([in_features, num_trees, depth]), requires_grad=True)
         initialize_selection_logits_(self.feature_selection_logits)
 
         self.feature_thresholds = nn.Parameter(
@@ -98,9 +94,7 @@ class ODST(ModuleWithInit):
         with torch.no_grad():
             indices = torch.arange(2**self.depth)
             offsets = 2 ** torch.arange(self.depth)
-            bin_codes = (indices.view(1, -1) // offsets.view(-1, 1) % 2).to(
-                torch.float32
-            )
+            bin_codes = (indices.view(1, -1) // offsets.view(-1, 1) % 2).to(torch.float32)
             bin_codes_1hot = torch.stack([bin_codes, 1.0 - bin_codes], dim=-1)
             self.bin_codes_1hot = nn.Parameter(bin_codes_1hot, requires_grad=False)
             # ^-- [depth, 2 ** depth, 2]
@@ -108,9 +102,7 @@ class ODST(ModuleWithInit):
     def forward(self, input):
         assert len(input.shape) >= 2
         if len(input.shape) > 2:
-            return self.forward(input.view(-1, input.shape[-1])).view(
-                *input.shape[:-1], -1
-            )
+            return self.forward(input.view(-1, input.shape[-1])).view(*input.shape[:-1], -1)
         # new input shape: [batch_size, in_features]
 
         feature_logits = self.feature_selection_logits
@@ -120,9 +112,7 @@ class ODST(ModuleWithInit):
         feature_values = torch.einsum("bi,ind->bnd", input, feature_selectors)
         # ^--[batch_size, num_trees, depth]
 
-        threshold_logits = (feature_values - self.feature_thresholds) * torch.exp(
-            -self.log_temperatures
-        )
+        threshold_logits = (feature_values - self.feature_thresholds) * torch.exp(-self.log_temperatures)
 
         threshold_logits = torch.stack([-threshold_logits, threshold_logits], dim=-1)
         # ^--[batch_size, num_trees, depth, 2]
@@ -151,9 +141,7 @@ class ODST(ModuleWithInit):
                 "You can do so manually before training. Use with torch.no_grad() for memory efficiency."
             )
         with torch.no_grad():
-            feature_selectors = self.choice_function(
-                self.feature_selection_logits, dim=0
-            )
+            feature_selectors = self.choice_function(self.feature_selection_logits, dim=0)
             # ^--[in_features, num_trees, depth]
 
             feature_values = torch.einsum("bi,ind->bnd", input, feature_selectors)
@@ -186,9 +174,7 @@ class ODST(ModuleWithInit):
 
             # if threshold_init_cutoff > 1, scale everything down by it
             temperatures /= max(1.0, self.threshold_init_cutoff)
-            self.log_temperatures.data[...] = torch.log(
-                torch.as_tensor(temperatures) + eps
-            )
+            self.log_temperatures.data[...] = torch.log(torch.as_tensor(temperatures) + eps)
 
     def __repr__(self):
         return "{}(in_features={}, num_trees={}, depth={}, tree_dim={}, flatten_output={})".format(
@@ -227,15 +213,11 @@ class NeuralDecisionStump(nn.Module):
         beta = random.uniform(0.5, 10.0)
         # with torch.no_grad():
         feature_mask = (
-            torch.distributions.Beta(torch.tensor([alpha]), torch.tensor([beta]))
-            .sample((self.n_features,))
-            .squeeze(-1)
+            torch.distributions.Beta(torch.tensor([alpha]), torch.tensor([beta])).sample((self.n_features,)).squeeze(-1)
         )
         self.feature_mask = nn.Parameter(feature_mask, requires_grad=True)
         if self.feature_mask_function.__name__ == "t_softmax":
-            t = RSoftmax.calculate_t(
-                self.feature_mask, r=torch.tensor([self.feature_sparsity])
-            )
+            t = RSoftmax.calculate_t(self.feature_mask, r=torch.tensor([self.feature_sparsity]))
             self.t = nn.Parameter(t, requires_grad=self.learnable_sparsity)
         W = torch.linspace(
             1.0,
@@ -247,13 +229,9 @@ class NeuralDecisionStump(nn.Module):
 
         cutpoints = torch.rand([self.n_features, self._num_cutpoints])
         # Append zeros to the beginning of each row
-        cutpoints = torch.cat(
-            [torch.zeros([self.n_features, 1], device=cutpoints.device), cutpoints], 1
-        )
+        cutpoints = torch.cat([torch.zeros([self.n_features, 1], device=cutpoints.device), cutpoints], 1)
         self.cut_points = nn.Parameter(cutpoints, requires_grad=True)
-        self.leaf_responses = nn.Parameter(
-            torch.rand(self.n_features, self._num_leaf), requires_grad=True
-        )
+        self.leaf_responses = nn.Parameter(torch.rand(self.n_features, self._num_leaf), requires_grad=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.feature_mask_function.__name__ == "t_softmax":
@@ -315,9 +293,7 @@ class NeuralDecisionTree(nn.Module):
             layer_nodes = []
             layer_feature_masks = []
             for n in range(max(2 ** (d), 1)):
-                leaf_nodes, feature_mask = self._modules[f"decision_stump_{d}_{n}"](
-                    tree_input
-                )
+                leaf_nodes, feature_mask = self._modules[f"decision_stump_{d}_{n}"](tree_input)
                 layer_nodes.append(leaf_nodes)
                 layer_feature_masks.append(feature_mask)
             layer_nodes = torch.cat(layer_nodes, dim=1)

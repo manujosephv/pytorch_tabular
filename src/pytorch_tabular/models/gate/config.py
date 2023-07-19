@@ -170,8 +170,9 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
     def __post_init__(self):
         assert self.tree_depth > 0, "tree_depth should be greater than 0"
         # Either gflu_stages or num_trees should be greater than 0
-        assert self.num_trees > 0, ("`num_trees` must be greater than 0."
-            "If you want a lighter model which performs better, use GANDALF.")
+        assert self.num_trees > 0, (
+            "`num_trees` must be greater than 0." "If you want a lighter model which performs better, use GANDALF."
+        )
         super().__post_init__()
 
 

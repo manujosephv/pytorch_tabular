@@ -5,19 +5,12 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.layers.activations import (
-    entmax15,
-    entmoid15,
-    sparsemax,
-    sparsemoid,
-    t_softmax,
-)
 from pytorch_tabular.models.common.heads import blocks
-from pytorch_tabular.models.common.layers import Embedding1dLayer, Add
+from pytorch_tabular.models.common.layers import Add, Embedding1dLayer, GatedFeatureLearningUnit, NeuralDecisionTree
+from pytorch_tabular.models.common.layers.activations import entmax15, entmoid15, sparsemax, sparsemoid, t_softmax
 from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel
-from pytorch_tabular.models.common.layers import GatedFeatureLearningUnit, NeuralDecisionTree
 
 logger = get_logger(__name__)
 
@@ -80,9 +73,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         self._embedded_cat_features = sum([y for x, y in cat_embedding_dims])
         self.n_features = self._embedded_cat_features + n_continuous_features
         self.embedding_dropout = embedding_dropout
-        self.output_dim = (
-            2**self.tree_depth if self.num_trees > 0 else self.n_features
-        )
+        self.output_dim = 2**self.tree_depth if self.num_trees > 0 else self.n_features
         self.gflu_feature_init_sparsity = gflu_feature_init_sparsity
         self.tree_feature_init_sparsity = tree_feature_init_sparsity
         self.learnable_sparsity = learnable_sparsity
@@ -103,9 +94,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
                 [
                     NeuralDecisionTree(
                         depth=self.tree_depth,
-                        n_features=self.n_features + 2**self.tree_depth * t
-                        if self.chain_trees
-                        else self.n_features,
+                        n_features=self.n_features + 2**self.tree_depth * t if self.chain_trees else self.n_features,
                         dropout=self.tree_dropout,
                         binning_activation=self.binning_activation,
                         feature_mask_function=self.feature_mask_function,
@@ -137,9 +126,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         if self.num_trees > 0:
             # Decision Tree
             tree_outputs = []
-            tree_feature_masks = (
-                []
-            )  # TODO make this optional and create feat importance
+            tree_feature_masks = []  # TODO make this optional and create feat importance
             tree_input = x
             for i in range(self.num_trees):
                 tree_output, feat_masks = self.trees[i](tree_input)
@@ -150,9 +137,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
             tree_outputs = torch.cat(tree_outputs, dim=-1)
             if self.tree_wise_attention:
                 tree_outputs = tree_outputs.permute(2, 0, 1)
-                tree_outputs, _ = self.tree_attention(
-                    tree_outputs, tree_outputs, tree_outputs
-                )
+                tree_outputs, _ = self.tree_attention(tree_outputs, tree_outputs, tree_outputs)
                 tree_outputs = tree_outputs.permute(1, 2, 0)
             return tree_outputs
         else:
@@ -160,13 +145,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
 
     @property
     def feature_importance_(self):
-        return (
-            self.gflus.feature_mask_function(self.gflus.feature_masks)
-            .sum(dim=0)
-            .detach()
-            .cpu()
-            .numpy()
-        )
+        return self.gflus.feature_mask_function(self.gflus.feature_masks).sum(dim=0).detach().cpu().numpy()
 
 
 class CustomHead(nn.Module):
@@ -184,17 +163,11 @@ class CustomHead(nn.Module):
         if self.hparams.share_head_weights:
             self.head = self._get_head_from_config()
         else:
-            self.head = nn.ModuleList(
-                [self._get_head_from_config() for _ in range(self.hparams.num_trees)]
-            )
+            self.head = nn.ModuleList([self._get_head_from_config() for _ in range(self.hparams.num_trees)])
         # random parameter with num_trees elements
-        self.eta = nn.Parameter(
-            torch.rand(self.hparams.num_trees, requires_grad=True)
-        )
+        self.eta = nn.Parameter(torch.rand(self.hparams.num_trees, requires_grad=True))
         if self.hparams.task == "regression":
-            self.T0 = nn.Parameter(
-                torch.rand(self.hparams.output_dim), requires_grad=True
-            )
+            self.T0 = nn.Parameter(torch.rand(self.hparams.output_dim), requires_grad=True)
 
     def _get_head_from_config(self):
         _head_callable = getattr(blocks, self.hparams.head)
@@ -209,10 +182,7 @@ class CustomHead(nn.Module):
         if not self.hparams.share_head_weights:
             # B x T X Output
             y_hat = torch.cat(
-                [
-                    h(backbone_features[:, :, i]).unsqueeze(1)
-                    for i, h in enumerate(self.head)
-                ],
+                [h(backbone_features[:, :, i]).unsqueeze(1) for i, h in enumerate(self.head)],
                 dim=1,
             )
         else:
@@ -270,9 +240,7 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
         self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
         if self.hparams.num_trees == 0:
-            self.T0 = nn.Parameter(
-                torch.rand(self.hparams.output_dim), requires_grad=True
-            )
+            self.T0 = nn.Parameter(torch.rand(self.hparams.output_dim), requires_grad=True)
             self._head = nn.Sequential(self._get_head_from_config(), Add(self.T0))
         else:
             self._head = CustomHead(self.backbone.output_dim, self.hparams)
@@ -281,9 +249,7 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
         if self.hparams.task == "regression":
             logger.info("Data Aware Initialization of T0")
             # Need a big batch to initialize properly
-            alt_loader = datamodule.train_dataloader(
-                batch_size=self.hparams.data_aware_init_batch_size
-            )
+            alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
             batch = next(iter(alt_loader))
             t0 = torch.mean(batch["target"], dim=0)
             if self.hparams.num_trees != 0:

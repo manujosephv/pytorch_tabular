@@ -10,9 +10,7 @@ logger = get_logger(__name__)
 
 
 def _make_smooth_weights_for_balanced_classes(y_train, mu=1.0):
-    labels_dict = {
-        label: count for label, count in zip(np.unique(y_train), np.bincount(y_train))
-    }
+    labels_dict = {label: count for label, count in zip(np.unique(y_train), np.bincount(y_train))}
     total = np.sum(list(labels_dict.values()))
     keys = sorted(labels_dict.keys())
     weight = []
@@ -39,9 +37,7 @@ def get_balanced_sampler(y_train):
     class_weights = 1.0 / torch.Tensor(class_sample_counts)
     train_samples_weight = [class_weights[class_id] for class_id in y_train]
     # now lets initialize samplers
-    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(
-        train_samples_weight, len(y_train)
-    )
+    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(train_samples_weight, len(y_train))
     return train_sampler
 
 

@@ -43,9 +43,7 @@ class MultiHeadedAttention(nn.Module):
         keep_attn: bool = True,
     ):
         super().__init__()
-        assert (
-            input_dim % num_heads == 0
-        ), "'input_dim' must be multiples of 'num_heads'"
+        assert input_dim % num_heads == 0, "'input_dim' must be multiples of 'num_heads'"
         inner_dim = head_dim * num_heads
         self.n_heads = num_heads
         self.scale = head_dim**-0.5
@@ -102,9 +100,7 @@ class TransformerEncoderBlock(nn.Module):
         self.mha = MultiHeadedAttention(
             input_embed_dim,
             num_heads,
-            head_dim=input_embed_dim
-            if transformer_head_dim is None
-            else transformer_head_dim,
+            head_dim=input_embed_dim if transformer_head_dim is None else transformer_head_dim,
             dropout=attn_dropout,
             keep_attn=keep_attn,
         )

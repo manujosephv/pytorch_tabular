@@ -49,33 +49,21 @@ class GatedFeatureLearningUnit(nn.Module):
 
     def _build_network(self):
         self.W_in = nn.ModuleList(
-            [
-                nn.Linear(2 * self.n_features_in, 2 * self.n_features_in)
-                for _ in range(self.n_stages)
-            ]
+            [nn.Linear(2 * self.n_features_in, 2 * self.n_features_in) for _ in range(self.n_stages)]
         )
         self.W_out = nn.ModuleList(
-            [
-                nn.Linear(2 * self.n_features_in, self.n_features_in)
-                for _ in range(self.n_stages)
-            ]
+            [nn.Linear(2 * self.n_features_in, self.n_features_in) for _ in range(self.n_stages)]
         )
 
         self.feature_masks = self._create_feature_mask()
         if self.feature_mask_function.__name__ == "t_softmax":
-            t = RSoftmax.calculate_t(
-                self.feature_masks, r=torch.tensor([self.feature_sparsity]), dim=-1
-            )
+            t = RSoftmax.calculate_t(self.feature_masks, r=torch.tensor([self.feature_sparsity]), dim=-1)
             self.t = nn.Parameter(t, requires_grad=self.learnable_sparsity)
         self.dropout = nn.Dropout(self._dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h = x
-        t = (
-            torch.relu(self.t)
-            if self.feature_mask_function.__name__ == "t_softmax"
-            else None
-        )
+        t = torch.relu(self.t) if self.feature_mask_function.__name__ == "t_softmax" else None
         for d in range(self.n_stages):
             if self.feature_mask_function.__name__ == "t_softmax":
                 feature = self.feature_mask_function(self.feature_masks[d], t[d]) * x
@@ -191,9 +179,7 @@ class GEGLU(nn.Module):
             dropout: dropout probability
         """
         super().__init__()
-        self.ffn = PositionWiseFeedForward(
-            d_model, d_ff, dropout, nn.GELU(), True, False, False, False
-        )
+        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.GELU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -210,9 +196,7 @@ class ReGLU(nn.Module):
             dropout: dropout probability
         """
         super().__init__()
-        self.ffn = PositionWiseFeedForward(
-            d_model, d_ff, dropout, nn.ReLU(), True, False, False, False
-        )
+        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.ReLU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -227,9 +211,7 @@ class SwiGLU(nn.Module):
             dropout: dropout probability
         """
         super().__init__()
-        self.ffn = PositionWiseFeedForward(
-            d_model, d_ff, dropout, nn.SiLU(), True, False, False, False
-        )
+        self.ffn = PositionWiseFeedForward(d_model, d_ff, dropout, nn.SiLU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)

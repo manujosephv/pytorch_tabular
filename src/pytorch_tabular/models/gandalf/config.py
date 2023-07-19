@@ -16,13 +16,13 @@ class GANDALFConfig(ModelConfig):
 
         gflu_dropout (float): Dropout rate for the feature abstraction layer. Defaults to 0.0
 
-        gflu_feature_init_sparsity (float): Only valid for t-softmax. The perecentge of features 
-                to be selected in each GFLU stage. This is just initialized and during learning 
+        gflu_feature_init_sparsity (float): Only valid for t-softmax. The perecentge of features
+                to be selected in each GFLU stage. This is just initialized and during learning
                 it may change. Defaults to 0.3
 
-        learnable_sparsity (bool): Only valid for t-softmax. If True, the sparsity parameters 
-                will be learned. If False, the sparsity parameters will be fixed to the initial 
-                values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`. 
+        learnable_sparsity (bool): Only valid for t-softmax. If True, the sparsity parameters
+                will be learned. If False, the sparsity parameters will be fixed to the initial
+                values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`.
                 Defaults to True
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which

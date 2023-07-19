@@ -1,14 +1,4 @@
-from . import (
-    autoint,
-    category_embedding,
-    ft_transformer,
-    gandalf,
-    gate,
-    mixture_density,
-    node,
-    tab_transformer,
-    tabnet,
-)
+from . import autoint, category_embedding, ft_transformer, gandalf, gate, mixture_density, node, tab_transformer, tabnet
 from .autoint import AutoIntConfig, AutoIntModel
 from .base_model import BaseModel
 from .category_embedding import CategoryEmbeddingModel, CategoryEmbeddingModelConfig

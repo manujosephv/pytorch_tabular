@@ -1,8 +1,4 @@
-from .data_utils import (
-    get_balanced_sampler,
-    get_class_weighted_cross_entropy,
-    get_gaussian_centers,
-)
+from .data_utils import get_balanced_sampler, get_class_weighted_cross_entropy, get_gaussian_centers
 from .logger import get_logger
 from .nn_utils import (
     _initialize_kaiming,
@@ -12,7 +8,7 @@ from .nn_utils import (
     reset_all_weights,
     to_one_hot,
 )
-from .python_utils import generate_doc_dataclass, getattr_nested, ifnone, pl_load, check_numpy
+from .python_utils import check_numpy, generate_doc_dataclass, getattr_nested, ifnone, pl_load
 
 __all__ = [
     "get_logger",
@@ -29,5 +25,5 @@ __all__ = [
     "_make_ix_like",
     "to_one_hot",
     "_initialize_kaiming",
-    "check_numpy"
+    "check_numpy",
 ]

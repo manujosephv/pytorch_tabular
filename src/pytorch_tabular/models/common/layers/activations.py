@@ -7,7 +7,6 @@ from torch.autograd import Function
 from torch.jit import script
 
 
-
 class Entmoid15(Function):
     """A highly optimized equivalent of labda x: Entmax15([x, 0])"""
 

@@ -18,9 +18,7 @@ def _initialize_layers(activation, initialization, layers):
             nonlinearity = "leaky_relu"
         else:
             if initialization == "kaiming":
-                logger.warning(
-                    "Kaiming initialization is only recommended for ReLU and LeakyReLU."
-                )
+                logger.warning("Kaiming initialization is only recommended for ReLU and LeakyReLU.")
                 nonlinearity = "leaky_relu"
             else:
                 nonlinearity = "relu"
@@ -30,17 +28,13 @@ def _initialize_layers(activation, initialization, layers):
         elif initialization == "xavier":
             nn.init.xavier_normal_(
                 layers.weight,
-                gain=nn.init.calculate_gain(nonlinearity)
-                if activation in ["ReLU", "LeakyReLU"]
-                else 1,
+                gain=nn.init.calculate_gain(nonlinearity) if activation in ["ReLU", "LeakyReLU"] else 1,
             )
         elif initialization == "random":
             nn.init.normal_(layers.weight)
 
 
-def _linear_dropout_bn(
-    activation, initialization, use_batch_norm, in_units, out_units, dropout
-):
+def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out_units, dropout):
     if isinstance(activation, str):
         _activation = getattr(nn, activation)
     else:
@@ -78,6 +72,7 @@ def reset_all_weights(model: nn.Module) -> None:
     # Applies fn recursively to every submodule see: https://pytorch.org/docs/stable/generated/torch.nn.Module.html
     model.apply(fn=weight_reset)
 
+
 def to_one_hot(y, depth=None):
     r"""Takes integer with n dims and converts it to 1-hot representation with n + 1 dims.
 
@@ -88,9 +83,7 @@ def to_one_hot(y, depth=None):
     """
     y_flat = y.to(torch.int64).view(-1, 1)
     depth = depth if depth is not None else int(torch.max(y_flat)) + 1
-    y_one_hot = torch.zeros(y_flat.size()[0], depth, device=y.device).scatter_(
-        1, y_flat, 1
-    )
+    y_one_hot = torch.zeros(y_flat.size()[0], depth, device=y.device).scatter_(1, y_flat, 1)
     y_one_hot = y_one_hot.view(*(tuple(y.shape) + (-1,)))
     return y_one_hot
 
@@ -111,7 +104,4 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
     elif initialization is None:
         pass
     else:
-        raise NotImplementedError(
-            "initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`"
-        )
-
+        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")

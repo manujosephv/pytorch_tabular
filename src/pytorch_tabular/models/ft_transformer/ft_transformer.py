@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Feature Tokenizer Transformer Model."""
-import math
 from collections import OrderedDict
 
 import torch
@@ -10,7 +9,7 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from ..base_model import BaseModel
-from ..common.layers import Embedding2dLayer, TransformerEncoderBlock, AppendCLSToken
+from ..common.layers import AppendCLSToken, Embedding2dLayer, TransformerEncoderBlock
 
 
 class FTTransformerBackbone(nn.Module):
@@ -87,12 +86,8 @@ class FTTransformerBackbone(nn.Module):
         self.local_feature_importance = torch.zeros((n, f), device=device)
         for attn_weights in self.attention_weights_:
             self.local_feature_importance += attn_weights[:, :, :, -1].sum(dim=1)
-        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[
-            :, :-1
-        ]
-        self.feature_importance_ = (
-            self.local_feature_importance.mean(dim=0).detach().cpu().numpy()
-        )
+        self.local_feature_importance = (1 / (h * L)) * self.local_feature_importance[:, :-1]
+        self.feature_importance_ = self.local_feature_importance.mean(dim=0).detach().cpu().numpy()
         # self.feature_importance_count_+=attn_weights.shape[0]
 
 
@@ -124,6 +119,4 @@ class FTTransformerModel(BaseModel):
         if self.hparams.attn_feature_importance:
             return super().feature_importance()
         else:
-            raise ValueError(
-                "If you want Feature Importance, `attn_feature_weights` should be `True`."
-            )
+            raise ValueError("If you want Feature Importance, `attn_feature_weights` should be `True`.")
