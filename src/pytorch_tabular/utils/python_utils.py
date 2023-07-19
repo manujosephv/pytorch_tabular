@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, IO, Optional, Union
 
 import numpy as np
 import torch
+
 try:  # for 1.8
     from pytorch_lightning.utilities.cloud_io import get_filesystem
 except ImportError:  # for 1.9
