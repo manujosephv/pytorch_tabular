@@ -34,7 +34,7 @@ repos:
         name: Upgrade code
 
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.4
+    rev: v1.7.5
     hooks:
       - id: docformatter
         args: [--in-place, --wrap-summaries=120, --wrap-descriptions=120]
@@ -69,7 +69,7 @@ repos:
       - id: yesqa
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.277
+    rev: v0.0.278
     hooks:
       - id: ruff
         args: ["--fix"]
