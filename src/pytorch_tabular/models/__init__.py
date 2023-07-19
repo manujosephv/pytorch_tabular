@@ -1,8 +1,9 @@
-from . import autoint, category_embedding, gate, mixture_density, node, tabnet
+from . import autoint, category_embedding, ft_transformer, gandalf, gate, mixture_density, node, tab_transformer, tabnet
 from .autoint import AutoIntConfig, AutoIntModel
 from .base_model import BaseModel
 from .category_embedding import CategoryEmbeddingModel, CategoryEmbeddingModelConfig
 from .ft_transformer import FTTransformerConfig, FTTransformerModel
+from .gandalf import GANDALFBackbone, GANDALFConfig, GANDALFModel
 from .gate import GatedAdditiveTreeEnsembleConfig, GatedAdditiveTreeEnsembleModel
 from .mixture_density import MDNConfig, MDNModel
 from .node import NodeConfig, NODEModel
@@ -27,11 +28,16 @@ __all__ = [
     "FTTransformerModel",
     "GatedAdditiveTreeEnsembleConfig",
     "GatedAdditiveTreeEnsembleModel",
+    "GANDALFConfig",
+    "GANDALFModel",
+    "GANDALFBackbone",
     "category_embedding",
     "node",
     "mixture_density",
     "tabnet",
     "autoint",
+    "ft_transformer",
     "tab_transformer",
     "gate",
+    "gandalf",
 ]

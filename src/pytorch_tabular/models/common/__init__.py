@@ -1,3 +1,4 @@
-from pytorch_tabular.models.common import activations, heads, layers, utils
+from pytorch_tabular.models.common import heads, layers
+from pytorch_tabular.models.common.layers import activations
 
-__all__ = ["activations", "layers", "utils", "heads"]
+__all__ = ["activations", "layers", "heads"]

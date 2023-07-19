@@ -9,6 +9,9 @@
 ::: pytorch_tabular.models.FTTransformerConfig
     options:
             heading_level: 3
+::: pytorch_tabular.models.GANDALFConfig
+    options:
+            heading_level: 3
 ::: pytorch_tabular.models.GatedAdditiveTreeEnsembleConfig
     options:
             heading_level: 3
@@ -37,6 +40,9 @@
     options:
             heading_level: 3
 ::: pytorch_tabular.models.FTTransformerModel
+    options:
+            heading_level: 3
+::: pytorch_tabular.models.GANDALFModel
     options:
             heading_level: 3
 ::: pytorch_tabular.models.GatedAdditiveTreeEnsembleModel

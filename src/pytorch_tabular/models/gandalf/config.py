@@ -1,44 +1,29 @@
 # Pytorch Tabular
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
-"""GatedAdditiveTreeEnsembleConfig Config."""
+"""AutomaticFeatureInteraction Config."""
 from dataclasses import dataclass, field
 
 from pytorch_tabular.config import ModelConfig
 
 
 @dataclass
-class GatedAdditiveTreeEnsembleConfig(ModelConfig):
-    """Gated Additive Tree Ensemble Config.
+class GANDALFConfig(ModelConfig):
+    """Gated Adaptive Network for Deep Automated Learning of Features (GANDALF) Config.
 
     Args:
         gflu_stages (int): Number of layers in the feature abstraction layer. Defaults to 6
 
         gflu_dropout (float): Dropout rate for the feature abstraction layer. Defaults to 0.0
 
-        tree_depth (int): Depth of the tree. Defaults to 5
+        gflu_feature_init_sparsity (float): Only valid for t-softmax. The perecentge of features
+                to be selected in each GFLU stage. This is just initialized and during learning
+                it may change. Defaults to 0.3
 
-        num_trees (int): Number of trees to use in the ensemble. Defaults to 20
-
-        binning_activation (str): The binning function to use. Defaults to entmoid. Defaults to sparsemoid.
-                Choices are: [`entmoid`,`sparsemoid`,`sigmoid`].
-
-        feature_mask_function (str): The feature mask function to use. Defaults to sparsemax. Choices are:
-                [`entmax`,`sparsemax`,`softmax`].
-
-        tree_dropout (float): probability of dropout in tree binning transformation. Defaults to 0.0
-
-        chain_trees (bool): If True, we will chain the trees together. Synonymous to boosting
-            (chaining trees) or bagging (parallel trees). Defaults to True
-
-        tree_wise_attention (bool): If True, we will use tree wise attention to combine trees. Defaults to
-                True
-
-        tree_wise_attention_dropout (float): probability of dropout in the tree wise attention layer.
-                Defaults to 0.0
-
-        share_head_weights (bool): If True, we will share the weights between the heads. Defaults to True
-
+        learnable_sparsity (bool): Only valid for t-softmax. If True, the sparsity parameters
+                will be learned. If False, the sparsity parameters will be fixed to the initial
+                values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`.
+                Defaults to True
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
@@ -94,39 +79,11 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
         default=0.0, metadata={"help": "Dropout rate for the feature abstraction layer. Defaults to 0.0"}
     )
 
-    tree_depth: int = field(default=4, metadata={"help": "Depth of the tree. Defaults to 5"})
-
-    num_trees: int = field(
-        default=10,
-        metadata={"help": "Number of trees to use in the ensemble. Defaults to 20"},
-    )
-
-    binning_activation: str = field(
-        default="sparsemoid",
-        metadata={
-            "help": "The binning function to use. Defaults to entmoid. Defaults to entmoid",
-            "choices": ["entmoid", "sparsemoid", "sigmoid"],
-        },
-    )
-    feature_mask_function: str = field(
-        default="t-softmax",
-        metadata={
-            "help": "The feature mask function to use. Defaults to entmax",
-            "choices": ["entmax", "sparsemax", "softmax", "t-softmax"],
-        },
-    )
     gflu_feature_init_sparsity: float = field(
         default=0.3,
         metadata={
-            "help": "Only valid for t-softmax. The percentage of features to be dropped in "
+            "help": "Only valid for t-softmax. The perecentge of features to be selected in "
             "each GFLU stage. This is just initialized and during learning it may change"
-        },
-    )
-    tree_feature_init_sparsity: float = field(
-        default=0.8,
-        metadata={
-            "help": "Only valid for t-softmax. The perecentge of features to be dropped in "
-            "each split in the tree. This is just initialized and during learning it may change"
         },
     )
     learnable_sparsity: bool = field(
@@ -137,46 +94,17 @@ class GatedAdditiveTreeEnsembleConfig(ModelConfig):
             "`gflu_feature_init_sparsity` and `tree_feature_init_sparsity`"
         },
     )
-
-    tree_dropout: float = field(
-        default=0.0,
-        metadata={"help": "probability of dropout in tree binning transformation. Defaults to 0.0"},
-    )
-    chain_trees: bool = field(
-        default=True,
-        metadata={
-            "help": "If True, we will chain the trees together."
-            " Synonymous to boosting (chaining trees) or bagging (parallel trees). Defaults to True"
-        },
-    )
-    tree_wise_attention: bool = field(
-        default=True,
-        metadata={"help": "If True, we will use tree wise attention to combine trees. Defaults to True"},
-    )
-    tree_wise_attention_dropout: float = field(
-        default=0.0,
-        metadata={"help": "probability of dropout in the tree wise attention layer. Defaults to 0.0"},
-    )
-    share_head_weights: bool = field(
-        default=True,
-        metadata={"help": "If True, we will share the weights between the heads. Defaults to True"},
-    )
-
-    _module_src: str = field(default="models.gate")
-    _model_name: str = field(default="GatedAdditiveTreeEnsembleModel")
-    _backbone_name: str = field(default="GatedAdditiveTreesBackbone")
-    _config_name: str = field(default="GatedAdditiveTreeEnsembleConfig")
+    _module_src: str = field(default="models.gandalf")
+    _model_name: str = field(default="GANDALFModel")
+    _backbone_name: str = field(default="GANDALFBackbone")
+    _config_name: str = field(default="GANDALFConfig")
 
     def __post_init__(self):
-        assert self.tree_depth > 0, "tree_depth should be greater than 0"
-        # Either gflu_stages or num_trees should be greater than 0
-        assert self.num_trees > 0, (
-            "`num_trees` must be greater than 0." "If you want a lighter model which performs better, use GANDALF."
-        )
-        super().__post_init__()
+        assert self.gflu_stages > 0, "gflu_stages should be greater than 0"
+        return super().__post_init__()
 
 
 if __name__ == "__main__":
     from pytorch_tabular.utils import generate_doc_dataclass
 
-    print(generate_doc_dataclass(GatedAdditiveTreeEnsembleConfig, desc="Gated Additive Tree Ensemble Config"))
+    print(generate_doc_dataclass(GANDALFConfig, desc="GANDALF Config"))

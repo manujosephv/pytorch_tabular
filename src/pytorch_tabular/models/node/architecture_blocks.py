@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .odst import ODST
+from pytorch_tabular.models.common.layers import ODST
 
 
 class DenseODSTBlock(nn.Sequential):

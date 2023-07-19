@@ -7,6 +7,7 @@ from abc import ABCMeta, abstractmethod
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
@@ -222,14 +223,28 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             # Log only if non-zero
             if output[t] != 0:
                 reg_loss += output[t]
-                self.log(f"{tag}_{t}_loss", output[t], on_epoch=True, on_step=False, logger=True, prog_bar=False)
+                self.log(
+                    f"{tag}_{t}_loss",
+                    output[t],
+                    on_epoch=True,
+                    on_step=False,
+                    logger=True,
+                    prog_bar=False,
+                )
         if self.hparams.task == "regression":
             computed_loss = reg_loss
             for i in range(self.hparams.output_dim):
                 _loss = self.loss(y_hat[:, i], y[:, i])
                 computed_loss += _loss
                 if self.hparams.output_dim > 1:
-                    self.log(f"{tag}_loss_{i}", _loss, on_epoch=True, on_step=False, logger=True, prog_bar=False)
+                    self.log(
+                        f"{tag}_loss_{i}",
+                        _loss,
+                        on_epoch=True,
+                        on_step=False,
+                        logger=True,
+                        prog_bar=False,
+                    )
         else:
             # TODO loss fails with batch size of 1?
             computed_loss = self.loss(y_hat.squeeze(), y.squeeze()) + reg_loss
@@ -259,7 +274,10 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         """
         metrics = []
         for metric, metric_str, prob_inp, metric_params in zip(
-            self.metrics, self.hparams.metrics, self.hparams.metrics_prob_input, self.hparams.metrics_params
+            self.metrics,
+            self.hparams.metrics,
+            self.hparams.metrics_prob_input,
+            self.hparams.metrics_params,
         ):
             if self.hparams.task == "regression":
                 _metrics = []
@@ -267,7 +285,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     name = metric.func.__name__ if isinstance(metric, partial) else metric.__name__
                     if name == torchmetrics.functional.mean_squared_log_error.__name__:
                         # MSLE should only be used in strictly positive targets. It is undefined otherwise
-                        _metric = metric(torch.clamp(y_hat[:, i], min=0), torch.clamp(y[:, i], min=0), **metric_params)
+                        _metric = metric(
+                            torch.clamp(y_hat[:, i], min=0),
+                            torch.clamp(y[:, i], min=0),
+                            **metric_params,
+                        )
                     else:
                         _metric = metric(y_hat[:, i], y[:, i], **metric_params)
                     if self.hparams.output_dim > 1:
@@ -288,7 +310,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 else:
                     avg_metric = metric(torch.argmax(y_hat, dim=-1), y.squeeze(), **metric_params)
             metrics.append(avg_metric)
-            self.log(f"{tag}_{metric_str}", avg_metric, on_epoch=True, on_step=False, logger=True, prog_bar=True)
+            self.log(
+                f"{tag}_{metric_str}",
+                avg_metric,
+                on_epoch=True,
+                on_step=False,
+                logger=True,
+                prog_bar=True,
+            )
         return metrics
 
     def data_aware_initialization(self, datamodule):
@@ -510,10 +539,31 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def feature_importance(self) -> pd.DataFrame:
         """Returns a dataframe with feature importance for the model."""
         if hasattr(self.backbone, "feature_importance_"):
+            imp = self.backbone.feature_importance_
+            n_feat = len(self.hparams.categorical_cols + self.hparams.continuous_cols)
+            if self.hparams.categorical_dim > 0:
+                if imp.shape[0] != n_feat:
+                    # Combining Cat Embedded Dimensions to a single one by averaging
+                    wt = []
+                    norm = []
+                    ft_idx = 0
+                    for _, embd_dim in self.hparams.embedding_dims:
+                        wt.extend([ft_idx] * embd_dim)
+                        norm.append(embd_dim)
+                        ft_idx += 1
+                    for _ in self.hparams.continuous_cols:
+                        wt.extend([ft_idx])
+                        norm.append(1)
+                        ft_idx += 1
+                    imp = np.bincount(wt, weights=imp) / np.array(norm)
+                else:
+                    # For models like FTTransformer, we dont need to do anything
+                    # It takes categorical and continuous as individual 2-D features
+                    pass
             importance_df = pd.DataFrame(
                 {
                     "Features": self.hparams.categorical_cols + self.hparams.continuous_cols,
-                    "importance": self.backbone.feature_importance_.detach().cpu().numpy(),
+                    "importance": imp,
                 }
             )
             return importance_df

@@ -9,7 +9,15 @@ from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.config.config import SSLModelConfig
 from pytorch_tabular.feature_extractor import DeepFeatureExtractor
-from pytorch_tabular.models import AutoIntConfig, CategoryEmbeddingModelConfig, NodeConfig, TabNetModelConfig
+from pytorch_tabular.models import (
+    AutoIntConfig,
+    CategoryEmbeddingModelConfig,
+    FTTransformerConfig,
+    GANDALFConfig,
+    GatedAdditiveTreeEnsembleConfig,
+    NodeConfig,
+    TabNetModelConfig,
+)
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
 # import os
@@ -38,7 +46,20 @@ MODEL_CONFIG_FEATURE_EXT_TEST = [
     DenoisingAutoEncoderConfig,
 ]
 
-DATASET_CONTINUOUS_COLUMNS = ("AveRooms", "AveBedrms", "Population", "AveOccup", "Latitude", "Longitude")
+MODEL_CONFIG_FEATURE_IMP_TEST = [
+    (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
+    (GANDALFConfig, {}),
+    (GatedAdditiveTreeEnsembleConfig, {"num_trees": 1, "tree_depth": 2, "gflu_stages": 1}),
+]
+
+DATASET_CONTINUOUS_COLUMNS = (
+    "AveRooms",
+    "AveBedrms",
+    "Population",
+    "AveOccup",
+    "Latitude",
+    "Longitude",
+)
 
 
 def fake_metric(y_hat, y):
@@ -171,6 +192,50 @@ def test_feature_extractor(
     dt = DeepFeatureExtractor(tabular_model)
     enc_df = dt.fit_transform(test)
     assert any(col for col in enc_df.columns if "backbone" in col)
+
+
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_IMP_TEST)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+def test_feature_importance(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+):
+    (train, test, target) = regression_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "regression"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+        validation=test,
+    )
+    feat_imp = tabular_model.feature_importance()
+    assert len(feat_imp) == len(continuous_cols + categorical_cols)
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_TEST)
