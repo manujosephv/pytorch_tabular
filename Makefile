@@ -47,6 +47,19 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
+env:
+	mkdir -p .env
+	# Create a virtual environment
+	python3 -m venv .env
+	# Activate the virtual environment
+	source .env/$name/bin/activate
+	# Create a temporary requirements file
+	# Read the contents of the file into a variable and write it to a file.
+	echo $(cat requirements.txt) > requirements.tmp
+	# Install the required dependencies from the temporary file
+	pip install -r requirements.tmp
+	rm requirements.tmp
+
 test: ## run tests quickly with the default Python
 	pytest
 
@@ -76,5 +89,5 @@ dist: clean ## builds source and wheel package
 	python setup.py bdist_wheel
 	ls -l dist
 
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+install: clean env ## install the package to the active Python's site-packages
+	pip install -e .[dev]
