@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 10
     steps:
     - name: Checkout 🛎️
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up Python 🐍
       uses: actions/setup-python@v4
       with:
@@ -39,7 +39,7 @@ jobs:
 
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
-      uses: pypa/gh-action-pypi-publish@v1.8.7
+      uses: pypa/gh-action-pypi-publish@v1.8.10
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}
