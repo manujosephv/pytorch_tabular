@@ -69,11 +69,9 @@ repos:
       - id: ruff
         args: ["--fix"]
 
-# exclude: ^docs/
-
-# exclude: |
-#     (?x)(
-#         ^docs/|
-#         ^output/|
-#         ^plugins
-#     )
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.3
+    hooks:
+      - id: prettier
+        # https://prettier.io/docs/en/options.html#print-width
+        args: ["--print-width=120"]
