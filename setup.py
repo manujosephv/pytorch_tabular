@@ -23,9 +23,9 @@ with open("docs/history.md") as history_file:
 
 thelibFolder = os.path.dirname(os.path.realpath(__file__))
 
-requirements = read_requirements(thelibFolder, "requirements.txt")
-requirements_testing = read_requirements(thelibFolder, "requirements_dev.txt")
-requirements_extra = read_requirements(thelibFolder, "requirements_extra.txt")
+requirements = read_requirements(thelibFolder, "requirements", "base.txt")
+requirements_testing = read_requirements(thelibFolder, "requirements", "dev.txt")
+requirements_extra = read_requirements(thelibFolder, "requirements", "extra.txt")
 
 # setup_requirements = ['pytest-runner', ]
 
