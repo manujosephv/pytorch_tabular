@@ -164,9 +164,7 @@ class TabularDatamodule(pl.LightningDataModule):
             return self.categorical_encoder.transform(data)
         if self.do_leave_one_out_encoder():
             logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
-            self.categorical_encoder = ce.LeaveOneOutEncoder(
-                cols=self.config.categorical_cols, random_state=self.seed
-            )
+            self.categorical_encoder = ce.LeaveOneOutEncoder(cols=self.config.categorical_cols, random_state=self.seed)
             # Multi-Target Regression uses the first target to encode the categorical columns
             if len(self.config.target) > 1:
                 logger.warning(
