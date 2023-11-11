@@ -21,11 +21,12 @@ with open("README.md") as readme_file:
 with open("docs/history.md") as history_file:
     history = history_file.read()
 
-thelibFolder = os.path.dirname(os.path.realpath(__file__))
+this_folder = os.path.dirname(os.path.realpath(__file__))
+req_folder = os.path.join(this_folder, "requirements")
 
-requirements = read_requirements(thelibFolder, "requirements", "base.txt")
-requirements_testing = read_requirements(thelibFolder, "requirements", "dev.txt")
-requirements_extra = read_requirements(thelibFolder, "requirements", "extra.txt")
+requirements = read_requirements(req_folder, "base.txt")
+requirements_testing = read_requirements(req_folder, "dev.txt")
+requirements_extra = read_requirements(req_folder, "extra.txt")
 
 # setup_requirements = ['pytest-runner', ]
 
