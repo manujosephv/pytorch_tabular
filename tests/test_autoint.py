@@ -168,36 +168,33 @@ def test_classification(
 #     aug_task,
 # ):
 #     (train, test, target) = regression_data
-#     if len(continuous_cols) + len(categorical_cols) == 0:
-#         assert True
-#     else:
-#         data_config = DataConfig(
-#             target=target,
-#             continuous_cols=continuous_cols,
-#             categorical_cols=categorical_cols,
-#             continuous_feature_transform=continuous_feature_transform,
-#             normalize_continuous_features=normalize_continuous_features,
-#         )
-#         model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
-#         model_config_params["deep_layers"] = deep_layers
-#         model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
-#         model_config_params["attention_pooling"] = attention_pooling
-#         model_config = AutoIntConfig(**model_config_params)
-#         trainer_config = TrainerConfig(
-#             max_epochs=3,
-#             checkpoints=None,
-#             early_stopping=None,
-#             fast_dev_run=True,
-#         )
-#         optimizer_config = OptimizerConfig()
-
-#         tabular_model = TabularModel(
-#             data_config=data_config,
-#             model_config=model_config,
-#             optimizer_config=optimizer_config,
-#             trainer_config=trainer_config,
-#         )
-#         tabular_model.fit(train=train, test=test)
-
-#         result = tabular_model.evaluate(test)
-#         assert "test_mean_squared_error" in result[0].keys()
+#     data_config = DataConfig(
+#         target=target,
+#         continuous_cols=continuous_cols,
+#         categorical_cols=categorical_cols,
+#         continuous_feature_transform=continuous_feature_transform,
+#         normalize_continuous_features=normalize_continuous_features,
+#     )
+#     model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
+#     model_config_params["deep_layers"] = deep_layers
+#     model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
+#     model_config_params["attention_pooling"] = attention_pooling
+#     model_config = AutoIntConfig(**model_config_params)
+#     trainer_config = TrainerConfig(
+#         max_epochs=3,
+#         checkpoints=None,
+#         early_stopping=None,
+#         fast_dev_run=True,
+#     )
+#     optimizer_config = OptimizerConfig()
+#
+#     tabular_model = TabularModel(
+#         data_config=data_config,
+#         model_config=model_config,
+#         optimizer_config=optimizer_config,
+#         trainer_config=trainer_config,
+#     )
+#     tabular_model.fit(train=train, test=test)
+#
+#     result = tabular_model.evaluate(test)
+#     assert "test_mean_squared_error" in result[0].keys()
