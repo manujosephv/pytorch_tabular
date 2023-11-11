@@ -5,16 +5,16 @@ Pytorch Tabular handles this using a `DataConfig` object.
 ## Basic Usage
 
 - `target`: List\[str\]: A list of strings with the names of the target column(s)
-- `continuous_columns`: List\[str\]: Column names of the numeric fields. Defaults to \[\]
-- `categorical_columns`: List\[str\]: Column names of the categorical fields to treat differently
+- `continuous_cols`: List\[str\]: Column names of the numeric fields. Defaults to \[\]
+- `categorical_cols`: List\[str\]: Column names of the categorical fields to treat differently
 
 ### Usage Example
 
 ```python
 data_config = DataConfig(
     target=["label"],
-    continuous_columns=["feature_1", "feature_2"],
-    categorical_columns=["cat_feature_1", "cat_feature_2"],
+    continuous_cols=["feature_1", "feature_2"],
+    categorical_cols=["cat_feature_1", "cat_feature_2"],
 )
 ```
 
