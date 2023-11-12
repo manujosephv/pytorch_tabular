@@ -521,7 +521,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         fig.update_traces(opacity=0.5)
         return fig
 
-    def validation_epoch_end(self, outputs) -> None:
+    def on_validation_epoch_end(self, outputs) -> None:
         if self.do_log_logits:
             logits = [output[0] for output in outputs]
             logits = torch.cat(logits).detach().cpu()

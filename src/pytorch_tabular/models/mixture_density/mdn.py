@@ -179,7 +179,7 @@ class MDNModel(BaseModel):
         self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
 
-    def validation_epoch_end(self, outputs) -> None:
+    def on_validation_epoch_end(self, outputs) -> None:
         pi = [
             nn.functional.gumbel_softmax(output[2]["pi"], tau=self.head.hparams.softmax_temperature, dim=-1)
             for output in outputs
