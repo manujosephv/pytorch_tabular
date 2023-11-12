@@ -520,7 +520,7 @@ class TabularDatamodule(pl.LightningDataModule):
         )
         return DataLoader(
             dataset,
-            batch_size if batch_size is not None else self.batch_size,
+            batch_size or self.batch_size,
             shuffle=True if self.train_sampler is None else False,
             num_workers=self.config.num_workers,
             sampler=self.train_sampler,
@@ -546,7 +546,7 @@ class TabularDatamodule(pl.LightningDataModule):
         )
         return DataLoader(
             dataset,
-            batch_size if batch_size is not None else self.batch_size,
+            batch_size or self.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
             pin_memory=self.config.pin_memory,
@@ -572,7 +572,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
             return DataLoader(
                 dataset,
-                batch_size if batch_size is not None else self.batch_size,
+                batch_size or self.batch_size,
                 shuffle=False,
                 num_workers=self.config.num_workers,
                 pin_memory=self.config.pin_memory,
@@ -611,7 +611,7 @@ class TabularDatamodule(pl.LightningDataModule):
         )
         return DataLoader(
             dataset,
-            batch_size if batch_size is not None else self.batch_size,
+            batch_size or self.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
         )
