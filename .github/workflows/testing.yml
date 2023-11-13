@@ -40,5 +40,17 @@ jobs:
           pip install -e .[extra] -r requirements/dev.txt -f ${TORCH_URL}
           pip list
 
+      - name: Restore test's datasets
+        uses: actions/cache/restore@v3
+        with:
+          path: tests/.datasets
+          key: test-datasets
+
       - name: Run test-suite
         run: python -m pytest -v
+
+      - name: Save test's datasets
+        uses: actions/cache/save@v3
+        with:
+          path: tests/.datasets
+          key: test-datasets
