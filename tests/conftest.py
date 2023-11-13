@@ -8,6 +8,7 @@ from sklearn.datasets import fetch_california_housing, fetch_covtype
 
 _PATH_TEST = os.path.dirname(__file__)
 PATH_DATASETS = os.path.join(_PATH_TEST, ".datasets")
+os.makedirs(PATH_DATASETS, exist_ok=True)
 
 DATASET_ZIP_OCCUPANCY = os.path.join(PATH_DATASETS, "occupancy_data.zip")
 if not os.path.isfile(DATASET_ZIP_OCCUPANCY):
