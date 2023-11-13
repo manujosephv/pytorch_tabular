@@ -160,29 +160,26 @@ class TabularDatamodule(pl.LightningDataModule):
         return data, added_features
 
     def _encode_categorical_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
-        if stage == "fit":
-            if self.do_leave_one_out_encoder():
-                logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
-                self.categorical_encoder = ce.LeaveOneOutEncoder(
-                    cols=self.config.categorical_cols, random_state=self.seed
+        if stage != "fit":
+            return self.categorical_encoder.transform(data)
+        if self.do_leave_one_out_encoder():
+            logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
+            self.categorical_encoder = ce.LeaveOneOutEncoder(cols=self.config.categorical_cols, random_state=self.seed)
+            # Multi-Target Regression uses the first target to encode the categorical columns
+            if len(self.config.target) > 1:
+                logger.warning(
+                    f"Multi-Target Regression: using the first target({self.config.target[0]})"
+                    f" to encode the categorical columns"
                 )
-                # Multi-Target Regression uses the first target to encode the categorical columns
-                if len(self.config.target) > 1:
-                    logger.warning(
-                        f"Multi-Target Regression: using the first target({self.config.target[0]})"
-                        f" to encode the categorical columns"
-                    )
-                data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
-            else:
-                logger.debug("Encoding Categorical Columns using OrdinalEncoder")
-                self.categorical_encoder = OrdinalEncoder(
-                    cols=self.config.categorical_cols,
-                    handle_unseen="impute" if self.config.handle_unknown_categories else "error",
-                    handle_missing="impute" if self.config.handle_missing_values else "error",
-                )
-                data = self.categorical_encoder.fit_transform(data)
+            data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
         else:
-            data = self.categorical_encoder.transform(data)
+            logger.debug("Encoding Categorical Columns using OrdinalEncoder")
+            self.categorical_encoder = OrdinalEncoder(
+                cols=self.config.categorical_cols,
+                handle_unseen="impute" if self.config.handle_unknown_categories else "error",
+                handle_missing="impute" if self.config.handle_missing_values else "error",
+            )
+            data = self.categorical_encoder.fit_transform(data)
         return data
 
     def _transform_continuous_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
@@ -212,30 +209,33 @@ class TabularDatamodule(pl.LightningDataModule):
         return data
 
     def _label_encode_target(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
-        if self.config.task == "classification":
-            if stage == "fit":
-                self.label_encoder = LabelEncoder()
-                data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
-            else:
-                if self.config.target[0] in data.columns:
-                    data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
+        if self.config.task != "classification":
+            return data
+        if stage == "fit":
+            self.label_encoder = LabelEncoder()
+            data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
+        else:
+            if self.config.target[0] in data.columns:
+                data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
         return data
 
     def _target_transform(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
-        if self.config.task == "regression":
-            # target transform only for regression
-            if all(col in data.columns for col in self.config.target):
-                if self.do_target_transform:
-                    if stage == "fit":
-                        target_transforms = []
-                        for col in self.config.target:
-                            _target_transform = copy.deepcopy(self.target_transform_template)
-                            data[col] = _target_transform.fit_transform(data[col].values.reshape(-1, 1))
-                            target_transforms.append(_target_transform)
-                        self.target_transforms = target_transforms
-                    else:
-                        for col, _target_transform in zip(self.config.target, self.target_transforms):
-                            data[col] = _target_transform.transform(data[col].values.reshape(-1, 1))
+        if self.config.task != "regression":
+            return data
+        # target transform only for regression
+        if not all(col in data.columns for col in self.config.target):
+            return data
+        if self.do_target_transform:
+            if stage == "fit":
+                target_transforms = []
+                for col in self.config.target:
+                    _target_transform = copy.deepcopy(self.target_transform_template)
+                    data[col] = _target_transform.fit_transform(data[col].values.reshape(-1, 1))
+                    target_transforms.append(_target_transform)
+                self.target_transforms = target_transforms
+            else:
+                for col, _target_transform in zip(self.config.target, self.target_transforms):
+                    data[col] = _target_transform.transform(data[col].values.reshape(-1, 1))
         return data
 
     def preprocess_data(self, data: pd.DataFrame, stage: str = "inference") -> Tuple[pd.DataFrame, list]:
@@ -286,27 +286,28 @@ class TabularDatamodule(pl.LightningDataModule):
             stage (Optional[str], optional):
                 Internal parameter to distinguish between fit and inference. Defaults to None.
         """
-        if stage == "fit" or stage is None:
-            logger.info(f"Setting up the datamodule for {self.config.task} task")
-            if self.validation is None:
-                logger.debug(
-                    f"No validation data provided."
-                    f" Using {self.config.validation_split*100}% of train data as validation"
-                )
-                val_idx = self.train.sample(
-                    int(self.config.validation_split * len(self.train)),
-                    random_state=self.seed,
-                ).index
-                self.validation = self.train[self.train.index.isin(val_idx)]
-                self.train = self.train[~self.train.index.isin(val_idx)]
-            else:
-                self.validation = self.validation.copy()
-            # Preprocessing Train, Validation
-            self.train, _ = self.preprocess_data(self.train, stage="fit")
-            self.validation, _ = self.preprocess_data(self.validation, stage="inference")
-            if self.test is not None:
-                self.test, _ = self.preprocess_data(self.test, stage="inference")
-            self._fitted = True
+        if not (stage is None or stage == "fit"):
+            return
+        logger.info(f"Setting up the datamodule for {self.config.task} task")
+        if self.validation is None:
+            logger.debug(
+                f"No validation data provided."
+                f" Using {self.config.validation_split*100}% of train data as validation"
+            )
+            val_idx = self.train.sample(
+                int(self.config.validation_split * len(self.train)),
+                random_state=self.seed,
+            ).index
+            self.validation = self.train[self.train.index.isin(val_idx)]
+            self.train = self.train[~self.train.index.isin(val_idx)]
+        else:
+            self.validation = self.validation.copy()
+        # Preprocessing Train, Validation
+        self.train, _ = self.preprocess_data(self.train, stage="fit")
+        self.validation, _ = self.preprocess_data(self.validation, stage="inference")
+        if self.test is not None:
+            self.test, _ = self.preprocess_data(self.test, stage="inference")
+        self._fitted = True
 
     # adapted from gluonts
     @classmethod
@@ -561,22 +562,23 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns:
             DataLoader: Test dataloader
         """
-        if self.test is not None:
-            dataset = TabularDataset(
-                task=self.config.task,
-                data=self.test,
-                categorical_cols=self.config.categorical_cols,
-                continuous_cols=self.config.continuous_cols,
-                embed_categorical=(not self.do_leave_one_out_encoder()),
-                target=self.target,
-            )
-            return DataLoader(
-                dataset,
-                batch_size or self.batch_size,
-                shuffle=False,
-                num_workers=self.config.num_workers,
-                pin_memory=self.config.pin_memory,
-            )
+        if self.test is None:
+            raise RuntimeError("Undefined test attribute.")
+        dataset = TabularDataset(
+            task=self.config.task,
+            data=self.test,
+            categorical_cols=self.config.categorical_cols,
+            continuous_cols=self.config.continuous_cols,
+            embed_categorical=(not self.do_leave_one_out_encoder()),
+            target=self.target,
+        )
+        return DataLoader(
+            dataset,
+            batch_size or self.batch_size,
+            shuffle=False,
+            num_workers=self.config.num_workers,
+            pin_memory=self.config.pin_memory,
+        )
 
     def _prepare_inference_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Prepare data for inference."""
