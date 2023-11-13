@@ -1,11 +1,21 @@
-from io import BytesIO
-from urllib.request import urlopen
+import os.path
 from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import fetch_california_housing, fetch_covtype
+
+_PATH_TEST = os.path.dirname(__file__)
+PATH_DATASETS = os.path.join(_PATH_TEST, ".datasets")
+
+DATASET_ZIP_OCCUPANCY = os.path.join(PATH_DATASETS, "occupancy_data.zip")
+if not os.path.isfile(DATASET_ZIP_OCCUPANCY):
+    import urllib.request
+
+    urllib.request.urlretrieve(
+        "https://archive.ics.uci.edu/ml/machine-learning-databases/00357/occupancy_data.zip", DATASET_ZIP_OCCUPANCY
+    )
 
 
 def load_regression_data():
@@ -34,9 +44,7 @@ def load_classification_data():
 
 
 def load_timeseries_data():
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00357/occupancy_data.zip"
-    resp = urlopen(url)
-    zipfile = ZipFile(BytesIO(resp.read()))
+    zipfile = ZipFile(DATASET_ZIP_OCCUPANCY)
     train = pd.read_csv(zipfile.open("datatraining.txt"), sep=",")
     val = pd.read_csv(zipfile.open("datatest.txt"), sep=",")
     test = pd.read_csv(zipfile.open("datatest2.txt"), sep=",")
