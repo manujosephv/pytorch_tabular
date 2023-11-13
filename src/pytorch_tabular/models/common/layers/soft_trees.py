@@ -9,7 +9,7 @@ import torch.nn as nn
 from pytorch_tabular.utils import check_numpy
 
 from ..layers import ModuleWithInit
-from .activations import entmax15, RSoftmax, sparsemax, sparsemoid
+from .activations import RSoftmax, entmax15, sparsemax, sparsemoid
 
 # Neural Oblivious Decision Ensembles
 # Author: Sergey Popov, Julian Qian

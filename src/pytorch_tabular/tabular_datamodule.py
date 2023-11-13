@@ -15,7 +15,7 @@ import torch
 from omegaconf import DictConfig
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
-from sklearn.base import copy, TransformerMixin
+from sklearn.base import TransformerMixin, copy
 from sklearn.preprocessing import (
     FunctionTransformer,
     LabelEncoder,

@@ -5,7 +5,7 @@
 import os
 import re
 import warnings
-from dataclasses import dataclass, field, MISSING
+from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
 from omegaconf import OmegaConf
