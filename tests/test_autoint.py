@@ -31,53 +31,50 @@ def test_regression(
     attention_pooling,
 ):
     (train, test, target) = regression_data
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target + ["MedInc"] if multi_target else target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {"task": "regression"}
-        if target_range:
-            _target_range = []
-            for target in data_config.target:
-                _target_range.append(
-                    (
-                        float(train[target].min()),
-                        float(train[target].max()),
-                    )
+    data_config = DataConfig(
+        target=target + ["MedInc"] if multi_target else target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {"task": "regression"}
+    if target_range:
+        _target_range = []
+        for target in data_config.target:
+            _target_range.append(
+                (
+                    float(train[target].min()),
+                    float(train[target].max()),
                 )
-            model_config_params["target_range"] = _target_range
-        model_config_params["deep_layers"] = deep_layers
-        model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
-        model_config_params["attention_pooling"] = attention_pooling
-        model_config = AutoIntConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=3,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+            )
+        model_config_params["target_range"] = _target_range
+    model_config_params["deep_layers"] = deep_layers
+    model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
+    model_config_params["attention_pooling"] = attention_pooling
+    model_config = AutoIntConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train, test=test)
 
-        result = tabular_model.evaluate(test)
-        # print(result[0]["valid_loss"])
-        assert "test_mean_squared_error" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    # print(result[0]["valid_loss"])
+    assert "test_mean_squared_error" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 @pytest.mark.parametrize(
@@ -101,42 +98,39 @@ def test_classification(
     batch_norm_continuous_input,
 ):
     (train, test, target) = classification_data
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {"task": "classification"}
-        model_config_params["deep_layers"] = deep_layers
-        model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
-        model_config = AutoIntConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=3,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {"task": "classification"}
+    model_config_params["deep_layers"] = deep_layers
+    model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
+    model_config = AutoIntConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train, test=test)
 
-        result = tabular_model.evaluate(test)
-        # print(result[0]["valid_loss"])
-        assert "test_accuracy" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    # print(result[0]["valid_loss"])
+    assert "test_accuracy" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 # @pytest.mark.parametrize(
@@ -173,36 +167,33 @@ def test_classification(
 #     aug_task,
 # ):
 #     (train, test, target) = regression_data
-#     if len(continuous_cols) + len(categorical_cols) == 0:
-#         assert True
-#     else:
-#         data_config = DataConfig(
-#             target=target,
-#             continuous_cols=continuous_cols,
-#             categorical_cols=categorical_cols,
-#             continuous_feature_transform=continuous_feature_transform,
-#             normalize_continuous_features=normalize_continuous_features,
-#         )
-#         model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
-#         model_config_params["deep_layers"] = deep_layers
-#         model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
-#         model_config_params["attention_pooling"] = attention_pooling
-#         model_config = AutoIntConfig(**model_config_params)
-#         trainer_config = TrainerConfig(
-#             max_epochs=3,
-#             checkpoints=None,
-#             early_stopping=None,
-#             fast_dev_run=True,
-#         )
-#         optimizer_config = OptimizerConfig()
-
-#         tabular_model = TabularModel(
-#             data_config=data_config,
-#             model_config=model_config,
-#             optimizer_config=optimizer_config,
-#             trainer_config=trainer_config,
-#         )
-#         tabular_model.fit(train=train, test=test)
-
-#         result = tabular_model.evaluate(test)
-#         assert "test_mean_squared_error" in result[0].keys()
+#     data_config = DataConfig(
+#         target=target,
+#         continuous_cols=continuous_cols,
+#         categorical_cols=categorical_cols,
+#         continuous_feature_transform=continuous_feature_transform,
+#         normalize_continuous_features=normalize_continuous_features,
+#     )
+#     model_config_params = dict(task="ssl", ssl_task=ssl_task, aug_task=aug_task)
+#     model_config_params["deep_layers"] = deep_layers
+#     model_config_params["batch_norm_continuous_input"] = batch_norm_continuous_input
+#     model_config_params["attention_pooling"] = attention_pooling
+#     model_config = AutoIntConfig(**model_config_params)
+#     trainer_config = TrainerConfig(
+#         max_epochs=3,
+#         checkpoints=None,
+#         early_stopping=None,
+#         fast_dev_run=True,
+#     )
+#     optimizer_config = OptimizerConfig()
+#
+#     tabular_model = TabularModel(
+#         data_config=data_config,
+#         model_config=model_config,
+#         optimizer_config=optimizer_config,
+#         trainer_config=trainer_config,
+#     )
+#     tabular_model.fit(train=train, test=test)
+#
+#     result = tabular_model.evaluate(test)
+#     assert "test_mean_squared_error" in result[0].keys()

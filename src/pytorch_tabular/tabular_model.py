@@ -667,8 +667,9 @@ class TabularModel:
             assert len(metrics) == len(
                 metrics_prob_inputs
             ), "The length of `metrics` and `metrics_prob_inputs` should be equal"
-        seed = seed if seed is not None else self.config.seed
-        seed_everything(seed)
+        seed = seed or self.config.seed
+        if seed:
+            seed_everything(seed)
         if datamodule is None:
             datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed)
         else:
@@ -738,8 +739,9 @@ class TabularModel:
         assert (
             self.config.task == "ssl"
         ), f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
-        seed = seed if seed is not None else self.config.seed
-        seed_everything(seed)
+        seed = seed or self.config.seed
+        if seed:
+            seed_everything(seed)
         if datamodule is None:
             datamodule = self.prepare_dataloader(
                 train,
@@ -973,8 +975,9 @@ class TabularModel:
         assert (
             self._is_finetune_model
         ), "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
-        seed = seed if seed is not None else self.config.seed
-        seed_everything(seed)
+        seed = seed or self.config.seed
+        if seed:
+            seed_everything(seed)
         if datamodule is None:
             target_transform = self._check_and_set_target_transform(target_transform)
             self.datamodule._set_target_transform(target_transform)
