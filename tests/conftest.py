@@ -15,7 +15,7 @@ if not os.path.isfile(DATASET_ZIP_OCCUPANCY):
     import urllib.request
 
     urllib.request.urlretrieve(
-        "https://archive.ics.uci.edu/ml/machine-learning-databases/00357/occupancy_data.zip", DATASET_ZIP_OCCUPANCY
+        "http://archive.ics.uci.edu/ml/machine-learning-databases/00357/occupancy_data.zip", DATASET_ZIP_OCCUPANCY
     )
 
 

@@ -151,3 +151,4 @@ compare.py
 checkpoints/
 docs/examples/basic/
 examples/test_save/
+tests/.datasets/occupancy_data.zip
