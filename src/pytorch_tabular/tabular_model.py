@@ -37,7 +37,7 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.config.config import InferredConfig
-from pytorch_tabular.models.base_model import _GenericModel, BaseModel
+from pytorch_tabular.models.base_model import BaseModel, _GenericModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 
@@ -510,10 +510,10 @@ class TabularModel:
                 The length of the list should be equal to the number of metrics. Defaults to None.
 
             optimizer (Optional[torch.optim.Optimizer], optional):
-                Custom optimizers which are a drop in replacements for standard PyToch optimizers.
+                Custom optimizers which are a drop in replacements for standard PyTorch optimizers.
                 This should be the Class and not the initialized object
 
-            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+            optimizer_params (Optional[Dict], optional): The parameters to initialize the custom optimizer.
 
         Returns:
             BaseModel: The prepared model
@@ -631,9 +631,9 @@ class TabularModel:
 
             optimizer (Optional[torch.optim.Optimizer], optional):
                 Custom optimizers which are a drop in replacements for
-                standard PyToch optimizers. This should be the Class and not the initialized object
+                standard PyTorch optimizers. This should be the Class and not the initialized object
 
-            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+            optimizer_params (Optional[Dict], optional): The parameters to initialize the custom optimizer.
 
             train_sampler (Optional[torch.utils.data.Sampler], optional):
                 Custom PyTorch batch samplers which will be passed
@@ -667,8 +667,9 @@ class TabularModel:
             assert len(metrics) == len(
                 metrics_prob_inputs
             ), "The length of `metrics` and `metrics_prob_inputs` should be equal"
-        seed = seed if seed is not None else self.config.seed
-        seed_everything(seed)
+        seed = seed or self.config.seed
+        if seed:
+            seed_everything(seed)
         if datamodule is None:
             datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed)
         else:
@@ -716,9 +717,9 @@ class TabularModel:
                 Defaults to None.
 
             optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizers which are a drop in replacements
-                for standard PyToch optimizers. This should be the Class and not the initialized object
+                for standard PyTorch optimizers. This should be the Class and not the initialized object
 
-            optimizer_params (Optional[Dict], optional): The parmeters to initialize the custom optimizer.
+            optimizer_params (Optional[Dict], optional): The parameters to initialize the custom optimizer.
 
             max_epochs (Optional[int]): Overwrite maximum number of epochs to be run. Defaults to None.
 
@@ -730,7 +731,7 @@ class TabularModel:
                 Defaults to None.
 
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
-                parameters like train, test etc and use the datamodule. Defaults to None.
+                parameters like train, test etc. and use the datamodule. Defaults to None.
 
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
@@ -738,8 +739,9 @@ class TabularModel:
         assert (
             self.config.task == "ssl"
         ), f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
-        seed = seed if seed is not None else self.config.seed
-        seed_everything(seed)
+        seed = seed or self.config.seed
+        if seed:
+            seed_everything(seed)
         if datamodule is None:
             datamodule = self.prepare_dataloader(
                 train,
@@ -806,7 +808,7 @@ class TabularModel:
 
             loss (Optional[torch.nn.Module], optional):
                 If provided, will be used as the loss function for the fine-tuning.
-                By Default it is MSELoss for regression and CrossEntropyLoss for classification.
+                By default, it is MSELoss for regression and CrossEntropyLoss for classification.
 
             metrics (Optional[List[Callable]], optional): List of metrics (either callables or str) to be used for the
                 fine-tuning stage. If str, it should be one of the functional metrics implemented in
@@ -973,8 +975,9 @@ class TabularModel:
         assert (
             self._is_finetune_model
         ), "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
-        seed = seed if seed is not None else self.config.seed
-        seed_everything(seed)
+        seed = seed or self.config.seed
+        if seed:
+            seed_everything(seed)
         if datamodule is None:
             target_transform = self._check_and_set_target_transform(target_transform)
             self.datamodule._set_target_transform(target_transform)

@@ -7,7 +7,7 @@ from typing import Callable
 import torch
 import torch.nn as nn
 
-from pytorch_tabular.models.common.layers.activations import entmax15, RSoftmax
+from pytorch_tabular.models.common.layers.activations import RSoftmax, entmax15
 
 
 class GatedFeatureLearningUnit(nn.Module):

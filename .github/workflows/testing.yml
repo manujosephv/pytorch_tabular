@@ -16,6 +16,9 @@ jobs:
           - {os: 'ubuntu-20.04', python-version: "3.8", requires: 'oldest'}
           - {os: 'ubuntu-20.04', python-version: "3.9", requires: 'oldest'}
 
+    env:
+        TORCH_URL: "https://download.pytorch.org/whl/cpu/torch_stable.html"
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -27,15 +30,27 @@ jobs:
         if: matrix.requires == 'oldest'
         run: |
           import os
-          fname = 'requirements.txt'
+          fname = 'requirements/base.txt'
           lines = [line.replace('>=', '==') for line in open(fname).readlines()]
           open(fname, 'w').writelines(lines)
         shell: python
 
       - name: Install main package & dependencies
         run: |
-          pip install -e .[extra] -r requirements_dev.txt -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install -e .[extra] -r requirements/dev.txt -f ${TORCH_URL}
           pip list
+
+      - name: Restore test's datasets
+        uses: actions/cache/restore@v3
+        with:
+          path: tests/.datasets
+          key: test-datasets
 
       - name: Run test-suite
         run: python -m pytest -v
+
+      - name: Save test's datasets
+        uses: actions/cache/save@v3
+        with:
+          path: tests/.datasets
+          key: test-datasets
