@@ -4,12 +4,11 @@
 import numpy as np
 import pytest
 import torch
-from sklearn.preprocessing import PowerTransformer
-
 from pytorch_tabular import TabularModel
 from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
+from sklearn.preprocessing import PowerTransformer
 
 
 def fake_metric(y_hat, y):
@@ -64,64 +63,64 @@ def test_regression(
     (train, test, target) = regression_data
     (custom_metrics, custom_metrics_prob_input, custom_loss, custom_optimizer) = custom_args
     if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target + ["MedInc"] if multi_target else target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {"task": "regression"}
-        if target_range:
-            _target_range = []
-            for target in data_config.target:
-                _target_range.append(
-                    (
-                        float(train[target].min()),
-                        float(train[target].max()),
-                    )
+        return
+
+    data_config = DataConfig(
+        target=target + ["MedInc"] if multi_target else target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {"task": "regression"}
+    if target_range:
+        _target_range = []
+        for target in data_config.target:
+            _target_range.append(
+                (
+                    float(train[target].min()),
+                    float(train[target].max()),
                 )
-            model_config_params["target_range"] = _target_range
-        if custom_head_config is not None:
-            model_config_params["head"] = "LinearHead"
-            model_config_params["head_config"] = {"layers": custom_head_config}
-        model_config = CategoryEmbeddingModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=3,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+            )
+        model_config_params["target_range"] = _target_range
+    if custom_head_config is not None:
+        model_config_params["head"] = "LinearHead"
+        model_config_params["head_config"] = {"layers": custom_head_config}
+    model_config = CategoryEmbeddingModelConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(
-            train=train,
-            test=test,
-            metrics=custom_metrics,
-            metrics_prob_inputs=custom_metrics_prob_input,
-            target_transform=target_transform,
-            loss=custom_loss,
-            optimizer=custom_optimizer,
-            optimizer_params={},
-        )
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+        test=test,
+        metrics=custom_metrics,
+        metrics_prob_inputs=custom_metrics_prob_input,
+        target_transform=target_transform,
+        loss=custom_loss,
+        optimizer=custom_optimizer,
+        optimizer_params={},
+    )
 
-        result = tabular_model.evaluate(test)
-        # print(result[0]["valid_loss"])
-        if custom_metrics is None:
-            assert "test_mean_squared_error" in result[0].keys()
-        else:
-            assert "test_fake_metric" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    # print(result[0]["valid_loss"])
+    if custom_metrics is None:
+        assert "test_mean_squared_error" in result[0].keys()
+    else:
+        assert "test_fake_metric" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 @pytest.mark.parametrize(
@@ -143,39 +142,39 @@ def test_classification(
 ):
     (train, test, target) = classification_data
     if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {"task": "classification"}
-        model_config = CategoryEmbeddingModelConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=3,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+        return
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {"task": "classification"}
+    model_config = CategoryEmbeddingModelConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        result = tabular_model.evaluate(test)
-        # print(result[0]["valid_loss"])
-        assert "test_accuracy" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train, test=test)
+
+    result = tabular_model.evaluate(test)
+    # print(result[0]["valid_loss"])
+    assert "test_accuracy" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 def test_embedding_transformer(regression_data):
