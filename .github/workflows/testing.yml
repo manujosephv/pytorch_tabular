@@ -30,14 +30,14 @@ jobs:
         if: matrix.requires == 'oldest'
         run: |
           import os
-          fname = 'requirements.txt'
+          fname = 'requirements/base.txt'
           lines = [line.replace('>=', '==') for line in open(fname).readlines()]
           open(fname, 'w').writelines(lines)
         shell: python
 
       - name: Install main package & dependencies
         run: |
-          pip install -e .[extra] -r requirements_dev.txt -f ${TORCH_URL}
+          pip install -e .[extra] -r requirements/dev.txt -f ${TORCH_URL}
           pip list
 
       - name: Restore test's datasets
