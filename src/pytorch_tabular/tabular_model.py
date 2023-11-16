@@ -37,7 +37,7 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.config.config import InferredConfig
-from pytorch_tabular.models.base_model import _GenericModel, BaseModel
+from pytorch_tabular.models.base_model import BaseModel, _GenericModel
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 

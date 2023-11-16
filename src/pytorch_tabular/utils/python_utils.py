@@ -1,6 +1,6 @@
 import textwrap
 from pathlib import Path
-from typing import Any, Callable, Dict, IO, Optional, Union
+from typing import IO, Any, Callable, Dict, Optional, Union
 
 import numpy as np
 import torch
