@@ -23,7 +23,6 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.utilities.model_summary import summarize
-from rich.progress import track
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder
 from torch import nn
@@ -1138,6 +1137,7 @@ class TabularModel:
         ret_logits=False,
         include_input_features: bool = True,
         device: Optional[torch.device] = None,
+        progress_bar: Optional[str] = None,
     ) -> pd.DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe.
 
@@ -1152,6 +1152,7 @@ class TabularModel:
                 with the dataframe. Defaults to False
             include_input_features (bool): Flag to include the input features in the returned dataframe.
                 Defaults to True
+            progress_bar: chose progress bar for tracking the progress
 
         Returns:
             pd.DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
@@ -1163,26 +1164,33 @@ class TabularModel:
             DeprecationWarning,
         )
         assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
+        model = self.model  # default
         if device is not None:
             if isinstance(device, str):
                 device = torch.device(device)
             if self.model.device != device:
                 model = self.model.to(device)
-            else:
-                model = self.model
-        else:
-            model = self.model
         model.eval()
         inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
         point_predictions = []
         quantile_predictions = []
         logits_predictions = defaultdict(list)
         is_probabilistic = hasattr(model.hparams, "_probabilistic") and model.hparams._probabilistic
-        for batch in track(inference_dataloader, description="Generating Predictions..."):
+
+        if progress_bar == "rich":
+            from rich.progress import track
+
+            progress_bar = partial(track, description="Generating Predictions...")
+        elif progress_bar == "tqdm":
+            from tqdm.auto import tqdm
+
+            progress_bar = partial(tqdm, description="Generating Predictions...")
+        else:
+            progress_bar = lambda it: it
+        for batch in progress_bar(inference_dataloader):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
-                    # Skipping empty list
-                    continue
+                    continue  # Skipping empty list
                 batch[k] = v.to(model.device)
             if is_probabilistic:
                 samples, ret_value = model.sample(batch, n_samples, ret_model_output=True)
@@ -1207,10 +1215,7 @@ class TabularModel:
             quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
             if quantile_predictions.ndim == 2:
                 quantile_predictions = quantile_predictions.unsqueeze(-1)
-        if include_input_features:
-            pred_df = test.copy()
-        else:
-            pred_df = pd.DataFrame(index=test.index)
+        pred_df = test.copy() if include_input_features else pd.DataFrame(index=test.index)
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
             # Probabilistic Models are only implemented for Regression
@@ -1227,9 +1232,10 @@ class TabularModel:
                     )
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
-                            pred_df[f"{target_col}_q{int(q*100)}"] = self.datamodule.target_transforms[
-                                i
-                            ].inverse_transform(quantile_predictions[:, j, i].reshape(-1, 1))
+                            col_ = f"{target_col}_q{int(q*100)}"
+                            pred_df[col_] = self.datamodule.target_transforms[i].inverse_transform(
+                                quantile_predictions[:, j, i].reshape(-1, 1)
+                            )
                 else:
                     pred_df[f"{target_col}_prediction"] = point_predictions[:, i]
                     if is_probabilistic:
