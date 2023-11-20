@@ -1,4 +1,4 @@
-pip ==23.1.2
+pip ==23.3.1
 wget
 bump2version ==1.0.1
 # coverage >=4.5.4
