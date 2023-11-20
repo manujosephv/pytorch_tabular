@@ -1276,7 +1276,7 @@ class TabularModel:
             dir (str): The path to the directory to save the datamodule
             drop_dataset (bool): Exclude the entire dataset to be storage friendly.
         """
-        dm = copy(self.datamodule) if drop_dataset else self.datamodule
+        dm = copy.copy(self.datamodule) if drop_dataset else self.datamodule
         if drop_dataset:
             dm.train = dm.validation = dm.test = None
         joblib.dump(dm, os.path.join(dir, "datamodule.sav"))

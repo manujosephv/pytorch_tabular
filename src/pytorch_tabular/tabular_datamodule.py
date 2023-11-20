@@ -131,8 +131,8 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
             output_dim=getattr(self, "output_dim", None),
-            categorical_cardinality=self.categorical_cardinality,
-            embedding_dims=self.embedding_dims,
+            categorical_cardinality=getattr(self, "categorical_cardinality", None),
+            embedding_dims=getattr(self, "embedding_dims", None),
         )
 
     def do_leave_one_out_encoder(self) -> bool:
