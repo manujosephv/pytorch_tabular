@@ -29,9 +29,9 @@ repos:
     - repo: https://github.com/asottile/pyupgrade
       rev: v3.15.0
       hooks:
-        - id: pyupgrade
-          args: ["--py38-plus"]
-          name: Upgrade code
+          - id: pyupgrade
+            args: ["--py38-plus"]
+            name: Upgrade code
 
     - repo: https://github.com/PyCQA/docformatter
       rev: v1.7.5
