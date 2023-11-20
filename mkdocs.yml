@@ -1,98 +1,98 @@
 site_name: PyTorch Tabular
 nav:
     - Getting Started:
-      - "PyTorch Tabular": index.md
+          - "PyTorch Tabular": index.md
     - Tutorials:
-      - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
-      - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
-      - Extracting and Using Learned Embeddings: "tutorials/03-Extracting and Using Learned Embeddings.ipynb"
-      - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
-      - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
-      - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
-      - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
-      - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
-      - Low-level API Usecases: "tutorials/09-Low-level API Usecases.ipynb"
-      - Test Time Augumentation: "tutorials/10-Test Time Augmentation.ipynb"
+          - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
+          - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
+          - Extracting and Using Learned Embeddings: "tutorials/03-Extracting and Using Learned Embeddings.ipynb"
+          - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
+          - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
+          - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
+          - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
+          - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
+          - Low-level API Usecases: "tutorials/09-Low-level API Usecases.ipynb"
+          - Test Time Augumentation: "tutorials/10-Test Time Augmentation.ipynb"
     - Configuration:
-      - Data: data.md
-      - Supervised Models: models.md
-      - Self-Supervised Models: ssl_models.md
-      - Training: training.md
-      - Optimizer and Learning Rate Scheduler: optimizer.md
-      - Experiment Tracking: experiment_tracking.md
+          - Data: data.md
+          - Supervised Models: models.md
+          - Self-Supervised Models: ssl_models.md
+          - Training: training.md
+          - Optimizer and Learning Rate Scheduler: optimizer.md
+          - Experiment Tracking: experiment_tracking.md
     - Tabular Model:
-      - TabularModel: tabular_model.md
+          - TabularModel: tabular_model.md
     - Other Features:
-      - "Other Features": other_features.md
+          - "Other Features": other_features.md
     # - FAQ: faq.md
     # - API:
     - API:
-      - Core Classes: apidocs_coreclasses.md
-      - Configuration Classes: apidocs_config.md
-      - Supervised Models: apidocs_model.md
-      - Self-Supervised Models: apidocs_ssl.md
-      - Heads: apidocs_head.md
-      - Common Modules: apidocs_common.md
-      - Utilities: apidocs_utils.md
+          - Core Classes: apidocs_coreclasses.md
+          - Configuration Classes: apidocs_config.md
+          - Supervised Models: apidocs_model.md
+          - Self-Supervised Models: apidocs_ssl.md
+          - Heads: apidocs_head.md
+          - Common Modules: apidocs_common.md
+          - Utilities: apidocs_utils.md
     - Contributions:
-      - Contributing: contributing.md
+          - Contributing: contributing.md
     # - Credits and History:
-      # - Authors: authors.md
+    # - Authors: authors.md
     - History: history.md
 theme:
-  name: material
-  features:
-    - search.suggest
-    - navigation.tabs
-    - navigation.tabs.sticky
-    # - toc.integrate
-    - navigation.top
-    - content.code.copy
-  palette:
-    # Palette toggle for light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
+    name: material
+    features:
+        - search.suggest
+        - navigation.tabs
+        - navigation.tabs.sticky
+        # - toc.integrate
+        - navigation.top
+        - content.code.copy
+    palette:
+        # Palette toggle for light mode
+        - media: "(prefers-color-scheme: light)"
+          scheme: default
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
 
-    # Palette toggle for dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-    # primary: deep purple
-  logo: imgs/pytorch_tabular_logo_small.svg
+        # Palette toggle for dark mode
+        - media: "(prefers-color-scheme: dark)"
+          scheme: slate
+          toggle:
+              icon: material/brightness-4
+              name: Switch to light mode
+        # primary: deep purple
+    logo: imgs/pytorch_tabular_logo_small.svg
 markdown_extensions:
-  - admonition
-  # - codehilite
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-  # - pymdownx.inlinehilite
+    - admonition
+    # - codehilite
+    - pymdownx.highlight:
+          anchor_linenums: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+    - pymdownx.superfences
+    # - pymdownx.inlinehilite
 plugins:
-  - search
-  - mknotebooks
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [src]  # search packages in the src folder
-          rendering:
-            show_root_heading: yes
-            merge_init_into_class: yes
-            docstring_section_style: spacy
+    - search
+    - mknotebooks
+    - mkdocstrings:
+          handlers:
+              python:
+                  paths: [src] # search packages in the src folder
+                  rendering:
+                      show_root_heading: yes
+                      merge_init_into_class: yes
+                      docstring_section_style: spacy
 repo_url: https://github.com/manujosephv/pytorch_tabular
 extra:
-  social:
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/in/manujosephv/
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/manujosephv
-    - icon: fontawesome/solid/blog
-      link: https://deep-and-shallow.com/
-    - icon: fontawesome/brands/medium
-      link: https://medium.com/@manujosephv
+    social:
+        - icon: fontawesome/brands/linkedin
+          link: https://www.linkedin.com/in/manujosephv/
+        - icon: fontawesome/brands/twitter
+          link: https://twitter.com/manujosephv
+        - icon: fontawesome/solid/blog
+          link: https://deep-and-shallow.com/
+        - icon: fontawesome/brands/medium
+          link: https://medium.com/@manujosephv
 copyright: Copyright &copy; 2020 Manu Joseph

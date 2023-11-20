@@ -5,7 +5,7 @@ tree_depth: 5
 chain_trees: False
 head: MixtureDensityHead
 head_config:
-  num_gaussian: 4
+    num_gaussian: 4
 learning_rate: 0.001
 _module_src: models.gate
 _model_name: GatedAdditiveTreeEnsembleModel
