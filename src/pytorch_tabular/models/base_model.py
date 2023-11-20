@@ -8,12 +8,12 @@ from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
 from omegaconf import DictConfig, OmegaConf
+from pandas import DataFrame
 from torch import Tensor
 
 from pytorch_tabular.models.common.heads import blocks
@@ -536,7 +536,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         reset_all_weights(self.head)
         reset_all_weights(self.embedding_layer)
 
-    def feature_importance(self) -> pd.DataFrame:
+    def feature_importance(self) -> DataFrame:
         """Returns a dataframe with feature importance for the model."""
         if hasattr(self.backbone, "feature_importance_"):
             imp = self.backbone.feature_importance_
@@ -560,7 +560,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     # For models like FTTransformer, we dont need to do anything
                     # It takes categorical and continuous as individual 2-D features
                     pass
-            importance_df = pd.DataFrame(
+            importance_df = DataFrame(
                 {
                     "Features": self.hparams.categorical_cols + self.hparams.continuous_cols,
                     "importance": imp,

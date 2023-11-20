@@ -13,12 +13,12 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
+from pandas import DataFrame
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
 from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
@@ -431,9 +431,9 @@ class TabularModel:
 
     def prepare_dataloader(
         self,
-        train: pd.DataFrame,
-        validation: Optional[pd.DataFrame] = None,
-        test: Optional[pd.DataFrame] = None,
+        train: DataFrame,
+        validation: Optional[DataFrame] = None,
+        test: Optional[DataFrame] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
@@ -441,14 +441,14 @@ class TabularModel:
         """Prepares the dataloaders for training and validation.
 
         Args:
-            train (pd.DataFrame): Training Dataframe
+            train (DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional):
+            validation (Optional[DataFrame], optional):
                 If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
 
-            test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
+            test (Optional[DataFrame], optional): If provided, will use as the hold-out data,
                 which you'll be able to check performance after the model is trained. Defaults to None.
 
             train_sampler (Optional[torch.utils.data.Sampler], optional):
@@ -588,9 +588,9 @@ class TabularModel:
 
     def fit(
         self,
-        train: Optional[pd.DataFrame],
-        validation: Optional[pd.DataFrame] = None,
-        test: Optional[pd.DataFrame] = None,  # TODO: Deprecate test in next version
+        train: Optional[DataFrame],
+        validation: Optional[DataFrame] = None,
+        test: Optional[DataFrame] = None,  # TODO: Deprecate test in next version
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         metrics_prob_inputs: Optional[List[bool]] = None,
@@ -607,14 +607,14 @@ class TabularModel:
         """The fit method which takes in the data and triggers the training.
 
         Args:
-            train (pd.DataFrame): Training Dataframe
+            train (DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional):
+            validation (Optional[DataFrame], optional):
                 If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
 
-            test (Optional[pd.DataFrame], optional): If provided, will use as the hold-out data,
+            test (Optional[DataFrame], optional): If provided, will use as the hold-out data,
                 which you'll be able to check performance after the model is trained. Defaults to None.
                 DEPRECATED. Will be removed in the next version.
 
@@ -696,8 +696,8 @@ class TabularModel:
 
     def pretrain(
         self,
-        train: Optional[pd.DataFrame],
-        validation: Optional[pd.DataFrame] = None,
+        train: Optional[DataFrame],
+        validation: Optional[DataFrame] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
         optimizer_params: Dict = {},
         # train_sampler: Optional[torch.utils.data.Sampler] = None,
@@ -710,9 +710,9 @@ class TabularModel:
         """The pretrained method which takes in the data and triggers the training.
 
         Args:
-            train (pd.DataFrame): Training Dataframe
+            train (DataFrame): Training Dataframe
 
-            validation (Optional[pd.DataFrame], optional): If provided, will use this dataframe as the validation while
+            validation (Optional[DataFrame], optional): If provided, will use this dataframe as the validation while
                 training. Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
 
@@ -932,7 +932,7 @@ class TabularModel:
     def finetune(
         self,
         train,
-        validation: Optional[pd.DataFrame] = None,
+        validation: Optional[DataFrame] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         max_epochs: Optional[int] = None,
@@ -944,9 +944,9 @@ class TabularModel:
     ) -> pl.Trainer:
         """Finetunes the model on the provided data
         Args:
-            train (pd.DataFrame): The training data with labels
+            train (DataFrame): The training data with labels
 
-            validation (Optional[pd.DataFrame], optional): The validation data with labels. Defaults to None.
+            validation (Optional[DataFrame], optional): The validation data with labels. Defaults to None.
 
             train_sampler (Optional[torch.utils.data.Sampler], optional): If provided, will be used as a batch sampler
                 for training. Defaults to None.
@@ -1027,7 +1027,7 @@ class TabularModel:
         early_stop_threshold: Optional[float] = 4.0,
         plot: bool = True,
         callbacks: Optional[List] = None,
-    ) -> Tuple[float, pd.DataFrame]:
+    ) -> Tuple[float, DataFrame]:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in
         picking a good starting learning rate.
 
@@ -1079,11 +1079,11 @@ class TabularModel:
         self.trainer = None
         self.datamodule = None
         self.callbacks = None
-        return new_lr, pd.DataFrame(lr_finder.results)
+        return new_lr, DataFrame(lr_finder.results)
 
     def evaluate(
         self,
-        test: Optional[pd.DataFrame] = None,
+        test: Optional[DataFrame] = None,
         test_loader: Optional[torch.utils.data.DataLoader] = None,
         ckpt_path: Optional[Union[str, Path]] = None,
         verbose: bool = True,
@@ -1091,7 +1091,7 @@ class TabularModel:
         """Evaluates the dataframe using the loss and metrics already set in config.
 
         Args:
-            test (Optional[pd.DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
+            test (Optional[DataFrame]): The dataframe to be evaluated. If not provided, will try to use the
                 test provided during fit. If that was also not provided will return an empty dictionary
 
             test_loader (Optional[torch.utils.data.DataLoader], optional): The dataloader to be used for evaluation.
@@ -1132,17 +1132,17 @@ class TabularModel:
 
     def predict(
         self,
-        test: pd.DataFrame,
+        test: DataFrame,
         quantiles: Optional[List] = [0.25, 0.5, 0.75],
         n_samples: Optional[int] = 100,
         ret_logits=False,
         include_input_features: bool = True,
         device: Optional[torch.device] = None,
-    ) -> pd.DataFrame:
+    ) -> DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe.
 
         Args:
-            test (pd.DataFrame): The new dataframe with the features defined during training
+            test (DataFrame): The new dataframe with the features defined during training
             quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
                 the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
                 For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
@@ -1154,7 +1154,7 @@ class TabularModel:
                 Defaults to True
 
         Returns:
-            pd.DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
+            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
                 If classification, it returns probabilities and final prediction
         """
         warnings.warn(
@@ -1210,7 +1210,7 @@ class TabularModel:
         if include_input_features:
             pred_df = test.copy()
         else:
-            pred_df = pd.DataFrame(index=test.index)
+            pred_df = DataFrame(index=test.index)
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
             # Probabilistic Models are only implemented for Regression
@@ -1383,6 +1383,6 @@ class TabularModel:
     def __str__(self) -> str:
         return self.summary()
 
-    def feature_importance(self) -> pd.DataFrame:
+    def feature_importance(self) -> DataFrame:
         """Returns the feature importance of the model as a pandas DataFrame."""
         return self.model.feature_importance()
