@@ -6,6 +6,7 @@ import copy
 import inspect
 import os
 import warnings
+from copy import copy
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -1269,24 +1270,29 @@ class TabularModel:
         else:
             logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
-    def save_datamodule(self, dir: str) -> None:
+    def save_datamodule(self, dir: str, drop_dataset: bool = False) -> None:
         """Saves the datamodule in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the datamodule
+            drop_dataset (bool): Exclude the entire dataset to be storage friendly.
         """
-        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
+        dm = copy(self.datamodule) if drop_dataset else self.datamodule
+        if drop_dataset:
+            dm.train = dm.validation = dm.test = None
+        joblib.dump(dm, os.path.join(dir, "datamodule.sav"))
 
     def save_config(self, dir: str) -> None:
         """Saves the config in the specified directory."""
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
-    def save_model(self, dir: str) -> None:
+    def save_model(self, dir: str, drop_dataset: bool = False) -> None:
         """Saves the model and checkpoints in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the model
+            drop_dataset (bool): Exclude the entire dataset to be storage friendly.
         """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")
@@ -1294,7 +1300,7 @@ class TabularModel:
                 os.remove(os.path.join(dir, f))
         os.makedirs(dir, exist_ok=True)
         self.save_config(dir)
-        self.save_datamodule(dir)
+        self.save_datamodule(dir, drop_dataset=drop_dataset)
         if hasattr(self.config, "log_target") and self.config.log_target is not None:
             joblib.dump(self.logger, os.path.join(dir, "exp_logger.sav"))
         if hasattr(self, "callbacks"):
