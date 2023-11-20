@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
 """Category Encoders."""
+from pandas import DataFrame, Series, unique
 
 try:
     import cPickle as pickle
@@ -10,7 +11,6 @@ except ImportError:
     import pickle
 
 import numpy as np
-import pandas as pd
 from rich.progress import track
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -125,11 +125,7 @@ class OrdinalEncoder(BaseEncoder):
                 not X[self.cols].isnull().any().any()
             ), "`handle_missing` = `error` and missing values found in columns to encode."
         for col in self.cols:
-            map = (
-                pd.Series(pd.unique(X[col].fillna(NAN_CATEGORY)), name=col)
-                .reset_index()
-                .rename(columns={"index": "value"})
-            )
+            map = Series(unique(X[col].fillna(NAN_CATEGORY)), name=col).reset_index().rename(columns={"index": "value"})
             map["value"] += 1
             self._mapping[col] = map.set_index(col)
 
@@ -182,18 +178,18 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         """
         return self
 
-    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def transform(self, X: DataFrame, y=None) -> DataFrame:
         """Transforms the categorical columns specified to the trained neural embedding from the model.
 
         Args:
-            X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
+            X (DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
             y ([type], optional): Only for compatibility. Not used. Defaults to None.
 
         Raises:
             ValueError: [description]
 
         Returns:
-            pd.DataFrame: The encoded dataframe
+            DataFrame: The encoded dataframe
         """
         if not self._mapping:
             raise ValueError(
@@ -217,15 +213,15 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         X_encoded.drop(columns=self.cols, inplace=True)
         return X_encoded
 
-    def fit_transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def fit_transform(self, X: DataFrame, y=None) -> DataFrame:
         """Encode given columns of X based on the learned embedding.
 
         Args:
-            X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
+            X (DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
             y ([type], optional): Only for compatibility. Not used. Defaults to None.
 
         Returns:
-            pd.DataFrame: The encoded dataframe
+            DataFrame: The encoded dataframe
         """
         self.fit(X, y)
         return self.transform(X)
