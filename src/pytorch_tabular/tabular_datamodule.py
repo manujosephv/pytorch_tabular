@@ -9,13 +9,13 @@ from typing import Iterable, List, Optional, Tuple, Union
 import category_encoders as ce
 import joblib
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig
+from pandas import DataFrame, DatetimeTZDtype, to_datetime
 from pandas.tseries import offsets
 from pandas.tseries.frequencies import to_offset
-from sklearn.base import copy, TransformerMixin
+from sklearn.base import TransformerMixin, copy
 from sklearn.preprocessing import (
     FunctionTransformer,
     LabelEncoder,
@@ -55,10 +55,10 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def __init__(
         self,
-        train: pd.DataFrame,
+        train: DataFrame,
         config: DictConfig,
-        validation: pd.DataFrame = None,
-        test: pd.DataFrame = None,
+        validation: DataFrame = None,
+        test: DataFrame = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         seed: Optional[int] = 42,
@@ -66,16 +66,16 @@ class TabularDatamodule(pl.LightningDataModule):
         """The Pytorch Lightning Datamodule for Tabular Data.
 
         Args:
-            train (pd.DataFrame): The Training Dataframe
+            train (DataFrame): The Training Dataframe
 
             config (DictConfig): Merged configuration object from ModelConfig, DataConfig,
                 TrainerConfig, OptimizerConfig & ExperimentConfig
 
-            validation (pd.DataFrame, optional): Validation Dataframe.
+            validation (DataFrame, optional): Validation Dataframe.
                 If left empty, we use the validation split from DataConfig to split a random sample as validation.
                 Defaults to None.
 
-            test (pd.DataFrame, optional): Holdout DataFrame to check final performance on.
+            test (DataFrame, optional): Holdout DataFrame to check final performance on.
                 Defaults to None.
 
             target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional):
@@ -151,7 +151,7 @@ class TabularDatamodule(pl.LightningDataModule):
         else:
             return False
 
-    def _encode_date_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+    def _encode_date_columns(self, data: DataFrame) -> DataFrame:
         added_features = []
         for field_name, freq in self.config.date_columns:
             data = self.make_date(data, field_name)
@@ -159,7 +159,7 @@ class TabularDatamodule(pl.LightningDataModule):
             added_features += _new_feats
         return data, added_features
 
-    def _encode_categorical_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
+    def _encode_categorical_columns(self, data: DataFrame, stage: str) -> DataFrame:
         if stage != "fit":
             return self.categorical_encoder.transform(data)
         if self.do_leave_one_out_encoder():
@@ -182,7 +182,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data = self.categorical_encoder.fit_transform(data)
         return data
 
-    def _transform_continuous_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
+    def _transform_continuous_columns(self, data: DataFrame, stage: str) -> DataFrame:
         if stage == "fit":
             transform = self.CONTINUOUS_TRANSFORMS[self.config.continuous_feature_transform]
             if "random_state" in transform["params"] and self.seed is not None:
@@ -198,7 +198,7 @@ class TabularDatamodule(pl.LightningDataModule):
             )
         return data
 
-    def _normalize_continuous_columns(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
+    def _normalize_continuous_columns(self, data: DataFrame, stage: str) -> DataFrame:
         if stage == "fit":
             self.scaler = StandardScaler()
             data.loc[:, self.config.continuous_cols] = self.scaler.fit_transform(
@@ -208,7 +208,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data.loc[:, self.config.continuous_cols] = self.scaler.transform(data.loc[:, self.config.continuous_cols])
         return data
 
-    def _label_encode_target(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
+    def _label_encode_target(self, data: DataFrame, stage: str) -> DataFrame:
         if self.config.task != "classification":
             return data
         if stage == "fit":
@@ -219,7 +219,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
         return data
 
-    def _target_transform(self, data: pd.DataFrame, stage: str) -> pd.DataFrame:
+    def _target_transform(self, data: DataFrame, stage: str) -> DataFrame:
         if self.config.task != "regression":
             return data
         # target transform only for regression
@@ -238,12 +238,12 @@ class TabularDatamodule(pl.LightningDataModule):
                     data[col] = _target_transform.transform(data[col].values.reshape(-1, 1))
         return data
 
-    def preprocess_data(self, data: pd.DataFrame, stage: str = "inference") -> Tuple[pd.DataFrame, list]:
+    def preprocess_data(self, data: DataFrame, stage: str = "inference") -> Tuple[DataFrame, list]:
         """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before
         feeding into the dataloder.
 
         Args:
-            data (pd.DataFrame): A dataframe with the features and target
+            data (DataFrame): A dataframe with the features and target
             stage (str, optional): Internal parameter. Used to distinguisj between fit and inference.
                 Defaults to "inference".
 
@@ -428,11 +428,11 @@ class TabularDatamodule(pl.LightningDataModule):
 
     # adapted from fastai
     @classmethod
-    def make_date(cls, df: pd.DataFrame, date_field: str) -> pd.DataFrame:
+    def make_date(cls, df: DataFrame, date_field: str) -> DataFrame:
         """Make sure `df[date_field]` is of the right date type.
 
         Args:
-            df (pd.DataFrame): Dataframe
+            df (DataFrame): Dataframe
 
             date_field (str): Date field name
 
@@ -440,26 +440,26 @@ class TabularDatamodule(pl.LightningDataModule):
             Dataframe with date field converted to datetime
         """
         field_dtype = df[date_field].dtype
-        if isinstance(field_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
+        if isinstance(field_dtype, DatetimeTZDtype):
             field_dtype = np.datetime64
         if not np.issubdtype(field_dtype, np.datetime64):
-            df[date_field] = pd.to_datetime(df[date_field], infer_datetime_format=True)
+            df[date_field] = to_datetime(df[date_field], infer_datetime_format=True)
         return df
 
     # adapted from fastai
     @classmethod
     def add_datepart(
         cls,
-        df: pd.DataFrame,
+        df: DataFrame,
         field_name: str,
         frequency: str,
         prefix: str = None,
         drop: bool = True,
-    ) -> Tuple[pd.DataFrame, List[str]]:
+    ) -> Tuple[DataFrame, List[str]]:
         """Helper function that adds columns relevant to a date in the column `field_name` of `df`.
 
         Args:
-            df (pd.DataFrame): Dataframe
+            df (DataFrame): Dataframe
 
             field_name (str): Date field name
 
@@ -580,7 +580,7 @@ class TabularDatamodule(pl.LightningDataModule):
             pin_memory=self.config.pin_memory,
         )
 
-    def _prepare_inference_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _prepare_inference_data(self, df: DataFrame) -> DataFrame:
         """Prepare data for inference."""
         # TODO Is the target encoding necessary?
         if len(set(self.target) - set(df.columns)) > 0:
@@ -591,11 +591,11 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
         return df
 
-    def prepare_inference_dataloader(self, df: pd.DataFrame, batch_size: Optional[int] = None) -> DataLoader:
+    def prepare_inference_dataloader(self, df: DataFrame, batch_size: Optional[int] = None) -> DataLoader:
         """Function that prepares and loads the new data.
 
         Args:
-            df (pd.DataFrame): Dataframe with the features and target
+            df (DataFrame): Dataframe with the features and target
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
 
         Returns:
@@ -649,7 +649,7 @@ class TabularDatamodule(pl.LightningDataModule):
 class TabularDataset(Dataset):
     def __init__(
         self,
-        data: pd.DataFrame,
+        data: DataFrame,
         task: str,
         continuous_cols: List[str] = None,
         categorical_cols: List[str] = None,
@@ -659,7 +659,7 @@ class TabularDataset(Dataset):
         """Dataset to Load Tabular Data.
 
         Args:
-            data (pd.DataFrame): Pandas DataFrame to load during training
+            data (DataFrame): Pandas DataFrame to load during training
             task (str):
                 Whether it is a classification or regression task. If classification, it returns a LongTensor as target
             continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.

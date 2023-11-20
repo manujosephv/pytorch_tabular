@@ -1,6 +1,6 @@
 import numpy as np
-import pandas as pd
 import torch
+from pandas import DataFrame, Series
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
@@ -42,7 +42,7 @@ def get_balanced_sampler(y_train):
 
 
 def get_gaussian_centers(y, n_components):
-    if isinstance(y, pd.Series) or isinstance(y, pd.DataFrame):
+    if isinstance(y, Series) or isinstance(y, DataFrame):
         y = y.values
     if y.ndim == 1:
         y = y.reshape(-1, 1)

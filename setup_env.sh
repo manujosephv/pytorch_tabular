@@ -13,7 +13,7 @@ source .env/$name/bin/activate
 
 # Create a temporary requirements file
 # Read the contents of the file into a variable.
-contents=$(cat requirements.txt)
+contents=$(cat requirements/base.txt)
 # Replace all occurrences of ">=" with "==" in the variable.
 contents=$(echo "$contents" | sed 's/>=$/==/g')
 # Write the contents of the variable to the file.

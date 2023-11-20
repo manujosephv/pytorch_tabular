@@ -5,7 +5,7 @@
 import os
 import re
 import warnings
-from dataclasses import dataclass, field, MISSING
+from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
 from omegaconf import OmegaConf
@@ -655,7 +655,8 @@ class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
     Args:
         optimizer (str): Any of the standard optimizers from
-                [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms).
+                [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms) or provide full python path,
+                for example "torch_optimizer.RAdam".
 
         optimizer_params (Dict): The parameters for the optimizer. If left blank, will use default
                 parameters.
@@ -675,7 +676,8 @@ class OptimizerConfig:
         default="Adam",
         metadata={
             "help": "Any of the standard optimizers from"
-            " [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms)."
+            " [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms) or provide full python path,"
+            " for example 'torch_optimizer.RAdam'."
         },
     )
     optimizer_params: Dict = field(

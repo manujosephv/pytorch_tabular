@@ -1,5 +1,4 @@
 from .config import (
-    _validate_choices,
     DataConfig,
     ExperimentConfig,
     ExperimentRunManager,
@@ -8,6 +7,7 @@ from .config import (
     OptimizerConfig,
     SSLModelConfig,
     TrainerConfig,
+    _validate_choices,
 )
 
 __all__ = [

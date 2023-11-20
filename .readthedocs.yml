@@ -11,20 +11,20 @@ version: 2
 
 # Build documentation with MkDocs
 mkdocs:
- configuration: mkdocs.yml
+    configuration: mkdocs.yml
 
 # Optionally build your docs in additional formats such as PDF
 formats:
-  - pdf
+    - pdf
 
 build:
-  os: ubuntu-20.04
-  tools:
-    python: "3.8"
+    os: ubuntu-20.04
+    tools:
+        python: "3.8"
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  install:
-    - requirements: requirements_dev.txt
-    - method: pip
-      path: .[extra]
+    install:
+        - requirements: requirements/dev.txt
+        - method: pip
+          path: .[extra]

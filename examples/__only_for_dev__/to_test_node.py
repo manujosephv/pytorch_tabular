@@ -3,11 +3,10 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import fetch_california_housing, fetch_covtype
-
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.node import NodeConfig
 from pytorch_tabular.tabular_model import TabularModel
+from sklearn.datasets import fetch_california_housing, fetch_covtype
 
 
 def regression_data():

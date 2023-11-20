@@ -5,9 +5,9 @@ tree_depth: 5
 chain_trees: False
 head: LinearHead
 head_config:
-  layers: ''
-  activation: LeakyRelu
-  dropout: 0.1
+    layers: ""
+    activation: LeakyRelu
+    dropout: 0.1
 learning_rate: 0.001
 _module_src: models.gate
 _model_name: GatedAdditiveTreeEnsembleModel
