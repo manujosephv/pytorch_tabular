@@ -6,7 +6,6 @@ import copy
 import inspect
 import os
 import warnings
-from copy import copy
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
