@@ -71,6 +71,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("drop_data", [True, False])
 def test_save_load(
     regression_data,
     model_config_class,
@@ -79,6 +80,7 @@ def test_save_load(
     custom_metrics,
     custom_loss,
     custom_optimizer,
+    drop_data,
     tmpdir,
 ):
     (train, test, target) = regression_data
@@ -119,7 +121,7 @@ def test_save_load(
     # sv_dir = tmpdir/"save_model"
     # sv_dir.mkdir(exist_ok=True, parents=True)
     sv_dir = tmpdir.mkdir("saved_model")
-    tabular_model.save_model(str(sv_dir))
+    tabular_model.save_model(str(sv_dir), drop_dataset=drop_data)
     new_mdl = TabularModel.load_from_checkpoint(str(sv_dir))
     result_2 = new_mdl.evaluate(test)
     assert (
