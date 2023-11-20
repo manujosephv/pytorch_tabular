@@ -29,7 +29,7 @@ jobs:
               if: matrix.requires == 'oldest'
               run: |
                   import os
-                  fname = 'requirements.txt'
+                  fname = 'requirements/base.txt'
                   lines = [line.replace('>=', '==') for line in open(fname).readlines()]
                   open(fname, 'w').writelines(lines)
               shell: python
