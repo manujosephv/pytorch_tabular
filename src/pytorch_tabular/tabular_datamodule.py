@@ -131,7 +131,7 @@ class TabularDatamodule(pl.LightningDataModule):
         return InferredConfig(
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
-            output_dim=self.output_dim,
+            output_dim=getattr(self, "output_dim", None),
             categorical_cardinality=getattr(self, "categorical_cardinality", []),
             embedding_dims=getattr(self, "embedding_dims", []),
         )
