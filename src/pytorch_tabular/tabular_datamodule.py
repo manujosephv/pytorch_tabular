@@ -119,20 +119,21 @@ class TabularDatamodule(pl.LightningDataModule):
             self.output_dim = len(config.target)
         elif config.task == "classification":
             self.output_dim = len(self.train[config.target[0]].unique())
-        if not self.do_leave_one_out_encoder() and self.train is not None:
-            self.categorical_cardinality = [
-                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
-            ]
+        if not self.do_leave_one_out_encoder():
+            if self.train is not None:
+                self.categorical_cardinality = [
+                    int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
+                ]
             if getattr(config, "embedding_dims", None) is not None:
                 self.embedding_dims = config.embedding_dims
-            else:
+            elif hasattr(self, "categorical_cardinality"):
                 self.embedding_dims = [(x, min(50, (x + 1) // 2)) for x in self.categorical_cardinality]
         return InferredConfig(
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
-            output_dim=getattr(self, "output_dim", None),
-            categorical_cardinality=getattr(self, "categorical_cardinality", None),
-            embedding_dims=getattr(self, "embedding_dims", None),
+            output_dim=self.output_dim,
+            categorical_cardinality=getattr(self, "categorical_cardinality", []),
+            embedding_dims=getattr(self, "embedding_dims", []),
         )
 
     def do_leave_one_out_encoder(self) -> bool:
