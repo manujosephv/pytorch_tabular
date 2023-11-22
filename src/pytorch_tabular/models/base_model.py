@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Base Model."""
+import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
 from functools import partial
@@ -461,7 +462,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         if self.custom_optimizer is None:
             # Loading from the config
             try:
-                self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+                if "." in self.hparams.optimizer:
+                    py_path, cls_name = self.hparams.optimizer.rsplit(".", 1)
+                    module = importlib.import_module(py_path)
+                    self._optimizer = getattr(module, cls_name)
+                else:
+                    self._optimizer = getattr(torch.optim, self.hparams.optimizer)
                 opt = self._optimizer(
                     self.parameters(),
                     lr=self.hparams.learning_rate,
