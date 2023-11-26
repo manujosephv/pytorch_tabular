@@ -22,12 +22,7 @@ class TabNetBackbone(nn.Module):
     def _build_network(self):
         group_matrix = create_group_matrix(
             self.hparams.grouped_features
-            or [
-                [i]
-                for i in range(
-                    self.hparams.continuous_dim + self.hparams.categorical_dim
-                )
-            ],
+            or [[i] for i in range(self.hparams.continuous_dim + self.hparams.categorical_dim)],
             self.hparams.continuous_dim + self.hparams.categorical_dim,
         )
         self.tabnet = TabNet(
@@ -95,7 +90,4 @@ class TabNetModel(BaseModel):
         self._head = nn.Identity()
 
     def extract_embedding(self):
-        raise ValueError(
-            "Extracting Embeddings is not supported by Tabnet. Please use another"
-            " compatible model"
-        )
+        raise ValueError("Extracting Embeddings is not supported by Tabnet. Please use another" " compatible model")
