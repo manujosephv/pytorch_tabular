@@ -279,6 +279,9 @@ class TabularModel:
         trainer_args_config["enable_progress_bar"] = self.config.progress_bar != "none"
         # Adding trainer_kwargs from config to trainer_args
         trainer_args_config.update(self.config.trainer_kwargs)
+        if trainer_args_config['devices'] == -1:
+            # Setting devices to auto if -1 so that lightning will use all available GPUs/CPUs
+            trainer_args_config['devices'] = "auto"
         return pl.Trainer(
             logger=self.logger,
             callbacks=callbacks,

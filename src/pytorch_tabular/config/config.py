@@ -574,9 +574,6 @@ class TrainerConfig:
                     f"Cannot override {key} in checkpoints_kwargs."
                     f" Please use the appropriate argument in `TrainerConfig`"
                 )
-        if self.devices == -1:
-            # setting devices to "auto" when devices == -1 to make PyTorch Lightning to use all available devices
-            self.devices = "auto"
 
 
 @dataclass
