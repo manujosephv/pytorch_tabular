@@ -6,7 +6,7 @@ import os
 import re
 import warnings
 from dataclasses import MISSING, dataclass, field
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from omegaconf import OmegaConf
 
@@ -383,11 +383,11 @@ class TrainerConfig:
             "choices": ["cpu", "gpu", "tpu", "ipu", "mps", "auto"],
         },
     )
-    devices: Optional[int] = field(
-        default=None,
+    devices: Optional[Union[int, str]] = field(
+        default="auto",
         metadata={
-            "help": "Number of devices to train on (int). -1 uses all available devices."
-            " By default uses all available devices (-1)",
+            "help": "Number of devices to train on (int). `auto` uses all available devices."
+            " By default uses all available devices (auto)",
         },
     )
     devices_list: Optional[List[int]] = field(

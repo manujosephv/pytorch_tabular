@@ -36,6 +36,7 @@ class MDNModel(BaseModel):
         assert self.hparams.output_dim == 1, "MDN is not implemented for multi-targets"
         if config.target_range is not None:
             logger.warning("MDN does not use target range. Ignoring it.")
+        self._val_output = []
 
     def _get_head_from_config(self):
         _head_callable = getattr(blocks, self.hparams.head)
@@ -179,10 +180,14 @@ class MDNModel(BaseModel):
         self.calculate_metrics(y, y_hat, tag="test")
         return y_hat, y
 
-    def on_validation_epoch_end(self, outputs) -> None:
+    def on_validation_batch_end(self, outputs, batch, batch_idx: int) -> None:
+        self._val_output.append(outputs)
+        super().on_validation_batch_end(outputs, batch, batch_idx)
+
+    def on_validation_epoch_end(self) -> None:
         pi = [
             nn.functional.gumbel_softmax(output[2]["pi"], tau=self.head.hparams.softmax_temperature, dim=-1)
-            for output in outputs
+            for output in self._val_output
         ]
         pi = torch.cat(pi).detach().cpu()
         for i in range(self.head.hparams.num_gaussian):
@@ -195,7 +200,7 @@ class MDNModel(BaseModel):
                 prog_bar=False,
             )
 
-        mu = [output[2]["mu"] for output in outputs]
+        mu = [output[2]["mu"] for output in self._val_output]
         mu = torch.cat(mu).detach().cpu()
         for i in range(self.head.hparams.num_gaussian):
             self.log(
@@ -207,7 +212,7 @@ class MDNModel(BaseModel):
                 prog_bar=False,
             )
 
-        sigma = [output[2]["sigma"] for output in outputs]
+        sigma = [output[2]["sigma"] for output in self._val_output]
         sigma = torch.cat(sigma).detach().cpu()
         for i in range(self.head.hparams.num_gaussian):
             self.log(
@@ -219,7 +224,7 @@ class MDNModel(BaseModel):
                 prog_bar=False,
             )
         if self.do_log_logits:
-            logits = [output[0] for output in outputs]
+            logits = [output[0] for output in self._val_output]
             logits = torch.cat(logits).detach().cpu()
             fig = self.create_plotly_histogram(logits.unsqueeze(1), "logits")
             wandb.log(
@@ -256,3 +261,4 @@ class MDNModel(BaseModel):
                     },
                     commit=False,
                 )
+        self._val_output = []

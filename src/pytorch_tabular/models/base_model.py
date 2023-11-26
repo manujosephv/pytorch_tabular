@@ -136,6 +136,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         self.do_log_logits = (
             hasattr(self.hparams, "log_logits") and self.hparams.log_logits and self.hparams.log_target == "wandb"
         )
+        if self.do_log_logits:
+            self._val_logits = []
         if not WANDB_INSTALLED:
             self.do_log_logits = False
             warnings.warn(
@@ -521,15 +523,21 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         fig.update_traces(opacity=0.5)
         return fig
 
-    def on_validation_epoch_end(self, outputs) -> None:
+    def on_validation_batch_end(self, outputs, batch, batch_idx: int) -> None:
         if self.do_log_logits:
-            logits = [output[0] for output in outputs]
-            logits = torch.cat(logits).detach().cpu()
+            self._val_logits.append(outputs[0][0])
+        super().on_validation_batch_end(outputs, batch, batch_idx)
+
+    def on_validation_epoch_end(self) -> None:
+        if self.do_log_logits:
+            logits = torch.cat(self._val_logits).detach().cpu()
+            self._val_logits = []
             fig = self.create_plotly_histogram(logits, "logits")
             wandb.log(
                 {"valid_logits": wandb.Plotly(fig), "global_step": self.global_step},
                 commit=False,
             )
+        super().on_validation_epoch_end()
 
     def reset_weights(self):
         reset_all_weights(self.backbone)
