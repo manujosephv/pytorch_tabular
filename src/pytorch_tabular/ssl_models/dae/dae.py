@@ -18,6 +18,9 @@ from ..common.noise_generators import SwapNoiseCorrupter
 
 class DenoisingAutoEncoderFeaturizer(nn.Module):
     output_tuple = namedtuple("output_tuple", ["features", "mask"])
+    # Fix for pickling
+    # https://codefying.com/2019/05/04/dont-get-in-a-pickle-with-a-namedtuple/
+    output_tuple.__qualname__ = "DenoisingAutoEncoderFeaturizer.output_tuple"
 
     def __init__(self, encoder, config: DictConfig, **kwargs):
         super().__init__()
@@ -73,6 +76,10 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
 class DenoisingAutoEncoderModel(SSLBaseModel):
     output_tuple = namedtuple("output_tuple", ["original", "reconstructed"])
     loss_weight_tuple = namedtuple("loss_weight_tuple", ["binary", "categorical", "continuous", "mask"])
+    # fix for pickling
+    # https://codefying.com/2019/05/04/dont-get-in-a-pickle-with-a-namedtuple/
+    output_tuple.__qualname__ = "DenoisingAutoEncoderModel.output_tuple"
+    loss_weight_tuple.__qualname__ = "DenoisingAutoEncoderModel.loss_weight_tuple"
     ALLOWED_MODELS = ["CategoryEmbeddingModelConfig"]
 
     def __init__(self, config: DictConfig, **kwargs):
