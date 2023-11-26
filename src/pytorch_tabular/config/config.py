@@ -383,11 +383,11 @@ class TrainerConfig:
             "choices": ["cpu", "gpu", "tpu", "ipu", "mps", "auto"],
         },
     )
-    devices: Optional[Union[int, str]] = field(
-        default="auto",
+    devices: Optional[int] = field(
+        default=-1,
         metadata={
-            "help": "Number of devices to train on (int). `auto` uses all available devices."
-            " By default uses all available devices (auto)",
+            "help": "Number of devices to train on. -1 uses all available devices."
+            " By default uses all available devices (-1)",
         },
     )
     devices_list: Optional[List[int]] = field(
@@ -574,6 +574,9 @@ class TrainerConfig:
                     f"Cannot override {key} in checkpoints_kwargs."
                     f" Please use the appropriate argument in `TrainerConfig`"
                 )
+        if self.devices == -1:
+            # setting devices to "auto" when devices == -1 to make PyTorch Lightning to use all available devices
+            self.devices = "auto"
 
 
 @dataclass
