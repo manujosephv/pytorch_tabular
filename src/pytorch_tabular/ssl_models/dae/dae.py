@@ -189,9 +189,12 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 loss = 0
                 for i in range(out.original.size(-1)):
                     loss += self.losses[type_](out.reconstructed[i], out.original[:, i])
-                loss *= getattr(self.loss_weights, type_)
+            elif type_ == "binary":
+                # Casting output to float for BCEWithLogitsLoss
+                loss = self.losses[type_](out.reconstructed, out.original.float())
             else:
-                loss = self.losses[type_](out.reconstructed, out.original) * getattr(self.loss_weights, type_)
+                loss = self.losses[type_](out.reconstructed, out.original)
+            loss *= getattr(self.loss_weights, type_)
             self.log(
                 f"{tag}_{type_}_loss",
                 loss.item(),
