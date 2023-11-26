@@ -6,14 +6,14 @@ jobs:
     pytest:
         runs-on: ${{ matrix.os }}
 
-    strategy:
-        fail-fast: false
-        matrix:
-            os: [ubuntu-latest]
-            python-version: ["3.8", "3.9", "3.10"]
-            include:
-                - { os: "ubuntu-20.04", python-version: "3.8", requires: "oldest" }
-                - { os: "ubuntu-20.04", python-version: "3.9", requires: "oldest" }
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest]
+                python-version: ["3.8", "3.9", "3.10"]
+                include:
+                    - { os: "ubuntu-20.04", python-version: "3.8", requires: "oldest" }
+                    - { os: "ubuntu-20.04", python-version: "3.9", requires: "oldest" }
 
             env:
                 TORCH_URL: "https://download.pytorch.org/whl/cpu/torch_stable.html"

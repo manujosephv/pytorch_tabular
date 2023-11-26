@@ -155,3 +155,4 @@ examples/test_save/
 # Ruff
 .ruff_cache/
 tests/.datasets/
+test.py
