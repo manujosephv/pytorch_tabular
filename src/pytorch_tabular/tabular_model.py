@@ -664,7 +664,7 @@ class TabularModel:
         ), "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
         if metrics is not None:
             assert len(metrics) == len(
-                metrics_prob_inputs
+                metrics_prob_inputs or []
             ), "The length of `metrics` and `metrics_prob_inputs` should be equal"
         seed = seed or self.config.seed
         if seed:
