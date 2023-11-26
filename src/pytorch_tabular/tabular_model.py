@@ -1307,11 +1307,11 @@ class TabularModel:
             joblib.dump(self.callbacks, os.path.join(dir, "callbacks.sav"))
         self.trainer.save_checkpoint(os.path.join(dir, "model.ckpt"))
         custom_params = {}
-        custom_params["custom_loss"] = self.model.custom_loss
-        custom_params["custom_metrics"] = self.model.custom_metrics
-        custom_params["custom_metrics_prob_inputs"] = self.model.custom_metrics_prob_inputs
-        custom_params["custom_optimizer"] = self.model.custom_optimizer
-        custom_params["custom_optimizer_params"] = self.model.custom_optimizer_params
+        custom_params["custom_loss"] = getattr(self.model, "custom_loss", None)
+        custom_params["custom_metrics"] = getattr(self.model, "custom_metrics", None)
+        custom_params["custom_metrics_prob_inputs"] = getattr(self.model, "custom_metrics_prob_inputs", None)
+        custom_params["custom_optimizer"] = getattr(self.model, "custom_optimizer", None)
+        custom_params["custom_optimizer_params"] = getattr(self.model, "custom_optimizer_params", None)
         joblib.dump(custom_params, os.path.join(dir, "custom_params.sav"))
         if self.custom_model:
             joblib.dump(self.model_callable, os.path.join(dir, "custom_model_callable.sav"))
