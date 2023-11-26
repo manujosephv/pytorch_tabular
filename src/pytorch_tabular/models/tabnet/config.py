@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """Tabnet Model Config."""
 from dataclasses import dataclass, field
+from typing import List, Optional
 
 from pytorch_tabular.config import ModelConfig
 
@@ -76,27 +77,44 @@ class TabNetModelConfig(ModelConfig):
 
     n_d: int = field(
         default=8,
-        metadata={"help": "Dimension of the prediction  layer (usually between 4 and 64)"},
+        metadata={
+            "help": "Dimension of the prediction  layer (usually between 4 and 64)"
+        },
     )
     n_a: int = field(
         default=8,
-        metadata={"help": "Dimension of the attention  layer (usually between 4 and 64)"},
+        metadata={
+            "help": "Dimension of the attention  layer (usually between 4 and 64)"
+        },
     )
     n_steps: int = field(
         default=3,
-        metadata={"help": "Number of sucessive steps in the newtork (usually betwenn 3 and 10)"},
+        metadata={
+            "help": (
+                "Number of sucessive steps in the newtork (usually betwenn 3 and 10)"
+            )
+        },
     )
     gamma: float = field(
         default=1.3,
-        metadata={"help": "Float above 1, scaling factor for attention updates (usually betwenn 1.0 to 2.0)"},
+        metadata={
+            "help": (
+                "Float above 1, scaling factor for attention updates (usually betwenn"
+                " 1.0 to 2.0)"
+            )
+        },
     )
     n_independent: int = field(
         default=2,
-        metadata={"help": "Number of independent GLU layer in each GLU block (default 2)"},
+        metadata={
+            "help": "Number of independent GLU layer in each GLU block (default 2)"
+        },
     )
     n_shared: int = field(
         default=2,
-        metadata={"help": "Number of independent GLU layer in each GLU block (default 2)"},
+        metadata={
+            "help": "Number of independent GLU layer in each GLU block (default 2)"
+        },
     )
     virtual_batch_size: int = field(
         default=128,
@@ -105,14 +123,30 @@ class TabNetModelConfig(ModelConfig):
     mask_type: str = field(
         default="sparsemax",
         metadata={
-            "help": "Either 'sparsemax' or 'entmax' : this is the masking function to use",
+            "help": (
+                "Either 'sparsemax' or 'entmax' : this is the masking function to use"
+            ),
             "choices": ["sparsemax", "entmax"],
+        },
+    )
+    grouped_features: Optional[List[List[str]]] = field(
+        default=None,
+        metadata={
+            "help": (
+                "List of list of features to be grouped together. This allows the"
+                " model to share it's attention accross feature inside a same group."
+                " This can be especially useful when your preprocessing generates"
+                " correlated or dependant features: like if you use a TF-IDF or a PCA"
+                " on a text column. Note that feature importance will be exactly the"
+                " same between features on a same group. Please also note that"
+                " embeddings generated for a categorical variable are always inside a"
+                " same group."
+            )
         },
     )
     _module_src: str = field(default="models.tabnet")
     _model_name: str = field(default="TabNetModel")
     _config_name: str = field(default="TabNetModelConfig")
-
 
 # if __name__ == "__main__":
 #     from pytorch_tabular.utils import generate_doc_dataclass

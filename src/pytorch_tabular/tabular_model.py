@@ -402,7 +402,7 @@ class TabularModel:
         tabular_model.datamodule = datamodule
         tabular_model.callbacks = callbacks
         tabular_model.trainer = tabular_model._prepare_trainer(callbacks=callbacks)
-        tabular_model.trainer.model = model
+        # tabular_model.trainer.model = model
         tabular_model.logger = logger
         return tabular_model
 

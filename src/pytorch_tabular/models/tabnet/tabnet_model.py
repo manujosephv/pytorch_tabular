@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 from pytorch_tabnet.tab_network import TabNet
+from pytorch_tabnet.utils import create_group_matrix
 
 from ..base_model import BaseModel
 
@@ -19,6 +20,16 @@ class TabNetBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
+        group_matrix = create_group_matrix(
+            self.hparams.grouped_features
+            or [
+                [i]
+                for i in range(
+                    self.hparams.continuous_dim + self.hparams.categorical_dim
+                )
+            ],
+            self.hparams.continuous_dim + self.hparams.categorical_dim,
+        )
         self.tabnet = TabNet(
             input_dim=self.hparams.continuous_dim + self.hparams.categorical_dim,
             output_dim=self.hparams.output_dim,
@@ -35,6 +46,7 @@ class TabNetBackbone(nn.Module):
             virtual_batch_size=self.hparams.virtual_batch_size,
             momentum=0.02,
             mask_type=self.hparams.mask_type,
+            group_attention_matrix=group_matrix,
         )
 
     def unpack_input(self, x: Dict):
@@ -83,4 +95,7 @@ class TabNetModel(BaseModel):
         self._head = nn.Identity()
 
     def extract_embedding(self):
-        raise ValueError("Extracting Embeddings is not supported by Tabnet. Please use another compatible model")
+        raise ValueError(
+            "Extracting Embeddings is not supported by Tabnet. Please use another"
+            " compatible model"
+        )
