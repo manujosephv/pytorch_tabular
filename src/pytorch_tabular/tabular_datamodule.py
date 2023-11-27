@@ -88,7 +88,7 @@ class TabularDatamodule(pl.LightningDataModule):
         self.validation = validation
         self._set_target_transform(target_transform)
         self.test = test if test is None else test.copy()
-        self.target = config.target
+        self.target = config.target or []
         self.batch_size = config.batch_size
         self.train_sampler = train_sampler
         self.config = config
