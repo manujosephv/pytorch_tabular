@@ -165,9 +165,10 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             self.calculate_metrics(output, tag="test")
         return output
 
-    def validation_epoch_end(self, outputs) -> None:
+    def on_validation_epoch_end(self) -> None:
         if hasattr(self.hparams, "log_logits") and self.hparams.log_logits:
             warnings.warn("Logging Logits is disabled for SSL tasks")
+        super().on_validation_epoch_end()
 
     def configure_optimizers(self):
         if self.custom_optimizer is None:
