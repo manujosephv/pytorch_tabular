@@ -20,9 +20,18 @@ class TabNetBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
+        if self.hparams.grouped_features:
+            # converting the grouped_features into a nested list of indices
+            features = self.hparams.categorical_cols + self.hparams.continuous_cols
+            grp_list = [
+                [features.index(col) for col in grp if col in features]
+                for grp in self.hparams.grouped_features
+            ]
+        else:
+            # creating a default grp_list with each feature as a group
+            grp_list = [[i] for i in range(self.hparams.continuous_dim + self.hparams.categorical_dim)]
         group_matrix = create_group_matrix(
-            self.hparams.grouped_features
-            or [[i] for i in range(self.hparams.continuous_dim + self.hparams.categorical_dim)],
+            grp_list,
             self.hparams.continuous_dim + self.hparams.categorical_dim,
         )
         self.tabnet = TabNet(

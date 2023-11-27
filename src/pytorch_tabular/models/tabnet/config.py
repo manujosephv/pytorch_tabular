@@ -114,7 +114,7 @@ class TabNetModelConfig(ModelConfig):
         default=None,
         metadata={
             "help": (
-                "List of list of features to be grouped together. This allows the"
+                "List of list of feature names to be grouped together. This allows the"
                 " model to share it's attention accross feature inside a same group."
                 " This can be especially useful when your preprocessing generates"
                 " correlated or dependant features: like if you use a TF-IDF or a PCA"
