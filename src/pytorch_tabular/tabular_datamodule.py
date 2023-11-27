@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Data Module."""
+from enum import Enum
 import re
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
@@ -23,6 +24,7 @@ from sklearn.preprocessing import (
     QuantileTransformer,
     StandardScaler,
 )
+import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from pytorch_tabular.config import InferredConfig
@@ -32,6 +34,84 @@ from .categorical_encoders import OrdinalEncoder
 
 logger = get_logger(__name__)
 
+
+class TabularDataset(Dataset):
+    def __init__(
+        self,
+        data: DataFrame,
+        task: str,
+        continuous_cols: List[str] = None,
+        categorical_cols: List[str] = None,
+        embed_categorical: bool = True,
+        target: List[str] = None,
+    ):
+        """Dataset to Load Tabular Data.
+
+        Args:
+            data (DataFrame): Pandas DataFrame to load during training
+            task (str):
+                Whether it is a classification or regression task. If classification, it returns a LongTensor as target
+            continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.
+            categorical_cols (List[str], optional): A list of names of categorical columns.
+                These columns must be ordinal encoded beforehand. Defaults to None.
+            embed_categorical (bool):
+                Flag to tell the dataset whether to convert categorical columns to LongTensor or retain as float.
+                If we are going to embed categorical cols with an embedding layer,
+                we need to convert the columns to LongTensor
+            target (List[str], optional): A list of strings with target column name(s). Defaults to None.
+        """
+
+        self.task = task
+        self.n = data.shape[0]
+
+        if target:
+            self.y = data[target].astype(np.float32).values
+            if isinstance(target, str):
+                self.y = self.y.reshape(-1, 1)  # .astype(np.int64)
+        else:
+            self.y = np.zeros((self.n, 1))  # .astype(np.int64)
+
+        if task == "classification":
+            self.y = self.y.astype(np.int64)
+        self.categorical_cols = categorical_cols if categorical_cols else []
+        self.continuous_cols = continuous_cols if continuous_cols else []
+
+        if self.continuous_cols:
+            self.continuous_X = data[self.continuous_cols].astype(np.float32).values
+
+        if self.categorical_cols:
+            self.categorical_X = data[categorical_cols]
+            if embed_categorical:
+                self.categorical_X = self.categorical_X.astype(np.int64).values
+            else:
+                self.categorical_X = self.categorical_X.astype(np.float32).values
+
+    @property
+    def data(self):
+        """Returns the data as a pandas dataframe"""
+        if self.continuous_cols and self.categorical_cols:
+            return pd.DataFrame(
+                np.concatenate([self.categorical_X, self.continuous_X], axis=1),
+                columns=self.categorical_cols+self.continuous_cols,
+            )
+        elif self.continuous_cols:
+            return pd.DataFrame(self.continuous_X, columns=self.continuous_cols)
+        elif self.categorical_cols:
+            return pd.DataFrame(self.categorical_X, columns=self.categorical_cols)
+        else:
+            return pd.DataFrame()
+
+    def __len__(self):
+        """Denotes the total number of samples."""
+        return self.n
+
+    def __getitem__(self, idx):
+        """Generates one sample of data."""
+        return {
+            "target": self.y[idx],
+            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
+            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
+        }
 
 class TabularDatamodule(pl.LightningDataModule):
     CONTINUOUS_TRANSFORMS = {
@@ -53,6 +133,11 @@ class TabularDatamodule(pl.LightningDataModule):
         },
     }
 
+    class CACHE_MODES(Enum):
+        MEMORY = "memory"
+        DISK = "disk"
+        FALSE = False
+
     def __init__(
         self,
         train: DataFrame,
@@ -62,6 +147,7 @@ class TabularDatamodule(pl.LightningDataModule):
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         seed: Optional[int] = 42,
+        cache_data: Optional[Union[str, bool]] = "memory"
     ):
         """The Pytorch Lightning Datamodule for Tabular Data.
 
@@ -82,9 +168,19 @@ class TabularDatamodule(pl.LightningDataModule):
                 If provided, applies the transform to the target before modelling and inverse the transform during
                 prediction. The parameter can either be a sklearn Transformer which has an inverse_transform method, or
                 a tuple of callables (transform_func, inverse_transform_func)
+                Defaults to None.
+
+            train_sampler (Optional[torch.utils.data.Sampler], optional):
+                If provided, the sampler will be used to sample the train data. Defaults to None.
+
+            seed (Optional[int], optional): Seed to use for reproducible dataloaders. Defaults to 42.
+
+            cache_data (Optional[Union[str, bool]], optional): If provided, will cache the data in the specified location. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
+                If set to `None` or `False`, will not cache the data.
         """
         super().__init__()
-        self.train = train.copy()
+        self.train = train
         self.validation = validation
         self._set_target_transform(target_transform)
         self.test = test if test is None else test.copy()
@@ -94,6 +190,28 @@ class TabularDatamodule(pl.LightningDataModule):
         self.config = config
         self.seed = seed
         self._fitted = False
+        self._setup_cache(cache_data)
+        self._inferred_config = self._update_config(config)
+
+    def _setup_cache(self, cache_data: Union[str, bool]) -> None:
+        if cache_data is None:
+            cache_data = False
+        if isinstance(cache_data, str):
+            cache_data = cache_data.lower()
+            if cache_data == self.CACHE_MODES.MEMORY.value:
+                self.cache_mode = self.CACHE_MODES.MEMORY
+            elif isinstance(cache_data, str):
+                self.cache_mode = self.CACHE_MODES.DISK
+                self.cache_dir = Path(cache_data)
+                self.cache_dir.mkdir(parents=True, exist_ok=True)
+            else:
+                logger.warning(f"{cache_data} is not a valid path. Caching in memory")
+                self.cache_mode = self.CACHE_MODES.MEMORY
+        elif cache_data is False:
+            self.cache_mode = self.CACHE_MODES.FALSE
+        else:
+            logger.warning(f"{cache_data} is not a valid value. Caching in memory")
+            self.cache_mode = self.CACHE_MODES.MEMORY
 
     def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
         if target_transform is not None:
@@ -104,7 +222,7 @@ class TabularDatamodule(pl.LightningDataModule):
             self.do_target_transform = False
         self.target_transform_template = target_transform
 
-    def update_config(self, config) -> InferredConfig:
+    def _update_config(self, config) -> InferredConfig:
         """Calculates and updates a few key information to the config object.
 
         Args:
@@ -116,25 +234,39 @@ class TabularDatamodule(pl.LightningDataModule):
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
         if config.task == "regression":
-            self.output_dim = len(config.target)
+            output_dim = len(config.target)
         elif config.task == "classification":
-            self.output_dim = len(self.train[config.target[0]].unique())
+            output_dim = len(self.train[config.target[0]].unique())
+        else:
+            output_dim = None
         if not self.do_leave_one_out_encoder():
-            if self.train is not None:
-                self.categorical_cardinality = [
-                    int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
-                ]
+            categorical_cardinality = [
+                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
+            ]
             if getattr(config, "embedding_dims", None) is not None:
-                self.embedding_dims = config.embedding_dims
-            elif hasattr(self, "categorical_cardinality"):
-                self.embedding_dims = [(x, min(50, (x + 1) // 2)) for x in self.categorical_cardinality]
+                embedding_dims = config.embedding_dims
+            else:
+                embedding_dims = [(x, min(50, (x + 1) // 2)) for x in categorical_cardinality]
         return InferredConfig(
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
-            output_dim=getattr(self, "output_dim", None),
-            categorical_cardinality=getattr(self, "categorical_cardinality", []),
-            embedding_dims=getattr(self, "embedding_dims", []),
+            output_dim=output_dim,
+            categorical_cardinality=categorical_cardinality,
+            embedding_dims=embedding_dims,
         )
+
+    def update_config(self, config) -> InferredConfig:
+        """Calculates and updates a few key information to the config object.
+        Logic happens in _update_config. This is just a wrapper to make it 
+        accessible from outside and not break current apis.
+
+        Args:
+            config (DictConfig): The config object
+
+        Returns:
+            InferredConfig: The updated config object
+        """
+        return self._inferred_config
 
     def do_leave_one_out_encoder(self) -> bool:
         """Checks the special condition for NODE where we use a LeaveOneOutEncoder to encode categorical columns
@@ -275,6 +407,52 @@ class TabularDatamodule(pl.LightningDataModule):
         data = self._target_transform(data, stage)
         return data, added_features
 
+    def _cache_dataset(self):
+        train_dataset = TabularDataset(
+            task=self.config.task,
+            data=self.train,
+            categorical_cols=self.config.categorical_cols,
+            continuous_cols=self.config.continuous_cols,
+            embed_categorical=(not self.do_leave_one_out_encoder()),
+            target=self.target,
+        )
+        self.train = None
+        validation_dataset = TabularDataset(
+            task=self.config.task,
+            data=self.validation,
+            categorical_cols=self.config.categorical_cols,
+            continuous_cols=self.config.continuous_cols,
+            embed_categorical=(not self.do_leave_one_out_encoder()),
+            target=self.target,
+        )
+        self.validation = None
+        
+        test_dataset = None
+        if self.test is not None:
+            test_dataset = TabularDataset(
+                task=self.config.task,
+                data=self.test,
+                categorical_cols=self.config.categorical_cols,
+                continuous_cols=self.config.continuous_cols,
+                embed_categorical=(not self.do_leave_one_out_encoder()),
+                target=self.target,
+            )
+            self.test = None
+        if self.cache_mode is self.CACHE_MODES.DISK:
+            torch.save(train_dataset, self.cache_dir / "train_dataset")
+            torch.save(validation_dataset, self.cache_dir / "validation_dataset")
+            if test_dataset is not None:
+                torch.save(test_dataset, self.cache_dir / "test_dataset")
+        elif self.cache_mode is self.CACHE_MODES.MEMORY:
+            self.train_dataset = train_dataset
+            self.validation_dataset = validation_dataset
+            self.test_dataset = test_dataset
+        elif self.cache_mode is self.CACHE_MODES.FALSE:
+            pass
+        else:
+            raise ValueError(f"{self.cache_mode} is not a valid cache mode")
+        
+
     def setup(self, stage: Optional[str] = None) -> None:
         """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc. This is called
         before accessing the dataloaders.
@@ -305,6 +483,7 @@ class TabularDatamodule(pl.LightningDataModule):
         if self.test is not None:
             self.test, _ = self.preprocess_data(self.test, stage="inference")
         self._fitted = True
+        self._cache_dataset()
 
     # adapted from gluonts
     @classmethod
@@ -499,83 +678,118 @@ class TabularDatamodule(pl.LightningDataModule):
         #         added_features.remove(col)
         return df, added_features
 
-    def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+    def _load_dataset_from_cache(self, tag: str = "train"):
+        if self.cache_mode is self.CACHE_MODES.MEMORY:
+            try:
+                dataset = getattr(self, f"{tag}_dataset")
+            except AttributeError:
+                raise AttributeError(f"{tag}_dataset not found in memory. Please provide the data for {tag} dataloader")
+        elif self.cache_mode is self.CACHE_MODES.DISK:
+            try:
+                dataset = torch.load(self.cache_dir / f"{tag}_dataset")
+            except FileNotFoundError:
+                raise FileNotFoundError(f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader")
+        elif self.cache_mode is self.CACHE_MODES.FALSE:
+            raise ValueError("Caching is disabled and no data is provided for train dataloader.")
+        else:
+            raise ValueError(f"{self.cache_mode} is not a valid cache mode")
+        return dataset
+
+    def load_train_dataset(self) -> TabularDataset:
+        """Returns the train dataset.
+
+        Returns:
+            TabularDataset: The train dataset
+        """
+        return self._load_dataset_from_cache("train")
+    
+    def load_validation_dataset(self) -> TabularDataset:
+        """Returns the validation dataset.
+
+        Returns:
+            TabularDataset: The validation dataset
+        """
+        return self._load_dataset_from_cache("validation")
+    
+    def load_test_dataset(self) -> TabularDataset:
+        """Returns the test dataset.
+
+        Returns:
+            TabularDataset: The test dataset
+        """
+        return self._load_dataset_from_cache("test")
+
+    def train_dataloader(self, batch_size: Optional[int] = None, data: Optional[DataFrame] = None, copy_df: bool = True) -> DataLoader:
         """Function that loads the train set.
 
         Args:
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
+            data (Optional[DataFrame], optional): If provided], will use this dataframe instead of the train dataframe.
+                But, it will take longer as preprocessing needs to be done on the data. Defaults to None.
+            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
 
         Returns:
             DataLoader: Train dataloader
         """
-        dataset = TabularDataset(
-            task=self.config.task,
-            data=self.train,
-            categorical_cols=self.config.categorical_cols,
-            continuous_cols=self.config.continuous_cols,
-            embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target,
-        )
-        return DataLoader(
-            dataset,
-            batch_size or self.batch_size,
-            shuffle=True if self.train_sampler is None else False,
-            num_workers=self.config.num_workers,
-            sampler=self.train_sampler,
-            pin_memory=self.config.pin_memory,
-        )
+        if data is not None:
+            return self.prepare_inference_dataloader(data, batch_size=batch_size, copy_df=copy_df)
+        else:
+            return DataLoader(
+                self.load_train_dataset(),
+                batch_size or self.batch_size,
+                shuffle=True if self.train_sampler is None else False,
+                num_workers=self.config.num_workers,
+                sampler=self.train_sampler,
+                pin_memory=self.config.pin_memory,
+            )
 
-    def val_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+    def val_dataloader(self, batch_size: Optional[int] = None, data: Optional[DataFrame] = None, copy_df: bool = True) -> DataLoader:
         """Function that loads the validation set.
 
         Args:
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
+            data (Optional[DataFrame], optional): If provided], will use this dataframe instead of the valid dataframe.
+                But, it will take longer as preprocessing needs to be done on the data. Defaults to None.
+            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
 
         Returns:
             DataLoader: Validation dataloader
         """
-        dataset = TabularDataset(
-            task=self.config.task,
-            data=self.validation,
-            categorical_cols=self.config.categorical_cols,
-            continuous_cols=self.config.continuous_cols,
-            embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target,
-        )
-        return DataLoader(
-            dataset,
-            batch_size or self.batch_size,
-            shuffle=False,
-            num_workers=self.config.num_workers,
-            pin_memory=self.config.pin_memory,
-        )
+        if data is not None:
+            return self.prepare_inference_dataloader(data, batch_size=batch_size, copy_df=copy_df)
+        else:
+            return DataLoader(
+                self.load_validation_dataset(),
+                batch_size or self.batch_size,
+                shuffle=False,
+                num_workers=self.config.num_workers,
+                pin_memory=self.config.pin_memory,
+            )
 
-    def test_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+    def test_dataloader(self, batch_size: Optional[int] = None, data: Optional[DataFrame] = None, copy_df: bool = True) -> DataLoader:
         """Function that loads the validation set.
 
         Args:
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
+            data (Optional[DataFrame], optional): If provided], will use this dataframe instead of the valid dataframe.
+                But, it will take longer as preprocessing needs to be done on the data. Defaults to None.
+            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
 
         Returns:
             DataLoader: Test dataloader
         """
-        if self.test is None:
-            raise RuntimeError("Undefined test attribute.")
-        dataset = TabularDataset(
-            task=self.config.task,
-            data=self.test,
-            categorical_cols=self.config.categorical_cols,
-            continuous_cols=self.config.continuous_cols,
-            embed_categorical=(not self.do_leave_one_out_encoder()),
-            target=self.target,
-        )
-        return DataLoader(
-            dataset,
-            batch_size or self.batch_size,
-            shuffle=False,
-            num_workers=self.config.num_workers,
-            pin_memory=self.config.pin_memory,
-        )
+        # if self.test is None:
+        #     raise RuntimeError("Undefined test attribute. Please provide a test dataframe to for the dataloader")
+        if data is not None:
+            return self.prepare_inference_dataloader(data, batch_size=batch_size, copy_df=copy_df)
+        else:
+            return DataLoader(
+                self.load_test_dataset(),
+                batch_size or self.batch_size,
+                shuffle=False,
+                num_workers=self.config.num_workers,
+                pin_memory=self.config.pin_memory,
+            )
 
     def _prepare_inference_data(self, df: DataFrame) -> DataFrame:
         """Prepare data for inference."""
@@ -588,17 +802,18 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
         return df
 
-    def prepare_inference_dataloader(self, df: DataFrame, batch_size: Optional[int] = None) -> DataLoader:
+    def prepare_inference_dataloader(self, df: DataFrame, batch_size: Optional[int] = None, copy_df: bool = False) -> DataLoader:
         """Function that prepares and loads the new data.
 
         Args:
             df (DataFrame): Dataframe with the features and target
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
-
+            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
         Returns:
             DataLoader: The dataloader for the passed in dataframe
         """
-        df = df.copy()
+        if copy_df:
+            df = df.copy()
         df = self._prepare_inference_data(df)
         dataset = TabularDataset(
             task=self.config.task,
@@ -642,66 +857,3 @@ class TabularDatamodule(pl.LightningDataModule):
         datamodule = joblib.load(path)
         return datamodule
 
-
-class TabularDataset(Dataset):
-    def __init__(
-        self,
-        data: DataFrame,
-        task: str,
-        continuous_cols: List[str] = None,
-        categorical_cols: List[str] = None,
-        embed_categorical: bool = True,
-        target: List[str] = None,
-    ):
-        """Dataset to Load Tabular Data.
-
-        Args:
-            data (DataFrame): Pandas DataFrame to load during training
-            task (str):
-                Whether it is a classification or regression task. If classification, it returns a LongTensor as target
-            continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.
-            categorical_cols (List[str], optional): A list of names of categorical columns.
-                These columns must be ordinal encoded beforehand. Defaults to None.
-            embed_categorical (bool):
-                Flag to tell the dataset whether to convert categorical columns to LongTensor or retain as float.
-                If we are going to embed categorical cols with an embedding layer,
-                we need to convert the columns to LongTensor
-            target (List[str], optional): A list of strings with target column name(s). Defaults to None.
-        """
-
-        self.task = task
-        self.n = data.shape[0]
-
-        if target:
-            self.y = data[target].astype(np.float32).values
-            if isinstance(target, str):
-                self.y = self.y.reshape(-1, 1)  # .astype(np.int64)
-        else:
-            self.y = np.zeros((self.n, 1))  # .astype(np.int64)
-
-        if task == "classification":
-            self.y = self.y.astype(np.int64)
-        self.categorical_cols = categorical_cols if categorical_cols else []
-        self.continuous_cols = continuous_cols if continuous_cols else []
-
-        if self.continuous_cols:
-            self.continuous_X = data[self.continuous_cols].astype(np.float32).values
-
-        if self.categorical_cols:
-            self.categorical_X = data[categorical_cols]
-            if embed_categorical:
-                self.categorical_X = self.categorical_X.astype(np.int64).values
-            else:
-                self.categorical_X = self.categorical_X.astype(np.float32).values
-
-    def __len__(self):
-        """Denotes the total number of samples."""
-        return self.n
-
-    def __getitem__(self, idx):
-        """Generates one sample of data."""
-        return {
-            "target": self.y[idx],
-            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
-            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
-        }

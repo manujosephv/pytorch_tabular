@@ -38,6 +38,7 @@ from sklearn.preprocessing import PowerTransformer
 )
 @pytest.mark.parametrize("validation_split", [None, 0.3])
 @pytest.mark.parametrize("embedding_dims", [None, [(5, 1)]])
+@pytest.mark.parametrize("cache_data", ["memory", "disk", None, False])
 def test_dataloader(
     regression_data,
     validation_split,
@@ -48,6 +49,8 @@ def test_dataloader(
     normalize_continuous_features,
     target_transform,
     embedding_dims,
+    cache_data,
+    tmp_path_factory,
 ):
     (train, test, target) = regression_data
     train, valid = train_test_split(train, random_state=42)
@@ -74,12 +77,15 @@ def test_dataloader(
         trainer_config=trainer_config,
     )
     config = tabular_model.config
+    if cache_data and cache_data == "disk":
+        cache_data = str(tmp_path_factory.mktemp("cache"))
     datamodule = TabularDatamodule(
         train=train,
         validation=valid,
         config=config,
         test=test,
         target_transform=target_transform,
+        cache_data=cache_data,
     )
     datamodule.prepare_data()
     datamodule.setup("fit")
@@ -90,12 +96,15 @@ def test_dataloader(
             assert inferred_config.embedding_dims[0][-1] == 3
         else:
             assert inferred_config.embedding_dims[0][-1] == embedding_dims[0][-1]
-    if normalize_continuous_features and len(continuous_cols) > 0:
-        assert round(datamodule.train[config.continuous_cols[0]].mean()) == 0
-        assert round(datamodule.train[config.continuous_cols[0]].std()) == 1
-        # assert round(datamodule.validation[config.continuous_cols[0]].mean()) == 0
-        # assert round(datamodule.validation[config.continuous_cols[0]].std()) == 1
-    val_loader = datamodule.val_dataloader()
+    if normalize_continuous_features and len(continuous_cols) > 0 and cache_data not in [None, False]:
+        assert round(datamodule.load_train_dataset().data[config.continuous_cols[0]].mean()) == 0
+        assert round(datamodule.load_train_dataset().data[config.continuous_cols[0]].std()) == 1
+    if cache_data in [None, False]:
+        with pytest.raises(ValueError):
+            datamodule.val_dataloader()
+        val_loader = datamodule.val_dataloader(data=valid)
+    else:
+        val_loader = datamodule.val_dataloader()
     _val_loader = datamodule.prepare_inference_dataloader(valid)
     chk_1 = next(iter(val_loader))["continuous"]
     chk_2 = next(iter(_val_loader))["continuous"]

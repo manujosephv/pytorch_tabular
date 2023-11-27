@@ -437,6 +437,7 @@ class TabularModel:
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
+        cache_data: Optional[Union[str, bool]] = "memory"
     ) -> TabularDatamodule:
         """Prepares the dataloaders for training and validation.
 
@@ -462,6 +463,9 @@ class TabularModel:
 
             seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
 
+            cache_data (Optional[Union[str, bool]], optional): If provided, will cache the data in the specified location. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
+                If set to `None` or `False`, will not cache the data.
         Returns:
             TabularDatamodule: The prepared datamodule
         """
@@ -481,6 +485,7 @@ class TabularModel:
             target_transform=target_transform,
             train_sampler=train_sampler,
             seed=seed,
+            cache_data=cache_data,
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
@@ -603,6 +608,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
+        cache_data: Optional[Union[str, bool]] = "memory",
     ) -> pl.Trainer:
         """The fit method which takes in the data and triggers the training.
 
@@ -657,6 +663,10 @@ class TabularModel:
                 If provided, will ignore the rest of the parameters like train, test etc and use the datamodule.
                 Defaults to None.
 
+            cache_data (Optional[Union[str, bool]], optional): If provided, will cache the data in the specified location. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
+                If set to `None` or `False`, will not cache the data.
+
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
@@ -671,7 +681,7 @@ class TabularModel:
         if seed:
             seed_everything(seed)
         if datamodule is None:
-            datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed)
+            datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed, cache_data)
         else:
             if train is not None:
                 warnings.warn(
@@ -706,6 +716,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
+        cache_data: Optional[Union[str, bool]] = "memory",
     ) -> pl.Trainer:
         """The pretrained method which takes in the data and triggers the training.
 
@@ -733,6 +744,9 @@ class TabularModel:
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
                 parameters like train, test etc. and use the datamodule. Defaults to None.
 
+            cache_data (Optional[Union[str, bool]], optional): If provided, will cache the data in the specified location. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
+                If set to `None` or `False`, will not cache the data.
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
@@ -750,6 +764,7 @@ class TabularModel:
                 train_sampler=None,
                 target_transform=None,
                 seed=seed,
+                cache_data=cache_data
             )
         else:
             if train is not None:
@@ -1269,24 +1284,20 @@ class TabularModel:
         else:
             logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
-    def save_datamodule(self, dir: str, drop_dataset: bool = False) -> None:
+    def save_datamodule(self, dir: str) -> None:
         """Saves the datamodule in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the datamodule
-            drop_dataset (bool): Exclude the entire dataset to be storage friendly.
         """
-        dm = copy.copy(self.datamodule) if drop_dataset else self.datamodule
-        if drop_dataset:
-            dm.train = dm.validation = dm.test = None
-        joblib.dump(dm, os.path.join(dir, "datamodule.sav"))
+        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
 
     def save_config(self, dir: str) -> None:
         """Saves the config in the specified directory."""
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
-    def save_model(self, dir: str, drop_dataset: bool = False) -> None:
+    def save_model(self, dir: str) -> None:
         """Saves the model and checkpoints in the specified directory.
 
         Args:
@@ -1299,7 +1310,7 @@ class TabularModel:
                 os.remove(os.path.join(dir, f))
         os.makedirs(dir, exist_ok=True)
         self.save_config(dir)
-        self.save_datamodule(dir, drop_dataset=drop_dataset)
+        self.save_datamodule(dir)
         if hasattr(self.config, "log_target") and self.config.log_target is not None:
             joblib.dump(self.logger, os.path.join(dir, "exp_logger.sav"))
         if hasattr(self, "callbacks"):
