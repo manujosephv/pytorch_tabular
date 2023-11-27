@@ -24,8 +24,7 @@ class TabNetBackbone(nn.Module):
             # converting the grouped_features into a nested list of indices
             features = self.hparams.categorical_cols + self.hparams.continuous_cols
             grp_list = [
-                [features.index(col) for col in grp if col in features]
-                for grp in self.hparams.grouped_features
+                [features.index(col) for col in grp if col in features] for grp in self.hparams.grouped_features
             ]
         else:
             # creating a default grp_list with each feature as a group
