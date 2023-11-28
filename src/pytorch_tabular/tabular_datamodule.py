@@ -136,7 +136,6 @@ class TabularDatamodule(pl.LightningDataModule):
     class CACHE_MODES(Enum):
         MEMORY = "memory"
         DISK = "disk"
-        FALSE = False
 
     def __init__(
         self,
@@ -147,7 +146,8 @@ class TabularDatamodule(pl.LightningDataModule):
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         seed: Optional[int] = 42,
-        cache_data: Optional[Union[str, bool]] = "memory"
+        cache_data: str = "memory",
+        copy_data: bool = True,
     ):
         """The Pytorch Lightning Datamodule for Tabular Data.
 
@@ -175,15 +175,22 @@ class TabularDatamodule(pl.LightningDataModule):
 
             seed (Optional[int], optional): Seed to use for reproducible dataloaders. Defaults to 42.
 
-            cache_data (Optional[Union[str, bool]], optional): If provided, will cache the data in the specified location. If set to
+            cache_data (str): Decides how to cache the data in the dataloader. If set to
                 "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
-                If set to `None` or `False`, will not cache the data.
+            
+            copy_data (bool): If True, will copy the dataframes before preprocessing. Defaults to True.
         """
         super().__init__()
-        self.train = train
-        self.validation = validation
+        self.train = train.copy() if copy_data else train
+        if validation is not None:
+            self.validation = validation.copy() if copy_data else validation
+        else:
+            self.validation = None
         self._set_target_transform(target_transform)
-        self.test = test if test is None else test.copy()
+        if test is not None:
+            self.test = test.copy() if copy_data else test
+        else:
+            self.test = None
         self.target = config.target
         self.batch_size = config.batch_size
         self.train_sampler = train_sampler
@@ -194,25 +201,17 @@ class TabularDatamodule(pl.LightningDataModule):
         self._inferred_config = self._update_config(config)
 
     def _setup_cache(self, cache_data: Union[str, bool]) -> None:
-        if cache_data is None:
-            cache_data = False
-        if isinstance(cache_data, str):
-            cache_data = cache_data.lower()
-            if cache_data == self.CACHE_MODES.MEMORY.value:
-                self.cache_mode = self.CACHE_MODES.MEMORY
-            elif isinstance(cache_data, str):
-                self.cache_mode = self.CACHE_MODES.DISK
-                self.cache_dir = Path(cache_data)
-                self.cache_dir.mkdir(parents=True, exist_ok=True)
-            else:
-                logger.warning(f"{cache_data} is not a valid path. Caching in memory")
-                self.cache_mode = self.CACHE_MODES.MEMORY
-        elif cache_data is False:
-            self.cache_mode = self.CACHE_MODES.FALSE
-        else:
-            logger.warning(f"{cache_data} is not a valid value. Caching in memory")
+        cache_data = cache_data.lower()
+        if cache_data == self.CACHE_MODES.MEMORY.value:
             self.cache_mode = self.CACHE_MODES.MEMORY
-
+        elif isinstance(cache_data, str):
+            self.cache_mode = self.CACHE_MODES.DISK
+            self.cache_dir = Path(cache_data)
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            logger.warning(f"{cache_data} is not a valid path. Caching in memory")
+            self.cache_mode = self.CACHE_MODES.MEMORY
+        
     def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
@@ -233,10 +232,12 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
+        self._output_dim_clf = len(self.train[config.target[0]].unique())
+        self._output_dim_reg = len(config.target)
         if config.task == "regression":
-            output_dim = len(config.target)
+            output_dim = self._output_dim_reg
         elif config.task == "classification":
-            output_dim = len(self.train[config.target[0]].unique())
+            output_dim = self._output_dim_clf
         else:
             output_dim = None
         if not self.do_leave_one_out_encoder():
@@ -247,6 +248,9 @@ class TabularDatamodule(pl.LightningDataModule):
                 embedding_dims = config.embedding_dims
             else:
                 embedding_dims = [(x, min(50, (x + 1) // 2)) for x in categorical_cardinality]
+        else:
+            categorical_cardinality = None
+            embedding_dims = None
         return InferredConfig(
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
@@ -447,11 +451,21 @@ class TabularDatamodule(pl.LightningDataModule):
             self.train_dataset = train_dataset
             self.validation_dataset = validation_dataset
             self.test_dataset = test_dataset
-        elif self.cache_mode is self.CACHE_MODES.FALSE:
-            pass
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
-        
+    
+    def split_train_val(self, train):
+        logger.debug(
+            f"No validation data provided."
+            f" Using {self.config.validation_split*100}% of train data as validation"
+        )
+        val_idx = train.sample(
+            int(self.config.validation_split * len(train)),
+            random_state=self.seed,
+        ).index
+        validation = train[train.index.isin(val_idx)]
+        train = train[~train.index.isin(val_idx)]
+        return train, validation
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc. This is called
@@ -461,30 +475,42 @@ class TabularDatamodule(pl.LightningDataModule):
             stage (Optional[str], optional):
                 Internal parameter to distinguish between fit and inference. Defaults to None.
         """
-        if not (stage is None or stage == "fit"):
+        if not (stage is None or stage == "fit" or stage=="ssl_finetune"):
             return
         logger.info(f"Setting up the datamodule for {self.config.task} task")
+        is_ssl = stage == "ssl_finetune"
         if self.validation is None:
-            logger.debug(
-                f"No validation data provided."
-                f" Using {self.config.validation_split*100}% of train data as validation"
-            )
-            val_idx = self.train.sample(
-                int(self.config.validation_split * len(self.train)),
-                random_state=self.seed,
-            ).index
-            self.validation = self.train[self.train.index.isin(val_idx)]
-            self.train = self.train[~self.train.index.isin(val_idx)]
+            self.train, self.validation = self.split_train_val(self.train)
         else:
             self.validation = self.validation.copy()
         # Preprocessing Train, Validation
-        self.train, _ = self.preprocess_data(self.train, stage="fit")
+        self.train, _ = self.preprocess_data(self.train, stage="fit" if not is_ssl else "inference")
         self.validation, _ = self.preprocess_data(self.validation, stage="inference")
         if self.test is not None:
             self.test, _ = self.preprocess_data(self.test, stage="inference")
         self._fitted = True
         self._cache_dataset()
 
+    # def inference_only_copy(self):
+    #     """Creates a copy of the datamodule with the train and validation datasets removed.
+    #     This is useful for inference only scenarios where we don't want to save the train and validation datasets.
+
+    #     Returns:
+    #         TabularDatamodule: A copy of the datamodule with the train and validation datasets removed.
+    #     """
+    #     if self._fitted:
+    #         raise RuntimeError("Cannot create an inference only copy after setup has been called")
+    #     return TabularDatamodule(
+    #         train=None,
+    #         validation=None,
+    #         test=self.test,
+    #         config=self.config,
+    #         target_transform=self.target_transform_template,
+    #         train_sampler=self.train_sampler,
+    #         seed=self.seed,
+    #         cache_data=self.cache_mode,
+    #         copy_data=False,
+    #     )
     # adapted from gluonts
     @classmethod
     def time_features_from_frequency_str(cls, freq_str: str) -> List[str]:
@@ -689,8 +715,6 @@ class TabularDatamodule(pl.LightningDataModule):
                 dataset = torch.load(self.cache_dir / f"{tag}_dataset")
             except FileNotFoundError:
                 raise FileNotFoundError(f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader")
-        elif self.cache_mode is self.CACHE_MODES.FALSE:
-            raise ValueError("Caching is disabled and no data is provided for train dataloader.")
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
         return dataset
@@ -719,77 +743,57 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         return self._load_dataset_from_cache("test")
 
-    def train_dataloader(self, batch_size: Optional[int] = None, data: Optional[DataFrame] = None, copy_df: bool = True) -> DataLoader:
+    def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
         """Function that loads the train set.
 
         Args:
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
-            data (Optional[DataFrame], optional): If provided], will use this dataframe instead of the train dataframe.
-                But, it will take longer as preprocessing needs to be done on the data. Defaults to None.
-            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
 
         Returns:
             DataLoader: Train dataloader
         """
-        if data is not None:
-            return self.prepare_inference_dataloader(data, batch_size=batch_size, copy_df=copy_df)
-        else:
-            return DataLoader(
-                self.load_train_dataset(),
-                batch_size or self.batch_size,
-                shuffle=True if self.train_sampler is None else False,
-                num_workers=self.config.num_workers,
-                sampler=self.train_sampler,
-                pin_memory=self.config.pin_memory,
-            )
+        return DataLoader(
+            self.load_train_dataset(),
+            batch_size or self.batch_size,
+            shuffle=True if self.train_sampler is None else False,
+            num_workers=self.config.num_workers,
+            sampler=self.train_sampler,
+            pin_memory=self.config.pin_memory,
+        )
 
-    def val_dataloader(self, batch_size: Optional[int] = None, data: Optional[DataFrame] = None, copy_df: bool = True) -> DataLoader:
+    def val_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
         """Function that loads the validation set.
 
         Args:
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
-            data (Optional[DataFrame], optional): If provided], will use this dataframe instead of the valid dataframe.
-                But, it will take longer as preprocessing needs to be done on the data. Defaults to None.
-            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
 
         Returns:
             DataLoader: Validation dataloader
         """
-        if data is not None:
-            return self.prepare_inference_dataloader(data, batch_size=batch_size, copy_df=copy_df)
-        else:
-            return DataLoader(
-                self.load_validation_dataset(),
-                batch_size or self.batch_size,
-                shuffle=False,
-                num_workers=self.config.num_workers,
-                pin_memory=self.config.pin_memory,
-            )
+        return DataLoader(
+            self.load_validation_dataset(),
+            batch_size or self.batch_size,
+            shuffle=False,
+            num_workers=self.config.num_workers,
+            pin_memory=self.config.pin_memory,
+        )
 
-    def test_dataloader(self, batch_size: Optional[int] = None, data: Optional[DataFrame] = None, copy_df: bool = True) -> DataLoader:
+    def test_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
         """Function that loads the validation set.
 
         Args:
             batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
-            data (Optional[DataFrame], optional): If provided], will use this dataframe instead of the valid dataframe.
-                But, it will take longer as preprocessing needs to be done on the data. Defaults to None.
-            copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
 
         Returns:
             DataLoader: Test dataloader
         """
-        # if self.test is None:
-        #     raise RuntimeError("Undefined test attribute. Please provide a test dataframe to for the dataloader")
-        if data is not None:
-            return self.prepare_inference_dataloader(data, batch_size=batch_size, copy_df=copy_df)
-        else:
-            return DataLoader(
-                self.load_test_dataset(),
-                batch_size or self.batch_size,
-                shuffle=False,
-                num_workers=self.config.num_workers,
-                pin_memory=self.config.pin_memory,
-            )
+        return DataLoader(
+            self.load_test_dataset(),
+            batch_size or self.batch_size,
+            shuffle=False,
+            num_workers=self.config.num_workers,
+            pin_memory=self.config.pin_memory,
+        )
 
     def _prepare_inference_data(self, df: DataFrame) -> DataFrame:
         """Prepare data for inference."""
@@ -802,7 +806,7 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
         return df
 
-    def prepare_inference_dataloader(self, df: DataFrame, batch_size: Optional[int] = None, copy_df: bool = False) -> DataLoader:
+    def prepare_inference_dataloader(self, df: DataFrame, batch_size: Optional[int] = None, copy_df: bool = True) -> DataLoader:
         """Function that prepares and loads the new data.
 
         Args:

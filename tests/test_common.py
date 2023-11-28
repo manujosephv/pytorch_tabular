@@ -71,7 +71,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
-@pytest.mark.parametrize("cache_data", [False, "memory", "disk"])
+@pytest.mark.parametrize("cache_data", ["memory", "disk"])
 def test_save_load(
     regression_data,
     model_config_class,
