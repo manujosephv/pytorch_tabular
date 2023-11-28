@@ -136,6 +136,7 @@ class TabularDatamodule(pl.LightningDataModule):
     class CACHE_MODES(Enum):
         MEMORY = "memory"
         DISK = "disk"
+        INFERENCE = "inference"
 
     def __init__(
         self,
@@ -451,6 +452,10 @@ class TabularDatamodule(pl.LightningDataModule):
             self.train_dataset = train_dataset
             self.validation_dataset = validation_dataset
             self.test_dataset = test_dataset
+        elif self.cache_mode is self.CACHE_MODES.INFERENCE:
+            self.train_dataset = None
+            self.validation_dataset = None
+            self.test_dataset = None
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
     
@@ -491,26 +496,22 @@ class TabularDatamodule(pl.LightningDataModule):
         self._fitted = True
         self._cache_dataset()
 
-    # def inference_only_copy(self):
-    #     """Creates a copy of the datamodule with the train and validation datasets removed.
-    #     This is useful for inference only scenarios where we don't want to save the train and validation datasets.
+    def inference_only_copy(self):
+        """Creates a copy of the datamodule with the train and validation datasets removed.
+        This is useful for inference only scenarios where we don't want to save the train and validation datasets.
 
-    #     Returns:
-    #         TabularDatamodule: A copy of the datamodule with the train and validation datasets removed.
-    #     """
-    #     if self._fitted:
-    #         raise RuntimeError("Cannot create an inference only copy after setup has been called")
-    #     return TabularDatamodule(
-    #         train=None,
-    #         validation=None,
-    #         test=self.test,
-    #         config=self.config,
-    #         target_transform=self.target_transform_template,
-    #         train_sampler=self.train_sampler,
-    #         seed=self.seed,
-    #         cache_data=self.cache_mode,
-    #         copy_data=False,
-    #     )
+        Returns:
+            TabularDatamodule: A copy of the datamodule with the train and validation datasets removed.
+        """
+        if not self._fitted:
+            raise RuntimeError("Can create an inference only copy only after model is fitted")
+        dm_inference = copy.copy(self)
+        dm_inference.train_dataset = None
+        dm_inference.validation_dataset = None
+        dm_inference.test_dataset = None
+        dm_inference.cache_mode = self.CACHE_MODES.INFERENCE
+        return dm_inference
+
     # adapted from gluonts
     @classmethod
     def time_features_from_frequency_str(cls, freq_str: str) -> List[str]:
@@ -715,6 +716,8 @@ class TabularDatamodule(pl.LightningDataModule):
                 dataset = torch.load(self.cache_dir / f"{tag}_dataset")
             except FileNotFoundError:
                 raise FileNotFoundError(f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader")
+        elif self.cache_mode is self.CACHE_MODES.INFERENCE:
+            raise RuntimeError("Cannot load dataset in inference mode. Use `prepare_inference_dataloader` instead")
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
         return dataset

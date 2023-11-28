@@ -1302,21 +1302,25 @@ class TabularModel:
                 without data. This cannot be used for further training, but can be 
                 used for inference. Defaults to False.
         """
-        # if inference_only:
+        if inference_only:
+            dm = self.datamodule.inference_only_copy()
+        else:
+            dm = self.datamodule
 
-        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
+        joblib.dump(dm, os.path.join(dir, "datamodule.sav"))
 
     def save_config(self, dir: str) -> None:
         """Saves the config in the specified directory."""
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
-    def save_model(self, dir: str) -> None:
+    def save_model(self, dir: str, inference_only:bool = False) -> None:
         """Saves the model and checkpoints in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the model
-            drop_dataset (bool): Exclude the entire dataset to be storage friendly.
+            inference_only (bool): If True, will only save the inference 
+            only version of the datamodule
         """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")
@@ -1324,7 +1328,7 @@ class TabularModel:
                 os.remove(os.path.join(dir, f))
         os.makedirs(dir, exist_ok=True)
         self.save_config(dir)
-        self.save_datamodule(dir)
+        self.save_datamodule(dir, inference_only=inference_only)
         if hasattr(self.config, "log_target") and self.config.log_target is not None:
             joblib.dump(self.logger, os.path.join(dir, "exp_logger.sav"))
         if hasattr(self, "callbacks"):
