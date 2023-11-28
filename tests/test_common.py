@@ -71,6 +71,8 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("cache_data", ["memory", "disk"])
+@pytest.mark.parametrize("inference_only", [True, False])
 def test_save_load(
     regression_data,
     model_config_class,
@@ -79,7 +81,9 @@ def test_save_load(
     custom_metrics,
     custom_loss,
     custom_optimizer,
-    tmpdir,
+    cache_data,
+    inference_only,
+    tmp_path_factory,
 ):
     (train, test, target) = regression_data
     data_config = DataConfig(
@@ -105,6 +109,8 @@ def test_save_load(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
+    if cache_data and cache_data == "disk":
+        cache_data = str(tmp_path_factory.mktemp("cache"))
     tabular_model.fit(
         train=train,
         test=test,
@@ -113,13 +119,14 @@ def test_save_load(
         loss=custom_loss,
         optimizer=custom_optimizer,
         optimizer_params={},
+        cache_data=cache_data,
     )
 
     result_1 = tabular_model.evaluate(test)
     # sv_dir = tmpdir/"save_model"
     # sv_dir.mkdir(exist_ok=True, parents=True)
-    sv_dir = tmpdir.mkdir("saved_model")
-    tabular_model.save_model(str(sv_dir))
+    sv_dir = tmp_path_factory.mktemp("saved_model")
+    tabular_model.save_model(str(sv_dir), inference_only=inference_only)
     new_mdl = TabularModel.load_from_checkpoint(str(sv_dir))
     result_2 = new_mdl.evaluate(test)
     assert (

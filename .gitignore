@@ -156,3 +156,4 @@ examples/test_save/
 .ruff_cache/
 tests/.datasets/
 test.py
+lightning_logs/
