@@ -493,7 +493,7 @@ class TabularModel:
         metrics: Optional[List[Callable]] = None,
         metrics_prob_inputs: Optional[List[bool]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {},
+        optimizer_params: Dict = None,
     ) -> BaseModel:
         """Prepares the model for training.
 
@@ -527,7 +527,7 @@ class TabularModel:
             custom_metrics=metrics,  # Unused in SSL tasks
             custom_metrics_prob_inputs=metrics_prob_inputs,  # Unused in SSL tasks
             custom_optimizer=optimizer,
-            custom_optimizer_params=optimizer_params,
+            custom_optimizer_params=optimizer_params or {},
             inferred_config=self.inferred_config,
         )
         # Data Aware Initialization(for the models that need it)
@@ -595,7 +595,7 @@ class TabularModel:
         metrics: Optional[List[Callable]] = None,
         metrics_prob_inputs: Optional[List[bool]] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {},
+        optimizer_params: Dict = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         max_epochs: Optional[int] = None,
@@ -689,7 +689,7 @@ class TabularModel:
             metrics,
             metrics_prob_inputs,
             optimizer,
-            optimizer_params,
+            optimizer_params or {},
         )
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
@@ -699,7 +699,7 @@ class TabularModel:
         train: Optional[DataFrame],
         validation: Optional[DataFrame] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {},
+        optimizer_params: Dict = None,
         # train_sampler: Optional[torch.utils.data.Sampler] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
@@ -760,7 +760,7 @@ class TabularModel:
         model = self.prepare_model(
             datamodule,
             optimizer,
-            optimizer_params,
+            optimizer_params or {},
         )
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
@@ -779,7 +779,7 @@ class TabularModel:
         metrics_prob_input: Optional[List[bool]] = None,
         metrics_params: Optional[Dict] = None,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = {},
+        optimizer_params: Dict = None,
         learning_rate: Optional[float] = None,
         target_range: Optional[Tuple[float, float]] = None,
     ):
@@ -836,6 +836,7 @@ class TabularModel:
             TabularModel (TabularModel): The new TabularModel model for fine-tuning
         """
         config = self.config
+        optimizer_params = optimizer_params or {}
         if target is None:
             assert (
                 hasattr(config, "target") and config.target is not None

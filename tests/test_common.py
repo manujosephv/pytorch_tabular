@@ -70,7 +70,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
 def test_save_load(
     regression_data,
     model_config_class,
@@ -242,7 +242,7 @@ def test_feature_importance(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
 def test_save_load_statedict(
     regression_data,
     model_config_class,
@@ -336,7 +336,7 @@ def test_save_load_statedict(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
 @pytest.mark.parametrize("save_type", ["pytorch"])  # "onnx"
 def test_save_for_inference(
     regression_data,
