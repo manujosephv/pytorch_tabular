@@ -37,7 +37,7 @@ from pytorch_tabular.config import (
 )
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import BaseModel, _GenericModel
-from pytorch_tabular.tabular_datamodule import TabularDatamodule, TabularDataset
+from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 
 logger = get_logger(__name__)
@@ -439,7 +439,7 @@ class TabularModel:
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
-        cache_data: str = "memory"
+        cache_data: str = "memory",
     ) -> TabularDatamodule:
         """Prepares the dataloaders for training and validation.
 
@@ -681,7 +681,9 @@ class TabularModel:
         if seed:
             seed_everything(seed)
         if datamodule is None:
-            datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed, cache_data)
+            datamodule = self.prepare_dataloader(
+                train, validation, test, train_sampler, target_transform, seed, cache_data
+            )
         else:
             if train is not None:
                 warnings.warn(
@@ -763,7 +765,7 @@ class TabularModel:
                 train_sampler=None,
                 target_transform=None,
                 seed=seed,
-                cache_data=cache_data
+                cache_data=cache_data,
             )
         else:
             if train is not None:
@@ -1293,13 +1295,13 @@ class TabularModel:
         else:
             logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
-    def save_datamodule(self, dir: str, inference_only:bool = False) -> None:
+    def save_datamodule(self, dir: str, inference_only: bool = False) -> None:
         """Saves the datamodule in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the datamodule
-            inference_only (bool): If True, will only save the inference datamodule 
-                without data. This cannot be used for further training, but can be 
+            inference_only (bool): If True, will only save the inference datamodule
+                without data. This cannot be used for further training, but can be
                 used for inference. Defaults to False.
         """
         if inference_only:
@@ -1314,12 +1316,12 @@ class TabularModel:
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
-    def save_model(self, dir: str, inference_only:bool = False) -> None:
+    def save_model(self, dir: str, inference_only: bool = False) -> None:
         """Saves the model and checkpoints in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the model
-            inference_only (bool): If True, will only save the inference 
+            inference_only (bool): If True, will only save the inference
             only version of the datamodule
         """
         if os.path.exists(dir) and (os.listdir(dir)):
