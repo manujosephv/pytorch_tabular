@@ -6,7 +6,7 @@ import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import pytorch_lightning as pl

@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """SSL Base Model."""
-import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
