@@ -37,7 +37,7 @@ from pytorch_tabular.config import (
 )
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import BaseModel, _GenericModel
-from pytorch_tabular.tabular_datamodule import TabularDatamodule
+from pytorch_tabular.tabular_datamodule import TabularDatamodule, TabularDataset
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 
 logger = get_logger(__name__)
@@ -439,6 +439,7 @@ class TabularModel:
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
+        cache_data: str = "memory"
     ) -> TabularDatamodule:
         """Prepares the dataloaders for training and validation.
 
@@ -464,6 +465,8 @@ class TabularModel:
 
             seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
 
+            cache_data (str): Decides how to cache the data in the dataloader. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
         Returns:
             TabularDatamodule: The prepared datamodule
         """
@@ -483,6 +486,7 @@ class TabularModel:
             target_transform=target_transform,
             train_sampler=train_sampler,
             seed=seed,
+            cache_data=cache_data,
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
@@ -605,6 +609,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
+        cache_data: str = "memory",
     ) -> pl.Trainer:
         """The fit method which takes in the data and triggers the training.
 
@@ -659,6 +664,9 @@ class TabularModel:
                 If provided, will ignore the rest of the parameters like train, test etc and use the datamodule.
                 Defaults to None.
 
+            cache_data (str): Decides how to cache the data in the dataloader. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
+
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
@@ -673,7 +681,7 @@ class TabularModel:
         if seed:
             seed_everything(seed)
         if datamodule is None:
-            datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed)
+            datamodule = self.prepare_dataloader(train, validation, test, train_sampler, target_transform, seed, cache_data)
         else:
             if train is not None:
                 warnings.warn(
@@ -708,6 +716,7 @@ class TabularModel:
         seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
+        cache_data: str = "memory",
     ) -> pl.Trainer:
         """The pretrained method which takes in the data and triggers the training.
 
@@ -735,6 +744,8 @@ class TabularModel:
             datamodule (Optional[TabularDatamodule], optional): The datamodule. If provided, will ignore the rest of the
                 parameters like train, test etc. and use the datamodule. Defaults to None.
 
+            cache_data (str): Decides how to cache the data in the dataloader. If set to
+                "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
@@ -752,6 +763,7 @@ class TabularModel:
                 train_sampler=None,
                 target_transform=None,
                 seed=seed,
+                cache_data=cache_data
             )
         else:
             if train is not None:
@@ -873,6 +885,10 @@ class TabularModel:
         datamodule.seed = config.seed
         model_callable = _GenericModel
         inferred_config = self.datamodule.update_config(config)
+        if task == "regression":
+            inferred_config.output_dim = datamodule._output_dim_reg
+        elif task == "classification":
+            inferred_config.output_dim = datamodule._output_dim_clf
         inferred_config = OmegaConf.structured(inferred_config)
         # Adding dummy attributes for compatibility. Not used because custom metrics are provided
         if not hasattr(config, "metrics"):
@@ -994,11 +1010,10 @@ class TabularModel:
                         _target_transform.fit(train[col].values.reshape(-1, 1))
                         target_transforms.append(_target_transform)
                 self.datamodule.target_transforms = target_transforms
-            self.datamodule.train = self.datamodule._prepare_inference_data(train)
-            if validation is not None:
-                self.datamodule.validation = self.datamodule._prepare_inference_data(validation)
-            else:
-                self.datamodule.validation = None
+
+            self.datamodule.train = train
+            self.datamodule.validation = validation
+            self.datamodule.setup("ssl_finetune")
             self.datamodule.train_sampler = train_sampler
             datamodule = self.datamodule
         else:
@@ -1278,24 +1293,34 @@ class TabularModel:
         else:
             logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
-    def save_datamodule(self, dir: str) -> None:
+    def save_datamodule(self, dir: str, inference_only:bool = False) -> None:
         """Saves the datamodule in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the datamodule
+            inference_only (bool): If True, will only save the inference datamodule 
+                without data. This cannot be used for further training, but can be 
+                used for inference. Defaults to False.
         """
-        joblib.dump(self.datamodule, os.path.join(dir, "datamodule.sav"))
+        if inference_only:
+            dm = self.datamodule.inference_only_copy()
+        else:
+            dm = self.datamodule
+
+        joblib.dump(dm, os.path.join(dir, "datamodule.sav"))
 
     def save_config(self, dir: str) -> None:
         """Saves the config in the specified directory."""
         with open(os.path.join(dir, "config.yml"), "w") as fp:
             OmegaConf.save(self.config, fp, resolve=True)
 
-    def save_model(self, dir: str) -> None:
+    def save_model(self, dir: str, inference_only:bool = False) -> None:
         """Saves the model and checkpoints in the specified directory.
 
         Args:
             dir (str): The path to the directory to save the model
+            inference_only (bool): If True, will only save the inference 
+            only version of the datamodule
         """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")
@@ -1303,7 +1328,7 @@ class TabularModel:
                 os.remove(os.path.join(dir, f))
         os.makedirs(dir, exist_ok=True)
         self.save_config(dir)
-        self.save_datamodule(dir)
+        self.save_datamodule(dir, inference_only=inference_only)
         if hasattr(self.config, "log_target") and self.config.log_target is not None:
             joblib.dump(self.logger, os.path.join(dir, "exp_logger.sav"))
         if hasattr(self, "callbacks"):
