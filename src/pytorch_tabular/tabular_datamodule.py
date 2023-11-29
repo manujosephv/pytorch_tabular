@@ -2,14 +2,15 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Data Module."""
-from enum import Enum
 import re
+from enum import Enum
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
 
 import category_encoders as ce
 import joblib
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig
@@ -24,7 +25,6 @@ from sklearn.preprocessing import (
     QuantileTransformer,
     StandardScaler,
 )
-import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from pytorch_tabular.config import InferredConfig
@@ -88,11 +88,11 @@ class TabularDataset(Dataset):
 
     @property
     def data(self):
-        """Returns the data as a pandas dataframe"""
+        """Returns the data as a pandas dataframe."""
         if self.continuous_cols and self.categorical_cols:
             return pd.DataFrame(
                 np.concatenate([self.categorical_X, self.continuous_X], axis=1),
-                columns=self.categorical_cols+self.continuous_cols,
+                columns=self.categorical_cols + self.continuous_cols,
             )
         elif self.continuous_cols:
             return pd.DataFrame(self.continuous_X, columns=self.continuous_cols)
@@ -112,6 +112,7 @@ class TabularDataset(Dataset):
             "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
             "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
         }
+
 
 class TabularDatamodule(pl.LightningDataModule):
     CONTINUOUS_TRANSFORMS = {
@@ -178,7 +179,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
             cache_data (str): Decides how to cache the data in the dataloader. If set to
                 "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
-            
+
             copy_data (bool): If True, will copy the dataframes before preprocessing. Defaults to True.
         """
         super().__init__()
@@ -192,7 +193,7 @@ class TabularDatamodule(pl.LightningDataModule):
             self.test = test.copy() if copy_data else test
         else:
             self.test = None
-        self.target = config.target
+        self.target = config.target or []
         self.batch_size = config.batch_size
         self.train_sampler = train_sampler
         self.config = config
@@ -212,7 +213,7 @@ class TabularDatamodule(pl.LightningDataModule):
         else:
             logger.warning(f"{cache_data} is not a valid path. Caching in memory")
             self.cache_mode = self.CACHE_MODES.MEMORY
-        
+
     def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
@@ -261,9 +262,8 @@ class TabularDatamodule(pl.LightningDataModule):
         )
 
     def update_config(self, config) -> InferredConfig:
-        """Calculates and updates a few key information to the config object.
-        Logic happens in _update_config. This is just a wrapper to make it 
-        accessible from outside and not break current apis.
+        """Calculates and updates a few key information to the config object. Logic happens in _update_config. This is
+        just a wrapper to make it accessible from outside and not break current apis.
 
         Args:
             config (DictConfig): The config object
@@ -431,7 +431,7 @@ class TabularDatamodule(pl.LightningDataModule):
             target=self.target,
         )
         self.validation = None
-        
+
         test_dataset = None
         if self.test is not None:
             test_dataset = TabularDataset(
@@ -458,11 +458,10 @@ class TabularDatamodule(pl.LightningDataModule):
             self.test_dataset = None
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
-    
+
     def split_train_val(self, train):
         logger.debug(
-            f"No validation data provided."
-            f" Using {self.config.validation_split*100}% of train data as validation"
+            f"No validation data provided." f" Using {self.config.validation_split*100}% of train data as validation"
         )
         val_idx = train.sample(
             int(self.config.validation_split * len(train)),
@@ -480,7 +479,7 @@ class TabularDatamodule(pl.LightningDataModule):
             stage (Optional[str], optional):
                 Internal parameter to distinguish between fit and inference. Defaults to None.
         """
-        if not (stage is None or stage == "fit" or stage=="ssl_finetune"):
+        if not (stage is None or stage == "fit" or stage == "ssl_finetune"):
             return
         logger.info(f"Setting up the datamodule for {self.config.task} task")
         is_ssl = stage == "ssl_finetune"
@@ -497,8 +496,8 @@ class TabularDatamodule(pl.LightningDataModule):
         self._cache_dataset()
 
     def inference_only_copy(self):
-        """Creates a copy of the datamodule with the train and validation datasets removed.
-        This is useful for inference only scenarios where we don't want to save the train and validation datasets.
+        """Creates a copy of the datamodule with the train and validation datasets removed. This is useful for inference
+        only scenarios where we don't want to save the train and validation datasets.
 
         Returns:
             TabularDatamodule: A copy of the datamodule with the train and validation datasets removed.
@@ -715,7 +714,9 @@ class TabularDatamodule(pl.LightningDataModule):
             try:
                 dataset = torch.load(self.cache_dir / f"{tag}_dataset")
             except FileNotFoundError:
-                raise FileNotFoundError(f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader")
+                raise FileNotFoundError(
+                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader"
+                )
         elif self.cache_mode is self.CACHE_MODES.INFERENCE:
             raise RuntimeError("Cannot load dataset in inference mode. Use `prepare_inference_dataloader` instead")
         else:
@@ -729,7 +730,7 @@ class TabularDatamodule(pl.LightningDataModule):
             TabularDataset: The train dataset
         """
         return self._load_dataset_from_cache("train")
-    
+
     def load_validation_dataset(self) -> TabularDataset:
         """Returns the validation dataset.
 
@@ -737,7 +738,7 @@ class TabularDatamodule(pl.LightningDataModule):
             TabularDataset: The validation dataset
         """
         return self._load_dataset_from_cache("validation")
-    
+
     def load_test_dataset(self) -> TabularDataset:
         """Returns the test dataset.
 
@@ -809,7 +810,9 @@ class TabularDatamodule(pl.LightningDataModule):
         df, _ = self.preprocess_data(df, stage="inference")
         return df
 
-    def prepare_inference_dataloader(self, df: DataFrame, batch_size: Optional[int] = None, copy_df: bool = True) -> DataLoader:
+    def prepare_inference_dataloader(
+        self, df: DataFrame, batch_size: Optional[int] = None, copy_df: bool = True
+    ) -> DataLoader:
         """Function that prepares and loads the new data.
 
         Args:
@@ -863,4 +866,3 @@ class TabularDatamodule(pl.LightningDataModule):
             raise FileNotFoundError(f"{path} does not exist.")
         datamodule = joblib.load(path)
         return datamodule
-
