@@ -2,10 +2,11 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Base Model."""
+import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import pytorch_lightning as pl
@@ -15,6 +16,7 @@ import torchmetrics
 from omegaconf import DictConfig, OmegaConf
 from pandas import DataFrame
 from torch import Tensor
+from torch.optim import Optimizer
 
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import PreEncoded1dLayer
@@ -42,8 +44,8 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     """Merge two configurations.
 
     Args:
-        base_config: The base configuration.
-        custom_config: The custom configuration.
+        config: The base configuration.
+        inferred_config: The custom configuration.
 
     Returns:
         The merged configuration.
@@ -52,6 +54,17 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     inferred_config.embedding_dims = config.get("embedding_dims") or inferred_config.embedding_dims
     merged_config = OmegaConf.merge(OmegaConf.to_container(config), OmegaConf.to_container(inferred_config))
     return merged_config
+
+
+def _create_optimizer(optimizer: Union[str, Callable]) -> Type[Optimizer]:
+    """Instantiate Optimizer."""
+    if callable(optimizer):
+        return optimizer
+    if "." not in optimizer:
+        return getattr(torch.optim, optimizer)
+    py_path, cls_name = optimizer.rsplit(".", 1)
+    module = importlib.import_module(py_path)
+    return getattr(module, cls_name)
 
 
 class BaseModel(pl.LightningModule, metaclass=ABCMeta):
@@ -73,7 +86,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             custom_metrics (Optional[List[Callable]], optional): A list of custom metrics. Defaults to None.
             custom_metrics_prob_inputs (Optional[List[bool]], optional): A list of boolean values indicating whether the
                 metric requires probability inputs. Defaults to None.
-            custom_optimizer (Optional[torch.optim.Optimizer], optional): A custom optimizer. Defaults to None.
+            custom_optimizer (Optional[torch.optim.Optimizer], optional):
+                A custom optimizer as callable or string to be imported. Defaults to None.
             custom_optimizer_params (Dict, optional): A dictionary of custom optimizer parameters. Defaults to {}.
             kwargs (Dict, optional): Additional keyword arguments.
         """
@@ -463,7 +477,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         if self.custom_optimizer is None:
             # Loading from the config
             try:
-                self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+                self._optimizer = _create_optimizer(self.hparams.optimizer)
                 opt = self._optimizer(
                     self.parameters(),
                     lr=self.hparams.learning_rate,
@@ -474,7 +488,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 raise e
         else:
             # Loading from custom fit arguments
-            self._optimizer = self.custom_optimizer
+            self._optimizer = _create_optimizer(self.custom_optimizer)
 
             opt = self._optimizer(
                 self.parameters(),

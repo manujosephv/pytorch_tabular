@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """SSL Base Model."""
-import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
@@ -12,6 +11,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 
+from pytorch_tabular.models.base_model import _create_optimizer
 from pytorch_tabular.utils import get_logger, getattr_nested, reset_all_weights
 
 logger = get_logger(__name__)
@@ -174,12 +174,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         if self.custom_optimizer is None:
             # Loading from the config
             try:
-                if "." in self.hparams.optimizer:
-                    py_path, cls_name = self.hparams.optimizer.rsplit(".", 1)
-                    module = importlib.import_module(py_path)
-                    self._optimizer = getattr(module, cls_name)
-                else:
-                    self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+                self._optimizer = _create_optimizer(self.hparams.optimizer)
                 opt = self._optimizer(
                     self.parameters(),
                     lr=self.hparams.learning_rate,
