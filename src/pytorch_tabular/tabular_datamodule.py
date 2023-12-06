@@ -289,8 +289,8 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def _encode_date_columns(self, data: DataFrame) -> DataFrame:
         added_features = []
-        for field_name, freq in self.config.date_columns:
-            data = self.make_date(data, field_name)
+        for field_name, freq, format in self.config.date_columns:
+            data = self.make_date(data, field_name, format)
             data, _new_feats = self.add_datepart(data, field_name, frequency=freq, prefix=None, drop=True)
             added_features += _new_feats
         return data, added_features
@@ -632,7 +632,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
     # adapted from fastai
     @classmethod
-    def make_date(cls, df: DataFrame, date_field: str) -> DataFrame:
+    def make_date(cls, df: DataFrame, date_field: str, date_format: str = "ISO8601") -> DataFrame:
         """Make sure `df[date_field]` is of the right date type.
 
         Args:
@@ -647,7 +647,7 @@ class TabularDatamodule(pl.LightningDataModule):
         if isinstance(field_dtype, DatetimeTZDtype):
             field_dtype = np.datetime64
         if not np.issubdtype(field_dtype, np.datetime64):
-            df[date_field] = to_datetime(df[date_field], infer_datetime_format=True)
+            df[date_field] = to_datetime(df[date_field], format=date_format)
         return df
 
     # adapted from fastai
