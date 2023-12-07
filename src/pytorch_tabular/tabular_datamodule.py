@@ -234,14 +234,16 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
-        self._output_dim_clf = len(self.train[config.target[0]].unique())
-        self._output_dim_reg = len(config.target)
+        self._output_dim_clf = len(self.train[config.target[0]].unique()) if len(config.target) > 0 else None
+        self._output_dim_reg = len(config.target) if len(config.target) > 0 else None
         if config.task == "regression":
             output_dim = self._output_dim_reg
         elif config.task == "classification":
             output_dim = self._output_dim_clf
-        else:
+        elif config.task == "ssl":
             output_dim = None
+        else:
+            raise ValueError(f"{config.task} is an unsupported task.")
         if not self.do_leave_one_out_encoder():
             categorical_cardinality = [
                 int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
