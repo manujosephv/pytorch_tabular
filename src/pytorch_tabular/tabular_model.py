@@ -1682,6 +1682,10 @@ class TabularModel:
         is_full_baselines = method in ["GradientShap", "DeepLiftShap"]
         is_not_supported = self.model._get_name() in  ["TabNetModel", "MDNModel", "TabTransformerModel"]
         do_baselines = method not in ["Saliency" , "InputXGradient", "FeaturePermutation", "LRP"]
+        if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
+            raise ValueError(
+                f"baselines cannot be a scalar or None for {method}. Please provide a tensor or a string like `b|<num_samples>`"
+            )
         if is_not_supported:
             raise NotImplementedError(
                 f"Attributions are not implemented for {self.model._get_name()}"
@@ -1701,11 +1705,11 @@ class TabularModel:
                 " embedding layer"
             )
         test_dl = self.datamodule.prepare_inference_dataloader(data)
+        self.model.eval()
         # prepare import for Captum
         tensor_inp, tensor_tgt = self._prepare_input_for_captum(test_dl)
         baselines = self._prepare_baselines_captum(baselines, test_dl, do_baselines, is_full_baselines)
         # prepare model for Captum
-        self.model.eval()
         try:
             interp_model = _CaptumModel(self.model)
             captum_interp_cls = getattr(captum.attr, method)(interp_model, **method_args)
@@ -1713,13 +1717,13 @@ class TabularModel:
                 attributions = captum_interp_cls.attribute(
                     tensor_inp,
                     baselines=baselines,
-                    target=tensor_tgt,
+                    target=tensor_tgt if self.config.task=="classification" else None,
                     **kwargs,
                 )
             else:
                 attributions = captum_interp_cls.attribute(
                     tensor_inp,
-                    target=tensor_tgt,
+                    target=tensor_tgt if self.config.task=="classification" else None,
                     **kwargs,
                 )
             attributions = self._handle_categorical_embeddings_attributions(attributions, is_embedding1d, is_embedding2d, is_embbeding_dims)

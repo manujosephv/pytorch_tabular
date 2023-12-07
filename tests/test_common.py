@@ -51,6 +51,12 @@ MODEL_CONFIG_FEATURE_IMP_TEST = [
     (GatedAdditiveTreeEnsembleConfig, {"num_trees": 1, "tree_depth": 2, "gflu_stages": 1}),
 ]
 
+MODEL_CONFIG_CAPTUM_TEST = [
+    (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
+    (GANDALFConfig, {}),
+    (TabNetModelConfig, {})
+]
+
 DATASET_CONTINUOUS_COLUMNS = (
     "AveRooms",
     "AveBedrms",
@@ -462,3 +468,68 @@ def test_model_reset(
     tabular_model.model.reset_weights()
     result_2 = tabular_model.evaluate(test)
     assert result_1[0]["test_loss"] != result_2[0]["test_loss"]
+
+
+
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_CAPTUM_TEST)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
+@pytest.mark.parametrize("attr_method", ["GradientShap","IntegratedGradients", "DeepLift", "DeepLiftShap", "InputXGradient", "FeaturePermutation", "FeatureAblation", "KernelShap"])
+@pytest.mark.parametrize("single_row", [True, False])
+@pytest.mark.parametrize("baselines", ["b|100", None, 0])
+def test_captum_integration_regression(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    attr_method,
+    single_row,
+    baselines,
+):
+    (train, test, target) = regression_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "regression"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+        validation=test,
+    )
+    if single_row:
+        test = test.head(1)
+    is_full_baselines = attr_method in ["GradientShap", "DeepLiftShap"]
+    is_not_supported = tabular_model.model._get_name() in  ["TabNetModel", "MDNModel", "TabTransformerModel"]
+    if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
+        with pytest.raises(ValueError):
+            exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
+    elif is_not_supported:
+        with pytest.raises(NotImplementedError):
+            exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
+    elif attr_method in ["FeaturePermutation", "FeatureAblation"]:
+        with pytest.raises(AssertionError):
+            exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
+    else:
+        exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
+    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim+tabular_model.model.hparams.categorical_dim
