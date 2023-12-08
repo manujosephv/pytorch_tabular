@@ -1604,9 +1604,9 @@ class TabularModel:
         return baselines
     
     def _handle_categorical_embeddings_attributions(self, attributions: torch.tensor, is_embedding1d: bool, is_embedding2d: bool, is_embbeding_dims: bool):
-        if self.model.hparams.categorical_dim > 0:
             # post processing to get attributions for categorical features
-            if is_embedding1d and is_embbeding_dims:
+        if is_embedding1d and is_embbeding_dims:
+            if self.model.hparams.categorical_dim > 0:
                 cat_attributions = []
                 index_counter = self.model.hparams.continuous_dim
                 for _, embed_dim in self.model.hparams.embedding_dims:
@@ -1624,6 +1624,8 @@ class TabularModel:
                     ],
                     dim=1,
                 )
+        elif is_embedding2d:
+            attributions = attributions.mean(dim=-1)
         return attributions
 
     def explain(
@@ -1727,9 +1729,8 @@ class TabularModel:
                     **kwargs,
                 )
             attributions = self._handle_categorical_embeddings_attributions(attributions, is_embedding1d, is_embedding2d, is_embbeding_dims)
-        except Exception as e:
+        finally:
             self.model.train()
-            raise e
         assert attributions.shape[1] == self.model.hparams.continuous_dim+self.model.hparams.categorical_dim, (
             f"Something went wrong. The number of features in the attributions"
             f" ({attributions.shape[1]}) does not match the number of features in"
