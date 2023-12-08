@@ -1566,9 +1566,8 @@ class TabularModel:
         Returns:
             DataFrame: The dataframe with the feature importance
         """
-        assert (
-            CAPTUM_INSTALLED
-        ), "Captum not installed. Please install using `pip install captum` or install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
+        assert CAPTUM_INSTALLED, "Captum not installed. Please install using `pip install captum` or "
+        "install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
         ALLOWED_METHODS = [
             "GradientShap",
             "IntegratedGradients",
@@ -1599,7 +1598,8 @@ class TabularModel:
         do_baselines = method not in ["Saliency", "InputXGradient", "FeaturePermutation", "LRP"]
         if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
             raise ValueError(
-                f"baselines cannot be a scalar or None for {method}. Please provide a tensor or a string like `b|<num_samples>`"
+                f"baselines cannot be a scalar or None for {method}. Please "
+                "provide a tensor or a string like `b|<num_samples>`"
             )
         if is_not_supported:
             raise NotImplementedError(f"Attributions are not implemented for {self.model._get_name()}")
