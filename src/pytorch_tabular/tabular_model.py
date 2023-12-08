@@ -13,6 +13,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
@@ -21,7 +22,10 @@ from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
-from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
+from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
+    GradientAccumulationScheduler,
+)
+from pytorch_lightning.tuner.tuning import Tuner
 from pytorch_lightning.utilities.model_summary import summarize
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder
@@ -36,9 +40,23 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.config.config import InferredConfig
-from pytorch_tabular.models.base_model import BaseModel, _GenericModel
+from pytorch_tabular.models.base_model import BaseModel, _CaptumModel, _GenericModel
+from pytorch_tabular.models.common.layers.embeddings import (
+    Embedding1dLayer,
+    Embedding2dLayer,
+    PreEncoded1dLayer,
+)
+
+# from pytorch_tabular.models import MDNModel, TabNetModel, TabTransformerModel # TODO exclude these from explanations
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
+
+try:
+    import captum.attr
+
+    CAPTUM_INSTALLED = True
+except ImportError:
+    CAPTUM_INSTALLED = False
 
 logger = get_logger(__name__)
 
@@ -89,17 +107,17 @@ class TabularModel:
         self.exp_manager = ExperimentRunManager()
         if config is None:
             assert any(c is not None for c in (data_config, model_config, optimizer_config, trainer_config)), (
-                "If `config` is None, `data_config`, `model_config`, `trainer_config`,"
-                " and `optimizer_config` cannot be None"
+                "If `config` is None, `data_config`, `model_config`,"
+                " `trainer_config`, and `optimizer_config` cannot be None"
             )
             data_config = self._read_parse_config(data_config, DataConfig)
             model_config = self._read_parse_config(model_config, ModelConfig)
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
             optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
             if model_config.task != "ssl":
-                assert (
-                    data_config.target is not None
-                ), f"`target` in data_config should not be None for {model_config.task} task"
+                assert data_config.target is not None, (
+                    "`target` in data_config should not be None for" f" {model_config.task} task"
+                )
             if experiment_config is None:
                 logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
@@ -158,16 +176,17 @@ class TabularModel:
                     or any(range_[0] > range_[1] for range_ in self.config.target_range)
                 ):
                     raise ValueError(
-                        "Targe Range, if defined, should be list tuples of length two(min,max)."
-                        " The length of the list should be equal to hte length of target columns"
+                        "Targe Range, if defined, should be list tuples of length"
+                        " two(min,max). The length of the list should be equal to hte"
+                        " length of target columns"
                     )
         if self.config.task == "ssl":
-            assert (
-                not self.config.handle_unknown_categories
-            ), "SSL only supports handle_unknown_categories=False. Please set this in your DataConfig"
-            assert (
-                not self.config.handle_missing_values
-            ), "SSL only supports handle_missing_values=False. Please set this in your DataConfig"
+            assert not self.config.handle_unknown_categories, (
+                "SSL only supports handle_unknown_categories=False. Please set this" " in your DataConfig"
+            )
+            assert not self.config.handle_missing_values, (
+                "SSL only supports handle_missing_values=False. Please set this in" " your DataConfig"
+            )
 
     def _read_parse_config(self, config, cls):
         if isinstance(config, str):
@@ -215,7 +234,9 @@ class TabularModel:
                 offline=False,
             )
         else:
-            raise NotImplementedError(f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]")
+            raise NotImplementedError(
+                f"{self.config.log_target} is not implemented. Try one of [wandb," " tensorboard]"
+            )
 
     def _prepare_callbacks(self, callbacks=None) -> List:
         """Prepares the necesary callbacks to the Trainer based on the configuration.
@@ -291,15 +312,18 @@ class TabularModel:
     def _check_and_set_target_transform(self, target_transform):
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
-                assert (
-                    len(target_transform) == 2
-                ), "If `target_transform` is a tuple, it should have and only have forward and backward transformations"
+                assert len(target_transform) == 2, (
+                    "If `target_transform` is a tuple, it should have and only have"
+                    " forward and backward transformations"
+                )
             elif isinstance(target_transform, TransformerMixin):
                 pass
             else:
-                raise ValueError("`target_transform` should wither be an sklearn Transformer or a tuple of callables.")
+                raise ValueError(
+                    "`target_transform` should wither be an sklearn Transformer or a" " tuple of callables."
+                )
         if self.config.task == "classification" and target_transform is not None:
-            logger.warning("For classification task, target transform is not used. Ignoring the parameter")
+            logger.warning("For classification task, target transform is not used. Ignoring the" " parameter")
             target_transform = None
         return target_transform
 
@@ -472,8 +496,9 @@ class TabularModel:
         """
         if test is not None:
             warnings.warn(
-                "Providing test data in `fit` is deprecated and will be removed in next major release."
-                " Plese use `evaluate` for evaluating on test data"
+                "Providing test data in `fit` is deprecated and will be removed in"
+                " next major release. Plese use `evaluate` for evaluating on test"
+                " data"
             )
         logger.info("Preparing the DataLoaders")
         target_transform = self._check_and_set_target_transform(target_transform)
@@ -577,10 +602,10 @@ class TabularModel:
         self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             logger.info("Auto LR Find Started")
-            result = self.trainer.tune(self.model, train_loader, val_loader)
+            result = Tuner(self.trainer).lr_find(self.model, train_dataloaders=train_loader, val_dataloaders=val_loader)
             logger.info(
-                f"Suggested LR: {result['lr_find'].suggestion()}."
-                f" For plot and detailed analysis, use `find_learning_rate` method."
+                f"Suggested LR: {result.suggestion()}."
+                " For plot and detailed analysis, use `find_learning_rate` method."
             )
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
@@ -670,9 +695,9 @@ class TabularModel:
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
-        assert (
-            self.config.task != "ssl"
-        ), "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
+        assert self.config.task != "ssl", (
+            "`fit` is not valid for SSL task. Please use `pretrain` for" " semi-supervised learning"
+        )
         if metrics is not None:
             assert len(metrics) == len(
                 metrics_prob_inputs or []
@@ -682,7 +707,13 @@ class TabularModel:
             seed_everything(seed)
         if datamodule is None:
             datamodule = self.prepare_dataloader(
-                train, validation, test, train_sampler, target_transform, seed, cache_data
+                train,
+                validation,
+                test,
+                train_sampler,
+                target_transform,
+                seed,
+                cache_data,
             )
         else:
             if train is not None:
@@ -692,8 +723,9 @@ class TabularModel:
                 )
             if test is not None:
                 warnings.warn(
-                    "Providing test data in `fit` is deprecated and will be removed in next major release."
-                    " Plese use `evaluate` for evaluating on test data"
+                    "Providing test data in `fit` is deprecated and will be removed"
+                    " in next major release. Plese use `evaluate` for evaluating on"
+                    " test data"
                 )
         model = self.prepare_model(
             datamodule,
@@ -751,9 +783,9 @@ class TabularModel:
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
-        assert (
-            self.config.task == "ssl"
-        ), f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
+        assert self.config.task == "ssl", (
+            f"`pretrain` is not valid for {self.config.task} task. Please use `fit`" " instead."
+        )
         seed = seed or self.config.seed
         if seed:
             seed_everything(seed)
@@ -878,7 +910,7 @@ class TabularModel:
         else:
             if self.track_experiment:
                 # Renaming the experiment run so that a different log is created for finetuning
-                logger.info(f"Renaming the experiment run for finetuning as {config['run_name'] + '_finetuned'}")
+                logger.info("Renaming the experiment run for finetuning as" f" {config['run_name'] + '_finetuned'}")
                 config["run_name"] = config["run_name"] + "_finetuned"
 
         datamodule = self.datamodule
@@ -913,7 +945,13 @@ class TabularModel:
             loss = loss or torch.nn.CrossEntropyLoss()
             if metrics is None:
                 metrics = [torchmetrics.functional.accuracy]
-                metrics_params = [{"task": "multiclass", "num_classes": inferred_config.output_dim, "top_k": 1}]
+                metrics_params = [
+                    {
+                        "task": "multiclass",
+                        "num_classes": inferred_config.output_dim,
+                        "top_k": 1,
+                    }
+                ]
                 metrics_prob_input = [False]
             else:
                 for i, mp in enumerate(metrics_params):
@@ -993,9 +1031,9 @@ class TabularModel:
         Returns:
             pl.Trainer: The trainer object
         """
-        assert (
-            self._is_finetune_model
-        ), "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
+        assert self._is_finetune_model, (
+            "finetune() can only be called on a finetune model created using" " `TabularModel.create_finetune_model()`"
+        )
         seed = seed or self.config.seed
         if seed:
             seed_everything(seed)
@@ -1080,7 +1118,7 @@ class TabularModel:
         """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs=None, min_epochs=None)
         train_loader, _ = datamodule.train_dataloader(), datamodule.val_dataloader()
-        lr_finder = self.trainer.tuner.lr_find(
+        lr_finder = Tuner(self.trainer).lr_find(
             model=self.model,
             train_dataloaders=train_loader,
             val_dataloaders=None,
@@ -1128,16 +1166,18 @@ class TabularModel:
         """
         if test_loader is None and test is None:
             warnings.warn(
-                "Providing test in fit is deprecated."
-                " Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                "Providing test in fit is deprecated. Not providing `test` or"
+                " `test_loader` in `evaluate` will cause an error in a future"
+                " release."
             )
         if test_loader is None:
             if test is not None:
                 test_loader = self.datamodule.prepare_inference_dataloader(test)
             elif self.datamodule.test is not None:
                 warnings.warn(
-                    "Providing test in fit is deprecated."
-                    " Not providing `test` or `test_loader` in `evaluate` will cause an error in a future release."
+                    "Providing test in fit is deprecated. Not providing `test` or"
+                    " `test_loader` in `evaluate` will cause an error in a future"
+                    " release."
                 )
                 test_loader = self.datamodule.test_dataloader()
             else:
@@ -1180,8 +1220,8 @@ class TabularModel:
                 If classification, it returns probabilities and final prediction
         """
         warnings.warn(
-            "Default for `include_input_features` will change from True to False in the next release."
-            " Please set it explicitly.",
+            "Default for `include_input_features` will change from True to False in"
+            " the next release. Please set it explicitly.",
             DeprecationWarning,
         )
         assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
@@ -1292,9 +1332,11 @@ class TabularModel:
                 ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["state_dict"])
             else:
-                logger.warning("No best model available to load. Did you run it more than 1 epoch?...")
+                logger.warning("No best model available to load. Did you run it more than 1" " epoch?...")
         else:
-            logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
+            logger.warning(
+                "No best model available to load. Checkpoint Callback needs to be" " enabled for this to work"
+            )
 
     def save_datamodule(self, dir: str, inference_only: bool = False) -> None:
         """Saves the datamodule in the specified directory.
@@ -1423,3 +1465,187 @@ class TabularModel:
     def feature_importance(self) -> DataFrame:
         """Returns the feature importance of the model as a pandas DataFrame."""
         return self.model.feature_importance()
+
+    def _prepare_input_for_captum(self, test_dl: torch.utils.data.DataLoader) -> Dict:
+        tensor_inp = []
+        tensor_tgt = []
+        for x in test_dl:
+            tensor_inp.append(self.model.embed_input(x))
+            tensor_tgt.append(x["target"].squeeze(1))
+        tensor_inp = torch.cat(tensor_inp, dim=0)
+        tensor_tgt = torch.cat(tensor_tgt, dim=0)
+        return tensor_inp, tensor_tgt
+
+    def _prepare_baselines_captum(
+        self,
+        baselines: Union[float, torch.tensor, str],
+        test_dl: torch.utils.data.DataLoader,
+        do_baselines: bool,
+        is_full_baselines: bool,
+    ):
+        if do_baselines and baselines is not None and isinstance(baselines, str):
+            if baselines.startswith("b|"):
+                num_samples = int(baselines.split("|")[1])
+                tensor_inp_tr = []
+                # tensor_tgt_tr = []
+                count = 0
+                for x in self.datamodule.train_dataloader():
+                    tensor_inp_tr.append(self.model.embed_input(x))
+                    # tensor_tgt_tr.append(x["target"])
+                    count += x["target"].shape[0]
+                    if count >= num_samples:
+                        break
+                tensor_inp_tr = torch.cat(tensor_inp_tr, dim=0)
+                # tensor_tgt_tr = torch.cat(tensor_tgt_tr, dim=0)
+                baselines = tensor_inp_tr[:num_samples]
+                if is_full_baselines:
+                    pass
+                else:
+                    baselines = baselines.mean(dim=0, keepdim=True)
+            else:
+                raise ValueError(
+                    "Invalid value for `baselines`. Please refer to the documentation" " for more details."
+                )
+        return baselines
+
+    def _handle_categorical_embeddings_attributions(
+        self, attributions: torch.tensor, is_embedding1d: bool, is_embedding2d: bool, is_embbeding_dims: bool
+    ):
+        # post processing to get attributions for categorical features
+        if is_embedding1d and is_embbeding_dims:
+            if self.model.hparams.categorical_dim > 0:
+                cat_attributions = []
+                index_counter = self.model.hparams.continuous_dim
+                for _, embed_dim in self.model.hparams.embedding_dims:
+                    cat_attributions.append(attributions[:, index_counter : index_counter + embed_dim].sum(dim=1))
+                    index_counter += embed_dim
+                cat_attributions = torch.stack(cat_attributions, dim=1)
+                attributions = torch.cat(
+                    [
+                        attributions[:, : self.model.hparams.continuous_dim],
+                        cat_attributions,
+                    ],
+                    dim=1,
+                )
+        elif is_embedding2d:
+            attributions = attributions.mean(dim=-1)
+        return attributions
+
+    def explain(
+        self,
+        data: DataFrame,
+        method: str = "GradientShap",
+        method_args: Optional[Dict] = {},
+        baselines: Union[float, torch.tensor, str] = None,
+        **kwargs,
+    ) -> DataFrame:
+        """Returns the feature attributions/explanations of the model as a pandas DataFrame. The shape of the returned
+        dataframe is (num_samples, num_features)
+
+        Args:
+            data (DataFrame): The dataframe to be explained
+            method (str): The method to be used for explaining the model.
+                It should be one of the Defaults to "GradientShap".
+                For more details, refer to https://captum.ai/api/attribution.html
+            method_args (Optional[Dict], optional): The arguments to be passed to the initialization
+                of the Captum method.
+            baselines (Union[float, torch.tensor, str]): The baselines to be used for the explanation.
+                If a scalar is provided, will use that value as the baseline for all the features.
+                If a tensor is provided, will use that tensor as the baseline for all the features.
+                If a string like `b|<num_samples>` is provided, will use that many samples from the train
+                Using the whole train data as the baseline is not recommended as it can be
+                computationally expensive. By default, PyTorch Tabular uses 10000 samples from the
+                train data as the baseline. You can configure this by passing a special string
+                "b|<num_samples>" where <num_samples> is the number of samples to be used as the
+                baseline. For eg. "b|1000" will use 1000 samples from the train.
+                If None, will use default settings like zero in captum(which is method dependent).
+                For `GradientShap`, it is the train data.
+                Defaults to None.
+
+            **kwargs: Additional keyword arguments to be passed to the Captum method `attribute` function.
+        Returns:
+            DataFrame: The dataframe with the feature importance
+        """
+        assert CAPTUM_INSTALLED, "Captum not installed. Please install using `pip install captum` or "
+        "install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
+        ALLOWED_METHODS = [
+            "GradientShap",
+            "IntegratedGradients",
+            "DeepLift",
+            "DeepLiftShap",
+            "InputXGradient",
+            "FeaturePermutation",
+            "FeatureAblation",
+            "KernelShap",
+        ]
+        assert method in ALLOWED_METHODS, f"method should be one of {ALLOWED_METHODS}"
+        if isinstance(data, pd.Series):
+            data = data.to_frame().T
+        if method in ["DeepLiftShap", "KernelShap"]:
+            warnings.warn(
+                f"{method} is computationally expensive and will take some time. For faster results, try using"
+                "some other methods like GradientShap, IntegratedGradients etc."
+            )
+        if method in ["FeaturePermutation", "FeatureAblation"]:
+            assert data.shape[0] > 1, f"{method} only works when the number of samples is greater than 1"
+            if len(data) <= 100:
+                warnings.warn(
+                    f"{method} gives better results when the number of samples is large. For better results, try using"
+                    "more samples or some other methods like GradientShap which works well on single examples."
+                )
+        is_full_baselines = method in ["GradientShap", "DeepLiftShap"]
+        is_not_supported = self.model._get_name() in ["TabNetModel", "MDNModel", "TabTransformerModel"]
+        do_baselines = method not in ["Saliency", "InputXGradient", "FeaturePermutation", "LRP"]
+        if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
+            raise ValueError(
+                f"baselines cannot be a scalar or None for {method}. Please "
+                "provide a tensor or a string like `b|<num_samples>`"
+            )
+        if is_not_supported:
+            raise NotImplementedError(f"Attributions are not implemented for {self.model._get_name()}")
+
+        is_embedding1d = isinstance(self.model.embedding_layer, (Embedding1dLayer, PreEncoded1dLayer))
+        is_embedding2d = isinstance(self.model.embedding_layer, Embedding2dLayer)
+        # Models like NODE may have no embedding dims (doing leaveOneOut encoding) even if categorical_dim > 0
+        is_embbeding_dims = (
+            hasattr(self.model.hparams, "embedding_dims") and self.model.hparams.embedding_dims is not None
+        )
+        if (not is_embedding1d) and (not is_embedding2d):
+            raise NotImplementedError(
+                "Attributions are not implemented for models with this type of" " embedding layer"
+            )
+        test_dl = self.datamodule.prepare_inference_dataloader(data)
+        self.model.eval()
+        # prepare import for Captum
+        tensor_inp, tensor_tgt = self._prepare_input_for_captum(test_dl)
+        baselines = self._prepare_baselines_captum(baselines, test_dl, do_baselines, is_full_baselines)
+        # prepare model for Captum
+        try:
+            interp_model = _CaptumModel(self.model)
+            captum_interp_cls = getattr(captum.attr, method)(interp_model, **method_args)
+            if do_baselines:
+                attributions = captum_interp_cls.attribute(
+                    tensor_inp,
+                    baselines=baselines,
+                    target=tensor_tgt if self.config.task == "classification" else None,
+                    **kwargs,
+                )
+            else:
+                attributions = captum_interp_cls.attribute(
+                    tensor_inp,
+                    target=tensor_tgt if self.config.task == "classification" else None,
+                    **kwargs,
+                )
+            attributions = self._handle_categorical_embeddings_attributions(
+                attributions, is_embedding1d, is_embedding2d, is_embbeding_dims
+            )
+        finally:
+            self.model.train()
+        assert attributions.shape[1] == self.model.hparams.continuous_dim + self.model.hparams.categorical_dim, (
+            f"Something went wrong. The number of features in the attributions"
+            f" ({attributions.shape[1]}) does not match the number of features in"
+            f" the model ({self.model.hparams.continuous_dim+self.model.hparams.categorical_dim})"
+        )
+        return pd.DataFrame(
+            attributions.detach().cpu().numpy(), columns=self.config.continuous_cols + self.config.categorical_cols
+        )
