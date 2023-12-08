@@ -661,4 +661,3 @@ class _CaptumModel(nn.Module):
     def forward(self, x: Tensor):
         x = self.model.compute_backbone(x)
         return self.model.compute_head(x)["logits"]
-

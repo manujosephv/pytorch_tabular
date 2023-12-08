@@ -54,7 +54,7 @@ MODEL_CONFIG_FEATURE_IMP_TEST = [
 MODEL_CONFIG_CAPTUM_TEST = [
     (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
     (GANDALFConfig, {}),
-    (TabNetModelConfig, {})
+    (TabNetModelConfig, {}),
 ]
 
 DATASET_CONTINUOUS_COLUMNS = (
@@ -497,13 +497,13 @@ def _test_captum(model_config_class, model_config_params, data_config, train, te
         test = test.head(10)
 
     is_full_baselines = attr_method in ["GradientShap", "DeepLiftShap"]
-    is_not_supported = tabular_model.model._get_name() in  ["TabNetModel", "MDNModel", "TabTransformerModel"]
+    is_not_supported = tabular_model.model._get_name() in ["TabNetModel", "MDNModel", "TabTransformerModel"]
     if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
         with pytest.raises(ValueError):
             exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
         return
     elif is_not_supported:
-        with pytest.raises((NotImplementedError,AssertionError)):
+        with pytest.raises((NotImplementedError, AssertionError)):
             exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
         return
     elif attr_method in ["FeaturePermutation", "FeatureAblation"] and single_row:
@@ -512,12 +512,25 @@ def _test_captum(model_config_class, model_config_params, data_config, train, te
         return
     else:
         exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
-    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim+tabular_model.model.hparams.categorical_dim
+    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim + tabular_model.model.hparams.categorical_dim
+
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_CAPTUM_TEST)
 @pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"], []])
-@pytest.mark.parametrize("attr_method", ["GradientShap","IntegratedGradients", "DeepLift", "DeepLiftShap", "InputXGradient", "FeaturePermutation", "FeatureAblation", "KernelShap"])
+@pytest.mark.parametrize(
+    "attr_method",
+    [
+        "GradientShap",
+        "IntegratedGradients",
+        "DeepLift",
+        "DeepLiftShap",
+        "InputXGradient",
+        "FeaturePermutation",
+        "FeatureAblation",
+        "KernelShap",
+    ],
+)
 @pytest.mark.parametrize("single_row", [True, False])
 @pytest.mark.parametrize("baselines", ["b|100", None, 0])
 def test_captum_integration_regression(
@@ -541,7 +554,8 @@ def test_captum_integration_regression(
 
     model_config_params["task"] = "regression"
     _test_captum(model_config_class, model_config_params, data_config, train, test, attr_method, single_row, baselines)
-    
+
+
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_CAPTUM_TEST)
 @pytest.mark.parametrize(
     "continuous_cols",
@@ -551,7 +565,19 @@ def test_captum_integration_regression(
     ],
 )
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"], []])
-@pytest.mark.parametrize("attr_method", ["GradientShap","IntegratedGradients", "DeepLift", "DeepLiftShap", "InputXGradient", "FeaturePermutation", "FeatureAblation", "KernelShap"])
+@pytest.mark.parametrize(
+    "attr_method",
+    [
+        "GradientShap",
+        "IntegratedGradients",
+        "DeepLift",
+        "DeepLiftShap",
+        "InputXGradient",
+        "FeaturePermutation",
+        "FeatureAblation",
+        "KernelShap",
+    ],
+)
 @pytest.mark.parametrize("single_row", [False])
 @pytest.mark.parametrize("baselines", ["b|100"])
 def test_captum_integration_classification(
