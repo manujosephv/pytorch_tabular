@@ -117,7 +117,7 @@ def test_date_encoding(timeseries_data, freq):
         target=target + ["Occupancy"],
         continuous_cols=["Temperature", "Humidity", "Light", "CO2", "HumidityRatio"],
         categorical_cols=[],
-        date_columns=[("date", freq)],
+        date_columns=[("date", freq, "%Y-%m-%d %H:%M:%S")],
         encode_date_columns=True,
     )
     model_config_params = {"task": "regression"}

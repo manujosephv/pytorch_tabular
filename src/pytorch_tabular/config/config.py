@@ -65,8 +65,9 @@ class DataConfig:
         categorical_cols (List): Column names of the categorical fields to treat differently. Defaults to
                 []
 
-        date_columns (List): (Column names, Freq) tuples of the date fields. For eg. a field named
-                introduction_date and with a monthly frequency should have an entry ('intro_date','M'}
+        date_columns (List): (Column name, Freq, Format) tuples of the date fields. For eg. a field named
+                introduction_date and with a monthly frequency like "2023-12" should have
+                an entry ('intro_date','M','%Y-%m')
 
         encode_date_columns (bool): Whether or not to encode the derived variables from date
 
@@ -115,7 +116,8 @@ class DataConfig:
         default_factory=list,
         metadata={
             "help": "(Column names, Freq) tuples of the date fields. For eg. a field named"
-            " `introduction_date` and with a monthly frequency should have an entry ('intro_date','M'}"
+            " introduction_date and with a monthly frequency like '2023-12' should have"
+            " an entry ('intro_date','M','%Y-%m')"
         },
     )
 
