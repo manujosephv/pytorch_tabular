@@ -53,6 +53,7 @@ from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 
 try:
     import captum.attr
+
     CAPTUM_INSTALLED = True
 except ImportError:
     CAPTUM_INSTALLED = False
@@ -1565,9 +1566,9 @@ class TabularModel:
         Returns:
             DataFrame: The dataframe with the feature importance
         """
-        assert CAPTUM_INSTALLED, (
-            "Captum not installed. Please install using `pip install captum` or install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
-        )
+        assert (
+            CAPTUM_INSTALLED
+        ), "Captum not installed. Please install using `pip install captum` or install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
         ALLOWED_METHODS = [
             "GradientShap",
             "IntegratedGradients",
