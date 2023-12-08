@@ -11,7 +11,6 @@ from functools import partial
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-import captum.attr
 import joblib
 import numpy as np
 import pandas as pd
@@ -51,6 +50,12 @@ from pytorch_tabular.models.common.layers.embeddings import (
 # from pytorch_tabular.models import MDNModel, TabNetModel, TabTransformerModel # TODO exclude these from explanations
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
+
+try:
+    import captum.attr
+    CAPTUM_INSTALLED = True
+except ImportError:
+    CAPTUM_INSTALLED = False
 
 logger = get_logger(__name__)
 
@@ -1560,6 +1565,9 @@ class TabularModel:
         Returns:
             DataFrame: The dataframe with the feature importance
         """
+        assert CAPTUM_INSTALLED, (
+            "Captum not installed. Please install using `pip install captum` or install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
+        )
         ALLOWED_METHODS = [
             "GradientShap",
             "IntegratedGradients",
