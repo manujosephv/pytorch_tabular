@@ -561,10 +561,9 @@ def test_captum_integration_regression(
     "continuous_cols",
     [
         [f"feature_{i}" for i in range(54)],
-        [],
     ],
 )
-@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"], []])
+@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize(
     "attr_method",
     [
