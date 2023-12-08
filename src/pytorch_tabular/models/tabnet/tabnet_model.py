@@ -63,6 +63,11 @@ class TabNetBackbone(nn.Module):
     def forward(self, x: Dict):
         # unpacking into a tuple
         x = self.unpack_input(x)
+        # Making two parameters to the right device.
+        self.tabnet.embedder.embedding_group_matrix = self.tabnet.embedder.embedding_group_matrix.to(x.device)
+        self.tabnet.tabnet.encoder.group_attention_matrix = self.tabnet.tabnet.encoder.group_attention_matrix.to(
+            x.device
+        )
         # Returns output and Masked Loss. We only need the output
         x, _ = self.tabnet(x)
         return x

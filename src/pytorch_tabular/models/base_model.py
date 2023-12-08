@@ -651,3 +651,13 @@ class _GenericModel(BaseModel):
         # all components are initialized in the init function
         self._backbone = self.kwargs.get("backbone")
         self._head = self._get_head_from_config()
+
+
+class _CaptumModel(nn.Module):
+    def __init__(self, model: BaseModel):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x: Tensor):
+        x = self.model.compute_backbone(x)
+        return self.model.compute_head(x)["logits"]

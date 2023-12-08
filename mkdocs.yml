@@ -13,6 +13,7 @@ nav:
           - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
           - Low-level API Usecases: "tutorials/09-Low-level API Usecases.ipynb"
           - Test Time Augumentation: "tutorials/10-Test Time Augmentation.ipynb"
+          - Explainability/Interpretability: "tutorials/11-Explainability.ipynb"
     - Configuration:
           - Data: data.md
           - Supervised Models: models.md
@@ -22,6 +23,8 @@ nav:
           - Experiment Tracking: experiment_tracking.md
     - Tabular Model:
           - TabularModel: tabular_model.md
+    - Explainability/Interpretablity:
+          - Explainability/Interpretablity: explainability.md
     - Other Features:
           - "Other Features": other_features.md
     # - FAQ: faq.md
