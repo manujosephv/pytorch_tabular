@@ -171,6 +171,13 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/sorenmacbeth">
+            <img src="https://avatars.githubusercontent.com/u/130043?v=4" width="100;" alt="sorenmacbeth"/>
+            <br />
+            <sub><b>Soren Macbeth</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/fonnesbeck">
             <img src="https://avatars.githubusercontent.com/u/81476?v=4" width="100;" alt="fonnesbeck"/>
             <br />
@@ -183,15 +190,15 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
             <br />
             <sub><b>Null</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/ndrsfel">
             <img src="https://avatars.githubusercontent.com/u/21068727?v=4" width="100;" alt="ndrsfel"/>
             <br />
             <sub><b>Andreas</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/EeyoreLee">
             <img src="https://avatars.githubusercontent.com/u/49790022?v=4" width="100;" alt="EeyoreLee"/>
@@ -226,7 +233,8 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
             <br />
             <sub><b>Sterling G. Baird</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/yinyunie">
             <img src="https://avatars.githubusercontent.com/u/25686434?v=4" width="100;" alt="yinyunie"/>
