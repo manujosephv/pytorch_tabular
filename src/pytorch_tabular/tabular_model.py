@@ -28,6 +28,7 @@ from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
 from pytorch_lightning.tuner.tuning import Tuner
 from pytorch_lightning.utilities.model_summary import summarize
 from sklearn.base import TransformerMixin
+from sklearn.model_selection import BaseCrossValidator, KFold, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from torch import nn
 
@@ -1509,7 +1510,11 @@ class TabularModel:
         return baselines
 
     def _handle_categorical_embeddings_attributions(
-        self, attributions: torch.tensor, is_embedding1d: bool, is_embedding2d: bool, is_embbeding_dims: bool
+        self,
+        attributions: torch.tensor,
+        is_embedding1d: bool,
+        is_embedding2d: bool,
+        is_embbeding_dims: bool,
     ):
         # post processing to get attributions for categorical features
         if is_embedding1d and is_embbeding_dims:
@@ -1583,19 +1588,30 @@ class TabularModel:
             data = data.to_frame().T
         if method in ["DeepLiftShap", "KernelShap"]:
             warnings.warn(
-                f"{method} is computationally expensive and will take some time. For faster results, try using"
-                "some other methods like GradientShap, IntegratedGradients etc."
+                f"{method} is computationally expensive and will take some time. For"
+                " faster results, try usingsome other methods like GradientShap,"
+                " IntegratedGradients etc."
             )
         if method in ["FeaturePermutation", "FeatureAblation"]:
             assert data.shape[0] > 1, f"{method} only works when the number of samples is greater than 1"
             if len(data) <= 100:
                 warnings.warn(
-                    f"{method} gives better results when the number of samples is large. For better results, try using"
-                    "more samples or some other methods like GradientShap which works well on single examples."
+                    f"{method} gives better results when the number of samples is"
+                    " large. For better results, try usingmore samples or some other"
+                    " methods like GradientShap which works well on single examples."
                 )
         is_full_baselines = method in ["GradientShap", "DeepLiftShap"]
-        is_not_supported = self.model._get_name() in ["TabNetModel", "MDNModel", "TabTransformerModel"]
-        do_baselines = method not in ["Saliency", "InputXGradient", "FeaturePermutation", "LRP"]
+        is_not_supported = self.model._get_name() in [
+            "TabNetModel",
+            "MDNModel",
+            "TabTransformerModel",
+        ]
+        do_baselines = method not in [
+            "Saliency",
+            "InputXGradient",
+            "FeaturePermutation",
+            "LRP",
+        ]
         if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
             raise ValueError(
                 f"baselines cannot be a scalar or None for {method}. Please "
@@ -1627,13 +1643,13 @@ class TabularModel:
                 attributions = captum_interp_cls.attribute(
                     tensor_inp,
                     baselines=baselines,
-                    target=tensor_tgt if self.config.task == "classification" else None,
+                    target=(tensor_tgt if self.config.task == "classification" else None),
                     **kwargs,
                 )
             else:
                 attributions = captum_interp_cls.attribute(
                     tensor_inp,
-                    target=tensor_tgt if self.config.task == "classification" else None,
+                    target=(tensor_tgt if self.config.task == "classification" else None),
                     **kwargs,
                 )
             attributions = self._handle_categorical_embeddings_attributions(
@@ -1642,10 +1658,146 @@ class TabularModel:
         finally:
             self.model.train()
         assert attributions.shape[1] == self.model.hparams.continuous_dim + self.model.hparams.categorical_dim, (
-            f"Something went wrong. The number of features in the attributions"
+            "Something went wrong. The number of features in the attributions"
             f" ({attributions.shape[1]}) does not match the number of features in"
-            f" the model ({self.model.hparams.continuous_dim+self.model.hparams.categorical_dim})"
+            " the model"
+            f" ({self.model.hparams.continuous_dim+self.model.hparams.categorical_dim})"
         )
         return pd.DataFrame(
-            attributions.detach().cpu().numpy(), columns=self.config.continuous_cols + self.config.categorical_cols
+            attributions.detach().cpu().numpy(),
+            columns=self.config.continuous_cols + self.config.categorical_cols,
         )
+
+    def _check_cv(self, cv):
+        cv = 5 if cv is None else cv
+        if isinstance(cv, int):
+            if self.config.task == "classification":
+                return StratifiedKFold(cv)
+            else:
+                return KFold(cv)
+        elif isinstance(cv, Iterable):
+            return cv
+        elif isinstance(cv, BaseCrossValidator):
+            return cv
+        else:
+            raise ValueError("cv must be int, iterable or scikit-learn splitter")
+
+    def _split_kwargs(self, kwargs):
+        prep_dl_kwargs = {}
+        prep_model_kwargs = {}
+        train_kwargs = {}
+        # using the defined args in self.prepare_dataloder, self.prepare_model, and self.train
+        # to split the kwargs
+        for k, v in kwargs.items():
+            if k in self.prepare_dataloader.__code__.co_varnames:
+                prep_dl_kwargs[k] = v
+            elif k in self.prepare_model.__code__.co_varnames:
+                prep_model_kwargs[k] = v
+            elif k in self.train.__code__.co_varnames:
+                train_kwargs[k] = v
+            else:
+                raise ValueError(f"Invalid keyword argument: {k}")
+        return prep_dl_kwargs, prep_model_kwargs, train_kwargs
+
+    def cross_validate(
+        self,
+        cv: Optional[Union[int, Iterable, BaseCrossValidator]],
+        train: DataFrame,
+        metric: Optional[Union[str, Callable]] = None,
+        return_oof: bool = False,
+        groups: Optional[Union[str, np.ndarray]] = None,
+        verbose: bool = True,
+        reset_datamodule: bool = True,
+        **kwargs,
+    ):
+        """Cross validate the model.
+
+        Args:
+            cv (Optional[Union[int, Iterable, BaseCrossValidator]]): Determines the cross-validation splitting strategy.
+                Possible inputs for cv are:
+
+                - None, to use the default 5-fold cross validation (KFold for
+                Regression and StratifiedKFold for Classification),
+                - integer, to specify the number of folds in a (Stratified)KFold,
+                - An iterable yielding (train, test) splits as arrays of indices.
+                - A scikit-learn CV splitter.
+
+            train (DataFrame): The training data with labels
+
+            metric (Optional[Union[str, Callable]], optional): The metrics to be used for evaluation.
+                If None, will use the first metric in the config. If str is provided, will use that
+                metric from the defined ones. If callable is provided, will use that function as the
+                metric. We expect callable to be of the form `metric(y_true, y_pred)`. For classification
+                problems, The `y_pred` is a dataframe with the probabilities for each class
+                (<class>_probability) and a final prediction(prediction). And for Regression, it is a
+                dataframe with a final prediction (<target>_prediction).
+                Defaults to None.
+
+            return_oof (bool, optional): If True, will return the out-of-fold predictions
+                along with the cross validation results. Defaults to False.
+
+            groups (Optional[Union[str, np.ndarray]], optional): Group labels for
+                the samples used while splitting. If provided, will be used as the
+                `groups` argument for the `split` method of the cross validator.
+                If input is str, will use the column in the input dataframe with that
+                name as the group labels. If input is array-like, will use that as the
+                group. The only constraint is that the group labels should have the
+                same size as the number of rows in the input dataframe. Defaults to None.
+
+            verbose (bool, optional): If True, will log the results. Defaults to True.
+
+            reset_datamodule (bool, optional): If True, will reset the datamodule for each iteration.
+                It will be slower because we will be fitting the transformations for each fold.
+                If False, we take an approximation that once the transformations are fit on the first
+                fold, they will be valid for all the other folds. Defaults to True.
+
+            **kwargs: Additional keyword arguments to be passed to the `fit` method of the model.
+        Returns:
+            DataFrame: The dataframe with the cross validation results
+        """
+        cv = self._check_cv(cv)
+        prep_dl_kwargs, prep_model_kwargs, train_kwargs = self._split_kwargs(kwargs)
+        is_callable_metric = False
+        if metric is None:
+            metric = "test_" + self.config.metrics[0]
+        elif isinstance(metric, str):
+            metric = metric if metric.startswith("test_") else "test_" + metric
+        elif callable(metric):
+            is_callable_metric = True
+        cv_metrics = []
+        datamodule = None
+        model = None
+        oof_preds = []
+        for fold, (train_idx, val_idx) in enumerate(cv.split(train, y=train[self.config.target], groups=groups)):
+            if verbose:
+                logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
+            train_fold = train.iloc[train_idx]
+            val_fold = train.iloc[val_idx]
+            if reset_datamodule:
+                datamodule = None
+            if datamodule is None:
+                # Initialize datamodule and model in the first fold
+                # uses train data from this fold to fit all transformers
+                datamodule = self.prepare_dataloader(train=train_fold, validation=val_fold, seed=42, **prep_dl_kwargs)
+                model = self.prepare_model(datamodule, **prep_model_kwargs)
+            else:
+                # Preprocess the current fold data using the fitted transformers and save in datamodule
+                datamodule.train, _ = datamodule.preprocess_data(train_fold, stage="inference")
+                datamodule.validation, _ = datamodule.preprocess_data(val_fold, stage="inference")
+
+            # Train the model
+            self.train(model, datamodule, **train_kwargs)
+            if return_oof or is_callable_metric:
+                preds = self.predict(val_fold, include_input_features=False)
+                oof_preds.append(preds)
+            if is_callable_metric:
+                cv_metrics.append(metric(val_fold[self.config.target], preds))
+            else:
+                result = self.evaluate(val_fold, verbose=False)
+                cv_metrics.append(result[0][metric])
+            if verbose:
+                logger.info(f"Fold {fold+1}/{cv.get_n_splits()} score: {cv_metrics[-1]}")
+            self.model.reset_weights()
+        return cv_metrics, oof_preds
+
+        #     pass
