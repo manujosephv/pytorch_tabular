@@ -101,7 +101,7 @@ tabular_model.fit(train=train, validation=val)
 # tabular_model.save_model("saved_models/gandalftree")
 # tabular_model = TabularModel.load_model("saved_models/gandalftree")
 # calculate runtime
-import time # noqa: E402
+import time  # noqa: E402
 
 print("Test Shape: ", test.shape)
 for method in [
