@@ -1861,7 +1861,10 @@ class TabularModel:
             metric (Optional[Union[str, Callable]], optional): The metrics to be used for evaluation.
                 If None, will use the first metric in the config. If str is provided, will use that 
                 metric from the defined ones. If callable is provided, will use that function as the
-                metric. We expect callable to be of the form `metric(y_true, y_pred)`. Defaults to None.
+                metric. We expect callable to be of the form `metric(y_true, y_pred)`. For classification 
+                problems, The `y_pred` is a dataframe with the probabilities for each class (<class>_probability) and a final 
+                prediction(prediction). And for Regression, it is a dataframe with a final prediction (prediction).
+                Defaults to None.
 
             return_oof (bool, optional): If True, will return the out-of-fold predictions
                 along with the cross validation results. Defaults to False.
@@ -1887,10 +1890,11 @@ class TabularModel:
         """
         cv = self._check_cv(cv)
         prep_dl_kwargs, prep_model_kwargs, train_kwargs = self._split_kwargs(kwargs)
+        is_callable_metric = False
         if metric is None:
-            metric = self.config.metrics[0]
+            metric = "test_"+self.config.metrics[0]
         elif isinstance(metric, str):
-            pass
+            metric = metric if metric.startswith("test_") else "test_"+metric
         elif callable(metric):
             is_callable_metric = True
         cv_metrics = []
