@@ -1728,8 +1728,9 @@ class TabularModel:
                 If None, will use the first metric in the config. If str is provided, will use that
                 metric from the defined ones. If callable is provided, will use that function as the
                 metric. We expect callable to be of the form `metric(y_true, y_pred)`. For classification
-                problems, The `y_pred` is a dataframe with the probabilities for each class (<class>_probability) and a final
-                prediction(prediction). And for Regression, it is a dataframe with a final prediction (prediction).
+                problems, The `y_pred` is a dataframe with the probabilities for each class 
+                (<class>_probability) and a final prediction(prediction). And for Regression, it is a 
+                dataframe with a final prediction (<target>_prediction).
                 Defaults to None.
 
             return_oof (bool, optional): If True, will return the out-of-fold predictions
