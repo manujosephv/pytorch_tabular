@@ -3,7 +3,6 @@
 import os
 
 import pytest
-from sklearn.model_selection import KFold
 import torch
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
@@ -20,6 +19,7 @@ from pytorch_tabular.models import (
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 from sklearn.metrics import accuracy_score, r2_score
+from sklearn.model_selection import KFold
 
 # import os
 
@@ -81,9 +81,7 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize(
-    "custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"]
-)
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
 @pytest.mark.parametrize("cache_data", ["memory", "disk"])
 @pytest.mark.parametrize("inference_only", [True, False])
 def test_save_load(
@@ -262,9 +260,7 @@ def test_feature_importance(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize(
-    "custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"]
-)
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
 def test_save_load_statedict(
     regression_data,
     model_config_class,
@@ -358,9 +354,7 @@ def test_save_load_statedict(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize(
-    "custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"]
-)
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
 @pytest.mark.parametrize("save_type", ["pytorch"])  # "onnx"
 def test_save_for_inference(
     regression_data,
@@ -412,9 +406,7 @@ def test_save_for_inference(
         sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx",
         kind=save_type,
     )
-    assert os.path.exists(
-        sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx"
-    )
+    assert os.path.exists(sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx")
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_EXT_TEST)
@@ -524,9 +516,7 @@ def _test_captum(
         "MDNModel",
         "TabTransformerModel",
     ]
-    if is_full_baselines and (
-        baselines is None or isinstance(baselines, (float, int))
-    ):
+    if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
         with pytest.raises(ValueError):
             exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
         return
@@ -540,11 +530,7 @@ def _test_captum(
         return
     else:
         exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
-    assert (
-        exp.shape[1]
-        == tabular_model.model.hparams.continuous_dim
-        + tabular_model.model.hparams.categorical_dim
-    )
+    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim + tabular_model.model.hparams.categorical_dim
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_CAPTUM_TEST)
@@ -679,7 +665,8 @@ def _run_cv(
         trainer_config=trainer_config,
     )
     cv_scores, oof_predictions = tabular_model.cross_validate(
-    cv, train, metric=metric, return_oof=return_oof, reset_datamodule=reset_datamodule)
+        cv, train, metric=metric, return_oof=return_oof, reset_datamodule=reset_datamodule
+    )
     return cv_scores, oof_predictions
 
 
@@ -737,7 +724,7 @@ def test_cross_validate_regression(
     assert len(cv_scores) == cv_splits
     if return_oof:
         assert len(oof_predictions) == cv_splits
-    
+
 
 @pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
 @pytest.mark.parametrize(

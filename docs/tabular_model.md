@@ -51,6 +51,11 @@ The low-level API is more flexible and allows you to customize the training loop
         show_root_heading: yes
         heading_level: 4
 
+::: pytorch_tabular.TabularModel.cross_validate
+    options:
+        show_root_heading: yes
+        heading_level: 4
+
 ## Low-Level API
 
 The low-level API is more flexible and allows you to write more complicated logic like cross validation, ensembling, etc. The low-level API is more verbose and requires you to write more code, but it comes with more control to the user.

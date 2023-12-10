@@ -58,7 +58,7 @@ data_config = DataConfig(
     # target=["target"],
     target=["num_col_2"],
     # continuous_cols=num_col_names,
-    continuous_cols=[c for c in num_col_names if c!="num_col_2"],
+    continuous_cols=[c for c in num_col_names if c != "num_col_2"],
     categorical_cols=cat_col_names,
     continuous_feature_transform="quantile_normal",
     normalize_continuous_features=True,
@@ -78,11 +78,9 @@ model_config = model_config(
     # num_layers=1,
     # num_trees=2,
     # depth=2,
-    
     input_embed_dim=4,
-    num_heads =1,
+    num_heads=1,
     num_attn_blocks=1,
-    
     # gflu_stages=2,
     # tree_depth=2,
     # num_trees=5,
@@ -104,17 +102,27 @@ tabular_model.fit(train=train, validation=val)
 # tabular_model = TabularModel.load_model("saved_models/gandalftree")
 # calculate runtime
 import time
+
 print("Test Shape: ", test.shape)
-for method in ["GradientShap","IntegratedGradients", "DeepLift", "DeepLiftShap", "InputXGradient", "FeaturePermutation", "FeatureAblation", "KernelShap"]:
+for method in [
+    "GradientShap",
+    "IntegratedGradients",
+    "DeepLift",
+    "DeepLiftShap",
+    "InputXGradient",
+    "FeaturePermutation",
+    "FeatureAblation",
+    "KernelShap",
+]:
     start = time.time()
     # try:
     exp = tabular_model.explain(test.head(1), method=method, baselines="b|100")
-    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim+tabular_model.model.hparams.categorical_dim
+    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim + tabular_model.model.hparams.categorical_dim
     # except AssertionError:
     #     pass
     end = time.time()
     print(f"{method} Time: ", end - start)
-    
+
     # print(exp)
 # test.drop(columns=["target"], inplace=True)
 # pred_df = tabular_model.predict(test)
@@ -126,7 +134,16 @@ for method in ["GradientShap","IntegratedGradients", "DeepLift", "DeepLiftShap",
 # tabular_model.fit(train=train, validation=val)
 # tabular_model.fit(train=train, validation=val, max_epochs=5)
 # tabular_model.fit(train=train, validation=val, max_epochs=5, reset=True)
-["GradientShap","IntegratedGradients", "DeepLift", "DeepLiftShap", "InputXGradient", "FeaturePermutation", "FeatureAblation", "KernelShap"]
+[
+    "GradientShap",
+    "IntegratedGradients",
+    "DeepLift",
+    "DeepLiftShap",
+    "InputXGradient",
+    "FeaturePermutation",
+    "FeatureAblation",
+    "KernelShap",
+]
 # TODO Check FeatureAblation, KernelShap - Error
 
 # t = torch.rand(128,200)
