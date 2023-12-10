@@ -3,6 +3,7 @@
 import os
 
 import pytest
+from sklearn.model_selection import KFold
 import torch
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
@@ -18,6 +19,7 @@ from pytorch_tabular.models import (
     TabNetModelConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
+from sklearn.metrics import accuracy_score, r2_score
 
 # import os
 
@@ -48,7 +50,10 @@ MODEL_CONFIG_FEATURE_EXT_TEST = [
 MODEL_CONFIG_FEATURE_IMP_TEST = [
     (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
     (GANDALFConfig, {}),
-    (GatedAdditiveTreeEnsembleConfig, {"num_trees": 1, "tree_depth": 2, "gflu_stages": 1}),
+    (
+        GatedAdditiveTreeEnsembleConfig,
+        {"num_trees": 1, "tree_depth": 2, "gflu_stages": 1},
+    ),
 ]
 
 MODEL_CONFIG_CAPTUM_TEST = [
@@ -76,7 +81,9 @@ def fake_metric(y_hat, y):
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
+@pytest.mark.parametrize(
+    "custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"]
+)
 @pytest.mark.parametrize("cache_data", ["memory", "disk"])
 @pytest.mark.parametrize("inference_only", [True, False])
 def test_save_load(
@@ -255,7 +262,9 @@ def test_feature_importance(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
+@pytest.mark.parametrize(
+    "custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"]
+)
 def test_save_load_statedict(
     regression_data,
     model_config_class,
@@ -349,7 +358,9 @@ def test_save_load_statedict(
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
-@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
+@pytest.mark.parametrize(
+    "custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"]
+)
 @pytest.mark.parametrize("save_type", ["pytorch"])  # "onnx"
 def test_save_for_inference(
     regression_data,
@@ -401,7 +412,9 @@ def test_save_for_inference(
         sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx",
         kind=save_type,
     )
-    assert os.path.exists(sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx")
+    assert os.path.exists(
+        sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx"
+    )
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_EXT_TEST)
@@ -470,7 +483,16 @@ def test_model_reset(
     assert result_1[0]["test_loss"] != result_2[0]["test_loss"]
 
 
-def _test_captum(model_config_class, model_config_params, data_config, train, test, attr_method, single_row, baselines):
+def _test_captum(
+    model_config_class,
+    model_config_params,
+    data_config,
+    train,
+    test,
+    attr_method,
+    single_row,
+    baselines,
+):
     model_config = model_config_class(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=3,
@@ -497,8 +519,14 @@ def _test_captum(model_config_class, model_config_params, data_config, train, te
         test = test.head(10)
 
     is_full_baselines = attr_method in ["GradientShap", "DeepLiftShap"]
-    is_not_supported = tabular_model.model._get_name() in ["TabNetModel", "MDNModel", "TabTransformerModel"]
-    if is_full_baselines and (baselines is None or isinstance(baselines, (float, int))):
+    is_not_supported = tabular_model.model._get_name() in [
+        "TabNetModel",
+        "MDNModel",
+        "TabTransformerModel",
+    ]
+    if is_full_baselines and (
+        baselines is None or isinstance(baselines, (float, int))
+    ):
         with pytest.raises(ValueError):
             exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
         return
@@ -512,7 +540,11 @@ def _test_captum(model_config_class, model_config_params, data_config, train, te
         return
     else:
         exp = tabular_model.explain(test, method=attr_method, baselines=baselines)
-    assert exp.shape[1] == tabular_model.model.hparams.continuous_dim + tabular_model.model.hparams.categorical_dim
+    assert (
+        exp.shape[1]
+        == tabular_model.model.hparams.continuous_dim
+        + tabular_model.model.hparams.categorical_dim
+    )
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_CAPTUM_TEST)
@@ -553,7 +585,16 @@ def test_captum_integration_regression(
     )
 
     model_config_params["task"] = "regression"
-    _test_captum(model_config_class, model_config_params, data_config, train, test, attr_method, single_row, baselines)
+    _test_captum(
+        model_config_class,
+        model_config_params,
+        data_config,
+        train,
+        test,
+        attr_method,
+        single_row,
+        baselines,
+    )
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_CAPTUM_TEST)
@@ -599,4 +640,161 @@ def test_captum_integration_classification(
     )
 
     model_config_params["task"] = "classification"
-    _test_captum(model_config_class, model_config_params, data_config, train, test, attr_method, single_row, baselines)
+    _test_captum(
+        model_config_class,
+        model_config_params,
+        data_config,
+        train,
+        test,
+        attr_method,
+        single_row,
+        baselines,
+    )
+
+
+def _run_cv(
+    model_config_class,
+    model_config_params,
+    data_config,
+    train,
+    metric,
+    cv,
+    return_oof,
+    reset_datamodule,
+):
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    cv_scores, oof_predictions = tabular_model.cross_validate(
+    cv, train, metric=metric, return_oof=return_oof, reset_datamodule=reset_datamodule)
+    return cv_scores, oof_predictions
+
+
+@pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("cv", [5, KFold(n_splits=3, shuffle=True, random_state=42)])
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "loss",
+        None,
+        lambda y_true, y_pred: r2_score(y_true, y_pred["MedHouseVal_prediction"].values),
+    ],
+)
+@pytest.mark.parametrize("return_oof", [True])
+@pytest.mark.parametrize("reset_datamodule", [True, False])
+def test_cross_validate_regression(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    cv,
+    metric,
+    return_oof,
+    reset_datamodule,
+):
+    (train, test, target) = regression_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "regression"
+    if cv is None:
+        cv_splits = 5
+    elif isinstance(cv, int):
+        cv_splits = cv
+    else:
+        cv_splits = cv.n_splits
+    cv_scores, oof_predictions = _run_cv(
+        model_config_class,
+        model_config_params,
+        data_config,
+        train,
+        metric,
+        cv,
+        return_oof,
+        reset_datamodule,
+    )
+    assert len(cv_scores) == cv_splits
+    if return_oof:
+        assert len(oof_predictions) == cv_splits
+    
+
+@pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [f"feature_{i}" for i in range(54)],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
+@pytest.mark.parametrize("cv", [None])
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "accuracy",
+        None,
+        lambda y_true, y_pred: accuracy_score(y_true, y_pred["prediction"].values),
+    ],
+)
+@pytest.mark.parametrize("return_oof", [True])
+@pytest.mark.parametrize("reset_datamodule", [False])
+def test_cross_validate_classification(
+    classification_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    cv,
+    metric,
+    return_oof,
+    reset_datamodule,
+):
+    (train, test, target) = classification_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "classification"
+    if cv is None:
+        cv_splits = 5
+    elif isinstance(cv, int):
+        cv_splits = cv
+    else:
+        cv_splits = cv.n_splits
+    cv_scores, oof_predictions = _run_cv(
+        model_config_class,
+        model_config_params,
+        data_config,
+        train,
+        metric,
+        cv,
+        return_oof,
+        reset_datamodule,
+    )
+    assert len(cv_scores) == cv_splits
+    if return_oof:
+        assert len(oof_predictions) == cv_splits
