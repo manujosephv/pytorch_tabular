@@ -25,13 +25,6 @@ from pytorch_tabular.config import (
 from pytorch_tabular.tabular_model import TabularModel
 from pytorch_tabular.utils import get_logger
 
-try:
-    import captum.attr
-
-    CAPTUM_INSTALLED = True
-except ImportError:
-    CAPTUM_INSTALLED = False
-
 logger = get_logger(__name__)
 
 
@@ -66,9 +59,10 @@ class TabularModelTuner:
         self.model_config = model_config
         self.optimizer_config = optimizer_config
         self.trainer_config = trainer_config
-        self.tabular_model_init_kwargs = dict(
-            model_callable=model_callable, model_state_dict_path=model_state_dict_path
-        )
+        self.tabular_model_init_kwargs = {
+            "model_callable": model_callable,
+            "model_state_dict_path": model_state_dict_path,
+        }
 
     def _check_assign_config(self, config, param, value):
         if isinstance(config, DictConfig):
