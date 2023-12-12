@@ -150,20 +150,74 @@ class TabularModelTuner:
     def tune(
         self,
         train: DataFrame,
-        validation: DataFrame,
         search_space: Dict,
         metric: Union[str, Callable],
         mode: str,
         strategy: str,
+        validation: Optional[DataFrame] = None,
         n_trials: Optional[int] = None,
         cv: Optional[Union[int, Iterable, BaseCrossValidator]] = None,
         cv_agg_func: Optional[Callable] = np.mean,
         cv_kwargs: Optional[Dict] = {},
-        verbose: bool = True,
+        verbose: bool = False,
         progress_bar: bool = True,
         random_state: Optional[int] = 42,
         **kwargs,
     ):
+        """Tune the hyperparameters of the TabularModel.
+        Args:
+        train (DataFrame): Training data
+
+        validation (DataFrame, optional): Validation data. Defaults to None.
+
+        search_space (Dict): A dictionary of the form {param_name: [values to try]} 
+            for grid search or {param_name: distribution} for random search
+
+        metric (Union[str, Callable]): The metric to be used for evaluation.
+            If str is provided, will use that metric from the defined ones. 
+            If callable is provided, will use that function as the metric. 
+            We expect callable to be of the form `metric(y_true, y_pred)`. For classification
+            problems, The `y_pred` is a dataframe with the probabilities for each class
+            (<class>_probability) and a final prediction(prediction). And for Regression, it is a
+            dataframe with a final prediction (<target>_prediction).
+            Defaults to None.
+
+        mode (str): One of ['max', 'min']. Whether to maximize or minimize the metric.
+
+        strategy (str): One of ['grid_search', 'random_search']. The strategy to use for tuning.
+
+        n_trials (int, optional): Number of trials to run. Only used for random search.
+            Defaults to None.
+
+        cv (Optional[Union[int, Iterable, BaseCrossValidator]]): Determines the cross-validation splitting strategy.
+            Possible inputs for cv are:
+
+            - None, to not use any cross validation. We will just use the validation data
+            - integer, to specify the number of folds in a (Stratified)KFold,
+            - An iterable yielding (train, test) splits as arrays of indices.
+            - A scikit-learn CV splitter.
+            Defaults to None.
+
+        cv_agg_func (Optional[Callable], optional): Function to aggregate the cross validation scores.
+            Defaults to np.mean.
+
+        cv_kwargs (Optional[Dict], optional): Additional keyword arguments to be passed to the cross validation
+            method. Defaults to {}.
+
+        verbose (bool, optional): Whether to print the results of each trial. Defaults to False.
+
+        progress_bar (bool, optional): Whether to show a progress bar. Defaults to True.
+
+        random_state (Optional[int], optional): Random state to be used for random search. Defaults to 42.
+
+        **kwargs: Additional keyword arguments to be passed to the TabularModel fit.
+
+        Returns:
+            OUTPUT: A named tuple with the following attributes:
+                trials_df (DataFrame): A dataframe with the results of each trial
+                best_params (Dict): The best parameters found
+                best_score (float): The best score found
+        """
         assert (
             strategy in self.ALLOWABLE_STRATEGIES
         ), f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
@@ -172,12 +226,12 @@ class TabularModelTuner:
         assert (
             isinstance(search_space, dict) and len(search_space) > 0
         ), "search_space must be a non-empty dict"
-
-        def metric_to_pt_metric(metric):
-            return metric if metric.startswith("test_") else "test_" + metric
-        
-        def pt_metric_to_metric(metric):
-            return metric.replace("test_", "")
+        if cv is not None and validation is not None:
+            warnings.warn(
+                "Both validation and cv are provided. Ignoring validation and using cv"
+            )
+            validation = None
+            
         
         if strategy == "grid_search":
             assert all(isinstance(v, list) for v in search_space.values()), (
@@ -275,6 +329,8 @@ class TabularModelTuner:
                         params.update({k.replace("test_", ""):v for k,v in result[0].items()})
                 params.update({"trial_id": i})
                 trials.append(params)
+                if verbose:
+                    logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric]}")
                 if progress:
                     progress.update(task, advance=1)
         trials_df = pd.DataFrame(trials)
