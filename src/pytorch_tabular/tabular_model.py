@@ -47,7 +47,6 @@ from pytorch_tabular.models.common.layers.embeddings import (
     Embedding2dLayer,
     PreEncoded1dLayer,
 )
-
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
 
@@ -1800,5 +1799,3 @@ class TabularModel:
         return cv_metrics, oof_preds
 
         #     pass
-
-        

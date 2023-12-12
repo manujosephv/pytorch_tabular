@@ -18,9 +18,10 @@ from pytorch_tabular.models import (
     TabNetModelConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
+from scipy.stats import randint, uniform
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.model_selection import KFold
-from scipy.stats import uniform, randint, loguniform
+
 # import os
 
 
@@ -832,7 +833,7 @@ def test_tuner(
         data_config=data_config,
         model_config=model_config,
         optimizer_config=optimizer_config,
-        trainer_config=trainer_config
+        trainer_config=trainer_config,
     )
     if strategy == "grid_search":
         search_space = {
@@ -857,7 +858,7 @@ def test_tuner(
         cv=cv,
         metric="loss",
         mode="min",
-        progress_bar=False
+        progress_bar=False,
     )
     if strategy == "grid_search":
         assert len(result.trials_df) == 8
