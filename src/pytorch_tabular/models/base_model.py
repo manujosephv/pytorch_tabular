@@ -152,7 +152,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         )
         if self.do_log_logits:
             self._val_logits = []
-        if not WANDB_INSTALLED:
+        if not WANDB_INSTALLED and self.do_log_logits:
             self.do_log_logits = False
             warnings.warn(
                 "Wandb is not installed. Please install wandb to log logits. "

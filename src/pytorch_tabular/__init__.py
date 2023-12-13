@@ -9,9 +9,11 @@ from .categorical_encoders import CategoricalEmbeddingTransformer
 from .feature_extractor import DeepFeatureExtractor
 from .tabular_datamodule import TabularDatamodule
 from .tabular_model import TabularModel
+from .tabular_model_tuner import TabularModelTuner
 
 __all__ = [
     "TabularModel",
+    "TabularModelTuner",
     "TabularDatamodule",
     "models",
     "ssl_models",

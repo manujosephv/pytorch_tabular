@@ -4,7 +4,7 @@ import os
 
 import pytest
 import torch
-from pytorch_tabular import TabularModel
+from pytorch_tabular import TabularModel, TabularModelTuner
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.config.config import SSLModelConfig
 from pytorch_tabular.feature_extractor import DeepFeatureExtractor
@@ -18,6 +18,7 @@ from pytorch_tabular.models import (
     TabNetModelConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
+from scipy.stats import randint, uniform
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.model_selection import KFold
 
@@ -785,3 +786,82 @@ def test_cross_validate_classification(
     assert len(cv_scores) == cv_splits
     if return_oof:
         assert len(oof_predictions) == cv_splits
+
+
+@pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("cv", [None, 5])
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "loss",
+        lambda y_true, y_pred: r2_score(y_true, y_pred["MedHouseVal_prediction"].values),
+    ],
+)
+@pytest.mark.parametrize("strategy", ["grid_search", "random_search"])
+def test_tuner(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    cv,
+    metric,
+    strategy,
+):
+    (train, test, target) = regression_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "regression"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+    tuner = TabularModelTuner(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    if strategy == "grid_search":
+        search_space = {
+            "model_config__layers": ["8-4", "16-8"],
+            "model_config.head_config__dropout": [0.1, 0.2],
+            "trainer_config__batch_size": [32],
+            "optimizer_config__optimizer": ["RAdam", "AdamW"],
+        }
+    else:
+        search_space = {
+            "model_config__layers": ["8-4", "16-8"],
+            "model_config.head_config__dropout": uniform(0, 0.5),
+            "trainer_config__batch_size": randint(32, 64),
+            "optimizer_config__optimizer": ["RAdam", "AdamW"],
+        }
+    result = tuner.tune(
+        train=train,
+        validation=test,
+        search_space=search_space,
+        strategy=strategy,
+        n_trials=2,
+        cv=cv,
+        metric="loss",
+        mode="min",
+        progress_bar=False,
+    )
+    if strategy == "grid_search":
+        assert len(result.trials_df) == 8
+    else:
+        assert len(result.trials_df) == 2
+    assert result.best_score in result.trials_df["loss"].values.tolist()
