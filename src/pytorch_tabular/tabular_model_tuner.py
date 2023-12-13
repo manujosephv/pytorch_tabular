@@ -200,12 +200,13 @@ class TabularModelTuner:
             ctx_mgr = Progress()
         else:
             ctx_mgr = nullcontext()
-
+        verbose_tabular_model = self.tabular_model_init_kwargs.pop("verbose", False)
         temp_tabular_model = TabularModel(
             data_config=self.data_config,
             model_config=self.model_config,
             optimizer_config=self.optimizer_config,
             trainer_config=self.trainer_config,
+            verbose=verbose_tabular_model,
             **self.tabular_model_init_kwargs,
         )
         prep_dl_kwargs, prep_model_kwargs, train_kwargs = temp_tabular_model._split_kwargs(kwargs)
@@ -240,6 +241,7 @@ class TabularModelTuner:
                     model_config=model_config_t,
                     optimizer_config=optimizer_config_t,
                     trainer_config=trainer_config_t,
+                    verbose=verbose_tabular_model,
                     **self.tabular_model_init_kwargs,
                 )
                 if cv is not None:

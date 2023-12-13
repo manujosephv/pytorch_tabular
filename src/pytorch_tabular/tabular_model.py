@@ -71,6 +71,7 @@ class TabularModel:
         experiment_config: Optional[Union[ExperimentConfig, str]] = None,
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
+        verbose: bool = True,
     ) -> None:
         """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
 
@@ -101,8 +102,11 @@ class TabularModel:
 
             model_state_dict_path (Optional[Union[str, Path]], optional):
                 If provided, will load the state dict after initializing the model from config.
+
+            verbose(bool): turns off and on the logging. Defaults to True.
         """
         super().__init__()
+        self.verbose = verbose
         self.exp_manager = ExperimentRunManager()
         if config is None:
             assert any(c is not None for c in (data_config, model_config, optimizer_config, trainer_config)), (
@@ -118,7 +122,8 @@ class TabularModel:
                     "`target` in data_config should not be None for" f" {model_config.task} task"
                 )
             if experiment_config is None:
-                logger.info("Experiment Tracking is turned off")
+                if self.verbose:
+                    logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
                 self.config = OmegaConf.merge(
                     OmegaConf.to_container(data_config),
@@ -142,7 +147,8 @@ class TabularModel:
                 # experiment_config = OmegaConf.structured(experiment_config)
                 self.track_experiment = True
             else:
-                logger.info("Experiment Tracking is turned off")
+                if self.verbose:
+                    logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
 
         self.name, self.uid = self._get_run_name_uid()
@@ -271,7 +277,8 @@ class TabularModel:
             self.config.enable_checkpointing = False
         if self.config.progress_bar == "rich" and self.config.trainer_kwargs.get("enable_progress_bar", True):
             callbacks.append(RichProgressBar())
-        logger.debug(f"Callbacks used: {callbacks}")
+        if self.verbose:
+            logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
     def _prepare_trainer(self, callbacks: List, max_epochs: int = None, min_epochs: int = None) -> pl.Trainer:
@@ -284,7 +291,8 @@ class TabularModel:
         Returns:
             pl.Trainer: A PyTorch Lightning Trainer object
         """
-        logger.info("Preparing the Trainer")
+        if self.verbose:
+            logger.info("Preparing the Trainer")
         if max_epochs is not None:
             self.config.max_epochs = max_epochs
         if min_epochs is not None:
@@ -322,7 +330,7 @@ class TabularModel:
                     "`target_transform` should wither be an sklearn Transformer or a" " tuple of callables."
                 )
         if self.config.task == "classification" and target_transform is not None:
-            logger.warning("For classification task, target transform is not used. Ignoring the" " parameter")
+            logger.warning("For classification task, target transform is not used. Ignoring the parameter")
             target_transform = None
         return target_transform
 
@@ -499,7 +507,8 @@ class TabularModel:
                 " next major release. Plese use `evaluate` for evaluating on test"
                 " data"
             )
-        logger.info("Preparing the DataLoaders")
+        if self.verbose:
+            logger.info("Preparing the DataLoaders")
         target_transform = self._check_and_set_target_transform(target_transform)
 
         datamodule = TabularDatamodule(
@@ -548,7 +557,8 @@ class TabularModel:
         Returns:
             BaseModel: The prepared model
         """
-        logger.info(f"Preparing the Model: {self.config._model_name}")
+        if self.verbose:
+            logger.info(f"Preparing the Model: {self.config._model_name}")
         # Fetching the config as some data specific configs have been added in the datamodule
         self.inferred_config = self._read_parse_config(datamodule.update_config(self.config), InferredConfig)
         model = self.model_callable(
@@ -600,18 +610,22 @@ class TabularModel:
         )
         self.model.train()
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
-            logger.info("Auto LR Find Started")
+            if self.verbose:
+                logger.info("Auto LR Find Started")
             result = Tuner(self.trainer).lr_find(self.model, train_dataloaders=train_loader, val_dataloaders=val_loader)
-            logger.info(
-                f"Suggested LR: {result.suggestion()}."
-                " For plot and detailed analysis, use `find_learning_rate` method."
-            )
+            if self.verbose:
+                logger.info(
+                    f"Suggested LR: {result.suggestion()}."
+                    " For plot and detailed analysis, use `find_learning_rate` method."
+                )
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
         self.model.train()
-        logger.info("Training Started")
+        if self.verbose:
+            logger.info("Training Started")
         self.trainer.fit(self.model, train_loader, val_loader)
-        logger.info("Training the model completed")
+        if self.verbose:
+            logger.info("Training the model completed")
         if self.config.load_best:
             self.load_best_model()
         return self.trainer
@@ -909,7 +923,8 @@ class TabularModel:
         else:
             if self.track_experiment:
                 # Renaming the experiment run so that a different log is created for finetuning
-                logger.info("Renaming the experiment run for finetuning as" f" {config['run_name'] + '_finetuned'}")
+                if self.verbose:
+                    logger.info("Renaming the experiment run for finetuning as" f" {config['run_name'] + '_finetuned'}")
                 config["run_name"] = config["run_name"] + "_finetuned"
 
         datamodule = self.datamodule
@@ -1324,10 +1339,12 @@ class TabularModel:
     def load_best_model(self) -> None:
         """Loads the best model after training is done."""
         if self.trainer.checkpoint_callback is not None:
-            logger.info("Loading the best model")
+            if self.verbose:
+                logger.info("Loading the best model")
             ckpt_path = self.trainer.checkpoint_callback.best_model_path
             if ckpt_path != "":
-                logger.debug(f"Model Checkpoint: {ckpt_path}")
+                if self.verbose:
+                    logger.debug(f"Model Checkpoint: {ckpt_path}")
                 ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["state_dict"])
             else:
