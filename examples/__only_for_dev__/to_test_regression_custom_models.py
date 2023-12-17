@@ -326,7 +326,7 @@ tabular_model = TabularModel(
     # experiment_config=experiment_config,
     model_callable=MultiStageModel,
 )
-tabular_model.fit(train=train, test=test)
+tabular_model.fit(train=train)
 
 result = tabular_model.evaluate(test)
 # print(result)

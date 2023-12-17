@@ -66,7 +66,7 @@ def test_regression(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     result = tabular_model.evaluate(test)
     # print(result[0]["valid_loss"])
@@ -124,4 +124,4 @@ def test_classification(
             optimizer_config=optimizer_config,
             trainer_config=trainer_config,
         )
-        tabular_model.fit(train=train, test=test)
+        tabular_model.fit(train=train)

@@ -144,7 +144,6 @@ class TabularDatamodule(pl.LightningDataModule):
         train: DataFrame,
         config: DictConfig,
         validation: DataFrame = None,
-        test: DataFrame = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         seed: Optional[int] = 42,
@@ -161,9 +160,6 @@ class TabularDatamodule(pl.LightningDataModule):
 
             validation (DataFrame, optional): Validation Dataframe.
                 If left empty, we use the validation split from DataConfig to split a random sample as validation.
-                Defaults to None.
-
-            test (DataFrame, optional): Holdout DataFrame to check final performance on.
                 Defaults to None.
 
             target_transform (Optional[Union[TransformerMixin, Tuple(Callable)]], optional):
@@ -189,10 +185,6 @@ class TabularDatamodule(pl.LightningDataModule):
         else:
             self.validation = None
         self._set_target_transform(target_transform)
-        if test is not None:
-            self.test = test.copy() if copy_data else test
-        else:
-            self.test = None
         self.target = config.target or []
         self.batch_size = config.batch_size
         self.train_sampler = train_sampler
@@ -434,30 +426,15 @@ class TabularDatamodule(pl.LightningDataModule):
         )
         self.validation = None
 
-        test_dataset = None
-        if self.test is not None:
-            test_dataset = TabularDataset(
-                task=self.config.task,
-                data=self.test,
-                categorical_cols=self.config.categorical_cols,
-                continuous_cols=self.config.continuous_cols,
-                embed_categorical=(not self.do_leave_one_out_encoder()),
-                target=self.target,
-            )
-            self.test = None
         if self.cache_mode is self.CACHE_MODES.DISK:
             torch.save(train_dataset, self.cache_dir / "train_dataset")
             torch.save(validation_dataset, self.cache_dir / "validation_dataset")
-            if test_dataset is not None:
-                torch.save(test_dataset, self.cache_dir / "test_dataset")
         elif self.cache_mode is self.CACHE_MODES.MEMORY:
             self.train_dataset = train_dataset
             self.validation_dataset = validation_dataset
-            self.test_dataset = test_dataset
         elif self.cache_mode is self.CACHE_MODES.INFERENCE:
             self.train_dataset = None
             self.validation_dataset = None
-            self.test_dataset = None
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
 
@@ -492,8 +469,6 @@ class TabularDatamodule(pl.LightningDataModule):
         # Preprocessing Train, Validation
         self.train, _ = self.preprocess_data(self.train, stage="fit" if not is_ssl else "inference")
         self.validation, _ = self.preprocess_data(self.validation, stage="inference")
-        if self.test is not None:
-            self.test, _ = self.preprocess_data(self.test, stage="inference")
         self._fitted = True
         self._cache_dataset()
 
@@ -509,7 +484,6 @@ class TabularDatamodule(pl.LightningDataModule):
         dm_inference = copy.copy(self)
         dm_inference.train_dataset = None
         dm_inference.validation_dataset = None
-        dm_inference.test_dataset = None
         dm_inference.cache_mode = self.CACHE_MODES.INFERENCE
         return dm_inference
 
@@ -741,14 +715,6 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         return self._load_dataset_from_cache("validation")
 
-    def load_test_dataset(self) -> TabularDataset:
-        """Returns the test dataset.
-
-        Returns:
-            TabularDataset: The test dataset
-        """
-        return self._load_dataset_from_cache("test")
-
     def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
         """Function that loads the train set.
 
@@ -784,22 +750,6 @@ class TabularDatamodule(pl.LightningDataModule):
             pin_memory=self.config.pin_memory,
         )
 
-    def test_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
-        """Function that loads the validation set.
-
-        Args:
-            batch_size (Optional[int], optional): Batch size. Defaults to `self.batch_size`.
-
-        Returns:
-            DataLoader: Test dataloader
-        """
-        return DataLoader(
-            self.load_test_dataset(),
-            batch_size or self.batch_size,
-            shuffle=False,
-            num_workers=self.config.num_workers,
-            pin_memory=self.config.pin_memory,
-        )
 
     def _prepare_inference_data(self, df: DataFrame) -> DataFrame:
         """Prepare data for inference."""

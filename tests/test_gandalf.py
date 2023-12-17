@@ -70,7 +70,7 @@ def test_regression(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     result = tabular_model.evaluate(test)
     assert "test_mean_squared_error" in result[0].keys()
@@ -119,7 +119,7 @@ def test_classification(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     result = tabular_model.evaluate(test)
     assert "test_accuracy" in result[0].keys()
@@ -163,7 +163,7 @@ def test_classification(
 #         optimizer_config=optimizer_config,
 #         trainer_config=trainer_config,
 #     )
-#     tabular_model.fit(train=train, test=test)
+#     tabular_model.fit(train=train)
 
 #     transformer = CategoricalEmbeddingTransformer(tabular_model)
 #     train_transform = transformer.fit_transform(train)

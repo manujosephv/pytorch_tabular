@@ -83,7 +83,6 @@ def test_dataloader(
         train=train,
         validation=valid,
         config=config,
-        test=test,
         target_transform=target_transform,
         cache_data=cache_data,
     )
@@ -136,7 +135,6 @@ def test_date_encoding(timeseries_data, freq):
         train=train,
         validation=valid,
         config=config,
-        test=test,
     )
     datamodule.prepare_data()
     if freq != "S":

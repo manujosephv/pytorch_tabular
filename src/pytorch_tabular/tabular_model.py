@@ -444,7 +444,6 @@ class TabularModel:
         self,
         train: DataFrame,
         validation: Optional[DataFrame] = None,
-        test: Optional[DataFrame] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
@@ -459,9 +458,6 @@ class TabularModel:
                 If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
-
-            test (Optional[DataFrame], optional): If provided, will use as the hold-out data,
-                which you'll be able to check performance after the model is trained. Defaults to None.
 
             train_sampler (Optional[torch.utils.data.Sampler], optional):
                 Custom PyTorch batch samplers which will be passed to the DataLoaders.
@@ -479,12 +475,6 @@ class TabularModel:
         Returns:
             TabularDatamodule: The prepared datamodule
         """
-        if test is not None:
-            warnings.warn(
-                "Providing test data in `fit` is deprecated and will be removed in"
-                " next major release. Plese use `evaluate` for evaluating on test"
-                " data"
-            )
         if self.verbose:
             logger.info("Preparing the DataLoaders")
         target_transform = self._check_and_set_target_transform(target_transform)
@@ -493,7 +483,6 @@ class TabularModel:
             train=train,
             validation=validation,
             config=self.config,
-            test=test,
             target_transform=target_transform,
             train_sampler=train_sampler,
             seed=seed,
@@ -612,7 +601,6 @@ class TabularModel:
         self,
         train: Optional[DataFrame],
         validation: Optional[DataFrame] = None,
-        test: Optional[DataFrame] = None,  # TODO: Deprecate test in next version
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         metrics_prob_inputs: Optional[List[bool]] = None,
@@ -636,10 +624,6 @@ class TabularModel:
                 If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
-
-            test (Optional[DataFrame], optional): If provided, will use as the hold-out data,
-                which you'll be able to check performance after the model is trained. Defaults to None.
-                DEPRECATED. Will be removed in the next version.
 
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
@@ -700,7 +684,6 @@ class TabularModel:
             datamodule = self.prepare_dataloader(
                 train,
                 validation,
-                test,
                 train_sampler,
                 target_transform,
                 seed,
@@ -711,12 +694,6 @@ class TabularModel:
                 warnings.warn(
                     "train data is provided but datamodule is provided."
                     " Ignoring the train data and using the datamodule"
-                )
-            if test is not None:
-                warnings.warn(
-                    "Providing test data in `fit` is deprecated and will be removed"
-                    " in next major release. Plese use `evaluate` for evaluating on"
-                    " test data"
                 )
         model = self.prepare_model(
             datamodule,
@@ -784,7 +761,6 @@ class TabularModel:
             datamodule = self.prepare_dataloader(
                 train,
                 validation,
-                test=None,
                 train_sampler=None,
                 target_transform=None,
                 seed=seed,
