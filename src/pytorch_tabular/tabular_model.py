@@ -440,28 +440,6 @@ class TabularModel:
         tabular_model.logger = logger
         return tabular_model
 
-    @classmethod
-    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
-        """(Deprecated: Use `load_model` instead) Loads a saved model from the directory.
-
-        Args:
-            dir (str): The directory where the model was saved, along with the checkpoints
-            map_location (Union[Dict[str, str], str, device, int, Callable, None]) : If your checkpoint
-                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
-                to the new setup. The behaviour is the same as in torch.load()
-            strict (bool) : Whether to strictly enforce that the keys in checkpoint_path match the keys
-                returned by this module's state dict. Default: True.
-
-        Returns:
-            TabularModel (TabularModel): The saved TabularModel
-        """
-
-        warnings.warn(
-            "`load_from_checkpoint` is deprecated. Use `load_model` instead.",
-            DeprecationWarning,
-        )
-        return cls.load_model(dir, map_location, strict)
-
     def prepare_dataloader(
         self,
         train: DataFrame,

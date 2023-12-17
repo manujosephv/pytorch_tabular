@@ -104,7 +104,7 @@ tabular_model.fit(
 result = tabular_model.evaluate(test)
 print(result)
 # # # print(result[0]['train_loss'])
-# new_mdl = TabularModel.load_from_checkpoint("examples/sample")
+# new_mdl = TabularModel.load_model("examples/sample")
 # # TODO test none no test loader
 # result = new_mdl.evaluate(test)
 # print(result)

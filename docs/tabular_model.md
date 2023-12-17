@@ -161,10 +161,6 @@ For self-supervised learning, there is a different API because the process is di
     options:
         show_root_heading: yes
         heading_level: 4
-::: pytorch_tabular.TabularModel.load_from_checkpoint
-    options:
-        show_root_heading: yes
-        heading_level: 4
 ::: pytorch_tabular.TabularModel.load_model
     options:
         show_root_heading: yes

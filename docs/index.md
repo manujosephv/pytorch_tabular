@@ -98,7 +98,7 @@ tabular_model.fit(train=train, validation=val)
 result = tabular_model.evaluate(test)
 pred_df = tabular_model.predict(test)
 tabular_model.save_model("examples/basic")
-loaded_model = TabularModel.load_from_checkpoint("examples/basic")
+loaded_model = TabularModel.load_model("examples/basic")
 ```
 
 ## Citation
