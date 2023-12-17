@@ -259,9 +259,6 @@ class TrainerConfig:
         max_time (Optional[int]): Stop training after this amount of time has passed. Disabled by default
                 (None)
 
-        gpus (Optional[int]): DEPRECATED: Number of gpus to train on (int). -1 uses all available GPUs. By
-                default uses CPU (None)
-
         accelerator (Optional[str]): The accelerator to use for training. Can be one of
                 'cpu','gpu','tpu','ipu', 'mps', 'auto'. Defaults to 'auto'.
                 Choices are: [`cpu`,`gpu`,`tpu`,`ipu`,'mps',`auto`].
@@ -369,13 +366,6 @@ class TrainerConfig:
     max_time: Optional[int] = field(
         default=None,
         metadata={"help": "Stop training after this amount of time has passed. Disabled by default (None)"},
-    )
-    gpus: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: Number of gpus to train on (int). -1 uses all available GPUs."
-            " By default uses CPU (None)"
-        },
     )
     accelerator: Optional[str] = field(
         default="auto",
@@ -546,20 +536,8 @@ class TrainerConfig:
 
     def __post_init__(self):
         _validate_choices(self)
-        if self.gpus is not None:
-            warnings.warn(
-                "The `gpus` argument is deprecated in favor of `accelerator` and will be removed in a future version"
-                " of PyTorch Tabular. Please use `accelerator='gpu'` instead.",
-                DeprecationWarning,
-            )
-            if self.devices is None:
-                self.devices = self.gpus
-            if self.accelerator is None:
-                self.accelerator = "gpu"
-        else:
-            if self.accelerator is None:
-                self.accelerator = "cpu"
-        delattr(self, "gpus")
+        if self.accelerator is None:
+            self.accelerator = "cpu"
         if self.devices_list is not None:
             warnings.warn("Ignoring devices in favor of devices_list")
             self.devices = self.devices_list
