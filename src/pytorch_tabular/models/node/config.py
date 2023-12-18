@@ -58,9 +58,6 @@ class NodeConfig(ModelConfig):
                 and sparse-sigmoid cutoff value                 All points will be between (0.5 - 0.5 /
                 threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
 
-        cat_embedding_dropout (float): DEPRECATED: Please use `embedding_dropout` instead. probability of
-                an embedding element to be zeroed.
-
         embed_categorical (bool): Flag to embed categorical columns using an Embedding Layer. If turned
                 off, the categorical columns are encoded using LeaveOneOutEncoder. This is DEPRECATED and will
                 always be `True` from next release.
@@ -203,13 +200,6 @@ class NodeConfig(ModelConfig):
             """
         },
     )
-    cat_embedding_dropout: float = field(
-        default=0.0,
-        metadata={
-            "help": "DEPRECATED: Please use `embedding_dropout` instead."
-            " probability of an embedding element to be zeroed."
-        },
-    )
 
     embed_categorical: bool = field(
         default=False,
@@ -233,12 +223,6 @@ class NodeConfig(ModelConfig):
                 " This is deprecated and will be removed in future versions and categorical columns"
                 " will be embedded by default."
             )
-        if self.cat_embedding_dropout > 0:
-            warnings.warn(
-                "`cat_embedding_dropout` is deprecated and will be removed in the next release."
-                " Please use `embedding_dropout` instead"
-            )
-            self.embedding_dropout = self.cat_embedding_dropout
         super().__post_init__()
 
 
