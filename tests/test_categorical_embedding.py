@@ -38,7 +38,7 @@ def fake_metric(y_hat, y):
     "target_transform",
     [None, PowerTransformer(), (lambda x: np.power(x, 2), lambda x: np.sqrt(x))],
 )
-# @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
+@pytest.mark.parametrize("virtual_bz", [None, 32])
 # @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 # @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad])
 @pytest.mark.parametrize(
@@ -54,6 +54,7 @@ def test_regression(
     normalize_continuous_features,
     target_range,
     target_transform,
+    virtual_bz,
     # custom_metrics,
     # custom_loss,
     # custom_optimizer,
@@ -72,7 +73,7 @@ def test_regression(
         continuous_feature_transform=continuous_feature_transform,
         normalize_continuous_features=normalize_continuous_features,
     )
-    model_config_params = {"task": "regression"}
+    model_config_params = {"task": "regression", "virtual_batch_size": virtual_bz}
     if target_range:
         _target_range = []
         for target in data_config.target:

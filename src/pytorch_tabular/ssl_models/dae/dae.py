@@ -38,6 +38,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
             max_onehot_cardinality=self.config.max_onehot_cardinality,
             embedding_dropout=self.config.embedding_dropout,
             batch_norm_continuous_input=self.config.batch_norm_continuous_input,
+            virtual_batch_size=self.config.virtual_batch_size,
         )
 
     def _build_network(self):

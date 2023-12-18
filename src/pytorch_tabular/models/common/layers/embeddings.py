@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 from torch import nn
+from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
 
 from pytorch_tabular.utils import _initialize_kaiming
 
@@ -61,6 +62,7 @@ class PreEncoded1dLayer(nn.Module):
         categorical_dim: Tuple[int, int],
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
+        virtual_batch_size: Optional[int] = None,
     ):
         super().__init__()
         self.continuous_dim = continuous_dim
@@ -73,7 +75,7 @@ class PreEncoded1dLayer(nn.Module):
             self.embd_dropout = None
         # Continuous Layers
         if batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
+            self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
@@ -114,6 +116,7 @@ class Embedding1dLayer(nn.Module):
         categorical_embedding_dims: Tuple[int, int],
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
+        virtual_batch_size: Optional[int] = None,
     ):
         super().__init__()
         self.continuous_dim = continuous_dim
@@ -128,7 +131,7 @@ class Embedding1dLayer(nn.Module):
             self.embd_dropout = None
         # Continuous Layers
         if batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
+            self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
 
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
@@ -179,6 +182,7 @@ class Embedding2dLayer(nn.Module):
         frac_shared_embed: float = 0.25,
         embedding_bias: bool = False,
         batch_norm_continuous_input: bool = False,
+        virtual_batch_size: Optional[int] = None,
         embedding_dropout: float = 0.0,
         initialization: Optional[str] = None,
     ):
@@ -254,7 +258,7 @@ class Embedding2dLayer(nn.Module):
             if self._do_kaiming_initialization:
                 self._initialize_kaiming(self.cont_embedding_bias)
         if batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
+            self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
         if embedding_dropout > 0:
             self.embd_dropout = nn.Dropout(embedding_dropout)
         else:
