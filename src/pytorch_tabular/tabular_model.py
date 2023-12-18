@@ -1131,7 +1131,7 @@ class TabularModel:
         Returns:
             The final test result dictionary.
         """
-        assert not(test_loader is None and test is None), (
+        assert not (test_loader is None and test is None), (
             "Either `test_loader` or `test` should be provided."
             " If `test_loader` is not provided, `test` should be provided."
         )

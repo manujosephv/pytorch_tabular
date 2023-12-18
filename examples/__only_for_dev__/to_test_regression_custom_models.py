@@ -111,13 +111,6 @@ class MultiStageModelConfig(ModelConfig):
             """
         },
     )
-    embed_categorical: bool = field(
-        default=False,
-        metadata={
-            "help": "Flag to embed categorical columns using an Embedding Layer. If turned off,"
-            " the categorical columns are encoded using LeaveOneOutEncoder"
-        },
-    )
     embedding_dims: Optional[List[int]] = field(
         default=None,
         metadata={
@@ -140,13 +133,10 @@ class MultiStageModel(BaseModel):
         super().__init__(config, **kwargs)
 
     def _build_network(self):
-        if self.hparams.embed_categorical:
-            self.embedding_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in self.hparams.embedding_dims])
-            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
-                self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.embedded_cat_dim
-        else:
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
+        self.embedding_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in self.hparams.embedding_dims])
+        if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
+            self.embedding_dropout = nn.Dropout(self.hparams.embedding_dropout)
+        self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.embedded_cat_dim
         self.backbone = NODEBackbone(self.hparams)
         # average first n channels of every tree, where n is the number of output targets for regression
         # and number of classes for classification
@@ -182,9 +172,8 @@ class MultiStageModel(BaseModel):
 
     def forward(self, x: Dict):
         x = self.unpack_input(x)
-        if self.hparams.embed_categorical:
-            if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
-                x = self.embedding_dropout(x)
+        if self.hparams.embedding_dropout != 0 and self.hparams.embedded_cat_dim != 0:
+            x = self.embedding_dropout(x)
         x = self.backbone(x)
         clf_logits = self.clf_out(x)
         clf_prob = nn.functional.gumbel_softmax(clf_logits, tau=1, dim=-1)
@@ -301,13 +290,11 @@ model_config = MultiStageModelConfig(
     num_layers=1,  # Number of Dense Layers
     num_trees=2048,  # Number of Trees in each layer
     depth=6,  # Depth of each Tree
-    # If True, will use a learned embedding, else it will use LeaveOneOutEncoding for categorical columns
-    embed_categorical=True,
     learning_rate=0.02,
     additional_tree_output_dim=25,
 )
 # model_config.validate()
-# model_config = NodeConfig(task="regression", depth=2, embed_categorical=False)
+# model_config = NodeConfig(task="regression", depth=2)
 # trainer_config = TrainerConfig(checkpoints=None, max_epochs=5, profiler=None)
 # experiment_config = ExperimentConfig(
 #     project_name="DeepGMM_test",

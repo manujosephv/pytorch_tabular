@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model Config."""
 from dataclasses import dataclass, field
-import warnings
 
 from pytorch_tabular.config import ModelConfig
 
@@ -96,19 +95,12 @@ class CategoryEmbeddingModelConfig(ModelConfig):
     )
     use_batch_norm: bool = field(
         default=False,
-        metadata={
-            "help": (
-                "Flag to include a BatchNorm layer after each Linear Layer+DropOut."
-                " Defaults to False"
-            )
-        },
+        metadata={"help": ("Flag to include a BatchNorm layer after each Linear Layer+DropOut." " Defaults to False")},
     )
     initialization: str = field(
         default="kaiming",
         metadata={
-            "help": (
-                "Initialization scheme for the linear layers. Defaults to `kaiming`"
-            ),
+            "help": ("Initialization scheme for the linear layers. Defaults to `kaiming`"),
             "choices": ["kaiming", "xavier", "random"],
         },
     )

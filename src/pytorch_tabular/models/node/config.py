@@ -1,4 +1,3 @@
-import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -57,11 +56,6 @@ class NodeConfig(ModelConfig):
                 to 0.0 or 1.0                 Setting this value > 1.0 will result in a margin between data points
                 and sparse-sigmoid cutoff value                 All points will be between (0.5 - 0.5 /
                 threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
-
-        embed_categorical (bool): Flag to embed categorical columns using an Embedding Layer. If turned
-                off, the categorical columns are encoded using LeaveOneOutEncoder. This is DEPRECATED and will
-                always be `True` from next release.
-
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
@@ -201,29 +195,10 @@ class NodeConfig(ModelConfig):
         },
     )
 
-    embed_categorical: bool = field(
-        default=False,
-        metadata={
-            "help": "Flag to embed categorical columns using an Embedding Layer."
-            " If turned off, the categorical columns are encoded using LeaveOneOutEncoder."
-            " This is DEPRECATED and will always be `True` from next release."
-        },
-    )
-
     _module_src: str = field(default="models.node")
     _model_name: str = field(default="NODEModel")
     _backbone_name: str = field(default="NODEBackbone")
     _config_name: str = field(default="NodeConfig")
-
-    def __post_init__(self):
-        if not self.embed_categorical:
-            # raise deprecation warning
-            warnings.warn(
-                "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features."
-                " This is deprecated and will be removed in future versions and categorical columns"
-                " will be embedded by default."
-            )
-        super().__post_init__()
 
 
 # if __name__ == "__main__":

@@ -37,7 +37,6 @@ def classification_data():
 def test_regression(
     regression_data,
     multi_target,
-    embed_categorical,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
@@ -54,7 +53,7 @@ def test_regression(
             continuous_feature_transform=continuous_feature_transform,
             normalize_continuous_features=normalize_continuous_features,
         )
-        model_config_params = {"task": "regression", "depth": 2, "embed_categorical": embed_categorical}
+        model_config_params = {"task": "regression", "depth": 2}
         model_config = NodeConfig(**model_config_params)
         # model_config_params = dict(task="regression")
         # model_config = NodeConfig(**model_config_params)
@@ -83,7 +82,6 @@ def test_classification(
     classification_data,
     continuous_cols,
     categorical_cols,
-    embed_categorical,
     continuous_feature_transform,
     normalize_continuous_features,
 ):
@@ -97,7 +95,7 @@ def test_classification(
         continuous_feature_transform=continuous_feature_transform,
         normalize_continuous_features=normalize_continuous_features,
     )
-    model_config_params = {"task": "classification", "depth": 2, "embed_categorical": embed_categorical}
+    model_config_params = {"task": "classification", "depth": 2}
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(max_epochs=1, checkpoints=None, early_stopping=None)
     optimizer_config = OptimizerConfig()
@@ -128,7 +126,6 @@ test_regression(
         "Longitude",
     ],
     categorical_cols=["HouseAgeBin"],
-    embed_categorical=True,
     continuous_feature_transform=None,
     normalize_continuous_features=True,
     # target_range=True,

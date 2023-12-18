@@ -7,7 +7,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
 
-import category_encoders as ce
 import joblib
 import numpy as np
 import pandas as pd
@@ -42,7 +41,6 @@ class TabularDataset(Dataset):
         task: str,
         continuous_cols: List[str] = None,
         categorical_cols: List[str] = None,
-        embed_categorical: bool = True,
         target: List[str] = None,
     ):
         """Dataset to Load Tabular Data.
@@ -54,10 +52,6 @@ class TabularDataset(Dataset):
             continuous_cols (List[str], optional): A list of names of continuous columns. Defaults to None.
             categorical_cols (List[str], optional): A list of names of categorical columns.
                 These columns must be ordinal encoded beforehand. Defaults to None.
-            embed_categorical (bool):
-                Flag to tell the dataset whether to convert categorical columns to LongTensor or retain as float.
-                If we are going to embed categorical cols with an embedding layer,
-                we need to convert the columns to LongTensor
             target (List[str], optional): A list of strings with target column name(s). Defaults to None.
         """
 
@@ -81,10 +75,7 @@ class TabularDataset(Dataset):
 
         if self.categorical_cols:
             self.categorical_X = data[categorical_cols]
-            if embed_categorical:
-                self.categorical_X = self.categorical_X.astype(np.int64).values
-            else:
-                self.categorical_X = self.categorical_X.astype(np.float32).values
+            self.categorical_X = self.categorical_X.astype(np.int64).values
 
     @property
     def data(self):
@@ -236,17 +227,11 @@ class TabularDatamodule(pl.LightningDataModule):
             output_dim = None
         else:
             raise ValueError(f"{config.task} is an unsupported task.")
-        if not self.do_leave_one_out_encoder():
-            categorical_cardinality = [
-                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
-            ]
-            if getattr(config, "embedding_dims", None) is not None:
-                embedding_dims = config.embedding_dims
-            else:
-                embedding_dims = [(x, min(50, (x + 1) // 2)) for x in categorical_cardinality]
+        categorical_cardinality = [int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols]
+        if getattr(config, "embedding_dims", None) is not None:
+            embedding_dims = config.embedding_dims
         else:
-            categorical_cardinality = None
-            embedding_dims = None
+            embedding_dims = [(x, min(50, (x + 1) // 2)) for x in categorical_cardinality]
         return InferredConfig(
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
@@ -267,18 +252,6 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         return self._inferred_config
 
-    def do_leave_one_out_encoder(self) -> bool:
-        """Checks the special condition for NODE where we use a LeaveOneOutEncoder to encode categorical columns
-        DEPRECATED: Automatically encoding categorical columns using LeaveOneOutEncoder is deprecated.
-
-        Returns:
-            bool: True if LeaveOneOutEncoder is used
-        """
-        if hasattr(self.config, "_model_name"):
-            return (self.config._model_name == "NODEModel") and (not self.config.embed_categorical)
-        else:
-            return False
-
     def _encode_date_columns(self, data: DataFrame) -> DataFrame:
         added_features = []
         for field_name, freq, format in self.config.date_columns:
@@ -290,24 +263,13 @@ class TabularDatamodule(pl.LightningDataModule):
     def _encode_categorical_columns(self, data: DataFrame, stage: str) -> DataFrame:
         if stage != "fit":
             return self.categorical_encoder.transform(data)
-        if self.do_leave_one_out_encoder():
-            logger.debug("Encoding Categorical Columns using LeavOneOutEncoder")
-            self.categorical_encoder = ce.LeaveOneOutEncoder(cols=self.config.categorical_cols, random_state=self.seed)
-            # Multi-Target Regression uses the first target to encode the categorical columns
-            if len(self.config.target) > 1:
-                logger.warning(
-                    f"Multi-Target Regression: using the first target({self.config.target[0]})"
-                    f" to encode the categorical columns"
-                )
-            data = self.categorical_encoder.fit_transform(data, data[self.config.target[0]])
-        else:
-            logger.debug("Encoding Categorical Columns using OrdinalEncoder")
-            self.categorical_encoder = OrdinalEncoder(
-                cols=self.config.categorical_cols,
-                handle_unseen="impute" if self.config.handle_unknown_categories else "error",
-                handle_missing="impute" if self.config.handle_missing_values else "error",
-            )
-            data = self.categorical_encoder.fit_transform(data)
+        logger.debug("Encoding Categorical Columns using OrdinalEncoder")
+        self.categorical_encoder = OrdinalEncoder(
+            cols=self.config.categorical_cols,
+            handle_unseen="impute" if self.config.handle_unknown_categories else "error",
+            handle_missing="impute" if self.config.handle_missing_values else "error",
+        )
+        data = self.categorical_encoder.fit_transform(data)
         return data
 
     def _transform_continuous_columns(self, data: DataFrame, stage: str) -> DataFrame:
@@ -412,7 +374,6 @@ class TabularDatamodule(pl.LightningDataModule):
             data=self.train,
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
-            embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         self.train = None
@@ -421,7 +382,6 @@ class TabularDatamodule(pl.LightningDataModule):
             data=self.validation,
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
-            embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target,
         )
         self.validation = None
@@ -750,7 +710,6 @@ class TabularDatamodule(pl.LightningDataModule):
             pin_memory=self.config.pin_memory,
         )
 
-
     def _prepare_inference_data(self, df: DataFrame) -> DataFrame:
         """Prepare data for inference."""
         # TODO Is the target encoding necessary?
@@ -782,7 +741,6 @@ class TabularDatamodule(pl.LightningDataModule):
             data=df,
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
-            embed_categorical=(not self.do_leave_one_out_encoder()),
             target=self.target if all(col in df.columns for col in self.target) else None,
         )
         return DataLoader(

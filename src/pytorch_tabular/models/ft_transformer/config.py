@@ -2,12 +2,10 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """AutomaticFeatureInteraction Config."""
-import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
-from pytorch_tabular.utils import ifnone
 
 
 @dataclass
@@ -199,7 +197,6 @@ class FTTransformerConfig(ModelConfig):
     _model_name: str = field(default="FTTransformerModel")
     _backbone_name: str = field(default="FTTransformerBackbone")
     _config_name: str = field(default="FTTransformerConfig")
-
 
 
 # if __name__ == "__main__":

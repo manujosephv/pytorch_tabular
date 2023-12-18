@@ -2,12 +2,10 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """AutomaticFeatureInteraction Config."""
-import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
-from pytorch_tabular.utils import ifnone
 
 
 @dataclass

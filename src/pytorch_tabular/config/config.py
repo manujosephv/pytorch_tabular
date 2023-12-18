@@ -972,9 +972,7 @@ class SSLModelConfig:
     )
     batch_norm_continuous_input: bool = field(
         default=True,
-        metadata={
-            "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer."
-        },
+        metadata={"help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer."},
     )
     learning_rate: float = field(
         default=1e-3,
