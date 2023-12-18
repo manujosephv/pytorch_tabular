@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """Category Embedding Model Config."""
 from dataclasses import dataclass, field
+import warnings
 
 from pytorch_tabular.config import ModelConfig
 
@@ -121,23 +122,23 @@ class CategoryEmbeddingModelConfig(ModelConfig):
         },
     )
 
-    def __post_init__(self):
-        deprecated_args = [
-            "layers",
-            "activation",
-            "use_batch_norm",
-            "initialization",
-            "dropout",
-        ]
-        for arg in deprecated_args:
-            if hasattr(self, arg):
-                raise ValueError(
-                    f"{arg} is deprecated and will be remoevd in next version. "
-                    "Please use 'head' and `head_config` instead. "
-                    "CategoricalEmbedding model is just a linear head "
-                    " with embedding layers."
-                )
-        return super().__post_init__()
+    # def __post_init__(self):
+    #     deprecated_args = [
+    #         "layers",
+    #         "activation",
+    #         "use_batch_norm",
+    #         "initialization",
+    #         "dropout",
+    #     ]
+    #     # for arg in deprecated_args:
+    #     if any([getattr(self, arg) is not None for arg in deprecated_args]):
+    #         warnings.warn(
+    #             f"{deprecated_args} are deprecated and will be remoevd in next version. "
+    #             "Please use 'head' and `head_config` and set deprecated args "
+    #             "to `None` to turn off warning. CategoricalEmbedding model is just a "
+    #             "linear head with embedding layers."
+    #         )
+    #     return super().__post_init__()
 
     _module_src: str = field(default="models.category_embedding")
     _model_name: str = field(default="CategoryEmbeddingModel")
