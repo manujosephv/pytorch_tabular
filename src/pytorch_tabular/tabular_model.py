@@ -1122,7 +1122,6 @@ class TabularModel:
 
             test_loader (Optional[torch.utils.data.DataLoader], optional): The dataloader to be used for evaluation.
                 If provided, will use the dataloader instead of the test dataframe or the test data provided during fit.
-                DEPRECATION: providing test data during fit is deprecated and will be removed in a future release.
                 Defaults to None.
 
             ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided,
@@ -1132,24 +1131,12 @@ class TabularModel:
         Returns:
             The final test result dictionary.
         """
-        if test_loader is None and test is None:
-            warnings.warn(
-                "Providing test in fit is deprecated. Not providing `test` or"
-                " `test_loader` in `evaluate` will cause an error in a future"
-                " release."
-            )
+        assert not(test_loader is None and test is None), (
+            "Either `test_loader` or `test` should be provided."
+            " If `test_loader` is not provided, `test` should be provided."
+        )
         if test_loader is None:
-            if test is not None:
-                test_loader = self.datamodule.prepare_inference_dataloader(test)
-            elif self.datamodule.test is not None:
-                warnings.warn(
-                    "Providing test in fit is deprecated. Not providing `test` or"
-                    " `test_loader` in `evaluate` will cause an error in a future"
-                    " release."
-                )
-                test_loader = self.datamodule.test_dataloader()
-            else:
-                return {}
+            test_loader = self.datamodule.prepare_inference_dataloader(test)
         result = self.trainer.test(
             model=self.model,
             dataloaders=test_loader,

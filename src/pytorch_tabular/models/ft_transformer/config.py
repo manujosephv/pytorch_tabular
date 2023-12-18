@@ -58,20 +58,6 @@ class FTTransformerConfig(ModelConfig):
                 https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU,
                 ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU
 
-        out_ff_layers (Optional[str]): DEPRECATED: Hyphen-separated number of layers and units in the deep
-                MLP. Defaults to 128-64-32
-
-        out_ff_activation (Optional[str]): DEPRECATED: The activation type in the deep MLP. The default
-                activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity.
-                Defaults to ReLU
-
-        out_ff_dropout (Optional[float]): DEPRECATED: probability of an classification element to be zeroed
-                in the deep MLP. Defaults to 0.0
-
-        out_ff_initialization (Optional[str]): DEPRECATED: Initialization scheme for the linear layers.
-                Defaults to `kaiming`. Choices are: [`None`,`kaiming`,`xavier`,`random`].
-
-
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
                 tasks.. Choices are: [`regression`,`classification`,`backbone`].

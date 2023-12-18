@@ -933,7 +933,7 @@ class SSLModelConfig:
         embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
-                through a BatchNorm layer. DEPRECATED - Use head and head_config instead
+                through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
@@ -974,7 +974,6 @@ class SSLModelConfig:
         default=True,
         metadata={
             "help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer."
-            " DEPRECATED - Use head and head_config instead"
         },
     )
     learning_rate: float = field(
