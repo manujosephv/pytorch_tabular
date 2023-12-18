@@ -69,4 +69,3 @@ class Add(nn.Module):
 
     def forward(self, x):
         return x + self.add_value
-

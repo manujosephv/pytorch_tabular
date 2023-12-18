@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 from torch import nn
-from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
 
+from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
 from pytorch_tabular.utils import _initialize_kaiming
 
 

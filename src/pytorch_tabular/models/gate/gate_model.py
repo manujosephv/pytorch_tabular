@@ -120,7 +120,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
             categorical_embedding_dims=self.cat_embedding_dims,
             embedding_dropout=self.embedding_dropout,
             batch_norm_continuous_input=self.batch_norm_continuous_input,
-            virtual_batch_size=self.virtual_batch_size
+            virtual_batch_size=self.virtual_batch_size,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

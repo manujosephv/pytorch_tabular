@@ -747,7 +747,7 @@ class ModelConfig:
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
-        
+
         virtual_batch_size (Optional[int]): If not None, all BatchNorms will be converted to GhostBatchNorm's
                 with the specified virtual batch size. Defaults to None
 
