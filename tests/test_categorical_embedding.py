@@ -104,7 +104,6 @@ def test_regression(
     )
     tabular_model.fit(
         train=train,
-        test=test,
         metrics=custom_metrics,
         metrics_prob_inputs=custom_metrics_prob_input,
         target_transform=target_transform,
@@ -168,7 +167,7 @@ def test_classification(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     result = tabular_model.evaluate(test)
     # print(result[0]["valid_loss"])
@@ -208,7 +207,7 @@ def test_embedding_transformer(regression_data):
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     transformer = CategoricalEmbeddingTransformer(tabular_model)
     train_transform = transformer.fit_transform(train)

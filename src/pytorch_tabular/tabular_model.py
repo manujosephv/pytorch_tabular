@@ -440,33 +440,10 @@ class TabularModel:
         tabular_model.logger = logger
         return tabular_model
 
-    @classmethod
-    def load_from_checkpoint(cls, dir: str, map_location=None, strict=True):
-        """(Deprecated: Use `load_model` instead) Loads a saved model from the directory.
-
-        Args:
-            dir (str): The directory where the model was saved, along with the checkpoints
-            map_location (Union[Dict[str, str], str, device, int, Callable, None]) : If your checkpoint
-                saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map
-                to the new setup. The behaviour is the same as in torch.load()
-            strict (bool) : Whether to strictly enforce that the keys in checkpoint_path match the keys
-                returned by this module's state dict. Default: True.
-
-        Returns:
-            TabularModel (TabularModel): The saved TabularModel
-        """
-
-        warnings.warn(
-            "`load_from_checkpoint` is deprecated. Use `load_model` instead.",
-            DeprecationWarning,
-        )
-        return cls.load_model(dir, map_location, strict)
-
     def prepare_dataloader(
         self,
         train: DataFrame,
         validation: Optional[DataFrame] = None,
-        test: Optional[DataFrame] = None,
         train_sampler: Optional[torch.utils.data.Sampler] = None,
         target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         seed: Optional[int] = 42,
@@ -481,9 +458,6 @@ class TabularModel:
                 If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
-
-            test (Optional[DataFrame], optional): If provided, will use as the hold-out data,
-                which you'll be able to check performance after the model is trained. Defaults to None.
 
             train_sampler (Optional[torch.utils.data.Sampler], optional):
                 Custom PyTorch batch samplers which will be passed to the DataLoaders.
@@ -501,12 +475,6 @@ class TabularModel:
         Returns:
             TabularDatamodule: The prepared datamodule
         """
-        if test is not None:
-            warnings.warn(
-                "Providing test data in `fit` is deprecated and will be removed in"
-                " next major release. Plese use `evaluate` for evaluating on test"
-                " data"
-            )
         if self.verbose:
             logger.info("Preparing the DataLoaders")
         target_transform = self._check_and_set_target_transform(target_transform)
@@ -515,7 +483,6 @@ class TabularModel:
             train=train,
             validation=validation,
             config=self.config,
-            test=test,
             target_transform=target_transform,
             train_sampler=train_sampler,
             seed=seed,
@@ -634,7 +601,6 @@ class TabularModel:
         self,
         train: Optional[DataFrame],
         validation: Optional[DataFrame] = None,
-        test: Optional[DataFrame] = None,  # TODO: Deprecate test in next version
         loss: Optional[torch.nn.Module] = None,
         metrics: Optional[List[Callable]] = None,
         metrics_prob_inputs: Optional[List[bool]] = None,
@@ -658,10 +624,6 @@ class TabularModel:
                 If provided, will use this dataframe as the validation while training.
                 Used in Early Stopping and Logging. If left empty, will use 20% of Train data as validation.
                 Defaults to None.
-
-            test (Optional[DataFrame], optional): If provided, will use as the hold-out data,
-                which you'll be able to check performance after the model is trained. Defaults to None.
-                DEPRECATED. Will be removed in the next version.
 
             loss (Optional[torch.nn.Module], optional): Custom Loss functions which are not in standard pytorch library
 
@@ -722,7 +684,6 @@ class TabularModel:
             datamodule = self.prepare_dataloader(
                 train,
                 validation,
-                test,
                 train_sampler,
                 target_transform,
                 seed,
@@ -733,12 +694,6 @@ class TabularModel:
                 warnings.warn(
                     "train data is provided but datamodule is provided."
                     " Ignoring the train data and using the datamodule"
-                )
-            if test is not None:
-                warnings.warn(
-                    "Providing test data in `fit` is deprecated and will be removed"
-                    " in next major release. Plese use `evaluate` for evaluating on"
-                    " test data"
                 )
         model = self.prepare_model(
             datamodule,
@@ -806,7 +761,6 @@ class TabularModel:
             datamodule = self.prepare_dataloader(
                 train,
                 validation,
-                test=None,
                 train_sampler=None,
                 target_transform=None,
                 seed=seed,
@@ -1168,7 +1122,6 @@ class TabularModel:
 
             test_loader (Optional[torch.utils.data.DataLoader], optional): The dataloader to be used for evaluation.
                 If provided, will use the dataloader instead of the test dataframe or the test data provided during fit.
-                DEPRECATION: providing test data during fit is deprecated and will be removed in a future release.
                 Defaults to None.
 
             ckpt_path (Optional[Union[str, Path]], optional): The path to the checkpoint to be loaded. If not provided,
@@ -1178,24 +1131,12 @@ class TabularModel:
         Returns:
             The final test result dictionary.
         """
-        if test_loader is None and test is None:
-            warnings.warn(
-                "Providing test in fit is deprecated. Not providing `test` or"
-                " `test_loader` in `evaluate` will cause an error in a future"
-                " release."
-            )
+        assert not (test_loader is None and test is None), (
+            "Either `test_loader` or `test` should be provided."
+            " If `test_loader` is not provided, `test` should be provided."
+        )
         if test_loader is None:
-            if test is not None:
-                test_loader = self.datamodule.prepare_inference_dataloader(test)
-            elif self.datamodule.test is not None:
-                warnings.warn(
-                    "Providing test in fit is deprecated. Not providing `test` or"
-                    " `test_loader` in `evaluate` will cause an error in a future"
-                    " release."
-                )
-                test_loader = self.datamodule.test_dataloader()
-            else:
-                return {}
+            test_loader = self.datamodule.prepare_inference_dataloader(test)
         result = self.trainer.test(
             model=self.model,
             dataloaders=test_loader,

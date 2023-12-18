@@ -2,12 +2,10 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """AutomaticFeatureInteraction Config."""
-import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
-from pytorch_tabular.utils import ifnone
 
 
 @dataclass
@@ -57,20 +55,6 @@ class FTTransformerConfig(ModelConfig):
                 addition to the default activation in PyTorch like ReLU, TanH, LeakyReLU, etc.
                 https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU,
                 ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU
-
-        out_ff_layers (Optional[str]): DEPRECATED: Hyphen-separated number of layers and units in the deep
-                MLP. Defaults to 128-64-32
-
-        out_ff_activation (Optional[str]): DEPRECATED: The activation type in the deep MLP. The default
-                activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity.
-                Defaults to ReLU
-
-        out_ff_dropout (Optional[float]): DEPRECATED: probability of an classification element to be zeroed
-                in the deep MLP. Defaults to 0.0
-
-        out_ff_initialization (Optional[str]): DEPRECATED: Initialization scheme for the linear layers.
-                Defaults to `kaiming`. Choices are: [`None`,`kaiming`,`xavier`,`random`].
-
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
@@ -208,70 +192,11 @@ class FTTransformerConfig(ModelConfig):
             " Defaults to GEGLU",
         },
     )
-    out_ff_layers: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
-        },
-    )
-    out_ff_activation: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: The activation type in the deep MLP. The default activaion in PyTorch"
-            " like ReLU, TanH, LeakyReLU, etc."
-            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity."
-            " Defaults to ReLU"
-        },
-    )
-    out_ff_dropout: Optional[float] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
-        },
-    )
-    out_ff_initialization: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: Initialization scheme for the linear layers. Defaults to `kaiming`",
-            "choices": [None, "kaiming", "xavier", "random"],
-        },
-    )
+
     _module_src: str = field(default="models.ft_transformer")
     _model_name: str = field(default="FTTransformerModel")
     _backbone_name: str = field(default="FTTransformerBackbone")
     _config_name: str = field(default="FTTransformerConfig")
-
-    def __post_init__(self):
-        deprecated_args = [
-            "out_ff_layers",
-            "out_ff_activation",
-            "out_ff_dropoout",
-            "out_ff_initialization",
-        ]
-        if self.head_config != {"layers": ""}:  # If the user has passed a head_config
-            warnings.warn(
-                "Ignoring the deprecated arguments, `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`,"
-                " and `out_ff_initialization` as head_config is passed."
-            )
-        else:
-            if any(p is not None for p in deprecated_args):
-                warnings.warn(
-                    "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization`"
-                    " arguments are deprecated and will be removed next release."
-                    " Please use head and head_config as an alternative.",
-                    DeprecationWarning,
-                )
-                # TODO: Remove this once we deprecate the old config
-                # Fill the head_config using deprecated parameters
-                self.head_config = {
-                    "layers": ifnone(self.out_ff_layers, ""),
-                    "activation": ifnone(self.out_ff_activation, "ReLU"),
-                    "dropout": ifnone(self.out_ff_dropout, 0.0),
-                    "use_batch_norm": False,
-                    "initialization": ifnone(self.out_ff_initialization, "kaiming"),
-                }
-
-        return super().__post_init__()
 
 
 # if __name__ == "__main__":

@@ -125,7 +125,6 @@ def test_save_load(
         cache_data = str(tmp_path_factory.mktemp("cache"))
     tabular_model.fit(
         train=train,
-        test=test,
         metrics=custom_metrics,
         metrics_prob_inputs=None if custom_metrics is None else [False],
         loss=custom_loss,
@@ -139,7 +138,7 @@ def test_save_load(
     # sv_dir.mkdir(exist_ok=True, parents=True)
     sv_dir = tmp_path_factory.mktemp("saved_model")
     tabular_model.save_model(str(sv_dir), inference_only=inference_only)
-    new_mdl = TabularModel.load_from_checkpoint(str(sv_dir))
+    new_mdl = TabularModel.load_model(str(sv_dir))
     result_2 = new_mdl.evaluate(test)
     assert (
         result_1[0][f"test_{tabular_model.model.hparams.metrics[0]}"]
@@ -298,7 +297,6 @@ def test_save_load_statedict(
     )
     tabular_model.fit(
         train=train,
-        test=test,
         metrics=custom_metrics,
         metrics_prob_inputs=None if custom_metrics is None else [False],
         loss=custom_loss,
@@ -318,7 +316,7 @@ def test_save_load_statedict(
         trainer_config=trainer_config,
         model_state_dict_path=str(sv_dir / "weights.pt"),
     )
-    datamodule = new_mdl.prepare_dataloader(train, test=test)
+    datamodule = new_mdl.prepare_dataloader(train)
     model = new_mdl.prepare_model(
         datamodule,
         metrics=custom_metrics,
@@ -394,7 +392,6 @@ def test_save_for_inference(
     )
     tabular_model.fit(
         train=train,
-        test=test,
         metrics=custom_metrics,
         metrics_prob_inputs=None if custom_metrics is None else [False],
         loss=custom_loss,

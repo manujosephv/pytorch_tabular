@@ -158,11 +158,7 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 - `bin_function`: str: Generates a sparse probability distribution to be used as tree leaf weights. Choices are: `entmax15` `sparsemax`. Defaults to `entmax15`
 - `additional_tree_output_dim`: int: The additional output dimensions which is only used to pass through different layers of the architectures. Only the first output_dim outputs will be used for prediction. Defaults to `3`
 - `input_dropout`: float: Dropout which is applied to the input to the different layers in the Dense Architecture. The probability of the element to be zeroed. Defaults to `0.0`
-- `embed_categorical`: bool: Flag to embed categorical columns using an Embedding Layer. If turned off, the categorical columns are encoded using LeaveOneOutEncoder. Defaults to `False`
 
-!!! warning
-
-    `embed_categorical` is deprecated and will be removed in the next release. If you do not want to embed categorical columns, process then using a categorical encoder of your choice and present to Pytorch Tabular as continuous features.
 
 **For a complete list of parameters refer to the API Docs**     
 [pytorch_tabular.models.NodeConfig][]

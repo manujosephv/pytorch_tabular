@@ -22,14 +22,12 @@ from pytorch_tabular.models import NodeConfig
     ],
 )
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
-@pytest.mark.parametrize("embed_categorical", [True, False])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 @pytest.mark.parametrize("target_range", [True, False])
 def test_regression(
     regression_data,
     multi_target,
-    embed_categorical,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
@@ -48,7 +46,6 @@ def test_regression(
         "task": "regression",
         "depth": 2,
         "num_trees": 50,
-        "embed_categorical": embed_categorical,
     }
     if target_range:
         _target_range = []
@@ -76,7 +73,7 @@ def test_regression(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     result = tabular_model.evaluate(test)
     assert "test_mean_squared_error" in result[0].keys()
@@ -92,13 +89,11 @@ def test_regression(
 )
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize("continuous_feature_transform", [None])
-@pytest.mark.parametrize("embed_categorical", [True, False])
 @pytest.mark.parametrize("normalize_continuous_features", [True])
 def test_classification(
     classification_data,
     continuous_cols,
     categorical_cols,
-    embed_categorical,
     continuous_feature_transform,
     normalize_continuous_features,
 ):
@@ -114,7 +109,6 @@ def test_classification(
         "task": "classification",
         "depth": 2,
         "num_trees": 50,
-        "embed_categorical": embed_categorical,
     }
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
@@ -132,7 +126,7 @@ def test_classification(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     result = tabular_model.evaluate(test)
     assert "test_accuracy" in result[0].keys()
@@ -154,7 +148,7 @@ def test_embedding_transformer(regression_data):
         ],
         categorical_cols=["HouseAgeBin"],
     )
-    model_config_params = {"task": "regression", "depth": 2, "num_trees": 50, "embed_categorical": True}
+    model_config_params = {"task": "regression", "depth": 2, "num_trees": 50}
     model_config = NodeConfig(**model_config_params)
     trainer_config = TrainerConfig(
         max_epochs=1,
@@ -171,7 +165,7 @@ def test_embedding_transformer(regression_data):
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
     )
-    tabular_model.fit(train=train, test=test)
+    tabular_model.fit(train=train)
 
     transformer = CategoricalEmbeddingTransformer(tabular_model)
     train_transform = transformer.fit_transform(train)
