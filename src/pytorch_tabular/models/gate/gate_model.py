@@ -47,6 +47,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         tree_feature_init_sparsity: float = 0.8,
         learnable_sparsity: bool = True,
         batch_norm_continuous_input: bool = True,
+        virtual_batch_size: int = None,
         embedding_dropout: float = 0.0,
     ):
         super().__init__()
@@ -77,6 +78,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
         self.gflu_feature_init_sparsity = gflu_feature_init_sparsity
         self.tree_feature_init_sparsity = tree_feature_init_sparsity
         self.learnable_sparsity = learnable_sparsity
+        self.virtual_batch_size = virtual_batch_size
         self._build_network()
 
     def _build_network(self):
@@ -118,6 +120,7 @@ class GatedAdditiveTreesBackbone(nn.Module):
             categorical_embedding_dims=self.cat_embedding_dims,
             embedding_dropout=self.embedding_dropout,
             batch_norm_continuous_input=self.batch_norm_continuous_input,
+            virtual_batch_size=self.virtual_batch_size,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -235,6 +238,7 @@ class GatedAdditiveTreeEnsembleModel(BaseModel):
             tree_wise_attention_dropout=self.hparams.tree_wise_attention_dropout,
             gflu_feature_init_sparsity=self.hparams.gflu_feature_init_sparsity,
             tree_feature_init_sparsity=self.hparams.tree_feature_init_sparsity,
+            virtual_batch_size=self.hparams.virtual_batch_size,
         )
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()

@@ -5,6 +5,7 @@ from typing import Any, Dict, Tuple
 import torch
 from torch import nn
 
+from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
 from pytorch_tabular.ssl_models.common.utils import OneHot
 
 
@@ -18,6 +19,7 @@ class MixedEmbedding1dLayer(nn.Module):
         max_onehot_cardinality: int = 4,
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
+        virtual_batch_size: int = None,
     ):
         super().__init__()
         self.continuous_dim = continuous_dim
@@ -55,7 +57,7 @@ class MixedEmbedding1dLayer(nn.Module):
             self.embd_dropout = None
         # Continuous Layers
         if batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(continuous_dim)
+            self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
 
     @property
     def embedded_cat_dim(self):

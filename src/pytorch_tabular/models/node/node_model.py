@@ -52,6 +52,7 @@ class NODEBackbone(nn.Module):
             categorical_embedding_dims=self.hparams.embedding_dims,
             embedding_dropout=self.hparams.embedding_dropout,
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            virtual_batch_size=self.hparams.virtual_batch_size,
         )
         return embedding
 

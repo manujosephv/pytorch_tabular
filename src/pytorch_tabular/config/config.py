@@ -748,6 +748,9 @@ class ModelConfig:
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
+        virtual_batch_size (Optional[int]): If not None, all BatchNorms will be converted to GhostBatchNorm's
+                with the specified virtual batch size. Defaults to None
+
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
         loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
@@ -860,6 +863,15 @@ class ModelConfig:
             "If left empty, will not apply any restrictions"
         },
     )
+
+    virtual_batch_size: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "If not None, all BatchNorms will be converted to GhostBatchNorm's "
+            " with this virtual batch size. Defaults to None"
+        },
+    )
+
     seed: int = field(
         default=42,
         metadata={"help": "The seed for reproducibility. Defaults to 42"},
@@ -935,6 +947,9 @@ class SSLModelConfig:
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
+        virtual_batch_size (Optional[int]): If not None, all BatchNorms will be converted to GhostBatchNorm's
+                with the specified virtual batch size. Defaults to None
+
         learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
         seed (int): The seed for reproducibility. Defaults to 42
@@ -973,6 +988,13 @@ class SSLModelConfig:
     batch_norm_continuous_input: bool = field(
         default=True,
         metadata={"help": "If True, we will normalize the continuous layer by passing it through a BatchNorm layer."},
+    )
+    virtual_batch_size: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "If not None, all BatchNorms will be converted to GhostBatchNorm's "
+            " with this virtual batch size. Defaults to None"
+        },
     )
     learning_rate: float = field(
         default=1e-3,

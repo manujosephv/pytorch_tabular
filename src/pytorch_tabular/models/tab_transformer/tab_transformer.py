@@ -20,6 +20,8 @@ import torch.nn as nn
 from einops import rearrange
 from omegaconf import DictConfig
 
+from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
+
 from ..base_model import BaseModel
 from ..common.layers import Embedding2dLayer, TransformerEncoderBlock
 
@@ -53,7 +55,7 @@ class TabTransformerBackbone(nn.Module):
         self.transformer_blocks = nn.Sequential(self.transformer_blocks)
         self.attention_weights = [None] * self.hparams.num_attn_blocks
         if self.hparams.batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
+            self.normalizing_batch_norm = BatchNorm1d(self.hparams.continuous_dim, self.hparams.virtual_batch_size)
 
         self.output_dim = self.hparams.input_embed_dim * self.hparams.categorical_dim + self.hparams.continuous_dim
 
@@ -67,6 +69,7 @@ class TabTransformerBackbone(nn.Module):
             embedding_bias=self.hparams.embedding_bias,
             embedding_dropout=self.hparams.embedding_dropout,
             initialization=self.hparams.embedding_initialization,
+            virtual_batch_size=self.hparams.virtual_batch_size,
         )
 
     def forward(self, x_cat: torch.Tensor, x_cont: torch.Tensor) -> torch.Tensor:

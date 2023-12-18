@@ -1,4 +1,5 @@
 from . import activations
+from .batch_norm import GBN, BatchNorm1d
 from .embeddings import Embedding1dLayer, Embedding2dLayer, PreEncoded1dLayer, SharedEmbeddings
 from .gated_units import GEGLU, GatedFeatureLearningUnit, PositionWiseFeedForward, ReGLU, SwiGLU
 from .misc import Add, Lambda, ModuleWithInit, Residual
@@ -26,4 +27,6 @@ __all__ = [
     "SwiGLU",
     "NeuralDecisionTree",
     "GatedFeatureLearningUnit",
+    "GBN",
+    "BatchNorm1d",
 ]

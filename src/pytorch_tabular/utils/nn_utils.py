@@ -41,7 +41,9 @@ def _linear_dropout_bn(activation, initialization, use_batch_norm, in_units, out
         _activation = activation
     layers = []
     if use_batch_norm:
-        layers.append(nn.BatchNorm1d(num_features=in_units))
+        from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
+
+        layers.append(BatchNorm1d(num_features=in_units))
     linear = nn.Linear(in_units, out_units)
     _initialize_layers(activation, initialization, linear)
     layers.extend([linear, _activation()])

@@ -24,6 +24,7 @@ class GANDALFBackbone(nn.Module):
         gflu_feature_init_sparsity: float = 0.3,
         learnable_sparsity: bool = True,
         batch_norm_continuous_input: bool = True,
+        virtual_batch_size: int = None,
         embedding_dropout: float = 0.0,
     ):
         super().__init__()
@@ -38,6 +39,7 @@ class GANDALFBackbone(nn.Module):
         self.output_dim = self.n_continuous_features + self._embedded_cat_features
         self.gflu_feature_init_sparsity = gflu_feature_init_sparsity
         self.learnable_sparsity = learnable_sparsity
+        self.virtual_batch_size = virtual_batch_size
         self._build_network()
 
     def _build_network(self):
@@ -56,6 +58,7 @@ class GANDALFBackbone(nn.Module):
             categorical_embedding_dims=self.cat_embedding_dims,
             embedding_dropout=self.embedding_dropout,
             batch_norm_continuous_input=self.batch_norm_continuous_input,
+            virtual_batch_size=self.virtual_batch_size,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -93,6 +96,7 @@ class GANDALFModel(BaseModel):
             learnable_sparsity=self.hparams.learnable_sparsity,
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             embedding_dropout=self.hparams.embedding_dropout,
+            virtual_batch_size=self.hparams.virtual_batch_size,
         )
         # Embedding Layer
         self._embedding_layer = self._backbone._build_embedding_layer()
