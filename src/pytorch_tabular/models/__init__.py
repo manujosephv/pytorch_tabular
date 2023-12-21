@@ -1,4 +1,4 @@
-from . import autoint, category_embedding, ft_transformer, gandalf, gate, mixture_density, node, tab_transformer, tabnet
+from . import autoint, category_embedding, ft_transformer, gandalf, gate, mixture_density, node, tab_transformer, tabnet, danet
 from .autoint import AutoIntConfig, AutoIntModel
 from .base_model import BaseModel
 from .category_embedding import CategoryEmbeddingModel, CategoryEmbeddingModelConfig
@@ -9,6 +9,7 @@ from .mixture_density import MDNConfig, MDNModel
 from .node import NodeConfig, NODEModel
 from .tab_transformer import TabTransformerConfig, TabTransformerModel
 from .tabnet import TabNetModel, TabNetModelConfig
+from .danet import DANetConfig, DANetModel
 
 __all__ = [
     "CategoryEmbeddingModel",
@@ -31,6 +32,8 @@ __all__ = [
     "GANDALFConfig",
     "GANDALFModel",
     "GANDALFBackbone",
+    "DANetConfig",
+    "DANetModel",
     "category_embedding",
     "node",
     "mixture_density",
@@ -40,4 +43,5 @@ __all__ = [
     "tab_transformer",
     "gate",
     "gandalf",
+    "danet"
 ]
