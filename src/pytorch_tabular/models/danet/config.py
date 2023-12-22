@@ -91,6 +91,14 @@ class DANetConfig(ModelConfig):
         default=0.1,
         metadata={"help": "Dropout to be applied in the Block. Defaults to 0.1"},
     )
+    block_activation: str = field(
+        default="LeakyReLU",
+        metadata={
+            "help": "The activation type in the classification head. The default activation in PyTorch"
+            " like ReLU, TanH, LeakyReLU, etc."
+            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
+        },
+        )
 
     _module_src: str = field(default="models.danet")
     _model_name: str = field(default="DANetModel")
