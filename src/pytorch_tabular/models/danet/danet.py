@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """DANet Model."""
-from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -54,7 +53,7 @@ class DANetBackbone(nn.Module):
             "abstlay_dim_1": self.abstlay_dim_1,
             "abstlay_dim_2": self.abstlay_dim_2,
             "drop_rate": self.dropout_rate,
-            "block_activation": self.block_activation
+            "block_activation": self.block_activation,
         }
         self.init_layer = BasicBlock(self.input_dim, **params)
         self.layers = nn.ModuleList()
@@ -90,7 +89,7 @@ class DANetBackbone(nn.Module):
     #     self.feature_importance_ = (
     #         self.local_feature_importance.mean(dim=0).detach().cpu().numpy()
     #     )
-        # self.feature_importance_count_+=attn_weights.shape[0]
+    # self.feature_importance_count_+=attn_weights.shape[0]
 
 
 class DANetModel(BaseModel):
@@ -128,5 +127,3 @@ class DANetModel(BaseModel):
         self._embedding_layer = self._backbone._build_embedding_layer()
         # Head
         self._head = self._get_head_from_config()
-
- 

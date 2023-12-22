@@ -14,9 +14,11 @@ class DANetConfig(ModelConfig):
     Args:
         n_layers (int): Number of Blocks in the DANet. Defaults to 16
 
-        abstlay_dim_1 (int): The dimension for the intermediate output in the first ABSTLAY layer in a Block. Defaults to 32
+        abstlay_dim_1 (int): The dimension for the intermediate output in the
+                first ABSTLAY layer in a Block. Defaults to 32
 
-        abstlay_dim_2 (int): The dimension for the intermediate output in the second ABSTLAY layer in a Block. Defaults to 64
+        abstlay_dim_2 (int): The dimension for the intermediate output in the
+                second ABSTLAY layer in a Block. Defaults to 64
 
         k (int): The number of feature groups in the ABSTLAY layer. Defaults to 5
 
@@ -74,14 +76,17 @@ class DANetConfig(ModelConfig):
 
     abstlay_dim_1: int = field(
         default=32,
-        metadata={"help": "The dimension for the intermediate output in the first ABSTLAY layer in a Block. Defaults to 32"},
+        metadata={
+            "help": "The dimension for the intermediate output in the first ABSTLAY layer in a Block. Defaults to 32"
+        },
     )
 
     abstlay_dim_2: Optional[int] = field(
         default=None,
-        metadata={"help": "The dimension for the intermediate output in the second ABSTLAY layer in a Block. "
-                  "If None, it will be twice abstlay_dim_1. Defaults to None"
-                  },
+        metadata={
+            "help": "The dimension for the intermediate output in the second ABSTLAY layer in a Block. "
+            "If None, it will be twice abstlay_dim_1. Defaults to None"
+        },
     )
     k: int = field(
         default=5,
@@ -98,7 +103,7 @@ class DANetConfig(ModelConfig):
             " like ReLU, TanH, LeakyReLU, etc."
             " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
         },
-        )
+    )
 
     _module_src: str = field(default="models.danet")
     _model_name: str = field(default="DANetModel")
@@ -112,6 +117,7 @@ class DANetConfig(ModelConfig):
         if self.abstlay_dim_2 is None:
             self.abstlay_dim_2 = self.abstlay_dim_1 * 2
         return super().__post_init__()
+
 
 # if __name__ == "__main__":
 #     from pytorch_tabular.utils import generate_doc_dataclass

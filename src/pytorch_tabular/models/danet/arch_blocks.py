@@ -1,8 +1,10 @@
 from functools import partial
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 import torch.nn.functional as F
+
 from pytorch_tabular.models.common.layers.activations import entmax15
 from pytorch_tabular.models.common.layers.batch_norm import GBN
 
@@ -15,7 +17,7 @@ def initialize_glu(module, input_dim, output_dim):
 
 class LearnableLocality(nn.Module):
     def __init__(self, input_dim, k):
-        super(LearnableLocality, self).__init__()
+        super().__init__()
         self.register_parameter("weight", nn.Parameter(torch.rand(k, input_dim)))
         self.smax = partial(entmax15, dim=-1)
 
@@ -26,10 +28,8 @@ class LearnableLocality(nn.Module):
 
 
 class AbstractLayer(nn.Module):
-    def __init__(
-        self, base_input_dim, base_output_dim, k, virtual_batch_size, bias=True
-    ):
-        super(AbstractLayer, self).__init__()
+    def __init__(self, base_input_dim, base_output_dim, k, virtual_batch_size, bias=True):
+        super().__init__()
         self.masker = LearnableLocality(input_dim=base_input_dim, k=k)
         self.fc = nn.Conv1d(
             base_input_dim * k,
@@ -38,9 +38,7 @@ class AbstractLayer(nn.Module):
             groups=k,
             bias=bias,
         )
-        initialize_glu(
-            self.fc, input_dim=base_input_dim * k, output_dim=2 * k * base_output_dim
-        )
+        initialize_glu(self.fc, input_dim=base_input_dim * k, output_dim=2 * k * base_output_dim)
         self.bn = GBN(2 * base_output_dim * k, virtual_batch_size)
         self.k = k
         self.base_output_dim = base_output_dim
@@ -48,17 +46,12 @@ class AbstractLayer(nn.Module):
     def forward(self, x):
         b = x.size(0)
         x = self.masker(x)  # [B, D] -> [B, k, D]
-        x = self.fc(
-            x.view(b, -1, 1)
-        )  # [B, k, D] -> [B, k * D, 1] -> [B, k * (2 * D'), 1]
+        x = self.fc(x.view(b, -1, 1))  # [B, k, D] -> [B, k * D, 1] -> [B, k * (2 * D'), 1]
         x = self.bn(x)
         chunks = x.chunk(self.k, 1)  # k * [B, 2 * D', 1]
         x = sum(
             [
-                F.relu(
-                    torch.sigmoid(x_[:, : self.base_output_dim, :])
-                    * x_[:, self.base_output_dim :, :]
-                )
+                F.relu(torch.sigmoid(x_[:, : self.base_output_dim, :]) * x_[:, self.base_output_dim :, :])
                 for x_ in chunks
             ]
         )  # k * [B, D', 1] -> [B, D', 1]
@@ -77,11 +70,9 @@ class BasicBlock(nn.Module):
         drop_rate,
         block_activation,
     ):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         self.conv1 = AbstractLayer(input_dim, abstlay_dim_1, k, virtual_batch_size)
-        self.conv2 = AbstractLayer(
-            abstlay_dim_1, abstlay_dim_2, k, virtual_batch_size
-        )
+        self.conv2 = AbstractLayer(abstlay_dim_1, abstlay_dim_2, k, virtual_batch_size)
 
         self.downsample = nn.Sequential(
             nn.Dropout(drop_rate),
@@ -90,7 +81,7 @@ class BasicBlock(nn.Module):
         self.block_activation = block_activation
 
     def forward(self, x, pre_out=None):
-        if pre_out == None:
+        if pre_out is None:
             pre_out = x
         out = self.conv1(pre_out)
         out = self.conv2(out)
