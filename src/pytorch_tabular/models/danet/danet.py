@@ -119,7 +119,7 @@ class DANetModel(BaseModel):
             abstlay_dim_2=self.hparams.abstlay_dim_2,
             k=self.hparams.k,
             dropout_rate=self.hparams.dropout_rate,
-            block_activation=getattr(nn, self.hparams.block_activation),
+            block_activation=getattr(nn, self.hparams.block_activation)(),
             virtual_batch_size=self.hparams.virtual_batch_size,
             embedding_dropout=self.hparams.embedding_dropout,
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
