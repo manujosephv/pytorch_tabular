@@ -6,7 +6,7 @@
 ::: pytorch_tabular.models.CategoryEmbeddingModelConfig
     options:
             heading_level: 3
-::: pytorch_tabular.models.DANetModelConfig
+::: pytorch_tabular.models.DANetConfig
     options:
             heading_level: 3
 ::: pytorch_tabular.models.FTTransformerConfig

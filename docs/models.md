@@ -244,7 +244,7 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 
 **For a complete list of parameters refer to the API Docs**    
-[pytorch_tabular.models.GANDALFConfig][]
+[pytorch_tabular.models.DANetConfig][]
 
 ## Implementing New Architectures
 
