@@ -31,9 +31,13 @@ While there are separate config classes for each model, all of them share a few 
 
 - `metrics`: Optional\[List\[str\]\]: The list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in `torchmetrics`. By default, it is `accuracy` if classification and `mean_squared_error` for regression
 
+- `metrics_prob_input`: Optional\[List\[bool\]\]: Is a mandatory parameter for classification metrics defined in the config. This defines whether the input to the metric function is the probability or the class. Length should be same as the number of metrics. Defaults to None.
+
 - `metrics_params`: Optional\[List\]: The parameters to be passed to the metrics function
 
 - `target_range`: Optional\[List\]: The range in which we should limit the output variable. Currently ignored for multi-target regression. Typically used for Regression problems. If left empty, will not apply any restrictions
+
+- `virtual_batch_size`: Optional\[int\]: If not None, all BatchNorms will be converted to GhostBatchNorm's with this virtual batch size. Defaults to None
 
 - `seed`: int: The seed for reproducibility. Defaults to 42
 
@@ -65,10 +69,11 @@ PyTorch Tabular also accepts custom loss functions(which are drop in replacement
 
 While the Loss functions drive the gradient based optimization, we keep track of the metrics that we care about during training. By default, PyTorch Tabular tracks Accuracy for classification and Mean Squared Error for regression. You can choose any functional metrics (as a list of strings) from [TorchMetrics](https://torchmetrics.readthedocs.io/en/stable/references/metric.html).
 
-Some metrics need some parameters to work the way we expect it to. For eg. the averaging scheme for a multi-class f1 score. Such parameters can be fed in through `metrics_params`, which is a list of dictionaries holding the parameters for the metrics declared in the same order. Length of `metrics_params` and `metrics` should be the same.
+Some metrics need some parameters to work the way we expect it to. For eg. the averaging scheme for a multi-class f1 score. Such parameters can be fed in through `metrics_params`, which is a list of dictionaries holding the parameters for the metrics declared in the same order. In classification metrics, PyTorch Tabular also needs to know whether the metric defined expects the predicted class (like Accuracy) or the predicted probability (like ROCAUC). This can be specified by `metrics_prob_input` which is a list of `True` or `False`, one for each custom metric you define.  Length of `metrics_params`, `metric_prob_input` and `metrics` should be the same.
 
 ```python
 metrics = ["accuracy", "f1_score"]
+metric_prob_input = [False, False]
 metrics_params = [{}, {num_classes: 2}]
 ```
 
@@ -91,8 +96,9 @@ target_range = [(train[target].min() * 0.8, train[target].max() * 1.2)]
 Now let's look at a few of the different models available in PyTorch Tabular and their configurations. For a complete list of implemented models:
 
 ```bash
->>> [cl for cl in dir(pytorch_tabular.models) if "config" in cl.lower()]
-['AutoIntConfig', 'CategoryEmbeddingModelConfig', 'FTTransformerConfig', 'GatedAdditiveTreeEnsembleConfig', 'MDNConfig', 'NodeConfig', 'TabNetModelConfig', 'TabTransformerConfig']
+>>> from pytorch_tabular import available_models
+>>> available_models()
+['AutoIntConfig', 'CategoryEmbeddingModelConfig', 'DANetConfig', 'FTTransformerConfig', 'GANDALFConfig', 'GatedAdditiveTreeEnsembleConfig', 'MDNConfig', 'NodeConfig', 'TabNetModelConfig', 'TabTransformerConfig']
 ```
 
 ### Category Embedding Model
@@ -186,6 +192,59 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 **For a complete list of parameters refer to the API Docs**    
 [pytorch_tabular.models.TabNetModelConfig][]
+
+### Automatic Feature Interaction Learning via Self-Attentive Neural Networks(AutoInt)
+
+[AutoInt](https://arxiv.org/abs/1810.11921) is a model which tries to learn interactions between the features in an automated way and create a better representation and then use this representation in downstream task You can use it by choosing `AutoIntConfig`.
+
+All the parameters have beet set to recommended values from the paper. Let's look at few of them:
+
+- `attn_embed_dim`: int: The number of hidden units in the Multi-Headed Attention layers. Defaults to 32
+
+- `num_heads`: int: The number of heads in the Multi-Headed Attention layer. Defaults to 2
+
+- `num_attn_blocks`: int: The number of layers of stacked Multi-Headed Attention layers. Defaults to 2
+
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.AutoIntConfig][]
+
+### Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)
+
+[Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)](https://arxiv.org/abs/2207.08548) is pared-down version of GATE which is more efficient and performing than GATE. GANDALF makes GFLUs the main learning unit, also introducing some speed-ups in the process. You can use it by choosing `GANDALFConfig`.
+
+All the parameters have beet set to recommended values from the paper. Let's look at them:
+
+- `gflu_stages`: int: Number of layers in the feature abstraction layer. Defaults to 6
+
+- `gflu_dropout`: float: Dropout rate for the feature abstraction layer. Defaults to 0.0
+
+- `gflu_feature_init_sparsity`: float: Only valid for t-softmax. The percentage of features to be selected in each GFLU stage. This is just initialized and during learning it may change. Defaults to 0.3
+
+- `learnable_sparsity`: bool: Only valid for t-softmax. If True, the sparsity parameters will be learned. If False, the sparsity parameters will be fixed to the initial values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`. Defaults to True
+
+
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.GANDALFConfig][]
+
+### DANETs: Deep Abstract Networks for Tabular Data Classification and Regression
+
+[DANETs: Deep Abstract Networks for Tabular Data Classification and Regression](https://arxiv.org/pdf/2112.02962v4.pdf) is a novel and flexible neural component for tabular data, called Abstract Layer (AbstLay), which learns to explicitly group correlative input features and generate higher-level features for semantics abstraction.  A special basic block is built using AbstLays, and we construct a family of Deep Abstract Networks (DANets) for tabular data classification and regression by stacking such blocks. You can use it by choosing `DANetConfig`.
+
+All the parameters have beet set to recommended values from the paper. Let's look at them:
+
+- `n_layers`: int: Number of Blocks in the DANet. Defaults to 16
+
+- `abstlay_dim_1`: int: The dimension for the intermediate output in the first ABSTLAY layer in a Block. Defaults to 32
+
+- `abstlay_dim_2`: int: The dimension for the intermediate output in the second ABSTLAY layer in a Block. Defaults to 64
+
+- `k`: int: The number of feature groups in the ABSTLAY layer. Defaults to 5
+
+- `dropout_rate`: float: Dropout to be applied in the Block. Defaults to 0.1
+
+
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.DANetConfig][]
 
 ## Implementing New Architectures
 

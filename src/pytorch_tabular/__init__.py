@@ -26,3 +26,7 @@ __all__ = [
 for item in __all__:
     if hasattr(item, "__module__"):
         setattr(item, "__module__", __name__)
+
+
+def available_models():
+    return [cl for cl in dir(models) if "config" in cl.lower()]
