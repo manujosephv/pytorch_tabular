@@ -5,7 +5,6 @@
 import copy
 import inspect
 import os
-from pprint import pprint
 import warnings
 from collections import defaultdict
 from functools import partial
@@ -18,10 +17,6 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
-from rich.console import Console
-from rich.markdown import Markdown
-from rich.pretty import pprint
-from rich import print as rich_print
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
@@ -32,6 +27,8 @@ from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
 )
 from pytorch_lightning.tuner.tuning import Tuner
 from pytorch_lightning.utilities.model_summary import summarize
+from rich import print as rich_print
+from rich.pretty import pprint
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import BaseCrossValidator, KFold, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
@@ -1443,20 +1440,15 @@ class TabularModel:
         elif self.has_model:
             print(summarize(self.model, max_depth=max_depth))
         else:
-            # console = Console()
-            markdown = f"""
-            # {self.__class__.__name__}
-            ------------------------------
-            ## Config
-            ------------------------------
-            """
             rich_print(f"[bold green]{self.__class__.__name__}[/bold green]")
-            rich_print("-"*100)
+            rich_print("-" * 100)
             rich_print("[bold yellow]Config[/bold yellow]")
-            rich_print("-"*100)
-            pprint(self.config.__dict__['_content'])
-            rich_print(":triangular_flag:[bold red]Full Model Summary once model has been initialized or passed in as an argument[/bold red]")
-
+            rich_print("-" * 100)
+            pprint(self.config.__dict__["_content"])
+            rich_print(
+                ":triangular_flag:[bold red]Full Model Summary once model has "
+                "been initialized or passed in as an argument[/bold red]"
+            )
 
     def __str__(self) -> str:
         return self.summary()
