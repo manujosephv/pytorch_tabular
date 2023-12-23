@@ -330,7 +330,7 @@ class TabularModel:
                     "`target_transform` should wither be an sklearn Transformer or a" " tuple of callables."
                 )
         if self.config.task == "classification" and target_transform is not None:
-            logger.warning("For classification task, target transform is not used. Ignoring the parameter")
+            logger.warning("For classification task, target transform is not used. Ignoring the" " parameter")
             target_transform = None
         return target_transform
 
@@ -582,8 +582,8 @@ class TabularModel:
             result = Tuner(self.trainer).lr_find(self.model, train_dataloaders=train_loader, val_dataloaders=val_loader)
             if self.verbose:
                 logger.info(
-                    f"Suggested LR: {result.suggestion()}."
-                    " For plot and detailed analysis, use `find_learning_rate` method."
+                    f"Suggested LR: {result.suggestion()}. For plot and detailed"
+                    " analysis, use `find_learning_rate` method."
                 )
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
@@ -1151,7 +1151,7 @@ class TabularModel:
         quantiles: Optional[List] = [0.25, 0.5, 0.75],
         n_samples: Optional[int] = 100,
         ret_logits=False,
-        include_input_features: bool = True,
+        include_input_features: bool = False,
         device: Optional[torch.device] = None,
         progress_bar: Optional[str] = None,
     ) -> DataFrame:
@@ -1166,7 +1166,7 @@ class TabularModel:
                 Ignored for non-probabilistic models. Defaults to 100
             ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
                 with the dataframe. Defaults to False
-            include_input_features (bool): Flag to include the input features in the returned dataframe.
+            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
                 Defaults to True
             progress_bar: chose progress bar for tracking the progress
 
@@ -1175,8 +1175,7 @@ class TabularModel:
                 If classification, it returns probabilities and final prediction
         """
         warnings.warn(
-            "Default for `include_input_features` will change from True to False in"
-            " the next release. Please set it explicitly.",
+            "`include_input_features` will be deprecated in the next release.",
             DeprecationWarning,
         )
         assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
@@ -1756,4 +1755,168 @@ class TabularModel:
             self.model.reset_weights()
         return cv_metrics, oof_preds
 
-        #     pass
+    def _combine_predictions(
+        self,
+        pred_l: List[DataFrame],
+        pred_prob_l: List[DataFrame],
+        pred_idx: Union[pd.Index, List],
+        aggregate: Union[str, Callable],
+        weights: Optional[List[float]] = None,
+    ):
+        if aggregate == "mean":
+            bagged_pred = np.average(pred_prob_l, axis=0, weights=weights)
+        elif aggregate == "median":
+            bagged_pred = np.median(pred_prob_l, axis=0)
+        elif aggregate == "min":
+            bagged_pred = np.min(pred_prob_l, axis=0)
+        elif aggregate == "max":
+            bagged_pred = np.max(pred_prob_l, axis=0)
+        elif aggregate == "hard_voting" and self.config.task == "classification":
+            final_pred = np.apply_along_axis(
+                lambda x: np.argmax(np.bincount(x)),
+                axis=0,
+                arr=[p[:, -1].astype(int) for p in pred_l],
+            )
+        elif callable(aggregate):
+            final_pred = bagged_pred = aggregate(pred_prob_l)
+        if self.config.task == "classification":
+            if aggregate == "hard_voting" or callable(aggregate):
+                pred_df = pd.DataFrame(
+                    np.concatenate(pred_prob_l, axis=1),
+                    columns=[
+                        f"{c}_probability_fold_{i}"
+                        for i in range(len(pred_prob_l))
+                        for c in self.datamodule.label_encoder.classes_
+                    ],
+                    index=pred_idx,
+                )
+                pred_df["prediction"] = final_pred
+            else:
+                final_pred = np.argmax(bagged_pred, axis=1)
+                pred_df = pd.DataFrame(
+                    bagged_pred,
+                    columns=[f"{c}_probability" for c in self.datamodule.label_encoder.classes_],
+                    index=pred_idx,
+                )
+                pred_df["prediction"] = final_pred
+        elif self.config.task == "regression":
+            pred_df = pd.DataFrame(bagged_pred, columns=self.config.target, index=pred_idx)
+        else:
+            raise NotImplementedError(f"Task {self.config.task} not supported for bagging")
+        return pred_df
+
+    def bagging_predict(
+        self,
+        cv: Optional[Union[int, Iterable, BaseCrossValidator]],
+        train: DataFrame,
+        test: DataFrame,
+        groups: Optional[Union[str, np.ndarray]] = None,
+        verbose: bool = True,
+        reset_datamodule: bool = True,
+        return_raw_predictions: bool = False,
+        aggregate: Union[str, Callable] = "mean",
+        weights: Optional[List[float]] = None,
+        **kwargs,
+    ):
+        """Bagging predict on the test data.
+
+        Args:
+            cv (Optional[Union[int, Iterable, BaseCrossValidator]]): Determines the cross-validation splitting strategy.
+                Possible inputs for cv are:
+
+                - None, to use the default 5-fold cross validation (KFold for
+                Regression and StratifiedKFold for Classification),
+                - integer, to specify the number of folds in a (Stratified)KFold,
+                - An iterable yielding (train, test) splits as arrays of indices.
+                - A scikit-learn CV splitter.
+
+            train (DataFrame): The training data with labels
+
+            test (DataFrame): The test data to be predicted
+
+            groups (Optional[Union[str, np.ndarray]], optional): Group labels for
+                the samples used while splitting. If provided, will be used as the
+                `groups` argument for the `split` method of the cross validator.
+                If input is str, will use the column in the input dataframe with that
+                name as the group labels. If input is array-like, will use that as the
+                group. The only constraint is that the group labels should have the
+                same size as the number of rows in the input dataframe. Defaults to None.
+
+            verbose (bool, optional): If True, will log the results. Defaults to True.
+
+            reset_datamodule (bool, optional): If True, will reset the datamodule for each iteration.
+                It will be slower because we will be fitting the transformations for each fold.
+                If False, we take an approximation that once the transformations are fit on the first
+                fold, they will be valid for all the other folds. Defaults to True.
+
+            return_raw_predictions (bool, optional): If True, will return the raw predictions
+                from each fold. Defaults to False.
+
+            aggregate (Union[str, Callable], optional): The function to be used to aggregate the
+                predictions from each fold. If str, should be one of "mean", "median", "min", or "max"
+                for regression. For classification, the previous options are applied to the confidence
+                scores (soft voting) and then converted to final prediction. An additional option
+                "hard_voting" is available for classification.
+                If callable, should be a function that takes in a list of 2D arrays (num_samples, num_targets)
+                and returns a 2D array (num_samples, num_targets). Defaults to "mean".
+
+            weights (Optional[List[float]], optional): The weights to be used for aggregating the predictions
+                from each fold. If None, will use equal weights. This is only used when `aggregate` is "mean".
+                Defaults to None.
+
+            **kwargs: Additional keyword arguments to be passed to the `fit` method of the model.
+        Returns:
+            DataFrame: The dataframe with the bagged predictions.
+        """
+        if weights is not None:
+            assert len(weights) == cv.n_splits, "Number of weights should be equal to the number of folds"
+        assert self.config.task in [
+            "classification",
+            "regression",
+        ], "Bagging is only available for classification and regression"
+        if not callable(aggregate):
+            assert aggregate in ["mean", "median", "min", "max", "hard_voting"], (
+                "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
+            )
+        if self.config.task == "regression":
+            assert aggregate != "hard_voting", "hard_voting is only available for classification"
+        cv = self._check_cv(cv)
+        prep_dl_kwargs, prep_model_kwargs, train_kwargs = self._split_kwargs(kwargs)
+        pred_l = []
+        pred_prob_l = []
+        datamodule = None
+        model = None
+        for fold, (train_idx, val_idx) in enumerate(cv.split(train, y=train[self.config.target], groups=groups)):
+            if verbose:
+                logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
+            train_fold = train.iloc[train_idx]
+            val_fold = train.iloc[val_idx]
+            if reset_datamodule:
+                datamodule = None
+            if datamodule is None:
+                # Initialize datamodule and model in the first fold
+                # uses train data from this fold to fit all transformers
+                datamodule = self.prepare_dataloader(train=train_fold, validation=val_fold, seed=42, **prep_dl_kwargs)
+                model = self.prepare_model(datamodule, **prep_model_kwargs)
+            else:
+                # Preprocess the current fold data using the fitted transformers and save in datamodule
+                datamodule.train, _ = datamodule.preprocess_data(train_fold, stage="inference")
+                datamodule.validation, _ = datamodule.preprocess_data(val_fold, stage="inference")
+
+            # Train the model
+            self.train(model, datamodule, **train_kwargs)
+            fold_preds = self.predict(test, include_input_features=False)
+            pred_idx = fold_preds.index
+            if self.config.task == "classification":
+                pred_l.append(fold_preds.values[:, -len(self.config.target) :].astype(int))
+                pred_prob_l.append(fold_preds.values[:, : -len(self.config.target)])
+            elif self.config.task == "regression":
+                pred_prob_l.append(fold_preds.values)
+            if verbose:
+                logger.info(f"Fold {fold+1}/{cv.get_n_splits()} prediction done")
+            self.model.reset_weights()
+        pred_df = self._combine_predictions(pred_l, pred_prob_l, pred_idx, aggregate, weights)
+        if return_raw_predictions:
+            return pred_df, pred_l, pred_prob_l
+        else:
+            return pred_df
