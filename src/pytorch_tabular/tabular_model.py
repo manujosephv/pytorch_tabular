@@ -5,6 +5,7 @@
 import copy
 import inspect
 import os
+from pprint import pprint
 import warnings
 from collections import defaultdict
 from functools import partial
@@ -17,6 +18,10 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torchmetrics
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.pretty import pprint
+from rich import print as rich_print
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
@@ -167,6 +172,25 @@ class TabularModel:
         self.model_state_dict_path = model_state_dict_path
         self._is_config_updated_with_data = False
         self._run_validation()
+        self._is_fitted = False
+
+    @property
+    def has_datamodule(self):
+        if hasattr(self, "datamodule") and self.datamodule is not None:
+            return True
+        else:
+            return False
+
+    @property
+    def has_model(self):
+        if hasattr(self, "model") and self.model is not None:
+            return True
+        else:
+            return False
+
+    @property
+    def is_fitted(self):
+        return self._is_fitted
 
     def _run_validation(self):
         """Validates the Config params and throws errors if something is wrong."""
@@ -591,6 +615,7 @@ class TabularModel:
         if self.verbose:
             logger.info("Training Started")
         self.trainer.fit(self.model, train_loader, val_loader)
+        self._is_fitted = True
         if self.verbose:
             logger.info("Training the model completed")
         if self.config.load_best:
@@ -1406,14 +1431,32 @@ class TabularModel:
         else:
             raise ValueError("`kind` must be either pytorch or onnx")
 
-    def summary(self, max_depth: int = -1) -> None:
+    def summary(self, model=None, max_depth: int = -1) -> None:
         """Prints a summary of the model.
 
         Args:
             max_depth (int): The maximum depth to traverse the modules and displayed in the summary.
                 Defaults to -1, which means will display all the modules.
         """
-        print(summarize(self.model, max_depth=max_depth))
+        if model is not None:
+            print(summarize(model, max_depth=max_depth))
+        elif self.has_model:
+            print(summarize(self.model, max_depth=max_depth))
+        else:
+            # console = Console()
+            markdown = f"""
+            # {self.__class__.__name__}
+            ------------------------------
+            ## Config
+            ------------------------------
+            """
+            rich_print(f"[bold green]{self.__class__.__name__}[/bold green]")
+            rich_print("-"*100)
+            rich_print("[bold yellow]Config[/bold yellow]")
+            rich_print("-"*100)
+            pprint(self.config.__dict__['_content'])
+            rich_print(":triangular_flag:[bold red]Full Model Summary once model has been initialized or passed in as an argument[/bold red]")
+
 
     def __str__(self) -> str:
         return self.summary()
