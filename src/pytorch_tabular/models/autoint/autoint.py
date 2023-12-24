@@ -15,6 +15,11 @@ from ..base_model import BaseModel
 
 class AutoIntBackbone(nn.Module):
     def __init__(self, config: DictConfig):
+        """Automatic Feature Interaction Network.
+
+        Args:
+            config (DictConfig): config of the model
+        """
         super().__init__()
         self.hparams = config
         self._build_network()

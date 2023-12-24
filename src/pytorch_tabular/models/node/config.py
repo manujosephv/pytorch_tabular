@@ -1,3 +1,4 @@
+import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -195,10 +196,26 @@ class NodeConfig(ModelConfig):
         },
     )
 
+    head: Optional[str] = field(
+        default=None,
+    )
+
     _module_src: str = field(default="models.node")
     _model_name: str = field(default="NODEModel")
     _backbone_name: str = field(default="NODEBackbone")
     _config_name: str = field(default="NodeConfig")
+
+    def __post_init__(self):
+        if self.head is not None:
+            warnings.warn(
+                "`head` and `head_config` is ignored as NODE has a specific"
+                " head which subsets the tree outputs. Set `head=None`"
+                " to turn off the warning"
+            )
+        else:
+            # Setting Head to LinearHead for compatibility
+            self.head = "LinearHead"
+        return super().__post_init__()
 
 
 # if __name__ == "__main__":

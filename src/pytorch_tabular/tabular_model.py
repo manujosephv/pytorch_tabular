@@ -714,8 +714,9 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided."
-                    " Ignoring the train data and using the datamodule"
+                    "train data and datamodule is provided."
+                    " Ignoring the train data and using the datamodule."
+                    " Set either one of them to None to avoid this warning."
                 )
         model = self.prepare_model(
             datamodule,
@@ -791,8 +792,9 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided."
-                    " Ignoring the train data and using the datamodule"
+                    "train data and datamodule is provided."
+                    " Ignoring the train data and using the datamodule."
+                    " Set either one of them to None to avoid this warning."
                 )
         model = self.prepare_model(
             datamodule,
@@ -1050,8 +1052,9 @@ class TabularModel:
         else:
             if train is not None:
                 warnings.warn(
-                    "train data is provided but datamodule is provided."
-                    " Ignoring the train data and using the datamodule"
+                    "train data and datamodule is provided."
+                    " Ignoring the train data and using the datamodule."
+                    " Set either one of them to None to avoid this warning."
                 )
         if freeze_backbone:
             for param in self.model.backbone.parameters():
@@ -1197,7 +1200,9 @@ class TabularModel:
                 If classification, it returns probabilities and final prediction
         """
         warnings.warn(
-            "`include_input_features` will be deprecated in the next release.",
+            "`include_input_features` will be deprecated in the next release."
+            " Please add index columns to the test dataframe if you want to"
+            " retain some features like the key or id",
             DeprecationWarning,
         )
         assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
@@ -1285,6 +1290,11 @@ class TabularModel:
                 pred_df[f"{class_}_probability"] = point_predictions[:, i]
             pred_df["prediction"] = self.datamodule.label_encoder.inverse_transform(
                 np.argmax(point_predictions, axis=1)
+            )
+            warnings.warn(
+                "Classification prediction column will be renamed to `{target_col}_prediction` "
+                "in the next release to maintain consistency with regression.",
+                DeprecationWarning,
             )
         if ret_logits:
             for k, v in logits_predictions.items():
@@ -1558,6 +1568,7 @@ class TabularModel:
                 Defaults to None.
 
             **kwargs: Additional keyword arguments to be passed to the Captum method `attribute` function.
+
         Returns:
             DataFrame: The dataframe with the feature importance
         """
@@ -1587,7 +1598,7 @@ class TabularModel:
             if len(data) <= 100:
                 warnings.warn(
                     f"{method} gives better results when the number of samples is"
-                    " large. For better results, try usingmore samples or some other"
+                    " large. For better results, try using more samples or some other"
                     " methods like GradientShap which works well on single examples."
                 )
         is_full_baselines = method in ["GradientShap", "DeepLiftShap"]
@@ -1742,6 +1753,7 @@ class TabularModel:
                 fold, they will be valid for all the other folds. Defaults to True.
 
             **kwargs: Additional keyword arguments to be passed to the `fit` method of the model.
+
         Returns:
             DataFrame: The dataframe with the cross validation results
         """
@@ -1900,6 +1912,7 @@ class TabularModel:
                 Defaults to None.
 
             **kwargs: Additional keyword arguments to be passed to the `fit` method of the model.
+
         Returns:
             DataFrame: The dataframe with the bagged predictions.
         """

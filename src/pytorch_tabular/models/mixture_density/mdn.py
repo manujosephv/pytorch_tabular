@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Mixture Density Models."""
-import warnings
 from typing import Dict, Optional, Union
 
 import torch
@@ -13,7 +12,9 @@ from torch import Tensor
 from pytorch_tabular import models
 from pytorch_tabular.config.config import ModelConfig
 from pytorch_tabular.models.common.heads import blocks
-from pytorch_tabular.models.tab_transformer.tab_transformer import TabTransformerBackbone
+from pytorch_tabular.models.tab_transformer.tab_transformer import (
+    TabTransformerBackbone,
+)
 from pytorch_tabular.tabular_model import getattr_nested
 from pytorch_tabular.utils import get_logger
 
@@ -22,7 +23,7 @@ from ..base_model import BaseModel, safe_merge_config
 try:
     import wandb
 except ImportError:
-    warnings.warn("Wandb not installed. WandbLogger will not work.")
+    pass
 
 logger = get_logger(__name__)
 

@@ -4,7 +4,6 @@
 """Config."""
 import os
 import re
-import warnings
 from dataclasses import MISSING, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -242,7 +241,8 @@ class InferredConfig:
 
 @dataclass
 class TrainerConfig:
-    """Trainer configuration
+    """Trainer configuration.
+
     Args:
         batch_size (int): Number of samples in each batch of training
 
@@ -539,7 +539,6 @@ class TrainerConfig:
         if self.accelerator is None:
             self.accelerator = "cpu"
         if self.devices_list is not None:
-            warnings.warn("Ignoring devices in favor of devices_list")
             self.devices = self.devices_list
         delattr(self, "devices_list")
         for key in self.early_stopping_kwargs.keys():

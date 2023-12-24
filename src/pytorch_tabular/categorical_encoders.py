@@ -22,6 +22,19 @@ NAN_CATEGORY = 0
 
 class BaseEncoder:
     def __init__(self, cols, handle_unseen, min_samples, imputed, handle_missing):
+        """Base class for categorical encoders.
+        Args:
+            cols (list): list of columns to encode, or None (then all dataset columns will be encoded at fitting time)
+            handle_unseen (str):
+                'error'  - raise an error if a category unseen at fitting time is found
+                'ignore' - skip unseen categories
+                'impute' - impute new categories to a predefined value, which is same as NAN_CATEGORY
+            min_samples (int): minimum samples to take category as valid
+            imputed (float): value to impute unseen categories
+            handle_missing (str):
+                'error'  - raise an error if missing values are found in columns to encode
+                'impute' - impute missing values to a predefined value, which is same as NAN_CATEGORY
+        """
         self.cols = cols
         self.handle_unseen = handle_unseen
         self.handle_missing = handle_missing
@@ -87,11 +100,21 @@ class BaseEncoder:
             assert X.shape[0] == y.shape[0]
 
     def save_as_object_file(self, path):
+        """Save the encoder as a pickle file.
+
+        Args:
+            path (str): path to save the encoder
+        """
         if not self._mapping:
             raise ValueError("`fit` method must be called before `save_as_object_file`.")
         pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):
+        """Load the encoder from a pickle file.
+
+        Args:
+            path (str): path to load the encoder
+        """
         for k, v in pickle.load(open(path, "rb")).items():
             setattr(self, k, v)
 

@@ -46,14 +46,40 @@ class TabularModelTuner:
         trainer_config: Optional[Union[TrainerConfig, str]] = None,
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
+        **kwargs,
     ):
+        """Tabular Model Tuner helps you tune the hyperparameters of a TabularModel.
+
+        Args:
+            data_config (Optional[Union[DataConfig, str]], optional): The DataConfig for the TabularModel.
+                If str is passed, will initialize the DataConfig using the yaml file in that path.
+                Defaults to None.
+            model_config (Optional[Union[ModelConfig, str]], optional): The ModelConfig for the TabularModel.
+                If str is passed, will initialize the ModelConfig using the yaml file in that path.
+                Defaults to None.
+            optimizer_config (Optional[Union[OptimizerConfig, str]], optional): The OptimizerConfig for the
+                TabularModel. If str is passed, will initialize the OptimizerConfig using the yaml file in
+                that path. Defaults to None.
+            trainer_config (Optional[Union[TrainerConfig, str]], optional): The TrainerConfig for the TabularModel.
+                If str is passed, will initialize the TrainerConfig using the yaml file in that path.
+                Defaults to None.
+            model_callable (Optional[Callable], optional): A callable that returns a PyTorch Tabular Model.
+                If provided, will ignore the model_config and use this callable to initialize the model.
+                Defaults to None.
+            model_state_dict_path (Optional[Union[str, Path]], optional): Path to the state dict of the model.
+                If provided, will ignore the model_config and use this state dict to initialize the model.
+                Defaults to None.
+            **kwargs: Additional keyword arguments to be passed to the TabularModel init.
+        """
         if trainer_config.profiler is not None:
-            warnings.warn("Profiler is not supported in tuner. Set profiler=None to disable this warning.")
+            warnings.warn(
+                "Profiler is not supported in tuner. Set profiler=None in TrainerConfig to disable this warning."
+            )
             trainer_config.profiler = None
         if trainer_config.fast_dev_run:
             warnings.warn("fast_dev_run is turned on. Tuning results won't be accurate.")
         if trainer_config.progress_bar != "none":
-            warnings.warn("Turning off progress bar. Set progress_bar='none' to disable this warning.")
+            warnings.warn("Turning off progress bar. Set progress_bar='none' in TrainerConfig to disable this warning.")
         trainer_config.trainer_kwargs.update({"enable_model_summary": False})
         self.data_config = data_config
         self.model_config = model_config
@@ -62,6 +88,7 @@ class TabularModelTuner:
         self.tabular_model_init_kwargs = {
             "model_callable": model_callable,
             "model_state_dict_path": model_state_dict_path,
+            **kwargs,
         }
 
     def _check_assign_config(self, config, param, value):
@@ -180,16 +207,22 @@ class TabularModelTuner:
         assert metric is not None, "metric must be specified"
         assert isinstance(search_space, dict) and len(search_space) > 0, "search_space must be a non-empty dict"
         if cv is not None and validation is not None:
-            warnings.warn("Both validation and cv are provided. Ignoring validation and using cv")
+            warnings.warn(
+                "Both validation and cv are provided. Ignoring validation and using cv. Use "
+                "`validation=None` to turn off this warning."
+            )
             validation = None
 
         if strategy == "grid_search":
-            assert all(isinstance(v, list) for v in search_space.values()), (
-                "For grid search, all values in search_space must be a list " "of values to try"
-            )
+            assert all(
+                isinstance(v, list) for v in search_space.values()
+            ), "For grid search, all values in search_space must be a list of values to try"
             iterator = ParameterGrid(search_space)
             if n_trials is not None:
-                warnings.warn("n_trials is ignored for grid search to do a complete sweep of" " the grid")
+                warnings.warn(
+                    "n_trials is ignored for grid search to do a complete sweep of"
+                    " the grid. Set n_trials=None to turn off this warning."
+                )
             n_trials = sum(1 for _ in iterator)
         elif strategy == "random_search":
             assert n_trials is not None, "n_trials must be specified for random search"
@@ -245,10 +278,12 @@ class TabularModelTuner:
                     **self.tabular_model_init_kwargs,
                 )
                 if cv is not None:
+                    cv_verbose = cv_kwargs.pop("verbose", False)
                     cv_scores, _ = tabular_model_t.cross_validate(
                         cv=cv,
                         train=train,
                         metric=metric,
+                        verbose=cv_verbose,
                         **cv_kwargs,
                     )
                     params.update({metric.__name__ if is_callable_metric else metric: cv_agg_func(cv_scores)})
