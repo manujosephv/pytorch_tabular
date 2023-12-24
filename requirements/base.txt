@@ -14,4 +14,3 @@ matplotlib >3.1
 ipywidgets
 einops >=0.6.0, <0.8.0
 rich >=11.0.0
-entmax>=1.1
