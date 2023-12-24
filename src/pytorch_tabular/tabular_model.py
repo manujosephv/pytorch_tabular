@@ -508,6 +508,7 @@ class TabularModel:
             train_sampler=train_sampler,
             seed=seed,
             cache_data=cache_data,
+            verbose=self.verbose,
         )
         datamodule.prepare_data()
         datamodule.setup("fit")
