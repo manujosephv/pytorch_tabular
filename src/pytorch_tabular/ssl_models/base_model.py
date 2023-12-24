@@ -44,6 +44,16 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
+        """Base Model for all SSL Models.
+
+        Args:
+            config (DictConfig): Configuration defined by the user
+            mode (str, optional): Mode of the model. Defaults to "pretrain".
+            encoder (Optional[nn.Module], optional): Encoder of the model. Defaults to None.
+            decoder (Optional[nn.Module], optional): Decoder of the model. Defaults to None.
+            custom_optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizer to use. Defaults to None.
+            custom_optimizer_params (Dict, optional): Custom optimizer parameters to use. Defaults to {}.
+        """
         super().__init__()
         assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
         inferred_config = kwargs["inferred_config"]
@@ -167,7 +177,9 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def on_validation_epoch_end(self) -> None:
         if hasattr(self.hparams, "log_logits") and self.hparams.log_logits:
-            warnings.warn("Logging Logits is disabled for SSL tasks")
+            warnings.warn(
+                "Logging Logits is disabled for SSL tasks. Set `log_logits` to False" " to turn off this warning"
+            )
         super().on_validation_epoch_end()
 
     def configure_optimizers(self):

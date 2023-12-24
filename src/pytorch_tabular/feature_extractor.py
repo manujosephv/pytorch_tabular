@@ -24,6 +24,8 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
 
         Args:
             tabular_model (TabularModel): The trained TabularModel object
+            extract_keys (list, optional): The keys of the features to extract. Defaults to ["backbone_features"].
+            drop_original (bool, optional): Whether to drop the original columns. Defaults to True.
         """
         assert not (
             isinstance(tabular_model.model, NODEModel)
@@ -102,10 +104,20 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
         return self.transform(X)
 
     def save_as_object_file(self, path):
+        """Saves the feature extractor as a pickle file.
+
+        Args:
+            path (str): The path to save the file
+        """
         if not self._mapping:
             raise ValueError("`fit` method must be called before `save_as_object_file`.")
         pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):
+        """Loads the feature extractor from a pickle file.
+
+        Args:
+            path (str): The path to load the file from
+        """
         for k, v in pickle.load(open(path, "rb")).items():
             setattr(self, k, v)

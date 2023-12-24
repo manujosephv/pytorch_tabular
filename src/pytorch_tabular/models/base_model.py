@@ -157,14 +157,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             warnings.warn(
                 "Wandb is not installed. Please install wandb to log logits. "
                 "You can install wandb using pip install wandb or install PyTorch Tabular"
-                " using pip install pytorch-tabular[all]"
+                " using pip install pytorch-tabular[extra]"
             )
         if not PLOTLY_INSTALLED:
             self.do_log_logits = False
             warnings.warn(
                 "Plotly is not installed. Please install plotly to log logits. "
                 "You can install plotly using pip install plotly or install PyTorch Tabular"
-                " using pip install pytorch-tabular[all]"
+                " using pip install pytorch-tabular[extra]"
             )
 
     @abstractmethod
@@ -376,7 +376,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         """
         # if self.head is the Identity function it means that we cannot extract backbone features,
         # because the model cannot be divide in backbone and head (i.e. TabNet)
-        if type(self.head) == nn.Identity:
+        if type(self.head) is nn.Identity:
             return {"logits": y_hat}
         return {"logits": y_hat, "backbone_features": backbone_features}
 
