@@ -212,6 +212,9 @@ class NodeConfig(ModelConfig):
                 " head which subsets the tree outputs. Set `head=None`"
                 " to turn off the warning"
             )
+        else:
+            # Setting Head to LinearHead for compatibility
+            self.head = "LinearHead"
         return super().__post_init__()
 
 
