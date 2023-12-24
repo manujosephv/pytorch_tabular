@@ -1,10 +1,10 @@
 # W605
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from torch.autograd import Function
 from torch.jit import script
-import torch.nn as nn
 
 
 class Entmoid15(Function):
@@ -79,17 +79,12 @@ class RSoftmax(torch.nn.Module):
         input_minus_maxes = input - maxes
 
         zeros_mask = torch.exp(input_minus_maxes) == 0.0
-        zeros_frac = (
-            zeros_mask.sum(dim=dim, keepdim=True).float()
-            / input_minus_maxes.shape[dim]
-        )
+        zeros_frac = zeros_mask.sum(dim=dim, keepdim=True).float() / input_minus_maxes.shape[dim]
 
         q = torch.clamp((r - zeros_frac) / (1 - zeros_frac), min=0.0, max=1.0)
         x_minus_maxes = input_minus_maxes * (~zeros_mask).float()
         if q.ndim > 1:
-            t = -torch.quantile(
-                x_minus_maxes, q.view(-1), dim=dim, keepdim=True
-            ).detach()
+            t = -torch.quantile(x_minus_maxes, q.view(-1), dim=dim, keepdim=True).detach()
             t = t.squeeze(dim).diagonal(dim1=-2, dim2=-1).unsqueeze(-1) + eps
         else:
             t = -torch.quantile(x_minus_maxes, q, dim=dim).detach() + eps
@@ -377,7 +372,7 @@ class Sparsemax(nn.Module):
         """
         self.dim = dim
         self.k = k
-        super(Sparsemax, self).__init__()
+        super().__init__()
 
     def forward(self, X):
         return sparsemax(X, dim=self.dim, k=self.k)
@@ -407,7 +402,7 @@ class Entmax15(nn.Module):
         """
         self.dim = dim
         self.k = k
-        super(Entmax15, self).__init__()
+        super().__init__()
 
     def forward(self, X):
         return entmax15(X, dim=self.dim, k=self.k)
