@@ -100,8 +100,8 @@ class TabularDataset(Dataset):
         """Generates one sample of data."""
         return {
             "target": self.y[idx],
-            "continuous": self.continuous_X[idx] if self.continuous_cols else torch.Tensor(),
-            "categorical": self.categorical_X[idx] if self.categorical_cols else torch.Tensor(),
+            "continuous": (self.continuous_X[idx] if self.continuous_cols else torch.Tensor()),
+            "categorical": (self.categorical_X[idx] if self.categorical_cols else torch.Tensor()),
         }
 
 
@@ -140,6 +140,7 @@ class TabularDatamodule(pl.LightningDataModule):
         seed: Optional[int] = 42,
         cache_data: str = "memory",
         copy_data: bool = True,
+        verbose: bool = True,
     ):
         """The Pytorch Lightning Datamodule for Tabular Data.
 
@@ -168,6 +169,8 @@ class TabularDatamodule(pl.LightningDataModule):
                 "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
 
             copy_data (bool): If True, will copy the dataframes before preprocessing. Defaults to True.
+
+            verbose (bool): Sets the verbosity of the databodule logging
         """
         super().__init__()
         self.train = train.copy() if copy_data else train
@@ -181,6 +184,7 @@ class TabularDatamodule(pl.LightningDataModule):
         self.train_sampler = train_sampler
         self.config = config
         self.seed = seed
+        self.verbose = verbose
         self._fitted = False
         self._setup_cache(cache_data)
         self._inferred_config = self._update_config(config)
@@ -266,7 +270,7 @@ class TabularDatamodule(pl.LightningDataModule):
         logger.debug("Encoding Categorical Columns using OrdinalEncoder")
         self.categorical_encoder = OrdinalEncoder(
             cols=self.config.categorical_cols,
-            handle_unseen="impute" if self.config.handle_unknown_categories else "error",
+            handle_unseen=("impute" if self.config.handle_unknown_categories else "error"),
             handle_missing="impute" if self.config.handle_missing_values else "error",
         )
         data = self.categorical_encoder.fit_transform(data)
@@ -400,7 +404,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def split_train_val(self, train):
         logger.debug(
-            f"No validation data provided." f" Using {self.config.validation_split*100}% of train data as validation"
+            "No validation data provided." f" Using {self.config.validation_split*100}% of train data as validation"
         )
         val_idx = train.sample(
             int(self.config.validation_split * len(train)),
@@ -420,7 +424,8 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         if not (stage is None or stage == "fit" or stage == "ssl_finetune"):
             return
-        logger.info(f"Setting up the datamodule for {self.config.task} task")
+        if self.verbose:
+            logger.info(f"Setting up the datamodule for {self.config.task} task")
         is_ssl = stage == "ssl_finetune"
         if self.validation is None:
             self.train, self.validation = self.split_train_val(self.train)
@@ -496,7 +501,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 "Is_year_end",
                 "Is_year_start",
                 "Is_month_start",
-                "Week" "Day",
+                "WeekDay",
                 "Dayofweek",
                 "Dayofyear",
             ],
@@ -508,7 +513,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 "Is_year_end",
                 "Is_year_start",
                 "Is_month_start",
-                "Week" "Day",
+                "WeekDay",
                 "Dayofweek",
                 "Dayofyear",
             ],
@@ -520,7 +525,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 "Is_year_end",
                 "Is_year_start",
                 "Is_month_start",
-                "Week" "Day",
+                "WeekDay",
                 "Dayofweek",
                 "Dayofyear",
                 "Hour",
@@ -533,7 +538,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 "Is_year_end",
                 "Is_year_start",
                 "Is_month_start",
-                "Week" "Day",
+                "WeekDay",
                 "Dayofweek",
                 "Dayofyear",
                 "Hour",
@@ -645,16 +650,18 @@ class TabularDatamodule(pl.LightningDataModule):
             try:
                 dataset = getattr(self, f"{tag}_dataset")
             except AttributeError:
-                raise AttributeError(f"{tag}_dataset not found in memory. Please provide the data for {tag} dataloader")
+                raise AttributeError(
+                    f"{tag}_dataset not found in memory. Please provide the data for" f" {tag} dataloader"
+                )
         elif self.cache_mode is self.CACHE_MODES.DISK:
             try:
                 dataset = torch.load(self.cache_dir / f"{tag}_dataset")
             except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader"
+                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the" f" data for {tag} dataloader"
                 )
         elif self.cache_mode is self.CACHE_MODES.INFERENCE:
-            raise RuntimeError("Cannot load dataset in inference mode. Use `prepare_inference_dataloader` instead")
+            raise RuntimeError("Cannot load dataset in inference mode. Use" " `prepare_inference_dataloader` instead")
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
         return dataset
@@ -741,7 +748,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data=df,
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
-            target=self.target if all(col in df.columns for col in self.target) else None,
+            target=(self.target if all(col in df.columns for col in self.target) else None),
         )
         return DataLoader(
             dataset,
