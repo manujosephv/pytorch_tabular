@@ -1,6 +1,8 @@
 from .data_utils import get_balanced_sampler, get_class_weighted_cross_entropy, get_gaussian_centers
 from .logger import get_logger
 from .nn_utils import (
+    OOMException,
+    OutOfMemoryHandler,
     _initialize_kaiming,
     _initialize_layers,
     _linear_dropout_bn,
@@ -26,4 +28,6 @@ __all__ = [
     "to_one_hot",
     "_initialize_kaiming",
     "check_numpy",
+    "OutOfMemoryHandler",
+    "OOMException",
 ]

@@ -50,7 +50,13 @@ from pytorch_tabular.models.common.layers.embeddings import (
     PreEncoded1dLayer,
 )
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
-from pytorch_tabular.utils import get_logger, getattr_nested, pl_load
+from pytorch_tabular.utils import (
+    OOMException,
+    OutOfMemoryHandler,
+    get_logger,
+    getattr_nested,
+    pl_load,
+)
 
 try:
     import captum.attr
@@ -573,6 +579,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         max_epochs: int = None,
         min_epochs: int = None,
+        handle_oom: bool = True,
     ) -> pl.Trainer:
         """Trains the model.
 
@@ -588,6 +595,8 @@ class TabularModel:
 
             min_epochs (Optional[int]): Overwrite minimum number of epochs to be run. Defaults to None.
 
+            handle_oom (bool): If True, will try to handle OOM errors elegantly. Defaults to True.
+
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
@@ -600,18 +609,36 @@ class TabularModel:
         if self.config.auto_lr_find and (not self.config.fast_dev_run):
             if self.verbose:
                 logger.info("Auto LR Find Started")
-            result = Tuner(self.trainer).lr_find(self.model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+            with OutOfMemoryHandler(handle_oom=handle_oom) as oom_handler:
+                result = Tuner(self.trainer).lr_find(
+                    self.model,
+                    train_dataloaders=train_loader,
+                    val_dataloaders=val_loader,
+                )
+            if oom_handler.oom_triggered:
+                raise OOMException(
+                    "OOM detected during LR Find. Try reducing your batch_size or the"
+                    " model parameters." + "/n" + "Original Error: " + oom_handler.oom_msg
+                )
             if self.verbose:
                 logger.info(
                     f"Suggested LR: {result.suggestion()}. For plot and detailed"
                     " analysis, use `find_learning_rate` method."
                 )
+            self.model.reset_weights()
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
         self.model.train()
         if self.verbose:
             logger.info("Training Started")
-        self.trainer.fit(self.model, train_loader, val_loader)
+        with OutOfMemoryHandler(handle_oom=handle_oom) as oom_handler:
+            self.trainer.fit(self.model, train_loader, val_loader)
+        if oom_handler.oom_triggered:
+            raise OOMException(
+                "OOM detected during Training. Try reducing your batch_size or the"
+                " model parameters."
+                "/n" + "Original Error: " + oom_handler.oom_msg
+            )
         self._is_fitted = True
         if self.verbose:
             logger.info("Training the model completed")
@@ -636,6 +663,7 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         datamodule: Optional[TabularDatamodule] = None,
         cache_data: str = "memory",
+        handle_oom: bool = True,
     ) -> pl.Trainer:
         """The fit method which takes in the data and triggers the training.
 
@@ -689,6 +717,8 @@ class TabularModel:
             cache_data (str): Decides how to cache the data in the dataloader. If set to
                 "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
 
+            handle_oom (bool): If True, will try to handle OOM errors elegantly. Defaults to True.
+
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
         """
@@ -727,7 +757,7 @@ class TabularModel:
             optimizer_params or {},
         )
 
-        return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
+        return self.train(model, datamodule, callbacks, max_epochs, min_epochs, handle_oom)
 
     def pretrain(
         self,
@@ -1228,7 +1258,7 @@ class TabularModel:
 
             progress_bar = partial(tqdm, description="Generating Predictions...")
         else:
-            progress_bar = lambda it: it
+            progress_bar = lambda it: it  # noqa E731
         for batch in progress_bar(inference_dataloader):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
@@ -1292,8 +1322,9 @@ class TabularModel:
                 np.argmax(point_predictions, axis=1)
             )
             warnings.warn(
-                "Classification prediction column will be renamed to `{target_col}_prediction` "
-                "in the next release to maintain consistency with regression.",
+                "Classification prediction column will be renamed to"
+                " `{target_col}_prediction` in the next release to maintain"
+                " consistency with regression.",
                 DeprecationWarning,
             )
         if ret_logits:
@@ -1709,6 +1740,7 @@ class TabularModel:
         groups: Optional[Union[str, np.ndarray]] = None,
         verbose: bool = True,
         reset_datamodule: bool = True,
+        handle_oom: bool = True,
         **kwargs,
     ):
         """Cross validate the model.
@@ -1752,6 +1784,7 @@ class TabularModel:
                 If False, we take an approximation that once the transformations are fit on the first
                 fold, they will be valid for all the other folds. Defaults to True.
 
+            handle_oom (bool, optional): If True, will handle out of memory errors elegantly
             **kwargs: Additional keyword arguments to be passed to the `fit` method of the model.
 
         Returns:
@@ -1788,7 +1821,8 @@ class TabularModel:
                 datamodule.validation, _ = datamodule.preprocess_data(val_fold, stage="inference")
 
             # Train the model
-            self.train(model, datamodule, **train_kwargs)
+            handle_oom = train_kwargs.pop("handle_oom", handle_oom)
+            self.train(model, datamodule, handle_oom=handle_oom, **train_kwargs)
             if return_oof or is_callable_metric:
                 preds = self.predict(val_fold, include_input_features=False)
                 oof_preds.append(preds)
@@ -1863,6 +1897,7 @@ class TabularModel:
         return_raw_predictions: bool = False,
         aggregate: Union[str, Callable] = "mean",
         weights: Optional[List[float]] = None,
+        handle_oom: bool = True,
         **kwargs,
     ):
         """Bagging predict on the test data.
@@ -1911,6 +1946,8 @@ class TabularModel:
                 from each fold. If None, will use equal weights. This is only used when `aggregate` is "mean".
                 Defaults to None.
 
+            handle_oom (bool, optional): If True, will handle out of memory errors elegantly
+
             **kwargs: Additional keyword arguments to be passed to the `fit` method of the model.
 
         Returns:
@@ -1952,7 +1989,8 @@ class TabularModel:
                 datamodule.validation, _ = datamodule.preprocess_data(val_fold, stage="inference")
 
             # Train the model
-            self.train(model, datamodule, **train_kwargs)
+            handle_oom = train_kwargs.pop("handle_oom", handle_oom)
+            self.train(model, datamodule, handle_oom=handle_oom, **train_kwargs)
             fold_preds = self.predict(test, include_input_features=False)
             pred_idx = fold_preds.index
             if self.config.task == "classification":
