@@ -1201,65 +1201,20 @@ class TabularModel:
         )
         return result
 
-    def predict(
+    def _generate_predictions(
         self,
-        test: DataFrame,
-        quantiles: Optional[List] = [0.25, 0.5, 0.75],
-        n_samples: Optional[int] = 100,
-        ret_logits=False,
-        include_input_features: bool = False,
-        device: Optional[torch.device] = None,
-        progress_bar: Optional[str] = None,
-    ) -> DataFrame:
-        """Uses the trained model to predict on new data and return as a dataframe.
+        model,
+        inference_dataloader,
+        quantiles,
+        n_samples,
+        ret_logits,
+        progress_bar,
+        is_probabilistic,
 
-        Args:
-            test (DataFrame): The new dataframe with the features defined during training
-            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
-                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
-                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
-            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
-                Ignored for non-probabilistic models. Defaults to 100
-            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
-                with the dataframe. Defaults to False
-            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
-                Defaults to True
-            progress_bar: chose progress bar for tracking the progress
-
-        Returns:
-            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
-                If classification, it returns probabilities and final prediction
-        """
-        warnings.warn(
-            "`include_input_features` will be deprecated in the next release."
-            " Please add index columns to the test dataframe if you want to"
-            " retain some features like the key or id",
-            DeprecationWarning,
-        )
-        assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
-        model = self.model  # default
-        if device is not None:
-            if isinstance(device, str):
-                device = torch.device(device)
-            if self.model.device != device:
-                model = self.model.to(device)
-        model.eval()
-        inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
+    ):
         point_predictions = []
         quantile_predictions = []
         logits_predictions = defaultdict(list)
-        is_probabilistic = hasattr(model.hparams, "_probabilistic") and model.hparams._probabilistic
-
-        if progress_bar == "rich":
-            from rich.progress import track
-
-            progress_bar = partial(track, description="Generating Predictions...")
-        elif progress_bar == "tqdm":
-            from tqdm.auto import tqdm
-
-            progress_bar = partial(tqdm, description="Generating Predictions...")
-        else:
-            progress_bar = lambda it: it  # noqa E731
         for batch in progress_bar(inference_dataloader):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
@@ -1275,8 +1230,6 @@ class TabularModel:
                 y_hat, ret_value = model.predict(batch, ret_model_output=True)
             if ret_logits:
                 for k, v in ret_value.items():
-                    # if k == "backbone_features":
-                    #     continue
                     logits_predictions[k].append(v.detach().cpu())
             point_predictions.append(y_hat.detach().cpu())
             if is_probabilistic:
@@ -1288,6 +1241,19 @@ class TabularModel:
             quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
             if quantile_predictions.ndim == 2:
                 quantile_predictions = quantile_predictions.unsqueeze(-1)
+        return point_predictions, quantile_predictions, logits_predictions
+
+    def _format_predicitons(
+            self,
+            test,
+            point_predictions,
+            quantile_predictions,
+            logits_predictions,
+            quantiles,
+            ret_logits,
+            include_input_features,
+            is_probabilistic
+    ):
         pred_df = test.copy() if include_input_features else DataFrame(index=test.index)
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
@@ -1338,6 +1304,121 @@ class TabularModel:
                         pred_df[f"{k}_{i}"] = v[:, i]
                     else:
                         pred_df[f"{k}"] = v[:, i]
+        return pred_df
+
+    def _predict(
+        self,
+        test: DataFrame,
+        quantiles: Optional[List] = [0.25, 0.5, 0.75],
+        n_samples: Optional[int] = 100,
+        ret_logits=False,
+        include_input_features: bool = False,
+        device: Optional[torch.device] = None,
+        progress_bar: Optional[str] = None,
+    ) -> DataFrame:
+        """Uses the trained model to predict on new data and return as a dataframe.
+
+        Args:
+            test (DataFrame): The new dataframe with the features defined during training
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
+                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
+            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
+                Ignored for non-probabilistic models. Defaults to 100
+            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
+                with the dataframe. Defaults to False
+            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
+                Defaults to True
+            progress_bar: chose progress bar for tracking the progress
+
+        Returns:
+            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
+                If classification, it returns probabilities and final prediction
+        """
+        assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
+        model = self.model  # default
+        if device is not None:
+            if isinstance(device, str):
+                device = torch.device(device)
+            if self.model.device != device:
+                model = self.model.to(device)
+        model.eval()
+        inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
+        is_probabilistic = hasattr(model.hparams, "_probabilistic") and model.hparams._probabilistic
+
+        if progress_bar == "rich":
+            from rich.progress import track
+            progress_bar = partial(track, description="Generating Predictions...")
+        elif progress_bar == "tqdm":
+            from tqdm.auto import tqdm
+            progress_bar = partial(tqdm, description="Generating Predictions...")
+        else:
+            progress_bar = lambda it: it  # noqa E731
+        point_predictions, quantile_predictions, logits_predictions = self._generate_predictions(
+            model,
+            inference_dataloader,
+            quantiles,
+            n_samples,
+            ret_logits,
+            progress_bar,
+            is_probabilistic,
+        )
+        pred_df = self._format_predicitons(
+            test,
+            point_predictions,
+            quantile_predictions,
+            logits_predictions,
+            quantiles,
+            ret_logits,
+            include_input_features,
+            is_probabilistic,
+        )
+        return pred_df
+
+    def predict(
+        self,
+        test: DataFrame,
+        quantiles: Optional[List] = [0.25, 0.5, 0.75],
+        n_samples: Optional[int] = 100,
+        ret_logits=False,
+        include_input_features: bool = False,
+        device: Optional[torch.device] = None,
+        progress_bar: Optional[str] = None,
+    ) -> DataFrame:
+        """Uses the trained model to predict on new data and return as a dataframe.
+
+        Args:
+            test (DataFrame): The new dataframe with the features defined during training
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
+                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
+            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
+                Ignored for non-probabilistic models. Defaults to 100
+            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
+                with the dataframe. Defaults to False
+            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
+                Defaults to True
+            progress_bar: chose progress bar for tracking the progress
+
+        Returns:
+            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
+                If classification, it returns probabilities and final prediction
+        """
+        warnings.warn(
+            "`include_input_features` will be deprecated in the next release."
+            " Please add index columns to the test dataframe if you want to"
+            " retain some features like the key or id",
+            DeprecationWarning,
+        )
+        pred_df = self._predict(
+            test,
+            quantiles,
+            n_samples,
+            ret_logits,
+            include_input_features,
+            device,
+            progress_bar,
+        )
         return pred_df
 
     def load_best_model(self) -> None:
