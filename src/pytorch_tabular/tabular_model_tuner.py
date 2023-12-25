@@ -4,7 +4,6 @@
 """Tabular Model."""
 import warnings
 from collections import namedtuple
-from contextlib import nullcontext
 from copy import deepcopy
 from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Union
@@ -13,7 +12,7 @@ import numpy as np
 import pandas as pd
 from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
-from rich.progress import Progress
+from rich.progress import track
 from sklearn.model_selection import BaseCrossValidator, ParameterGrid, ParameterSampler
 
 from pytorch_tabular.config import (
@@ -23,7 +22,7 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.tabular_model import TabularModel
-from pytorch_tabular.utils import get_logger
+from pytorch_tabular.utils import OOMException, OutOfMemoryHandler, get_logger
 
 logger = get_logger(__name__)
 
@@ -146,6 +145,7 @@ class TabularModelTuner:
         verbose: bool = False,
         progress_bar: bool = True,
         random_state: Optional[int] = 42,
+        ignore_oom: bool = True,
         **kwargs,
     ):
         """Tune the hyperparameters of the TabularModel.
@@ -194,6 +194,8 @@ class TabularModelTuner:
 
         random_state (Optional[int], optional): Random state to be used for random search. Defaults to 42.
 
+        ignore_oom (bool, optional): Whether to ignore out of memory errors. Defaults to True.
+
         **kwargs: Additional keyword arguments to be passed to the TabularModel fit.
 
         Returns:
@@ -230,9 +232,7 @@ class TabularModelTuner:
         else:
             raise NotImplementedError(f"{strategy} is not implemented yet.")
         if progress_bar:
-            ctx_mgr = Progress()
-        else:
-            ctx_mgr = nullcontext()
+            iterator = track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
         verbose_tabular_model = self.tabular_model_init_kwargs.pop("verbose", False)
         temp_tabular_model = TabularModel(
             data_config=self.data_config,
@@ -253,58 +253,74 @@ class TabularModelTuner:
             is_callable_metric = True
         del temp_tabular_model
         trials = []
+        for i, params in enumerate(iterator):
+            # Copying the configs as a base
+            # Make sure all default parameters that you want to be set for all
+            # trials are in the original configs
+            trainer_config_t = deepcopy(self.trainer_config)
+            optimizer_config_t = deepcopy(self.optimizer_config)
+            model_config_t = deepcopy(self.model_config)
 
-        with ctx_mgr as progress:
-            if progress:
-                task = progress.add_task(f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
-            for i, params in enumerate(iterator):
-                # Copying the configs as a base
-                # Make sure all default parameters that you want to be set for all
-                # trials are in the original configs
-                trainer_config_t = deepcopy(self.trainer_config)
-                optimizer_config_t = deepcopy(self.optimizer_config)
-                model_config_t = deepcopy(self.model_config)
-
-                trainer_config_t, optimizer_config_t, model_config_t = self._update_configs(
-                    trainer_config_t, optimizer_config_t, model_config_t, params
-                )
-                # Initialize Tabular model using the new config
-                tabular_model_t = TabularModel(
-                    data_config=self.data_config,
-                    model_config=model_config_t,
-                    optimizer_config=optimizer_config_t,
-                    trainer_config=trainer_config_t,
-                    verbose=verbose_tabular_model,
-                    **self.tabular_model_init_kwargs,
-                )
-                if cv is not None:
-                    cv_verbose = cv_kwargs.pop("verbose", False)
+            trainer_config_t, optimizer_config_t, model_config_t = self._update_configs(
+                trainer_config_t, optimizer_config_t, model_config_t, params
+            )
+            # Initialize Tabular model using the new config
+            tabular_model_t = TabularModel(
+                data_config=self.data_config,
+                model_config=model_config_t,
+                optimizer_config=optimizer_config_t,
+                trainer_config=trainer_config_t,
+                verbose=verbose_tabular_model,
+                **self.tabular_model_init_kwargs,
+            )
+            if cv is not None:
+                cv_verbose = cv_kwargs.pop("verbose", False)
+                cv_kwargs.pop("handle_oom", None)
+                with OutOfMemoryHandler(handle_oom=True) as handler:
                     cv_scores, _ = tabular_model_t.cross_validate(
                         cv=cv,
                         train=train,
                         metric=metric,
                         verbose=cv_verbose,
+                        handle_oom=False,
                         **cv_kwargs,
                     )
-                    params.update({metric.__name__ if is_callable_metric else metric: cv_agg_func(cv_scores)})
+                if handler.oom_triggered:
+                    if not ignore_oom:
+                        raise OOMException(
+                            "Out of memory error occurred during cross validation. "
+                            "Set ignore_oom=True to ignore this error."
+                        )
+                    else:
+                        params.update({metric.__name__ if is_callable_metric else metric: "OOM"})
                 else:
-                    model = tabular_model_t.prepare_model(
-                        datamodule=datamodule,
-                        **prep_model_kwargs,
-                    )
-                    tabular_model_t.train(model=model, datamodule=datamodule, **train_kwargs)
+                    params.update({metric.__name__ if is_callable_metric else metric: cv_agg_func(cv_scores)})
+            else:
+                model = tabular_model_t.prepare_model(
+                    datamodule=datamodule,
+                    **prep_model_kwargs,
+                )
+                train_kwargs.pop("handle_oom", None)
+                with OutOfMemoryHandler(handle_oom=True) as handler:
+                    tabular_model_t.train(model=model, datamodule=datamodule, handle_oom=False, **train_kwargs)
+                if handler.oom_triggered:
+                    if not ignore_oom:
+                        raise OOMException(
+                            "Out of memory error occurred during training. " "Set ignore_oom=True to ignore this error."
+                        )
+                    else:
+                        params.update({metric.__name__ if is_callable_metric else metric: "OOM"})
+                else:
                     if is_callable_metric:
                         preds = tabular_model_t.predict(validation, include_input_features=False)
                         params.update({metric.__name__: metric(validation[tabular_model_t.config.target], preds)})
                     else:
                         result = tabular_model_t.evaluate(validation, verbose=False)
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
-                params.update({"trial_id": i})
-                trials.append(params)
-                if verbose:
-                    logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric]}")
-                if progress:
-                    progress.update(task, advance=1)
+            params.update({"trial_id": i})
+            trials.append(params)
+            if verbose:
+                logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric]}")
         trials_df = pd.DataFrame(trials)
         trials = trials_df.pop("trial_id")
         if mode == "max":

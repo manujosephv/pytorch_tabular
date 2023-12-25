@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 
 def _initialize_layers(activation, initialization, layers):
-    if type(layers) == nn.Sequential:
+    if type(layers) is nn.Sequential:
         for layer in layers:
             if hasattr(layer, "weight"):
                 _initialize_layers(activation, initialization, layer)
@@ -18,7 +18,7 @@ def _initialize_layers(activation, initialization, layers):
             nonlinearity = "leaky_relu"
         else:
             if initialization == "kaiming":
-                logger.warning("Kaiming initialization is only recommended for ReLU and LeakyReLU.")
+                logger.warning("Kaiming initialization is only recommended for ReLU and" " LeakyReLU.")
                 nonlinearity = "leaky_relu"
             else:
                 nonlinearity = "relu"
@@ -28,7 +28,7 @@ def _initialize_layers(activation, initialization, layers):
         elif initialization == "xavier":
             nn.init.xavier_normal_(
                 layers.weight,
-                gain=nn.init.calculate_gain(nonlinearity) if activation in ["ReLU", "LeakyReLU"] else 1,
+                gain=(nn.init.calculate_gain(nonlinearity) if activation in ["ReLU", "LeakyReLU"] else 1),
             )
         elif initialization == "random":
             nn.init.normal_(layers.weight)
@@ -106,4 +106,39 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
     elif initialization is None:
         pass
     else:
-        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
+        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`," " `None`")
+
+
+class OutOfMemoryHandler:
+    """Context manager to handle out of memory errors.
+
+    Args:
+        handle_oom: Whether to handle the error or not. If set to False,
+            the exception will be propagated.
+    """
+
+    def __init__(self, handle_oom: bool = True):
+        self.handle_oom = handle_oom
+        self.oom_triggered = False
+        self.oom_msg = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        is_oom_runtime_error = exc_type is RuntimeError and "out of memory" in str(exc_value)
+        try:
+            is_cuda_oom_error = exc_type is torch.cuda.OutOfMemoryError
+        except AttributeError:
+            # before torch 1.13.0, torch.cuda.OutOfMemoryError did not exist
+            is_cuda_oom_error = False
+        if (is_oom_runtime_error or is_cuda_oom_error) and self.handle_oom:
+            self.oom_triggered = True
+            self.oom_msg = exc_value.args[0]
+            torch.cuda.empty_cache()
+            return True  # Suppress the exception
+        return False  # Propagate any other exceptions
+
+
+class OOMException(Exception):
+    pass
