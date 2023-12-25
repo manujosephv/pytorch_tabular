@@ -127,7 +127,11 @@ class OutOfMemoryHandler:
 
     def __exit__(self, exc_type, exc_value, traceback):
         is_oom_runtime_error = exc_type is RuntimeError and "out of memory" in str(exc_value)
-        is_cuda_oom_error = exc_type is torch.cuda.OutOfMemoryError
+        try:
+            is_cuda_oom_error = exc_type is torch.cuda.OutOfMemoryError
+        except AttributeError:
+            # before torch 1.13.0, torch.cuda.OutOfMemoryError did not exist
+            is_cuda_oom_error = False
         if (is_oom_runtime_error or is_cuda_oom_error) and self.handle_oom:
             self.oom_triggered = True
             self.oom_msg = exc_value.args[0]
