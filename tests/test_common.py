@@ -994,3 +994,130 @@ def test_bagging_regression(
             aggregate,
         )
         assert len(pred_df) == len(test)
+
+
+def _run_tta(
+    model_config_class,
+    model_config_params,
+    data_config,
+    train,
+    test,
+    aggregate,
+):
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train)
+    pred_df = tabular_model.predict(test, test_time_augmentation=True, num_tta=2, aggregate_tta=aggregate)
+    return pred_df
+
+
+@pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
+@pytest.mark.parametrize(
+    "continuous_cols",
+    [
+        [f"feature_{i}" for i in range(54)],
+    ],
+)
+@pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
+@pytest.mark.parametrize(
+    "aggregate",
+    ["mean", "median", "min", "max", "hard_voting", lambda x: np.argmax(np.median(x, axis=0), axis=1)],
+)
+def test_tta_classification(
+    classification_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    aggregate,
+):
+    (train, test, target) = classification_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "classification"
+    pred_df = _run_tta(
+        model_config_class,
+        model_config_params,
+        data_config,
+        train,
+        test,
+        aggregate,
+    )
+    assert len(pred_df) == len(test)
+
+
+@pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize(
+    "aggregate",
+    ["mean", "median", "min", "max", "hard_voting", lambda x: np.median(x, axis=0)],
+)
+def test_tta_regression(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    aggregate,
+):
+    (train, test, target) = regression_data
+    model_config_class, model_config_params = model_config_class
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        handle_missing_values=True,
+        handle_unknown_categories=True,
+    )
+
+    model_config_params["task"] = "regression"
+    if aggregate == "hard_voting":
+        with pytest.raises(AssertionError):
+            pred_df = _run_tta(
+                model_config_class,
+                model_config_params,
+                data_config,
+                train,
+                test,
+                aggregate,
+            )
+        return
+    else:
+        pred_df = _run_tta(
+            model_config_class,
+            model_config_params,
+            data_config,
+            train,
+            test,
+            aggregate,
+        )
+        assert len(pred_df) == len(test)
+    pred_df = _run_tta(
+        model_config_class,
+        model_config_params,
+        data_config,
+        train,
+        test,
+        aggregate,
+    )
+    assert len(pred_df) == len(test)
