@@ -789,7 +789,7 @@ def test_cross_validate_classification(
 @pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
 @pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
-@pytest.mark.parametrize("cv", [None, 5])
+@pytest.mark.parametrize("cv", [None, "validation", 5])
 @pytest.mark.parametrize(
     "metric",
     [
@@ -808,6 +808,10 @@ def test_tuner(
     strategy,
 ):
     (train, test, target) = regression_data
+    if cv=="validation":
+        # To test flow with no CV and no Validation data
+        test = None
+        cv = None
     model_config_class, model_config_params = model_config_class
     data_config = DataConfig(
         target=target,
@@ -854,7 +858,7 @@ def test_tuner(
         strategy=strategy,
         n_trials=2,
         cv=cv,
-        metric="loss",
+        metric=metric,
         mode="min",
         progress_bar=False,
     )
@@ -862,7 +866,8 @@ def test_tuner(
         assert len(result.trials_df) == 8
     else:
         assert len(result.trials_df) == 2
-    assert result.best_score in result.trials_df["loss"].values.tolist()
+    metric_str = metric.__name__ if callable(metric) else metric
+    assert result.best_score in result.trials_df[metric_str].values.tolist()
 
 
 def _run_bagging(

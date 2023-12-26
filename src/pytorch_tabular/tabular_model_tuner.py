@@ -246,11 +246,14 @@ class TabularModelTuner:
         if "seed" not in prep_dl_kwargs:
             prep_dl_kwargs["seed"] = random_state
         datamodule = temp_tabular_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
+        validation = validation if validation is not None else datamodule.validation_dataset.data
         if isinstance(metric, str):
             # metric = metric_to_pt_metric(metric)
             is_callable_metric = False
+            metric_str = metric
         elif callable(metric):
             is_callable_metric = True
+            metric_str = metric.__name__
         del temp_tabular_model
         trials = []
         for i, params in enumerate(iterator):
@@ -292,9 +295,9 @@ class TabularModelTuner:
                             "Set ignore_oom=True to ignore this error."
                         )
                     else:
-                        params.update({metric.__name__ if is_callable_metric else metric: "OOM"})
+                        params.update({metric_str: "OOM"})
                 else:
-                    params.update({metric.__name__ if is_callable_metric else metric: cv_agg_func(cv_scores)})
+                    params.update({metric_str: cv_agg_func(cv_scores)})
             else:
                 model = tabular_model_t.prepare_model(
                     datamodule=datamodule,
@@ -309,13 +312,13 @@ class TabularModelTuner:
                             "Out of memory error occurred during training. " "Set ignore_oom=True to ignore this error."
                         )
                     else:
-                        params.update({metric.__name__ if is_callable_metric else metric: "OOM"})
+                        params.update({metric_str: "OOM"})
                 else:
                     if is_callable_metric:
-                        preds = tabular_model_t.predict(validation or datamodule.validation_dataset.data, include_input_features=False)
-                        params.update({metric.__name__: metric(validation[tabular_model_t.config.target], preds)})
+                        preds = tabular_model_t.predict(validation, include_input_features=False)
+                        params.update({metric_str: metric(validation[tabular_model_t.config.target], preds)})
                     else:
-                        result = tabular_model_t.evaluate(validation or datamodule.validation_dataset.data, verbose=False)
+                        result = tabular_model_t.evaluate(validation, verbose=False)
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
             params.update({"trial_id": i})
             trials.append(params)
@@ -324,12 +327,12 @@ class TabularModelTuner:
         trials_df = pd.DataFrame(trials)
         trials = trials_df.pop("trial_id")
         if mode == "max":
-            best_idx = trials_df[metric].idxmax()
+            best_idx = trials_df[metric_str].idxmax()
         elif mode == "min":
-            best_idx = trials_df[metric].idxmin()
+            best_idx = trials_df[metric_str].idxmin()
         else:
             raise NotImplementedError(f"{mode} is not implemented yet.")
         best_params = trials_df.iloc[best_idx].to_dict()
-        best_score = best_params.pop(metric)
+        best_score = best_params.pop(metric_str)
         trials_df.insert(0, "trial_id", trials)
         return self.OUTPUT(trials_df, best_params, best_score)

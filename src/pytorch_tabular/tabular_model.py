@@ -1855,7 +1855,8 @@ class TabularModel:
                 return StratifiedKFold(cv)
             else:
                 return KFold(cv)
-        elif isinstance(cv, Iterable):
+        elif isinstance(cv, Iterable) and not isinstance(cv, str):
+            # An iterable yielding (train, test) splits as arrays of indices.
             return cv
         elif isinstance(cv, BaseCrossValidator):
             return cv
@@ -1947,11 +1948,17 @@ class TabularModel:
             metric = metric if metric.startswith("test_") else "test_" + metric
         elif callable(metric):
             is_callable_metric = True
+
+        if isinstance(cv, BaseCrossValidator):
+            it = enumerate(cv.split(train, y=train[self.config.target], groups=groups))
+        else:
+            # when iterable is directly passed
+            it = enumerate(cv)
         cv_metrics = []
         datamodule = None
         model = None
         oof_preds = []
-        for fold, (train_idx, val_idx) in enumerate(cv.split(train, y=train[self.config.target], groups=groups)):
+        for fold, (train_idx, val_idx) in it:
             if verbose:
                 logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
             train_fold = train.iloc[train_idx]
