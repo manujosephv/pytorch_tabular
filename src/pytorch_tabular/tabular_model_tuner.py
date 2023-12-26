@@ -312,10 +312,10 @@ class TabularModelTuner:
                         params.update({metric.__name__ if is_callable_metric else metric: "OOM"})
                 else:
                     if is_callable_metric:
-                        preds = tabular_model_t.predict(validation, include_input_features=False)
+                        preds = tabular_model_t.predict(validation or datamodule.validation_dataset.data, include_input_features=False)
                         params.update({metric.__name__: metric(validation[tabular_model_t.config.target], preds)})
                     else:
-                        result = tabular_model_t.evaluate(validation, verbose=False)
+                        result = tabular_model_t.evaluate(validation or datamodule.validation_dataset.data, verbose=False)
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
             params.update({"trial_id": i})
             trials.append(params)
