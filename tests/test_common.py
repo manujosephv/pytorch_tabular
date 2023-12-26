@@ -808,7 +808,7 @@ def test_tuner(
     strategy,
 ):
     (train, test, target) = regression_data
-    if cv=="validation":
+    if cv == "validation":
         # To test flow with no CV and no Validation data
         test = None
         cv = None
