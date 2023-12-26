@@ -1201,65 +1201,19 @@ class TabularModel:
         )
         return result
 
-    def predict(
+    def _generate_predictions(
         self,
-        test: DataFrame,
-        quantiles: Optional[List] = [0.25, 0.5, 0.75],
-        n_samples: Optional[int] = 100,
-        ret_logits=False,
-        include_input_features: bool = False,
-        device: Optional[torch.device] = None,
-        progress_bar: Optional[str] = None,
-    ) -> DataFrame:
-        """Uses the trained model to predict on new data and return as a dataframe.
-
-        Args:
-            test (DataFrame): The new dataframe with the features defined during training
-            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
-                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
-                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
-            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
-                Ignored for non-probabilistic models. Defaults to 100
-            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
-                with the dataframe. Defaults to False
-            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
-                Defaults to True
-            progress_bar: chose progress bar for tracking the progress
-
-        Returns:
-            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
-                If classification, it returns probabilities and final prediction
-        """
-        warnings.warn(
-            "`include_input_features` will be deprecated in the next release."
-            " Please add index columns to the test dataframe if you want to"
-            " retain some features like the key or id",
-            DeprecationWarning,
-        )
-        assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
-        model = self.model  # default
-        if device is not None:
-            if isinstance(device, str):
-                device = torch.device(device)
-            if self.model.device != device:
-                model = self.model.to(device)
-        model.eval()
-        inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
+        model,
+        inference_dataloader,
+        quantiles,
+        n_samples,
+        ret_logits,
+        progress_bar,
+        is_probabilistic,
+    ):
         point_predictions = []
         quantile_predictions = []
         logits_predictions = defaultdict(list)
-        is_probabilistic = hasattr(model.hparams, "_probabilistic") and model.hparams._probabilistic
-
-        if progress_bar == "rich":
-            from rich.progress import track
-
-            progress_bar = partial(track, description="Generating Predictions...")
-        elif progress_bar == "tqdm":
-            from tqdm.auto import tqdm
-
-            progress_bar = partial(tqdm, description="Generating Predictions...")
-        else:
-            progress_bar = lambda it: it  # noqa E731
         for batch in progress_bar(inference_dataloader):
             for k, v in batch.items():
                 if isinstance(v, list) and (len(v) == 0):
@@ -1275,8 +1229,6 @@ class TabularModel:
                 y_hat, ret_value = model.predict(batch, ret_model_output=True)
             if ret_logits:
                 for k, v in ret_value.items():
-                    # if k == "backbone_features":
-                    #     continue
                     logits_predictions[k].append(v.detach().cpu())
             point_predictions.append(y_hat.detach().cpu())
             if is_probabilistic:
@@ -1288,6 +1240,19 @@ class TabularModel:
             quantile_predictions = torch.cat(quantile_predictions, dim=0).unsqueeze(-1)
             if quantile_predictions.ndim == 2:
                 quantile_predictions = quantile_predictions.unsqueeze(-1)
+        return point_predictions, quantile_predictions, logits_predictions
+
+    def _format_predicitons(
+        self,
+        test,
+        point_predictions,
+        quantile_predictions,
+        logits_predictions,
+        quantiles,
+        ret_logits,
+        include_input_features,
+        is_probabilistic,
+    ):
         pred_df = test.copy() if include_input_features else DataFrame(index=test.index)
         if self.config.task == "regression":
             point_predictions = point_predictions.numpy()
@@ -1338,6 +1303,188 @@ class TabularModel:
                         pred_df[f"{k}_{i}"] = v[:, i]
                     else:
                         pred_df[f"{k}"] = v[:, i]
+        return pred_df
+
+    def _predict(
+        self,
+        test: DataFrame,
+        quantiles: Optional[List] = [0.25, 0.5, 0.75],
+        n_samples: Optional[int] = 100,
+        ret_logits=False,
+        include_input_features: bool = False,
+        device: Optional[torch.device] = None,
+        progress_bar: Optional[str] = None,
+    ) -> DataFrame:
+        """Uses the trained model to predict on new data and return as a dataframe.
+
+        Args:
+            test (DataFrame): The new dataframe with the features defined during training
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
+                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
+            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
+                Ignored for non-probabilistic models. Defaults to 100
+            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
+                with the dataframe. Defaults to False
+            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
+                Defaults to True
+            progress_bar: chose progress bar for tracking the progress
+
+        Returns:
+            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
+                If classification, it returns probabilities and final prediction
+        """
+        assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
+        model = self.model  # default
+        if device is not None:
+            if isinstance(device, str):
+                device = torch.device(device)
+            if self.model.device != device:
+                model = self.model.to(device)
+        model.eval()
+        inference_dataloader = self.datamodule.prepare_inference_dataloader(test)
+        is_probabilistic = hasattr(model.hparams, "_probabilistic") and model.hparams._probabilistic
+
+        if progress_bar == "rich":
+            from rich.progress import track
+
+            progress_bar = partial(track, description="Generating Predictions...")
+        elif progress_bar == "tqdm":
+            from tqdm.auto import tqdm
+
+            progress_bar = partial(tqdm, description="Generating Predictions...")
+        else:
+            progress_bar = lambda it: it  # noqa E731
+        point_predictions, quantile_predictions, logits_predictions = self._generate_predictions(
+            model,
+            inference_dataloader,
+            quantiles,
+            n_samples,
+            ret_logits,
+            progress_bar,
+            is_probabilistic,
+        )
+        pred_df = self._format_predicitons(
+            test,
+            point_predictions,
+            quantile_predictions,
+            logits_predictions,
+            quantiles,
+            ret_logits,
+            include_input_features,
+            is_probabilistic,
+        )
+        return pred_df
+
+    def predict(
+        self,
+        test: DataFrame,
+        quantiles: Optional[List] = [0.25, 0.5, 0.75],
+        n_samples: Optional[int] = 100,
+        ret_logits=False,
+        include_input_features: bool = False,
+        device: Optional[torch.device] = None,
+        progress_bar: Optional[str] = None,
+        test_time_augmentation: Optional[bool] = False,
+        num_tta: Optional[float] = 5,
+        alpha_tta: Optional[float] = 0.1,
+        aggregate_tta: Optional[str] = "mean",
+    ) -> DataFrame:
+        """Uses the trained model to predict on new data and return as a dataframe.
+
+        Args:
+            test (DataFrame): The new dataframe with the features defined during training
+
+            quantiles (Optional[List]): For probabilistic models like Mixture Density Networks, this specifies
+                the different quantiles to be extracted apart from the `central_tendency` and added to the dataframe.
+                For other models it is ignored. Defaults to [0.25, 0.5, 0.75]
+
+            n_samples (Optional[int]): Number of samples to draw from the posterior to estimate the quantiles.
+                Ignored for non-probabilistic models. Defaults to 100
+
+            ret_logits (bool): Flag to return raw model outputs/logits except the backbone features along
+                with the dataframe. Defaults to False
+
+            include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
+                Defaults to True
+
+            progress_bar: chose progress bar for tracking the progress
+
+            test_time_augmentation (bool): If True, will use test time augmentation to generate predictions.
+                The approach is very similar to what is described [here](https://kozodoi.me/blog/20210908/tta-tabular)
+                But, we add noise to the embedded inputs to handle categorical features as well.\
+                \\(x_{aug} = x_{orig} + \alpha * \\epsilon\\) where \\(\\epsilon \\sim \\mathcal{N}(0, 1)\\)
+                Defaults to False
+            num_tta (float): The number of augumentations to run TTA for. Defaults to 0.0
+
+            alpha_tta (float): The standard deviation of the gaussian noise to be added to the input features
+
+            aggregate_tta (Union[str, Callable], optional): The function to be used to aggregate the
+                predictions from each augumentation. If str, should be one of "mean", "median", "min", or "max"
+                for regression. For classification, the previous options are applied to the confidence
+                scores (soft voting) and then converted to final prediction. An additional option
+                "hard_voting" is available for classification.
+                If callable, should be a function that takes in a list of 2D arrays (num_samples, num_targets)
+                and returns a 2D array (num_samples, num_targets). Defaults to "mean".
+
+
+        Returns:
+            DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
+                If classification, it returns probabilities and final prediction
+        """
+        warnings.warn(
+            "`include_input_features` will be deprecated in the next release."
+            " Please add index columns to the test dataframe if you want to"
+            " retain some features like the key or id",
+            DeprecationWarning,
+        )
+        if test_time_augmentation:
+            assert num_tta > 0, "num_tta should be greater than 0"
+            assert alpha_tta > 0, "alpha_tta should be greater than 0"
+            assert include_input_features is False, "include_input_features cannot be True for TTA."
+            if not callable(aggregate_tta):
+                assert aggregate_tta in ["mean", "median", "min", "max", "hard_voting"], (
+                    "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
+                )
+            if self.config.task == "regression":
+                assert aggregate_tta != "hard_voting", "hard_voting is only available for classification"
+
+            def add_noise(module, input, output):
+                return output + alpha_tta * torch.randn_like(output)
+
+            # Register the hook to the embedding_layer
+            handle = self.model.embedding_layer.register_forward_hook(add_noise)
+            pred_l = []
+            pred_prob_l = []
+            for _ in range(num_tta):
+                pred_df = self._predict(
+                    test,
+                    quantiles,
+                    n_samples,
+                    ret_logits,
+                    include_input_features=False,
+                    device=device,
+                    progress_bar=progress_bar,
+                )
+                pred_idx = pred_df.index
+                if self.config.task == "classification":
+                    pred_l.append(pred_df.values[:, -len(self.config.target) :].astype(int))
+                    pred_prob_l.append(pred_df.values[:, : -len(self.config.target)])
+                elif self.config.task == "regression":
+                    pred_prob_l.append(pred_df.values)
+            pred_df = self._combine_predictions(pred_l, pred_prob_l, pred_idx, aggregate_tta, None)
+            # Remove the hook
+            handle.remove()
+        else:
+            pred_df = self._predict(
+                test,
+                quantiles,
+                n_samples,
+                ret_logits,
+                include_input_features,
+                device,
+                progress_bar,
+            )
         return pred_df
 
     def load_best_model(self) -> None:
@@ -1708,7 +1855,8 @@ class TabularModel:
                 return StratifiedKFold(cv)
             else:
                 return KFold(cv)
-        elif isinstance(cv, Iterable):
+        elif isinstance(cv, Iterable) and not isinstance(cv, str):
+            # An iterable yielding (train, test) splits as arrays of indices.
             return cv
         elif isinstance(cv, BaseCrossValidator):
             return cv
@@ -1800,11 +1948,17 @@ class TabularModel:
             metric = metric if metric.startswith("test_") else "test_" + metric
         elif callable(metric):
             is_callable_metric = True
+
+        if isinstance(cv, BaseCrossValidator):
+            it = enumerate(cv.split(train, y=train[self.config.target], groups=groups))
+        else:
+            # when iterable is directly passed
+            it = enumerate(cv)
         cv_metrics = []
         datamodule = None
         model = None
         oof_preds = []
-        for fold, (train_idx, val_idx) in enumerate(cv.split(train, y=train[self.config.target], groups=groups)):
+        for fold, (train_idx, val_idx) in it:
             if verbose:
                 logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
             train_fold = train.iloc[train_idx]

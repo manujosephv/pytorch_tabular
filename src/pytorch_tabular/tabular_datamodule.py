@@ -57,7 +57,7 @@ class TabularDataset(Dataset):
 
         self.task = task
         self.n = data.shape[0]
-
+        self.target = target
         if target:
             self.y = data[target].astype(np.float32).values
             if isinstance(target, str):
@@ -81,16 +81,19 @@ class TabularDataset(Dataset):
     def data(self):
         """Returns the data as a pandas dataframe."""
         if self.continuous_cols and self.categorical_cols:
-            return pd.DataFrame(
+            data = pd.DataFrame(
                 np.concatenate([self.categorical_X, self.continuous_X], axis=1),
                 columns=self.categorical_cols + self.continuous_cols,
             )
         elif self.continuous_cols:
-            return pd.DataFrame(self.continuous_X, columns=self.continuous_cols)
+            data = pd.DataFrame(self.continuous_X, columns=self.continuous_cols)
         elif self.categorical_cols:
-            return pd.DataFrame(self.categorical_X, columns=self.categorical_cols)
+            data = pd.DataFrame(self.categorical_X, columns=self.categorical_cols)
         else:
-            return pd.DataFrame()
+            data = pd.DataFrame()
+        for i, t in enumerate(self.target):
+            data[t] = self.y[:, i]
+        return data
 
     def __len__(self):
         """Denotes the total number of samples."""
