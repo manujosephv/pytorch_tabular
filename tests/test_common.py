@@ -916,7 +916,7 @@ def _run_bagging(
 @pytest.mark.parametrize("cv", [2])
 @pytest.mark.parametrize(
     "aggregate",
-    ["mean", "median", "min", "max", "hard_voting", lambda x: np.argmax(np.median(x, axis=0), axis=1)],
+    ["mean", "median", "min", "max", "hard_voting", lambda x: np.median(x, axis=0)],
 )
 def test_bagging_classification(
     classification_data,
@@ -1040,7 +1040,7 @@ def _run_tta(
 @pytest.mark.parametrize("categorical_cols", [["feature_0_cat"]])
 @pytest.mark.parametrize(
     "aggregate",
-    ["mean", "median", "min", "max", "hard_voting", lambda x: np.argmax(np.median(x, axis=0), axis=1)],
+    ["mean", "median", "min", "max", "hard_voting", lambda x: np.median(x, axis=0)],
 )
 def test_tta_classification(
     classification_data,

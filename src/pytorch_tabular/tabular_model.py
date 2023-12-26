@@ -1424,9 +1424,8 @@ class TabularModel:
                 for regression. For classification, the previous options are applied to the confidence
                 scores (soft voting) and then converted to final prediction. An additional option
                 "hard_voting" is available for classification.
-                If callable, should be a function that takes in a list of 2D arrays (num_samples, num_targets)
-                and returns a 2D array (num_samples, num_targets). Defaults to "mean".
-
+                If callable, should be a function that takes in a list of 3D arrays (num_samples, num_cv, num_targets)
+                and returns a 2D array of final probabilities (num_samples, num_targets). Defaults to "mean".
 
         Returns:
             DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
@@ -1454,7 +1453,6 @@ class TabularModel:
 
             # Register the hook to the embedding_layer
             handle = self.model.embedding_layer.register_forward_hook(add_noise)
-            pred_l = []
             pred_prob_l = []
             for _ in range(num_tta):
                 pred_df = self._predict(
@@ -1468,11 +1466,10 @@ class TabularModel:
                 )
                 pred_idx = pred_df.index
                 if self.config.task == "classification":
-                    pred_l.append(pred_df.values[:, -len(self.config.target) :].astype(int))
                     pred_prob_l.append(pred_df.values[:, : -len(self.config.target)])
                 elif self.config.task == "regression":
                     pred_prob_l.append(pred_df.values)
-            pred_df = self._combine_predictions(pred_l, pred_prob_l, pred_idx, aggregate_tta, None)
+            pred_df = self._combine_predictions(pred_prob_l, pred_idx, aggregate_tta, None)
             # Remove the hook
             handle.remove()
         else:
@@ -1993,7 +1990,6 @@ class TabularModel:
 
     def _combine_predictions(
         self,
-        pred_l: List[DataFrame],
         pred_prob_l: List[DataFrame],
         pred_idx: Union[pd.Index, List],
         aggregate: Union[str, Callable],
@@ -2008,15 +2004,16 @@ class TabularModel:
         elif aggregate == "max":
             bagged_pred = np.max(pred_prob_l, axis=0)
         elif aggregate == "hard_voting" and self.config.task == "classification":
+            pred_l = [np.argmax(p, axis=1) for p in pred_prob_l]
             final_pred = np.apply_along_axis(
                 lambda x: np.argmax(np.bincount(x)),
                 axis=0,
-                arr=[p[:, -1].astype(int) for p in pred_l],
+                arr=pred_l,
             )
         elif callable(aggregate):
-            final_pred = bagged_pred = aggregate(pred_prob_l)
+            bagged_pred = aggregate(pred_prob_l)
         if self.config.task == "classification":
-            if aggregate == "hard_voting" or callable(aggregate):
+            if aggregate == "hard_voting":
                 pred_df = pd.DataFrame(
                     np.concatenate(pred_prob_l, axis=1),
                     columns=[
@@ -2094,8 +2091,8 @@ class TabularModel:
                 for regression. For classification, the previous options are applied to the confidence
                 scores (soft voting) and then converted to final prediction. An additional option
                 "hard_voting" is available for classification.
-                If callable, should be a function that takes in a list of 2D arrays (num_samples, num_targets)
-                and returns a 2D array (num_samples, num_targets). Defaults to "mean".
+                If callable, should be a function that takes in a list of 3D arrays (num_samples, num_cv, num_targets)
+                and returns a 2D array of final probabilities (num_samples, num_targets). Defaults to "mean".
 
             weights (Optional[List[float]], optional): The weights to be used for aggregating the predictions
                 from each fold. If None, will use equal weights. This is only used when `aggregate` is "mean".
@@ -2122,7 +2119,6 @@ class TabularModel:
             assert aggregate != "hard_voting", "hard_voting is only available for classification"
         cv = self._check_cv(cv)
         prep_dl_kwargs, prep_model_kwargs, train_kwargs = self._split_kwargs(kwargs)
-        pred_l = []
         pred_prob_l = []
         datamodule = None
         model = None
@@ -2149,15 +2145,14 @@ class TabularModel:
             fold_preds = self.predict(test, include_input_features=False)
             pred_idx = fold_preds.index
             if self.config.task == "classification":
-                pred_l.append(fold_preds.values[:, -len(self.config.target) :].astype(int))
                 pred_prob_l.append(fold_preds.values[:, : -len(self.config.target)])
             elif self.config.task == "regression":
                 pred_prob_l.append(fold_preds.values)
             if verbose:
                 logger.info(f"Fold {fold+1}/{cv.get_n_splits()} prediction done")
             self.model.reset_weights()
-        pred_df = self._combine_predictions(pred_l, pred_prob_l, pred_idx, aggregate, weights)
+        pred_df = self._combine_predictions(pred_prob_l, pred_idx, aggregate, weights)
         if return_raw_predictions:
-            return pred_df, pred_l, pred_prob_l
+            return pred_df, pred_prob_l
         else:
             return pred_df
