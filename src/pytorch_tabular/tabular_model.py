@@ -835,6 +835,7 @@ class TabularModel:
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
+    # TODO - REvamp this. Tahe target output dim ranther than column name
     def create_finetune_model(
         self,
         task: str,
@@ -942,7 +943,9 @@ class TabularModel:
         datamodule.batch_size = config.batch_size
         datamodule.seed = config.seed
         model_callable = _GenericModel
-        inferred_config = self.datamodule.update_config(config)
+        inferred_config = self.datamodule._update_config(config)
+        self.datamodule._inferred_config = inferred_config
+        # TODO Check if needed
         if task == "regression":
             inferred_config.output_dim = datamodule._output_dim_reg
         elif task == "classification":
@@ -982,6 +985,8 @@ class TabularModel:
                     metrics_params[i]["task"] = mp.get("task", "multiclass")
                     metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
                     metrics_params[i]["top_k"] = mp.get("top_k", 1)
+        else:
+            raise ValueError(f"Task {task} not supported")
         # Forming partial callables using metrics and metric params
         metrics = [partial(m, **mp) for m, mp in zip(metrics, metrics_params)]
         self.model.mode = "finetune"

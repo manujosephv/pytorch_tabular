@@ -224,12 +224,14 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
-        self._output_dim_clf = len(self.train[config.target[0]].unique()) if len(config.target) > 0 else None
-        self._output_dim_reg = len(config.target) if len(config.target) > 0 else None
+        # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
+        # self._output_dim_reg = len(config.target) if config.target else None
         if config.task == "regression":
-            output_dim = self._output_dim_reg
+            # self._output_dim_reg = len(config.target) if config.target else None
+            output_dim = len(config.target) if config.target else None
         elif config.task == "classification":
-            output_dim = self._output_dim_clf
+            # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
+            output_dim = len(np.unique(self.train_dataset.y)) if config.target else None
         elif config.task == "ssl":
             output_dim = None
         else:
@@ -257,7 +259,7 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns:
             InferredConfig: The updated config object
         """
-        return self._inferred_config
+        return self._update_config(config)
 
     def _encode_date_columns(self, data: DataFrame) -> DataFrame:
         added_features = []
