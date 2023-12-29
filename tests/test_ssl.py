@@ -131,7 +131,10 @@ def test_regression(
         metrics_prob_input=metrics_prob_input,
         optimizer=custom_optimizer,
     )
-    assert torch.equal(tabular_model.model.encoder.linear_layers[0].weight, finetune_model.model._backbone.encoder.linear_layers[0].weight)
+    assert torch.equal(
+        tabular_model.model.encoder.linear_layers[0].weight,
+        finetune_model.model._backbone.encoder.linear_layers[0].weight,
+    )
     finetune_model.finetune(
         freeze_backbone=freeze_backbone,
     )
@@ -218,7 +221,10 @@ def test_classification(
         trainer_config=trainer_config,
         optimizer_config=optimizer_config,
     )
-    assert torch.equal(tabular_model.model.encoder.linear_layers[0].weight, finetune_model.model._backbone.encoder.linear_layers[0].weight)
+    assert torch.equal(
+        tabular_model.model.encoder.linear_layers[0].weight,
+        finetune_model.model._backbone.encoder.linear_layers[0].weight,
+    )
     finetune_model.finetune(
         freeze_backbone=freeze_backbone,
     )

@@ -2,15 +2,15 @@ import gzip
 import os
 import random
 import shutil
+
 import numpy as np
 import pandas as pd
 import requests
-from sklearn.datasets import make_classification, make_regression
 import torch
 from pandas import DataFrame, Series
 from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification, make_regression
 from sklearn.preprocessing import LabelEncoder
-import requests
 
 from .logger import get_logger
 
@@ -45,9 +45,7 @@ def get_balanced_sampler(y_train):
     class_weights = 1.0 / torch.Tensor(class_sample_counts)
     train_samples_weight = [class_weights[class_id] for class_id in y_train]
     # now lets initialize samplers
-    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(
-        train_samples_weight, len(y_train)
-    )
+    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(train_samples_weight, len(y_train))
     return train_sampler
 
 
@@ -70,8 +68,7 @@ def make_mixed_dataset(
     n_targets=None,
     **kwargs,
 ):
-    """
-    Creates a synthetic dataset with mixed data types.
+    """Creates a synthetic dataset with mixed data types.
 
     Args:
         task (str): Either "classification" or "regression"
@@ -85,12 +82,8 @@ def make_mixed_dataset(
             Defaults to 2 classes for classification and 1 for regression
         kwargs: Additional arguments to pass to the make_classification or make_regression function
     """
-    assert (
-        n_features >= n_categories
-    ), "n_features must be greater than or equal to n_categories"
-    assert (
-        n_informative <= n_features
-    ), "n_informative must be less than or equal to n_features"
+    assert n_features >= n_categories, "n_features must be greater than or equal to n_categories"
+    assert n_informative <= n_features, "n_informative must be less than or equal to n_features"
     assert task in [
         "classification",
         "regression",
@@ -161,20 +154,24 @@ def print_metrics(metrics, y_true, y_pred, tag, return_dict=False):
 
 
 def load_covertype_dataset(download_dir=None):
-    """
-    Predicting forest cover type from cartographic variables only (no remotely sensed data). The actual forest cover type for a given observation (30 x 30 meter cell) was determined from US Forest Service (USFS) Region 2 Resource Information System (RIS) data. Independent variables were derived from data originally obtained from US Geological Survey (USGS) and USFS data. Data is in raw form (not scaled) and contains binary (0 or 1) columns of data for qualitative independent variables (wilderness areas and soil types).
+    """Predicting forest cover type from cartographic variables only (no remotely sensed data). The actual forest cover
+    type for a given observation (30 x 30 meter cell) was determined from US Forest Service (USFS) Region 2 Resource
+    Information System (RIS) data. Independent variables were derived from data originally obtained from US Geological
+    Survey (USGS) and USFS data. Data is in raw form (not scaled) and contains binary (0 or 1) columns of data for
+    qualitative independent variables (wilderness areas and soil types).
 
-    This study area includes four wilderness areas located in the Roosevelt National Forest of northern Colorado. These areas represent forests with minimal human-caused disturbances, so that existing forest cover types are more a result of ecological processes rather than forest management practices.
+    This study area includes four wilderness areas located in the Roosevelt National Forest of northern Colorado.
+    These areas represent forests with minimal human-caused disturbances, so that existing forest cover types are more a
+    result of ecological processes rather than forest management practices.
 
     It is from [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/covertype)
 
     Args:
-        download_dir (str): Directory to download the data to. Defaults to None, which will download to ~/.pytorch_tabular/datasets/
+        download_dir (str): Directory to download the data to. Defaults to None, which will download
+            to ~/.pytorch_tabular/datasets/
     """
     if download_dir is None:
-        download_dir = os.path.join(
-            os.path.expanduser("~"), ".pytorch_tabular", "datasets"
-        )
+        download_dir = os.path.join(os.path.expanduser("~"), ".pytorch_tabular", "datasets")
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
     file_path = os.path.join(download_dir, "covertype.csv")
@@ -207,21 +204,10 @@ def load_covertype_dataset(download_dir=None):
         + ["Cover_Type"]
     )
     # convert one hot encoded columns to categorical
-    df["Wilderness_Area"] = (
-        df[[f"Wilderness_Area_{i}" for i in range(4)]]
-        .idxmax(axis=1)
-        .str.split("_")
-        .str[-1]
-    )
-    df["Soil_Type"] = (
-        df[[f"Soil_Type_{i}" for i in range(40)]]
-        .idxmax(axis=1)
-        .str.split("_")
-        .str[-1]
-    )
+    df["Wilderness_Area"] = df[[f"Wilderness_Area_{i}" for i in range(4)]].idxmax(axis=1).str.split("_").str[-1]
+    df["Soil_Type"] = df[[f"Soil_Type_{i}" for i in range(40)]].idxmax(axis=1).str.split("_").str[-1]
     df.drop(
-        [f"Wilderness_Area_{i}" for i in range(4)]
-        + [f"Soil_Type_{i}" for i in range(40)],
+        [f"Wilderness_Area_{i}" for i in range(4)] + [f"Soil_Type_{i}" for i in range(40)],
         axis=1,
         inplace=True,
     )

@@ -3,10 +3,10 @@
 # For license information, see LICENSE.TXT
 """Tabular Data Module."""
 import re
+import warnings
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple, Union
-import warnings
 
 import joblib
 import numpy as np
@@ -104,12 +104,8 @@ class TabularDataset(Dataset):
         """Generates one sample of data."""
         return {
             "target": self.y[idx],
-            "continuous": (
-                self.continuous_X[idx] if self.continuous_cols else torch.Tensor()
-            ),
-            "categorical": (
-                self.categorical_X[idx] if self.categorical_cols else torch.Tensor()
-            ),
+            "continuous": (self.continuous_X[idx] if self.continuous_cols else torch.Tensor()),
+            "categorical": (self.categorical_X[idx] if self.categorical_cols else torch.Tensor()),
         }
 
 
@@ -201,7 +197,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def categorical_encoder(self):
         """Returns the categorical encoder."""
         return getattr(self, "_categorical_encoder", None)
-    
+
     @categorical_encoder.setter
     def categorical_encoder(self, value):
         self._categorical_encoder = value
@@ -210,7 +206,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def continuous_transform(self):
         """Returns the continuous transform."""
         return getattr(self, "_continuous_transform", None)
-    
+
     @continuous_transform.setter
     def continuous_transform(self, value):
         self._continuous_transform = value
@@ -219,7 +215,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def scaler(self):
         """Returns the scaler."""
         return getattr(self, "_scaler", None)
-    
+
     @scaler.setter
     def scaler(self, value):
         self._scaler = value
@@ -228,7 +224,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def label_encoder(self):
         """Returns the label encoder."""
         return getattr(self, "_label_encoder", None)
-    
+
     @label_encoder.setter
     def label_encoder(self, value):
         self._label_encoder = value
@@ -240,7 +236,7 @@ class TabularDatamodule(pl.LightningDataModule):
             return self._target_transforms
         else:
             return None
-    
+
     @target_transforms.setter
     def target_transforms(self, value):
         self._target_transforms = value
@@ -257,14 +253,10 @@ class TabularDatamodule(pl.LightningDataModule):
             logger.warning(f"{cache_data} is not a valid path. Caching in memory")
             self.cache_mode = self.CACHE_MODES.MEMORY
 
-    def _set_target_transform(
-        self, target_transform: Union[TransformerMixin, Tuple]
-    ) -> None:
+    def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
-                target_transform = FunctionTransformer(
-                    func=target_transform[0], inverse_func=target_transform[1]
-                )
+                target_transform = FunctionTransformer(func=target_transform[0], inverse_func=target_transform[1])
             self.do_target_transform = True
         else:
             self.do_target_transform = False
@@ -289,37 +281,25 @@ class TabularDatamodule(pl.LightningDataModule):
         elif config.task == "classification":
             # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
             if self.train is not None:
-                output_dim = (
-                    len(np.unique(self.train[config.target[0]]))
-                    if config.target
-                    else None
-                )
+                output_dim = len(np.unique(self.train[config.target[0]])) if config.target else None
             else:
-                output_dim = (
-                    len(np.unique(self.train_dataset.y))
-                    if config.target
-                    else None
-                )
+                output_dim = len(np.unique(self.train_dataset.y)) if config.target else None
         elif config.task == "ssl":
             output_dim = None
         else:
             raise ValueError(f"{config.task} is an unsupported task.")
         if self.train is not None:
             categorical_cardinality = [
-                int(self.train[col].fillna("NA").nunique()) + 1
-                for col in config.categorical_cols
+                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
             ]
         else:
             categorical_cardinality = [
-                int(self.train_dataset.data[col].nunique()) + 1
-                for col in config.categorical_cols
+                int(self.train_dataset.data[col].nunique()) + 1 for col in config.categorical_cols
             ]
         if getattr(config, "embedding_dims", None) is not None:
             embedding_dims = config.embedding_dims
         else:
-            embedding_dims = [
-                (x, min(50, (x + 1) // 2)) for x in categorical_cardinality
-            ]
+            embedding_dims = [(x, min(50, (x + 1) // 2)) for x in categorical_cardinality]
         return InferredConfig(
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
@@ -339,9 +319,7 @@ class TabularDatamodule(pl.LightningDataModule):
             InferredConfig: The updated config object
         """
         if self.cache_mode is self.CACHE_MODES.INFERENCE:
-            warnings.warn(
-                "Cannot update config in inference mode. Returning the cached config"
-            )
+            warnings.warn("Cannot update config in inference mode. Returning the cached config")
             return self._inferred_config
         else:
             return self._update_config(config)
@@ -350,9 +328,7 @@ class TabularDatamodule(pl.LightningDataModule):
         added_features = []
         for field_name, freq, format in self.config.date_columns:
             data = self.make_date(data, field_name, format)
-            data, _new_feats = self.add_datepart(
-                data, field_name, frequency=freq, prefix=None, drop=True
-            )
+            data, _new_feats = self.add_datepart(data, field_name, frequency=freq, prefix=None, drop=True)
             added_features += _new_feats
         return data, added_features
 
@@ -364,9 +340,7 @@ class TabularDatamodule(pl.LightningDataModule):
         logger.debug("Encoding Categorical Columns using OrdinalEncoder")
         self.categorical_encoder = OrdinalEncoder(
             cols=self.config.categorical_cols,
-            handle_unseen=(
-                "impute" if self.config.handle_unknown_categories else "error"
-            ),
+            handle_unseen=("impute" if self.config.handle_unknown_categories else "error"),
             handle_missing="impute" if self.config.handle_missing_values else "error",
         )
         data = self.categorical_encoder.fit_transform(data)
@@ -374,23 +348,17 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def _transform_continuous_columns(self, data: DataFrame, stage: str) -> DataFrame:
         if stage == "fit":
-            transform = self.CONTINUOUS_TRANSFORMS[
-                self.config.continuous_feature_transform
-            ]
+            transform = self.CONTINUOUS_TRANSFORMS[self.config.continuous_feature_transform]
             if "random_state" in transform["params"] and self.seed is not None:
                 transform["params"]["random_state"] = self.seed
             self.continuous_transform = transform["callable"](**transform["params"])
             # can be accessed through property continuous_transform
-            data.loc[:, self.config.continuous_cols] = (
-                self.continuous_transform.fit_transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
+            data.loc[:, self.config.continuous_cols] = self.continuous_transform.fit_transform(
+                data.loc[:, self.config.continuous_cols]
             )
         else:
-            data.loc[:, self.config.continuous_cols] = (
-                self.continuous_transform.transform(
-                    data.loc[:, self.config.continuous_cols]
-                )
+            data.loc[:, self.config.continuous_cols] = self.continuous_transform.transform(
+                data.loc[:, self.config.continuous_cols]
             )
         return data
 
@@ -401,26 +369,18 @@ class TabularDatamodule(pl.LightningDataModule):
                 data.loc[:, self.config.continuous_cols]
             )
         else:
-            data.loc[:, self.config.continuous_cols] = self.scaler.transform(
-                data.loc[:, self.config.continuous_cols]
-            )
+            data.loc[:, self.config.continuous_cols] = self.scaler.transform(data.loc[:, self.config.continuous_cols])
         return data
 
     def _label_encode_target(self, data: DataFrame, stage: str) -> DataFrame:
         if self.config.task != "classification":
             return data
         if stage == "fit" or self.label_encoder is None:
-            self.label_encoder = (
-                LabelEncoder()
-            )
-            data[self.config.target[0]] = self.label_encoder.fit_transform(
-                data[self.config.target[0]]
-            )
+            self.label_encoder = LabelEncoder()
+            data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
         else:
             if self.config.target[0] in data.columns:
-                data[self.config.target[0]] = self.label_encoder.transform(
-                    data[self.config.target[0]]
-                )
+                data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
         return data
 
     def _target_transform(self, data: DataFrame, stage: str) -> DataFrame:
@@ -434,23 +394,15 @@ class TabularDatamodule(pl.LightningDataModule):
                 target_transforms = []
                 for col in self.config.target:
                     _target_transform = copy.deepcopy(self.target_transform_template)
-                    data[col] = _target_transform.fit_transform(
-                        data[col].values.reshape(-1, 1)
-                    )
+                    data[col] = _target_transform.fit_transform(data[col].values.reshape(-1, 1))
                     target_transforms.append(_target_transform)
                 self.target_transforms = target_transforms
             else:
-                for col, _target_transform in zip(
-                    self.config.target, self.target_transforms
-                ):
-                    data[col] = _target_transform.transform(
-                        data[col].values.reshape(-1, 1)
-                    )
+                for col, _target_transform in zip(self.config.target, self.target_transforms):
+                    data[col] = _target_transform.transform(data[col].values.reshape(-1, 1))
         return data
 
-    def preprocess_data(
-        self, data: DataFrame, stage: str = "inference"
-    ) -> Tuple[DataFrame, list]:
+    def preprocess_data(self, data: DataFrame, stage: str = "inference") -> Tuple[DataFrame, list]:
         """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before
         feeding into the dataloder.
 
@@ -468,29 +420,21 @@ class TabularDatamodule(pl.LightningDataModule):
         # The only features that are added are the date features extracted
         # from the date which are categorical in nature
         if (added_features is not None) and (stage == "fit"):
-            logger.debug(
-                f"Added {added_features} features after encoding the date_columns"
-            )
+            logger.debug(f"Added {added_features} features after encoding the date_columns")
             self.config.categorical_cols += added_features
             # Update the categorical dimension in config
             self.config.categorical_dim = (
-                len(self.config.categorical_cols)
-                if self.config.categorical_cols is not None
-                else 0
+                len(self.config.categorical_cols) if self.config.categorical_cols is not None else 0
             )
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
             data = self._encode_categorical_columns(data, stage)
 
         # Transforming Continuous Columns
-        if (self.config.continuous_feature_transform is not None) and (
-            len(self.config.continuous_cols) > 0
-        ):
+        if (self.config.continuous_feature_transform is not None) and (len(self.config.continuous_cols) > 0):
             data = self._transform_continuous_columns(data, stage)
         # Normalizing Continuous Columns
-        if (self.config.normalize_continuous_features) and (
-            len(self.config.continuous_cols) > 0
-        ):
+        if (self.config.normalize_continuous_features) and (len(self.config.continuous_cols) > 0):
             data = self._normalize_continuous_columns(data, stage)
         # Converting target labels to a 0 indexed label
         data = self._label_encode_target(data, stage)
@@ -530,8 +474,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def split_train_val(self, train):
         logger.debug(
-            "No validation data provided."
-            f" Using {self.config.validation_split*100}% of train data as validation"
+            "No validation data provided." f" Using {self.config.validation_split*100}% of train data as validation"
         )
         val_idx = train.sample(
             int(self.config.validation_split * len(train)),
@@ -559,9 +502,7 @@ class TabularDatamodule(pl.LightningDataModule):
         else:
             self.validation = self.validation.copy()
         # Preprocessing Train, Validation
-        self.train, _ = self.preprocess_data(
-            self.train, stage="fit" if not is_ssl else "inference"
-        )
+        self.train, _ = self.preprocess_data(self.train, stage="fit" if not is_ssl else "inference")
         self.validation, _ = self.preprocess_data(self.validation, stage="inference")
         self._fitted = True
         self._cache_dataset()
@@ -574,9 +515,7 @@ class TabularDatamodule(pl.LightningDataModule):
             TabularDatamodule: A copy of the datamodule with the train and validation datasets removed.
         """
         if not self._fitted:
-            raise RuntimeError(
-                "Can create an inference only copy only after model is fitted"
-            )
+            raise RuntimeError("Can create an inference only copy only after model is fitted")
         dm_inference = copy.copy(self)
         dm_inference.train_dataset = None
         dm_inference.validation_dataset = None
@@ -702,9 +641,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
     # adapted from fastai
     @classmethod
-    def make_date(
-        cls, df: DataFrame, date_field: str, date_format: str = "ISO8601"
-    ) -> DataFrame:
+    def make_date(cls, df: DataFrame, date_field: str, date_format: str = "ISO8601") -> DataFrame:
         """Make sure `df[date_field]` is of the right date type.
 
         Args:
@@ -749,9 +686,7 @@ class TabularDatamodule(pl.LightningDataModule):
             Dataframe with added columns and list of added columns
         """
         field = df[field_name]
-        prefix = (
-            re.sub("[Dd]ate$", "", field_name) if prefix is None else prefix
-        ) + "_"
+        prefix = (re.sub("[Dd]ate$", "", field_name) if prefix is None else prefix) + "_"
         attr = cls.time_features_from_frequency_str(frequency)
         added_features = []
         for n in attr:
@@ -761,11 +696,7 @@ class TabularDatamodule(pl.LightningDataModule):
             added_features.append(prefix + n)
         # Pandas removed `dt.week` in v1.1.10
         if "Week" in attr:
-            week = (
-                field.dt.isocalendar().week
-                if hasattr(field.dt, "isocalendar")
-                else field.dt.week
-            )
+            week = field.dt.isocalendar().week if hasattr(field.dt, "isocalendar") else field.dt.week
             df.insert(3, prefix + "Week", week)
             added_features.append(prefix + "Week")
         # TODO Not adding Elapsed by default. Need to route it through config
@@ -790,22 +721,17 @@ class TabularDatamodule(pl.LightningDataModule):
                 dataset = getattr(self, f"_{tag}_dataset")
             except AttributeError:
                 raise AttributeError(
-                    f"{tag}_dataset not found in memory. Please provide the data for"
-                    f" {tag} dataloader"
+                    f"{tag}_dataset not found in memory. Please provide the data for" f" {tag} dataloader"
                 )
         elif self.cache_mode is self.CACHE_MODES.DISK:
             try:
                 dataset = torch.load(self.cache_dir / f"{tag}_dataset")
             except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the"
-                    f" data for {tag} dataloader"
+                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the" f" data for {tag} dataloader"
                 )
         elif self.cache_mode is self.CACHE_MODES.INFERENCE:
-            raise RuntimeError(
-                "Cannot load dataset in inference mode. Use"
-                " `prepare_inference_dataloader` instead"
-            )
+            raise RuntimeError("Cannot load dataset in inference mode. Use" " `prepare_inference_dataloader` instead")
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
         return dataset
@@ -876,9 +802,7 @@ class TabularDatamodule(pl.LightningDataModule):
         # TODO Is the target encoding necessary?
         if len(set(self.target) - set(df.columns)) > 0:
             if self.config.task == "classification":
-                df.loc[:, self.target] = np.array(
-                    [self.label_encoder.classes_[0]] * len(df)
-                ).reshape(-1, 1)
+                df.loc[:, self.target] = np.array([self.label_encoder.classes_[0]] * len(df)).reshape(-1, 1)
             else:
                 df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
         df, _ = self.preprocess_data(df, stage="inference")
@@ -904,9 +828,7 @@ class TabularDatamodule(pl.LightningDataModule):
             data=df,
             categorical_cols=self.config.categorical_cols,
             continuous_cols=self.config.continuous_cols,
-            target=(
-                self.target if all(col in df.columns for col in self.target) else None
-            ),
+            target=(self.target if all(col in df.columns for col in self.target) else None),
         )
         return DataLoader(
             dataset,
@@ -952,7 +874,7 @@ class TabularDatamodule(pl.LightningDataModule):
         cache_data: str = None,
         copy_data: bool = None,
         verbose: bool = None,
-        call_setup:bool = True,
+        call_setup: bool = True,
         config_override: Optional[Dict] = {},
     ):
         if config_override is not None:

@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model."""
-import copy
 import inspect
 import os
 import warnings
@@ -31,7 +30,6 @@ from rich import print as rich_print
 from rich.pretty import pprint
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import BaseCrossValidator, KFold, StratifiedKFold
-from sklearn.preprocessing import LabelEncoder
 from torch import nn
 
 from pytorch_tabular.config import (
