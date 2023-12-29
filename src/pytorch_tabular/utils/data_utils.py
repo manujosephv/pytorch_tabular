@@ -61,7 +61,14 @@ def get_gaussian_centers(y, n_components):
 
 
 def make_mixed_dataset(
-    task, n_samples, n_features=7, n_categories=2, n_informative=5, random_state=42, n_targets=None, **kwargs
+    task,
+    n_samples,
+    n_features=7,
+    n_categories=2,
+    n_informative=5,
+    random_state=42,
+    n_targets=None,
+    **kwargs,
 ):
     """
     Creates a synthetic dataset with mixed data types.
@@ -84,7 +91,10 @@ def make_mixed_dataset(
     assert (
         n_informative <= n_features
     ), "n_informative must be less than or equal to n_features"
-    assert task in ["classification", "regression"], "task must be either classification or regression"
+    assert task in [
+        "classification",
+        "regression",
+    ], "task must be either classification or regression"
     if n_targets is None:
         n_targets = 1 if task == "regression" else 2
     if task == "classification":
@@ -94,7 +104,7 @@ def make_mixed_dataset(
             random_state=random_state,
             n_informative=n_informative,
             n_classes=n_targets,
-            **kwargs
+            **kwargs,
         )
     elif task == "regression":
         X, y = make_regression(
@@ -103,7 +113,7 @@ def make_mixed_dataset(
             random_state=random_state,
             n_informative=n_informative,
             n_targets=n_targets,
-            **kwargs
+            **kwargs,
         )
     cat_cols = random.choices(list(range(X.shape[-1])), k=n_categories)
     num_cols = [i for i in range(X.shape[-1]) if i not in cat_cols]
@@ -120,7 +130,7 @@ def make_mixed_dataset(
             col_names.append(f"num_col_{i}")
             num_col_names.append(f"num_col_{i}")
     X = pd.DataFrame(X, columns=col_names)
-    if n_targets == 1 or task=="classification":
+    if n_targets == 1 or task == "classification":
         y = pd.Series(y, name="target")
     else:
         y = pd.DataFrame(y, columns=[f"target_{i}" for i in range(n_targets)])
@@ -149,6 +159,7 @@ def print_metrics(metrics, y_true, y_pred, tag, return_dict=False):
     if return_dict:
         return res_d
 
+
 def load_covertype_dataset(download_dir=None):
     """
     Predicting forest cover type from cartographic variables only (no remotely sensed data). The actual forest cover type for a given observation (30 x 30 meter cell) was determined from US Forest Service (USFS) Region 2 Resource Information System (RIS) data. Independent variables were derived from data originally obtained from US Geological Survey (USGS) and USFS data. Data is in raw form (not scaled) and contains binary (0 or 1) columns of data for qualitative independent variables (wilderness areas and soil types).
@@ -161,7 +172,9 @@ def load_covertype_dataset(download_dir=None):
         download_dir (str): Directory to download the data to. Defaults to None, which will download to ~/.pytorch_tabular/datasets/
     """
     if download_dir is None:
-        download_dir = os.path.join(os.path.expanduser("~"), ".pytorch_tabular", "datasets")
+        download_dir = os.path.join(
+            os.path.expanduser("~"), ".pytorch_tabular", "datasets"
+        )
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
     file_path = os.path.join(download_dir, "covertype.csv")
@@ -176,18 +189,42 @@ def load_covertype_dataset(download_dir=None):
                 shutil.copyfileobj(f_in, f_out)
         os.remove(os.path.join(download_dir, "covertype.data.gz"))
     df = pd.read_csv(file_path, header=None)
-    df.columns = [
-        "Elevation",
-        "Aspect",
-        "Slope",
-        "Horizontal_Distance_To_Hydrology",
-        "Vertical_Distance_To_Hydrology",
-        "Horizontal_Distance_To_Roadways",
-        "Hillshade_9am",
-        "Hillshade_Noon",
-        "Hillshade_3pm",
-        "Horizontal_Distance_To_Fire_Points",
-    ] + [f"Wilderness_Area_{i}" for i in range(4)] + [f"Soil_Type_{i}" for i in range(40)] + ["Cover_Type"]
+    df.columns = (
+        [
+            "Elevation",
+            "Aspect",
+            "Slope",
+            "Horizontal_Distance_To_Hydrology",
+            "Vertical_Distance_To_Hydrology",
+            "Horizontal_Distance_To_Roadways",
+            "Hillshade_9am",
+            "Hillshade_Noon",
+            "Hillshade_3pm",
+            "Horizontal_Distance_To_Fire_Points",
+        ]
+        + [f"Wilderness_Area_{i}" for i in range(4)]
+        + [f"Soil_Type_{i}" for i in range(40)]
+        + ["Cover_Type"]
+    )
+    # convert one hot encoded columns to categorical
+    df["Wilderness_Area"] = (
+        df[[f"Wilderness_Area_{i}" for i in range(4)]]
+        .idxmax(axis=1)
+        .str.split("_")
+        .str[-1]
+    )
+    df["Soil_Type"] = (
+        df[[f"Soil_Type_{i}" for i in range(40)]]
+        .idxmax(axis=1)
+        .str.split("_")
+        .str[-1]
+    )
+    df.drop(
+        [f"Wilderness_Area_{i}" for i in range(4)]
+        + [f"Soil_Type_{i}" for i in range(40)],
+        axis=1,
+        inplace=True,
+    )
     continuous_cols = [
         "Elevation",
         "Aspect",
@@ -200,5 +237,5 @@ def load_covertype_dataset(download_dir=None):
         "Hillshade_3pm",
         "Horizontal_Distance_To_Fire_Points",
     ]
-    categorical_cols = [f"Wilderness_Area_{i}" for i in range(4)] + [f"Soil_Type_{i}" for i in range(40)]
+    categorical_cols = ["Wilderness_Area", "Soil_Type"]
     return df, categorical_cols, continuous_cols, "Cover_Type"

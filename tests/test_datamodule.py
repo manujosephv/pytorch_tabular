@@ -96,8 +96,8 @@ def test_dataloader(
         else:
             assert inferred_config.embedding_dims[0][-1] == embedding_dims[0][-1]
     if normalize_continuous_features and len(continuous_cols) > 0 and cache_data not in [None, False]:
-        assert round(datamodule.load_train_dataset().data[config.continuous_cols[0]].mean()) == 0
-        assert round(datamodule.load_train_dataset().data[config.continuous_cols[0]].std()) == 1
+        assert round(datamodule.train_dataset.data[config.continuous_cols[0]].mean()) == 0
+        assert round(datamodule.train_dataset.data[config.continuous_cols[0]].std()) == 1
     val_loader = datamodule.val_dataloader()
     _val_loader = datamodule.prepare_inference_dataloader(valid)
     chk_1 = next(iter(val_loader))["continuous"]

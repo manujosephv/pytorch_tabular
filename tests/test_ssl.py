@@ -111,6 +111,9 @@ def test_regression(
         _target_range = None
     finetune_model = tabular_model.create_finetune_model(
         task="regression",
+        train=finetune_train,
+        validation=finetune_val,
+        target_transform=target_transform,
         head="LinearHead",
         head_config={
             "layers": "64-32-16",
@@ -125,11 +128,9 @@ def test_regression(
         metrics_prob_input=metrics_prob_input,
         optimizer=custom_optimizer,
     )
+    assert torch.equal(tabular_model.model.encoder.linear_layers[0].weight, finetune_model.model._backbone.encoder.linear_layers[0].weight)
     finetune_model.finetune(
-        train=finetune_train,
-        validation=finetune_val,
         freeze_backbone=freeze_backbone,
-        target_transform=target_transform,
     )
     result = finetune_model.evaluate(test)
     if custom_metrics is None:
@@ -204,6 +205,8 @@ def test_classification(
     tabular_model.pretrain(train=ssl_train, validation=ssl_val)
     finetune_model = tabular_model.create_finetune_model(
         task="classification",
+        train=finetune_train,
+        validation=finetune_val,
         head="LinearHead",
         head_config={
             "layers": "64-32-16",
@@ -212,9 +215,8 @@ def test_classification(
         trainer_config=trainer_config,
         optimizer_config=optimizer_config,
     )
+    assert torch.equal(tabular_model.model.encoder.linear_layers[0].weight, finetune_model.model._backbone.encoder.linear_layers[0].weight)
     finetune_model.finetune(
-        train=finetune_train,
-        validation=finetune_val,
         freeze_backbone=freeze_backbone,
     )
     result = finetune_model.evaluate(test)
