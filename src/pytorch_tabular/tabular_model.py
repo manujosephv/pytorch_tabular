@@ -835,7 +835,6 @@ class TabularModel:
 
         return self.train(model, datamodule, callbacks, max_epochs, min_epochs)
 
-    # TODO - REvamp this. Tahe target output dim ranther than column name
     def create_finetune_model(
         self,
         task: str,

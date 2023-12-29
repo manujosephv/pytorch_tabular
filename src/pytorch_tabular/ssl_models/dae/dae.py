@@ -26,6 +26,7 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
         super().__init__()
         self.encoder = encoder
         self.config = config
+        self.pick_keys = ["binary", "categorical", "continuous", "embedding"]
         self._build_network()
 
     def _get_noise_probability(self, name):
@@ -58,12 +59,13 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
         self._swap_probabilities = swap_probabilities
         self.swap_noise = SwapNoiseCorrupter(swap_probabilities)
 
-    def forward(self, x: Dict, perturb: bool = True):
+    def _concatenate_features(self, x: Dict):
+        x = torch.cat([x[key] for key in self.pick_keys if x[key] is not None], 1)
+        return x
+
+    def forward(self, x: Dict, perturb: bool = True, return_input: bool = False):
         # (B, N, E)
-        # x = self._embed_input(x)
-        pick_keys = ["binary", "categorical", "continuous", "embedding"]
-        x = torch.cat([x[key] for key in pick_keys if x[key] is not None], 1)
-        # x = torch.cat([item for item in x.values() if item is not None], 1)
+        x = self._concatenate_features(x)
         mask = None
         if perturb:
             # swap noise
@@ -71,7 +73,10 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
                 x, mask = self.swap_noise(x)
         # encoder
         z = self.encoder(x)
-        return self.output_tuple(z, mask)
+        if return_input:
+            return self.output_tuple(z, mask), x
+        else:
+            return self.output_tuple(z, mask)
 
 
 class DenoisingAutoEncoderModel(SSLBaseModel):
@@ -188,7 +193,11 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 output_dict["binary"] = self.output_tuple(x["binary"], reconstructed_in["binary"])
             return output_dict
         else:  # self.mode == "finetune"
-            return self.featurizer(x, perturb=False).features
+            z, x = self.featurizer(x, perturb=False, return_input=True)
+            if self.hparams.include_input_features_inference:
+                return torch.cat([z.features, x], 1)
+            else:
+                return z.features
 
     def calculate_loss(self, output, tag):
         total_loss = 0
@@ -232,4 +241,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
 
     @property
     def output_dim(self):
-        return self._featurizer.encoder.output_dim
+        if self.mode == "finetune" and self.hparams.include_input_features_inference:
+            return self._featurizer.encoder.output_dim + self.hparams.encoder_config._backbone_input_dim
+        else:
+            return self._featurizer.encoder.output_dim
