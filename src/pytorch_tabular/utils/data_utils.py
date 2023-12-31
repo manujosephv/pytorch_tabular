@@ -164,7 +164,8 @@ def load_covertype_dataset(download_dir=None):
     These areas represent forests with minimal human-caused disturbances, so that existing forest cover types are more a
     result of ecological processes rather than forest management practices.
 
-    It is from [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/covertype)
+    It is from [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/covertype), but with small changes:
+    - The one hot encoded columns are converted to categorical - Soli Type and Wilderness type
 
     Args:
         download_dir (str): Directory to download the data to. Defaults to None, which will download
