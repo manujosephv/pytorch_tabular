@@ -3,17 +3,27 @@ nav:
     - Getting Started:
           - "PyTorch Tabular": index.md
     - Tutorials:
-          - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
-          - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
-          - Extracting and Using Learned Embeddings: "tutorials/03-Extracting and Using Learned Embeddings.ipynb"
-          - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
-          - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
-          - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
-          - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
-          - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
-          - Low-level API Usecases (CV, Tuning & More): "tutorials/09-Low-level API Usecases(CV, Tuning, and more).ipynb"
-          - Test Time Augumentation: "tutorials/10-Test Time Augmentation.ipynb"
-          - Explainability/Interpretability: "tutorials/11-Explainability.ipynb"
+          - Getting Started:
+                - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
+                - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
+                - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
+          - Hyperparameter Tuning:
+                - Grid Search and Random Search: "tutorials/10-Hyperparameter Tuning.ipynb"
+          - Cross Validation and Other Modelling Tricks:
+                - Cross Validation: "tutorials/09-Cross Validation.ipynb"
+                - Bagged Predictions: "tutorials/12-Bagged Predictions.ipynb"
+                - Test Time Augumentation (Experimental): "tutorials/11-Test Time Augmentation.ipynb"
+          - Explainability / Interpretability:
+                - SHAP, Deep LIFT and so on through Captum Integration: "tutorials/14-Explainability.ipynb"
+          - Custom PyTorch Models:
+                - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
+          - Other Features:
+                - Neural Embeddings in Scikit-Learn Workflows: "tutorials/03-Neural Embedding in Scikit-Learn Workflows.ipynb"
+                - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
+                - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
+          - Other Tutorials:
+                - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
+
     - Configuration:
           - Data: data.md
           - Supervised Models: models.md

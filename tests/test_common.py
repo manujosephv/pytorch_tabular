@@ -664,7 +664,11 @@ def _run_cv(
         trainer_config=trainer_config,
     )
     cv_scores, oof_predictions = tabular_model.cross_validate(
-        cv, train, metric=metric, return_oof=return_oof, reset_datamodule=reset_datamodule
+        cv,
+        train,
+        metric=metric,
+        return_oof=return_oof,
+        reset_datamodule=reset_datamodule,
     )
     return cv_scores, oof_predictions
 
@@ -947,6 +951,7 @@ def test_bagging_classification(
         aggregate,
     )
     assert len(pred_df) == len(test)
+    assert len(set(pred_df["prediction"].values.tolist()) - set(test[target[0]].values.tolist())) == 0
 
 
 @pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])
@@ -1069,6 +1074,7 @@ def test_tta_classification(
         aggregate,
     )
     assert len(pred_df) == len(test)
+    assert len(set(pred_df["prediction"].values.tolist()) - set(test[target[0]].values.tolist())) == 0
 
 
 @pytest.mark.parametrize("model_config_class", [(CategoryEmbeddingModelConfig, {"layers": "10-20"})])

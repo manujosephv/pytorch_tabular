@@ -1354,6 +1354,7 @@ class TabularModel:
         num_tta: Optional[float] = 5,
         alpha_tta: Optional[float] = 0.1,
         aggregate_tta: Optional[str] = "mean",
+        tta_seed: Optional[int] = 42,
     ) -> DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe.
 
@@ -1390,7 +1391,9 @@ class TabularModel:
                 scores (soft voting) and then converted to final prediction. An additional option
                 "hard_voting" is available for classification.
                 If callable, should be a function that takes in a list of 3D arrays (num_samples, num_cv, num_targets)
-                and returns a 2D array of final probabilities (num_samples, num_targets). Defaults to "mean".
+                and returns a 2D array of final probabilities (num_samples, num_targets). Defaults to "mean".'
+
+            tta_seed (int): The random seed to be used for the noise added in TTA. Defaults to 42.
 
         Returns:
             DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
@@ -1407,14 +1410,22 @@ class TabularModel:
             assert alpha_tta > 0, "alpha_tta should be greater than 0"
             assert include_input_features is False, "include_input_features cannot be True for TTA."
             if not callable(aggregate_tta):
-                assert aggregate_tta in ["mean", "median", "min", "max", "hard_voting"], (
+                assert aggregate_tta in [
+                    "mean",
+                    "median",
+                    "min",
+                    "max",
+                    "hard_voting",
+                ], (
                     "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
                 )
             if self.config.task == "regression":
                 assert aggregate_tta != "hard_voting", "hard_voting is only available for classification"
 
+            torch.manual_seed(tta_seed)
+
             def add_noise(module, input, output):
-                return output + alpha_tta * torch.randn_like(output)
+                return output + alpha_tta * torch.randn_like(output, memory_format=torch.contiguous_format)
 
             # Register the hook to the embedding_layer
             handle = self.model.embedding_layer.register_forward_hook(add_noise)
@@ -1978,6 +1989,7 @@ class TabularModel:
         elif callable(aggregate):
             bagged_pred = aggregate(pred_prob_l)
         if self.config.task == "classification":
+            classes = self.datamodule.label_encoder.classes_
             if aggregate == "hard_voting":
                 pred_df = pd.DataFrame(
                     np.concatenate(pred_prob_l, axis=1),
@@ -1988,9 +2000,9 @@ class TabularModel:
                     ],
                     index=pred_idx,
                 )
-                pred_df["prediction"] = final_pred
+                pred_df["prediction"] = classes[final_pred]
             else:
-                final_pred = np.argmax(bagged_pred, axis=1)
+                final_pred = classes[np.argmax(bagged_pred, axis=1)]
                 pred_df = pd.DataFrame(
                     bagged_pred,
                     columns=[f"{c}_probability" for c in self.datamodule.label_encoder.classes_],
