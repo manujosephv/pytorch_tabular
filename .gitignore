@@ -157,3 +157,4 @@ examples/test_save/
 tests/.datasets/
 test.py
 lightning_logs/
+docs/tutorials/examples/basic/

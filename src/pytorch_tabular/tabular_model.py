@@ -2,7 +2,6 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model."""
-import copy
 import inspect
 import os
 import warnings
@@ -31,7 +30,6 @@ from rich import print as rich_print
 from rich.pretty import pprint
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import BaseCrossValidator, KFold, StratifiedKFold
-from sklearn.preprocessing import LabelEncoder
 from torch import nn
 
 from pytorch_tabular.config import (
@@ -840,6 +838,10 @@ class TabularModel:
         task: str,
         head: str,
         head_config: Dict,
+        train: DataFrame,
+        validation: Optional[DataFrame] = None,
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
+        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         target: Optional[str] = None,
         optimizer_config: Optional[OptimizerConfig] = None,
         trainer_config: Optional[TrainerConfig] = None,
@@ -852,6 +854,7 @@ class TabularModel:
         optimizer_params: Dict = None,
         learning_rate: Optional[float] = None,
         target_range: Optional[Tuple[float, float]] = None,
+        seed: Optional[int] = 42,
     ):
         """Creates a new TabularModel model using the pretrained weights and the new task and head
         Args:
@@ -863,6 +866,16 @@ class TabularModel:
 
             head_config (Dict): The config as a dict which defines the head. If left empty,
                 will be initialized as default linear head.
+
+            train (DataFrame): The training data with labels
+
+            validation (Optional[DataFrame], optional): The validation data with labels. Defaults to None.
+
+            train_sampler (Optional[torch.utils.data.Sampler], optional): If provided, will be used as a batch sampler
+                for training. Defaults to None.
+
+            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used
+                to transform the target before training and inverse transform the predictions.
 
             target (Optional[str], optional): The target column name if not provided in the initial pretraining stage.
                 Defaults to None.
@@ -902,6 +915,8 @@ class TabularModel:
 
             target_range (Optional[Tuple[float, float]], optional): The target range for the regression task.
                 Is ignored for classification. Defaults to None.
+
+            seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
         Returns:
             TabularModel (TabularModel): The new TabularModel model for fine-tuning
         """
@@ -936,18 +951,16 @@ class TabularModel:
                     logger.info("Renaming the experiment run for finetuning as" f" {config['run_name'] + '_finetuned'}")
                 config["run_name"] = config["run_name"] + "_finetuned"
 
-        datamodule = self.datamodule
-        # Setting the attributes from new config
-        datamodule.target = config.target
-        datamodule.batch_size = config.batch_size
-        datamodule.seed = config.seed
+        datamodule = self.datamodule.copy(
+            train=train,
+            validation=validation,
+            target_transform=target_transform,
+            train_sampler=train_sampler,
+            seed=seed,
+            config_override={"target": target} if target is not None else {},
+        )
         model_callable = _GenericModel
-        inferred_config = self.datamodule.update_config(config)
-        if task == "regression":
-            inferred_config.output_dim = datamodule._output_dim_reg
-        elif task == "classification":
-            inferred_config.output_dim = datamodule._output_dim_clf
-        inferred_config = OmegaConf.structured(inferred_config)
+        inferred_config = OmegaConf.structured(datamodule._inferred_config)
         # Adding dummy attributes for compatibility. Not used because custom metrics are provided
         if not hasattr(config, "metrics"):
             config.metrics = "dummy"
@@ -982,6 +995,8 @@ class TabularModel:
                     metrics_params[i]["task"] = mp.get("task", "multiclass")
                     metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
                     metrics_params[i]["top_k"] = mp.get("top_k", 1)
+        else:
+            raise ValueError(f"Task {task} not supported")
         # Forming partial callables using metrics and metric params
         metrics = [partial(m, **mp) for m, mp in zip(metrics, metrics_params)]
         self.model.mode = "finetune"
@@ -1004,7 +1019,7 @@ class TabularModel:
         model = model_callable(
             **model_args,
         )
-        tabular_model = TabularModel(config=config)
+        tabular_model = TabularModel(config=config, verbose=self.verbose)
         tabular_model.model = model
         tabular_model.datamodule = datamodule
         # Setting a flag to identify this as a fine-tune model
@@ -1013,40 +1028,19 @@ class TabularModel:
 
     def finetune(
         self,
-        train,
-        validation: Optional[DataFrame] = None,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
         max_epochs: Optional[int] = None,
         min_epochs: Optional[int] = None,
-        seed: Optional[int] = 42,
         callbacks: Optional[List[pl.Callback]] = None,
-        datamodule: Optional[TabularDatamodule] = None,
         freeze_backbone: bool = False,
     ) -> pl.Trainer:
         """Finetunes the model on the provided data
         Args:
-            train (DataFrame): The training data with labels
-
-            validation (Optional[DataFrame], optional): The validation data with labels. Defaults to None.
-
-            train_sampler (Optional[torch.utils.data.Sampler], optional): If provided, will be used as a batch sampler
-                for training. Defaults to None.
-
-            target_transform (Optional[Union[TransformerMixin, Tuple]], optional): If provided, will be used
-                to transform the target before training and inverse transform the predictions.
-
             max_epochs (Optional[int], optional): The maximum number of epochs to train for. Defaults to None.
 
             min_epochs (Optional[int], optional): The minimum number of epochs to train for. Defaults to None.
 
-            seed (Optional[int], optional): The seed to be used for training. Defaults to 42.
-
             callbacks (Optional[List[pl.Callback]], optional): If provided, will be added to the callbacks for Trainer.
                 Defaults to None.
-
-            datamodule (Optional[TabularDatamodule], optional): If provided, will be used as the datamodule
-                for training. Defaults to None.
 
             freeze_backbone (bool, optional): If True, will freeze the backbone by tirning off gradients.
                 Defaults to False, which means the pretrained weights are also further tuned during fine-tuning.
@@ -1057,42 +1051,13 @@ class TabularModel:
         assert self._is_finetune_model, (
             "finetune() can only be called on a finetune model created using" " `TabularModel.create_finetune_model()`"
         )
-        seed = seed or self.config.seed
-        if seed:
-            seed_everything(seed)
-        if datamodule is None:
-            target_transform = self._check_and_set_target_transform(target_transform)
-            self.datamodule._set_target_transform(target_transform)
-            if self.config.task == "classification":
-                self.datamodule.label_encoder = LabelEncoder()
-                self.datamodule.label_encoder.fit(train[self.config.target[0]])
-            elif self.config.task == "regression":
-                target_transforms = []
-                if target_transform is not None:
-                    for col in self.config.target:
-                        _target_transform = copy.deepcopy(self.datamodule.target_transform_template)
-                        _target_transform.fit(train[col].values.reshape(-1, 1))
-                        target_transforms.append(_target_transform)
-                self.datamodule.target_transforms = target_transforms
-
-            self.datamodule.train = train
-            self.datamodule.validation = validation
-            self.datamodule.setup("ssl_finetune")
-            self.datamodule.train_sampler = train_sampler
-            datamodule = self.datamodule
-        else:
-            if train is not None:
-                warnings.warn(
-                    "train data and datamodule is provided."
-                    " Ignoring the train data and using the datamodule."
-                    " Set either one of them to None to avoid this warning."
-                )
+        seed_everything(self.config.seed)
         if freeze_backbone:
             for param in self.model.backbone.parameters():
                 param.requires_grad = False
         return self.train(
             self.model,
-            datamodule,
+            self.datamodule,
             callbacks=callbacks,
             max_epochs=max_epochs,
             min_epochs=min_epochs,
@@ -1389,6 +1354,7 @@ class TabularModel:
         num_tta: Optional[float] = 5,
         alpha_tta: Optional[float] = 0.1,
         aggregate_tta: Optional[str] = "mean",
+        tta_seed: Optional[int] = 42,
     ) -> DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe.
 
@@ -1425,7 +1391,9 @@ class TabularModel:
                 scores (soft voting) and then converted to final prediction. An additional option
                 "hard_voting" is available for classification.
                 If callable, should be a function that takes in a list of 3D arrays (num_samples, num_cv, num_targets)
-                and returns a 2D array of final probabilities (num_samples, num_targets). Defaults to "mean".
+                and returns a 2D array of final probabilities (num_samples, num_targets). Defaults to "mean".'
+
+            tta_seed (int): The random seed to be used for the noise added in TTA. Defaults to 42.
 
         Returns:
             DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
@@ -1442,14 +1410,22 @@ class TabularModel:
             assert alpha_tta > 0, "alpha_tta should be greater than 0"
             assert include_input_features is False, "include_input_features cannot be True for TTA."
             if not callable(aggregate_tta):
-                assert aggregate_tta in ["mean", "median", "min", "max", "hard_voting"], (
+                assert aggregate_tta in [
+                    "mean",
+                    "median",
+                    "min",
+                    "max",
+                    "hard_voting",
+                ], (
                     "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
                 )
             if self.config.task == "regression":
                 assert aggregate_tta != "hard_voting", "hard_voting is only available for classification"
 
+            torch.manual_seed(tta_seed)
+
             def add_noise(module, input, output):
-                return output + alpha_tta * torch.randn_like(output)
+                return output + alpha_tta * torch.randn_like(output, memory_format=torch.contiguous_format)
 
             # Register the hook to the embedding_layer
             handle = self.model.embedding_layer.register_forward_hook(add_noise)
@@ -2013,6 +1989,7 @@ class TabularModel:
         elif callable(aggregate):
             bagged_pred = aggregate(pred_prob_l)
         if self.config.task == "classification":
+            classes = self.datamodule.label_encoder.classes_
             if aggregate == "hard_voting":
                 pred_df = pd.DataFrame(
                     np.concatenate(pred_prob_l, axis=1),
@@ -2023,9 +2000,9 @@ class TabularModel:
                     ],
                     index=pred_idx,
                 )
-                pred_df["prediction"] = final_pred
+                pred_df["prediction"] = classes[final_pred]
             else:
-                final_pred = np.argmax(bagged_pred, axis=1)
+                final_pred = classes[np.argmax(bagged_pred, axis=1)]
                 pred_df = pd.DataFrame(
                     bagged_pred,
                     columns=[f"{c}_probability" for c in self.datamodule.label_encoder.classes_],

@@ -34,7 +34,7 @@ tabular_model.explain(test.head(1), method="GradientShap", baselines="b|10000")
 tabular_model.explain(test.head(10), method="IntegratedGradients", baselines=0)
 ```
 
-Checkout the [Captum documentation](https://captum.ai/docs/algorithms) for more details on the algorithms and the [Explainability Tutorial](tutorials/11-Explainability.ipynb) for example usage.
+Checkout the [Captum documentation](https://captum.ai/docs/algorithms) for more details on the algorithms and the [Explainability Tutorial](tutorials/14-Explainability.ipynb) for example usage.
 
 ## API Reference
 ::: pytorch_tabular.TabularModel.explain

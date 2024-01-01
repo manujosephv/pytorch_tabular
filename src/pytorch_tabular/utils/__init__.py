@@ -1,4 +1,11 @@
-from .data_utils import get_balanced_sampler, get_class_weighted_cross_entropy, get_gaussian_centers
+from .data_utils import (
+    get_balanced_sampler,
+    get_class_weighted_cross_entropy,
+    get_gaussian_centers,
+    load_covertype_dataset,
+    make_mixed_dataset,
+    print_metrics,
+)
 from .logger import get_logger
 from .nn_utils import (
     OOMException,
@@ -10,7 +17,13 @@ from .nn_utils import (
     reset_all_weights,
     to_one_hot,
 )
-from .python_utils import check_numpy, generate_doc_dataclass, getattr_nested, ifnone, pl_load
+from .python_utils import (
+    check_numpy,
+    generate_doc_dataclass,
+    getattr_nested,
+    ifnone,
+    pl_load,
+)
 
 __all__ = [
     "get_logger",
@@ -30,4 +43,7 @@ __all__ = [
     "check_numpy",
     "OutOfMemoryHandler",
     "OOMException",
+    "make_mixed_dataset",
+    "print_metrics",
+    "load_covertype_dataset",
 ]

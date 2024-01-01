@@ -40,6 +40,7 @@ def fake_metric(y_hat, y):
     "custom_args",
     [(None, None, None, None), ([fake_metric], [False], torch.nn.L1Loss(), torch.optim.Adagrad)],
 )
+@pytest.mark.parametrize("include_input_features_inference", [False, True])
 def test_regression(
     regression_data,
     multi_target,
@@ -51,6 +52,7 @@ def test_regression(
     target_range,
     target_transform,
     custom_args,
+    include_input_features_inference,
 ):
     (train, test, target) = regression_data
     (custom_metrics, metrics_prob_input, custom_loss, custom_optimizer) = custom_args
@@ -68,18 +70,19 @@ def test_regression(
     )
     encoder_config = CategoryEmbeddingModelConfig(
         task="backbone",
-        layers="4096-2048-512",  # Number of nodes in each layer
+        layers="32-16-8",  # Number of nodes in each layer
         activation="LeakyReLU",  # Activation between each layers
     )
     decoder_config = CategoryEmbeddingModelConfig(
         task="backbone",
-        layers="512-2048-4096",  # Number of nodes in each layer
+        layers="8-16-32",  # Number of nodes in each layer
         activation="LeakyReLU",  # Activation between each layers
     )
 
     model_config_params = {
         "encoder_config": encoder_config,
         "decoder_config": decoder_config,
+        "include_input_features_inference": include_input_features_inference,
     }
     model_config = DenoisingAutoEncoderConfig(**model_config_params)
     trainer_config = TrainerConfig(
@@ -111,9 +114,12 @@ def test_regression(
         _target_range = None
     finetune_model = tabular_model.create_finetune_model(
         task="regression",
+        train=finetune_train,
+        validation=finetune_val,
+        target_transform=target_transform,
         head="LinearHead",
         head_config={
-            "layers": "64-32-16",
+            "layers": "16-8",
             "activation": "LeakyReLU",
         },
         trainer_config=trainer_config,
@@ -125,11 +131,12 @@ def test_regression(
         metrics_prob_input=metrics_prob_input,
         optimizer=custom_optimizer,
     )
+    assert torch.equal(
+        tabular_model.model.encoder.linear_layers[0].weight,
+        finetune_model.model._backbone.encoder.linear_layers[0].weight,
+    )
     finetune_model.finetune(
-        train=finetune_train,
-        validation=finetune_val,
         freeze_backbone=freeze_backbone,
-        target_transform=target_transform,
     )
     result = finetune_model.evaluate(test)
     if custom_metrics is None:
@@ -173,12 +180,12 @@ def test_classification(
     )
     encoder_config = CategoryEmbeddingModelConfig(
         task="backbone",
-        layers="4096-2048-512",  # Number of nodes in each layer
+        layers="32-16-8",  # Number of nodes in each layer
         activation="LeakyReLU",  # Activation between each layers
     )
     decoder_config = CategoryEmbeddingModelConfig(
         task="backbone",
-        layers="512-2048-4096",  # Number of nodes in each layer
+        layers="8-16-32",  # Number of nodes in each layer
         activation="LeakyReLU",  # Activation between each layers
     )
     model_config_params = {
@@ -204,17 +211,21 @@ def test_classification(
     tabular_model.pretrain(train=ssl_train, validation=ssl_val)
     finetune_model = tabular_model.create_finetune_model(
         task="classification",
+        train=finetune_train,
+        validation=finetune_val,
         head="LinearHead",
         head_config={
-            "layers": "64-32-16",
+            "layers": "16-8",
             "activation": "LeakyReLU",
         },
         trainer_config=trainer_config,
         optimizer_config=optimizer_config,
     )
+    assert torch.equal(
+        tabular_model.model.encoder.linear_layers[0].weight,
+        finetune_model.model._backbone.encoder.linear_layers[0].weight,
+    )
     finetune_model.finetune(
-        train=finetune_train,
-        validation=finetune_val,
         freeze_backbone=freeze_backbone,
     )
     result = finetune_model.evaluate(test)

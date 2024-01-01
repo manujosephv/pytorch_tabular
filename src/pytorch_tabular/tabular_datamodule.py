@@ -3,9 +3,10 @@
 # For license information, see LICENSE.TXT
 """Tabular Data Module."""
 import re
+import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
@@ -192,6 +193,54 @@ class TabularDatamodule(pl.LightningDataModule):
         self._setup_cache(cache_data)
         self._inferred_config = self._update_config(config)
 
+    @property
+    def categorical_encoder(self):
+        """Returns the categorical encoder."""
+        return getattr(self, "_categorical_encoder", None)
+
+    @categorical_encoder.setter
+    def categorical_encoder(self, value):
+        self._categorical_encoder = value
+
+    @property
+    def continuous_transform(self):
+        """Returns the continuous transform."""
+        return getattr(self, "_continuous_transform", None)
+
+    @continuous_transform.setter
+    def continuous_transform(self, value):
+        self._continuous_transform = value
+
+    @property
+    def scaler(self):
+        """Returns the scaler."""
+        return getattr(self, "_scaler", None)
+
+    @scaler.setter
+    def scaler(self, value):
+        self._scaler = value
+
+    @property
+    def label_encoder(self):
+        """Returns the label encoder."""
+        return getattr(self, "_label_encoder", None)
+
+    @label_encoder.setter
+    def label_encoder(self, value):
+        self._label_encoder = value
+
+    @property
+    def target_transforms(self):
+        """Returns the target transforms."""
+        if self.do_target_transform:
+            return self._target_transforms
+        else:
+            return None
+
+    @target_transforms.setter
+    def target_transforms(self, value):
+        self._target_transforms = value
+
     def _setup_cache(self, cache_data: Union[str, bool]) -> None:
         cache_data = cache_data.lower()
         if cache_data == self.CACHE_MODES.MEMORY.value:
@@ -224,17 +273,29 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
-        self._output_dim_clf = len(self.train[config.target[0]].unique()) if len(config.target) > 0 else None
-        self._output_dim_reg = len(config.target) if len(config.target) > 0 else None
+        # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
+        # self._output_dim_reg = len(config.target) if config.target else None
         if config.task == "regression":
-            output_dim = self._output_dim_reg
+            # self._output_dim_reg = len(config.target) if config.target else None if self.train is not None:
+            output_dim = len(config.target) if config.target else None
         elif config.task == "classification":
-            output_dim = self._output_dim_clf
+            # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
+            if self.train is not None:
+                output_dim = len(np.unique(self.train[config.target[0]])) if config.target else None
+            else:
+                output_dim = len(np.unique(self.train_dataset.y)) if config.target else None
         elif config.task == "ssl":
             output_dim = None
         else:
             raise ValueError(f"{config.task} is an unsupported task.")
-        categorical_cardinality = [int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols]
+        if self.train is not None:
+            categorical_cardinality = [
+                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
+            ]
+        else:
+            categorical_cardinality = [
+                int(self.train_dataset.data[col].nunique()) + 1 for col in config.categorical_cols
+            ]
         if getattr(config, "embedding_dims", None) is not None:
             embedding_dims = config.embedding_dims
         else:
@@ -257,7 +318,11 @@ class TabularDatamodule(pl.LightningDataModule):
         Returns:
             InferredConfig: The updated config object
         """
-        return self._inferred_config
+        if self.cache_mode is self.CACHE_MODES.INFERENCE:
+            warnings.warn("Cannot update config in inference mode. Returning the cached config")
+            return self._inferred_config
+        else:
+            return self._update_config(config)
 
     def _encode_date_columns(self, data: DataFrame) -> DataFrame:
         added_features = []
@@ -269,7 +334,9 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def _encode_categorical_columns(self, data: DataFrame, stage: str) -> DataFrame:
         if stage != "fit":
+            # Inference
             return self.categorical_encoder.transform(data)
+        # Fit
         logger.debug("Encoding Categorical Columns using OrdinalEncoder")
         self.categorical_encoder = OrdinalEncoder(
             cols=self.config.categorical_cols,
@@ -285,7 +352,7 @@ class TabularDatamodule(pl.LightningDataModule):
             if "random_state" in transform["params"] and self.seed is not None:
                 transform["params"]["random_state"] = self.seed
             self.continuous_transform = transform["callable"](**transform["params"])
-            # TODO implement quantile noise
+            # can be accessed through property continuous_transform
             data.loc[:, self.config.continuous_cols] = self.continuous_transform.fit_transform(
                 data.loc[:, self.config.continuous_cols]
             )
@@ -308,7 +375,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def _label_encode_target(self, data: DataFrame, stage: str) -> DataFrame:
         if self.config.task != "classification":
             return data
-        if stage == "fit":
+        if stage == "fit" or self.label_encoder is None:
             self.label_encoder = LabelEncoder()
             data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
         else:
@@ -323,7 +390,7 @@ class TabularDatamodule(pl.LightningDataModule):
         if not all(col in data.columns for col in self.config.target):
             return data
         if self.do_target_transform:
-            if stage == "fit":
+            if stage == "fit" or self.target_transforms is None:
                 target_transforms = []
                 for col in self.config.target:
                     _target_transform = copy.deepcopy(self.target_transform_template)
@@ -652,7 +719,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def _load_dataset_from_cache(self, tag: str = "train"):
         if self.cache_mode is self.CACHE_MODES.MEMORY:
             try:
-                dataset = getattr(self, f"{tag}_dataset")
+                dataset = getattr(self, f"_{tag}_dataset")
             except AttributeError:
                 raise AttributeError(
                     f"{tag}_dataset not found in memory. Please provide the data for" f" {tag} dataloader"
@@ -670,7 +737,8 @@ class TabularDatamodule(pl.LightningDataModule):
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
         return dataset
 
-    def load_train_dataset(self) -> TabularDataset:
+    @property
+    def train_dataset(self) -> TabularDataset:
         """Returns the train dataset.
 
         Returns:
@@ -678,13 +746,22 @@ class TabularDatamodule(pl.LightningDataModule):
         """
         return self._load_dataset_from_cache("train")
 
-    def load_validation_dataset(self) -> TabularDataset:
+    @train_dataset.setter
+    def train_dataset(self, value):
+        self._train_dataset = value
+
+    @property
+    def validation_dataset(self) -> TabularDataset:
         """Returns the validation dataset.
 
         Returns:
             TabularDataset: The validation dataset
         """
         return self._load_dataset_from_cache("validation")
+
+    @validation_dataset.setter
+    def validation_dataset(self, value):
+        self._validation_dataset = value
 
     def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
         """Function that loads the train set.
@@ -696,7 +773,7 @@ class TabularDatamodule(pl.LightningDataModule):
             DataLoader: Train dataloader
         """
         return DataLoader(
-            self.load_train_dataset(),
+            self.train_dataset,
             batch_size or self.batch_size,
             shuffle=True if self.train_sampler is None else False,
             num_workers=self.config.num_workers,
@@ -714,7 +791,7 @@ class TabularDatamodule(pl.LightningDataModule):
             DataLoader: Validation dataloader
         """
         return DataLoader(
-            self.load_validation_dataset(),
+            self.validation_dataset,
             batch_size or self.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
@@ -787,3 +864,38 @@ class TabularDatamodule(pl.LightningDataModule):
             raise FileNotFoundError(f"{path} does not exist.")
         datamodule = joblib.load(path)
         return datamodule
+
+    def copy(
+        self,
+        train: DataFrame,
+        validation: DataFrame = None,
+        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
+        train_sampler: Optional[torch.utils.data.Sampler] = None,
+        seed: Optional[int] = None,
+        cache_data: str = None,
+        copy_data: bool = None,
+        verbose: bool = None,
+        call_setup: bool = True,
+        config_override: Optional[Dict] = {},
+    ):
+        if config_override is not None:
+            for k, v in config_override.items():
+                setattr(self.config, k, v)
+        dm = TabularDatamodule(
+            train=train,
+            config=self.config,
+            validation=validation,
+            target_transform=target_transform or self.target_transforms,
+            train_sampler=train_sampler or self.train_sampler,
+            seed=seed or self.seed,
+            cache_data=cache_data or self.cache_mode.value,
+            copy_data=copy_data or True,
+            verbose=verbose or self.verbose,
+        )
+        dm.categorical_encoder = self.categorical_encoder
+        dm.continuous_transform = self.continuous_transform
+        dm.scaler = self.scaler
+        dm.label_encoder = self.label_encoder
+        dm.target_transforms = self.target_transforms
+        dm.setup(stage="ssl_finetune") if call_setup else None
+        return dm

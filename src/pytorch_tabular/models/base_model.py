@@ -159,7 +159,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 "You can install wandb using pip install wandb or install PyTorch Tabular"
                 " using pip install pytorch-tabular[extra]"
             )
-        if not PLOTLY_INSTALLED:
+        if not PLOTLY_INSTALLED and self.do_log_logits:
             self.do_log_logits = False
             warnings.warn(
                 "Plotly is not installed. Please install plotly to log logits. "
