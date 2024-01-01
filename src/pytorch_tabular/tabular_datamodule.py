@@ -426,6 +426,7 @@ class TabularDatamodule(pl.LightningDataModule):
             self.config.categorical_dim = (
                 len(self.config.categorical_cols) if self.config.categorical_cols is not None else 0
             )
+            self._inferred_config = self._update_config(self.config)
         # Encoding Categorical Columns
         if len(self.config.categorical_cols) > 0:
             data = self._encode_categorical_columns(data, stage)
