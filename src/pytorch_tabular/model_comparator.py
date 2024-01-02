@@ -1,16 +1,10 @@
-"""Top-level package for Pytorch Tabular."""
+import time
+from typing import Callable, List, Optional, Tuple, Union
 
-__author__ = """Manu Joseph"""
-__email__ = "manujosephv@gmail.com"
-__version__ = "1.0.2"
+import pandas as pd
 
-from . import models, ssl_models
-from .categorical_encoders import CategoricalEmbeddingTransformer
-from .feature_extractor import DeepFeatureExtractor
-from .tabular_datamodule import TabularDatamodule
-from .tabular_model import TabularModel
-from .tabular_model_tuner import TabularModelTuner
-# from .model_comparator import compare_models
+from pytorch_tabular import TabularModel
+from pytorch_tabular import models as pt_models
 from pytorch_tabular.config import (
     DataConfig,
     ExperimentConfig,
@@ -18,38 +12,7 @@ from pytorch_tabular.config import (
     OptimizerConfig,
     TrainerConfig,
 )
-import time
-from typing import Callable, List, Optional, Tuple, Union
-
-import pandas as pd
-
-__all__ = [
-    "TabularModel",
-    "TabularModelTuner",
-    "TabularDatamodule",
-    "models",
-    "ssl_models",
-    "CategoricalEmbeddingTransformer",
-    "DeepFeatureExtractor",
-    "utils",
-    "compare_models",
-    "available_models",
-    "available_ssl_models",
-]
-
-# fix Sphinx issues, see https://bit.ly/2K2eptM
-for item in __all__:
-    if hasattr(item, "__module__"):
-        setattr(item, "__module__", __name__)
-
-
-def available_models():
-    return [cl for cl in dir(models) if "config" in cl.lower()]
-
-
-def available_ssl_models():
-    return [cl for cl in dir(ssl_models) if "config" in cl.lower()]
-
+from pytorch_tabular import available_models
 
 MODEL_PRESETS = {
     "lite": [
@@ -69,10 +32,10 @@ def _validate_args(
     data_config: Union[DataConfig, str],
     optimizer_config: Union[OptimizerConfig, str],
     trainer_config: Union[TrainerConfig, str],
-    model_list: Union[str, List[Union[ModelConfig, str]]] = "fast",
+    models: Union[str, List[Union[ModelConfig, str]]] = "fast",
     metrics: Optional[List[Union[str, Callable]]] = None,
-    metrics_params: Optional[List[dict]] = None,
-    metrics_prob_input: Optional[List[bool]] = None,
+    metric_params: Optional[List[dict]] = None,
+    metrics_prob_inputs: Optional[List[bool]] = None,
     validation: Optional[pd.DataFrame] = None,
     experiment_config: Optional[Union[ExperimentConfig, str]] = None,
     common_model_args: Optional[dict] = {},
@@ -88,19 +51,19 @@ def _validate_args(
     assert isinstance(
         test, pd.DataFrame
     ), f"test must be a pandas DataFrame, but got {type(test)}"
-    assert model_list is not None, "models cannot be None"
+    assert models is not None, "models cannot be None"
     assert isinstance(
-        model_list, (str, list)
-    ), f"models must be a string or list of strings, but got {type(model_list)}"
-    if isinstance(model_list, str):
-        assert model_list in MODEL_PRESETS.keys(), (
+        models, (str, list)
+    ), f"models must be a string or list of strings, but got {type(models)}"
+    if isinstance(models, str):
+        assert models in MODEL_PRESETS.keys(), (
             f"models must be one of {MODEL_PRESETS.keys()}, "
-            f"but got {model_list}"
+            f"but got {models}"
         )
     else:  # isinstance(models, list):
         assert all(
-            [isinstance(m, (str, ModelConfig)) for m in model_list]
-        ), f"models must be a list of strings or ModelConfigs, but got {model_list}"
+            [isinstance(m, (str, ModelConfig)) for m in models]
+        ), f"models must be a list of strings or ModelConfigs, but got {models}"
     if metrics is not None:
         assert isinstance(
             metrics, list
@@ -109,32 +72,32 @@ def _validate_args(
             [isinstance(m, (str, Callable)) for m in metrics]
         ), f"metrics must be a list of strings or callables, but got {metrics}"
         assert (
-            metrics_params is not None
+            metric_params is not None
         ), "metric_params cannot be None when metrics is not None"
         assert (
-            metrics_prob_input is not None
+            metrics_prob_inputs is not None
         ), "metrics_prob_inputs cannot be None when metrics is not None"
         assert isinstance(
-            metrics_params, list
-        ), f"metric_params must be a list of dicts, but got {type(metrics_params)}"
-        assert isinstance(metrics_prob_input, list), (
+            metric_params, list
+        ), f"metric_params must be a list of dicts, but got {type(metric_params)}"
+        assert isinstance(metrics_prob_inputs, list), (
             "metrics_prob_inputs must be a list of bools, but got"
-            f" {type(metrics_prob_input)}"
+            f" {type(metrics_prob_inputs)}"
         )
-        assert len(metrics) == len(metrics_params), (
+        assert len(metrics) == len(metric_params), (
             "metrics and metric_params must be of the same length, but got"
-            f" {len(metrics)} and {len(metrics_params)}"
+            f" {len(metrics)} and {len(metric_params)}"
         )
-        assert len(metrics) == len(metrics_prob_input), (
+        assert len(metrics) == len(metrics_prob_inputs), (
             "metrics and metrics_prob_inputs must be of the same length, but got"
-            f" {len(metrics)} and {len(metrics_prob_input)}"
+            f" {len(metrics)} and {len(metrics_prob_inputs)}"
         )
         assert all(
-            [isinstance(m, dict) for m in metrics_params]
-        ), f"metric_params must be a list of dicts, but got {metrics_params}"
+            [isinstance(m, dict) for m in metric_params]
+        ), f"metric_params must be a list of dicts, but got {metric_params}"
     if common_model_args is not None:
         # all args should be members of ModelConfig
-        assert all([k in ModelConfig.__dataclass_fields__.keys() for k in common_model_args.keys()]), (
+        assert all([hasattr(ModelConfig, k) for k in common_model_args.keys()]), (
             "common_model_args must be a subset of ModelConfig, but got"
             f" {common_model_args.keys()}"
         )
@@ -158,10 +121,10 @@ def compare_models(
     data_config: Union[DataConfig, str],
     optimizer_config: Union[OptimizerConfig, str],
     trainer_config: Union[TrainerConfig, str],
-    model_list: Union[str, List[Union[ModelConfig, str]]] = "lite",
+    models: Union[str, List[Union[ModelConfig, str]]] = "fast",
     metrics: Optional[List[Union[str, Callable]]] = None,
-    metrics_params: Optional[List[dict]] = None,
-    metrics_prob_input: Optional[List[bool]] = None,
+    metric_params: Optional[List[dict]] = None,
+    metrics_prob_inputs: Optional[List[bool]] = None,
     validation: Optional[pd.DataFrame] = None,
     experiment_config: Optional[Union[ExperimentConfig, str]] = None,
     common_model_args: Optional[dict] = {},
@@ -224,29 +187,29 @@ def compare_models(
         data_config=data_config,
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
-        model_list=model_list,
+        models=models,
         metrics=metrics,
-        metrics_params=metrics_params,
-        metrics_prob_input=metrics_prob_input,
+        metric_params=metric_params,
+        metrics_prob_inputs=metrics_prob_inputs,
         validation=validation,
         experiment_config=experiment_config,
         common_model_args=common_model_args,
         rank_metric=rank_metric,
     )
-    _model_args = ["metrics", "metrics_params", "metrics_prob_input"]
+    _model_args = ["metrics", "metric_params", "metrics_prob_inputs"]
     # Replacing the common model args with the ones passed in the function
     for arg in _model_args:
         if locals()[arg] is not None:
             common_model_args[arg] = locals()[arg]
-    if isinstance(model_list, str):
-        model_list = MODEL_PRESETS[model_list]
-        model_list = [
+    if isinstance(models, str):
+        models = MODEL_PRESETS[models]
+        models = [
             (
-                getattr(models, m)(task=task, **common_model_args)
+                getattr(pt_models, m)(task=task, **common_model_args)
                 if isinstance(m, str)
                 else m
             )
-            for m in model_list
+            for m in models
         ]
 
         def _init_tabular_model(m):
@@ -258,29 +221,26 @@ def compare_models(
                 experiment_config=experiment_config,
             )
 
-        datamodule = _init_tabular_model(model_list[0]).prepare_dataloader(
+        datamodule = _init_tabular_model(models[0]).prepare_dataloader(
             train=train, validation=validation, seed=seed
         )
         results = []
         best_model = None
         is_lower_better = rank_metric[1] == "lower_is_better"
-        best_score = 1e9 if is_lower_better else -1e9
-        for tabular_model in model_list:
-            name = tabular_model._model_name
-            params = tabular_model.__dict__
+        for tabular_model in models:
             start_time = time.time()
             tabular_model = _init_tabular_model(tabular_model)
             model = tabular_model.prepare_model(datamodule)
             tabular_model.train(model, datamodule)
             res_dict = {
                 "Sl. No.": len(results) + 1,
-                "model": name,
+                "model": tabular_model.model_config._model_name,
             }
             res_dict.update(
-                tabular_model.evaluate(test=test, verbose=False)[0]
+                tabular_model.evaluate(test_loader=datamodule.test_loader())[0]
             )
             res_dict["time_taken"] = time.time() - start_time
-            res_dict["params"] = params
+            res_dict.update(tabular_model.model_config.__dict__)
             results.append(res_dict)
             if best_model is None:
                 best_model = tabular_model
@@ -288,19 +248,17 @@ def compare_models(
                 if is_lower_better:
                     if (
                         res_dict[f"test_{rank_metric[0]}"]
-                        < best_score
+                        < results[best_model][rank_metric[0]]
                     ):
                         best_model = tabular_model
-                        best_score = res_dict[f"test_{rank_metric[0]}"]
                 else:
                     if (
                         res_dict[f"test_{rank_metric[0]}"]
-                        > best_score
+                        > results[best_model][rank_metric[0]]
                     ):
                         best_model = tabular_model
-                        best_score = res_dict[f"test_{rank_metric[0]}"]
         results = pd.DataFrame(results).sort_values(
-            by=f"test_{rank_metric[0]}", ascending=is_lower_better
+            by=rank_metric[0], ascending=is_lower_better
         )
         if return_best_model:
             return results, best_model
