@@ -4,6 +4,9 @@ __author__ = """Manu Joseph"""
 __email__ = "manujosephv@gmail.com"
 __version__ = "1.0.2"
 
+import warnings
+
+import numpy as np
 from . import models, ssl_models
 from .categorical_encoders import CategoricalEmbeddingTransformer
 from .feature_extractor import DeepFeatureExtractor
@@ -20,7 +23,7 @@ from pytorch_tabular.config import (
 )
 import time
 from typing import Callable, List, Optional, Tuple, Union
-
+from .utils import OOMException, OutOfMemoryHandler
 import pandas as pd
 
 __all__ = [
@@ -58,7 +61,8 @@ MODEL_PRESETS = {
         "GANDALFConfig",
         "TabNetModelConfig",
     ],
-    "full": available_models(),
+    "full": [m for m in available_models() if m not in ['MDNConfig', "NodeConfig"]],
+    "high_memory": [m for m in available_models() if m not in ['MDNConfig']],
 }
 
 
@@ -138,7 +142,7 @@ def _validate_args(
             "common_model_args must be a subset of ModelConfig, but got"
             f" {common_model_args.keys()}"
         )
-    if rank_metric[0] != "loss":
+    if rank_metric[0] not in ["loss", "accuracy", "mean_squared_error"]:
         assert (
             rank_metric[0] in metrics
         ), f"rank_metric must be one of {metrics}, but got {rank_metric}"
@@ -168,6 +172,7 @@ def compare_models(
     rank_metric: Optional[Tuple[str, str]] = ("loss", "lower_is_better"),
     return_best_model: bool = True,
     seed: int = 42,
+    ignore_oom: bool = True,
 ):
     """Compare multiple models on the same dataset.
 
@@ -216,6 +221,8 @@ def compare_models(
         return_best_model (bool, optional): If True, will return the best model. Defaults to True.
 
         seed (int, optional): The seed for reproducibility. Defaults to 42.
+
+        ignore_oom (bool, optional): If True, will ignore the Out of Memory error and continue with the next model.
     """
     _validate_args(
         task=task,
@@ -233,6 +240,11 @@ def compare_models(
         common_model_args=common_model_args,
         rank_metric=rank_metric,
     )
+    if model_list in ["full", "high_memory"]:
+        warnings.warn(
+            "The full model list is quite large and uses a lot of memory. "
+            "Consider using `lite` or define configs yourselves for a faster run"
+        )
     _model_args = ["metrics", "metrics_params", "metrics_prob_input"]
     # Replacing the common model args with the ones passed in the function
     for arg in _model_args:
@@ -248,61 +260,81 @@ def compare_models(
             )
             for m in model_list
         ]
-
-        def _init_tabular_model(m):
-            return TabularModel(
-                data_config=data_config,
-                model_config=m,
-                optimizer_config=optimizer_config,
-                trainer_config=trainer_config,
-                experiment_config=experiment_config,
+    else:
+        if len(common_model_args) > 0:
+            warnings.warn(
+                "common_model_args are ignored when model_list is not a string"
             )
-
-        datamodule = _init_tabular_model(model_list[0]).prepare_dataloader(
-            train=train, validation=validation, seed=seed
+    def _init_tabular_model(m):
+        return TabularModel(
+            data_config=data_config,
+            model_config=m,
+            optimizer_config=optimizer_config,
+            trainer_config=trainer_config,
+            experiment_config=experiment_config,
+            verbose=False
         )
-        results = []
-        best_model = None
-        is_lower_better = rank_metric[1] == "lower_is_better"
-        best_score = 1e9 if is_lower_better else -1e9
-        for tabular_model in model_list:
-            name = tabular_model._model_name
-            params = tabular_model.__dict__
-            start_time = time.time()
-            tabular_model = _init_tabular_model(tabular_model)
-            model = tabular_model.prepare_model(datamodule)
-            tabular_model.train(model, datamodule)
-            res_dict = {
-                "Sl. No.": len(results) + 1,
-                "model": name,
-            }
+
+    datamodule = _init_tabular_model(model_list[0]).prepare_dataloader(
+        train=train, validation=validation, seed=seed
+    )
+    results = []
+    best_model = None
+    is_lower_better = rank_metric[1] == "lower_is_better"
+    best_score = 1e9 if is_lower_better else -1e9
+    for tabular_model in model_list:
+        name = tabular_model._model_name
+        params = tabular_model.__dict__
+        start_time = time.time()
+        tabular_model = _init_tabular_model(tabular_model)
+        model = tabular_model.prepare_model(datamodule)
+        with OutOfMemoryHandler(handle_oom=True) as handler:
+            tabular_model.train(model, datamodule, handle_oom=False)
+        res_dict = {
+            "model": name,
+        }
+        if handler.oom_triggered:
+            if not ignore_oom:
+                raise OOMException(
+                    "Out of memory error occurred during cross validation. "
+                    "Set ignore_oom=True to ignore this error."
+                )
+            else:
+                res_dict.update(
+                    {
+                        f"test_{rank_metric[0]}": np.inf if is_lower_better else -np.inf,
+                        "time_taken": "NA",
+                    }
+                )
+                res_dict['model'] = name + " (OOM)"
+        else:
             res_dict.update(
                 tabular_model.evaluate(test=test, verbose=False)[0]
             )
             res_dict["time_taken"] = time.time() - start_time
-            res_dict["params"] = params
-            results.append(res_dict)
-            if best_model is None:
-                best_model = tabular_model
-            else:
-                if is_lower_better:
-                    if (
-                        res_dict[f"test_{rank_metric[0]}"]
-                        < best_score
-                    ):
-                        best_model = tabular_model
-                        best_score = res_dict[f"test_{rank_metric[0]}"]
-                else:
-                    if (
-                        res_dict[f"test_{rank_metric[0]}"]
-                        > best_score
-                    ):
-                        best_model = tabular_model
-                        best_score = res_dict[f"test_{rank_metric[0]}"]
-        results = pd.DataFrame(results).sort_values(
-            by=f"test_{rank_metric[0]}", ascending=is_lower_better
-        )
-        if return_best_model:
-            return results, best_model
+        res_dict["params"] = params
+        results.append(res_dict)
+        if best_model is None:
+            best_model = tabular_model
         else:
-            return results
+            if is_lower_better:
+                if (
+                    res_dict[f"test_{rank_metric[0]}"]
+                    < best_score
+                ):
+                    best_model = tabular_model
+                    best_score = res_dict[f"test_{rank_metric[0]}"]
+            else:
+                if (
+                    res_dict[f"test_{rank_metric[0]}"]
+                    > best_score
+                ):
+                    best_model = tabular_model
+                    best_score = res_dict[f"test_{rank_metric[0]}"]
+    results = pd.DataFrame(results).sort_values(
+        by=f"test_{rank_metric[0]}", ascending=is_lower_better
+    )
+    if return_best_model:
+        return results, best_model
+    else:
+        return results
