@@ -19,10 +19,10 @@ from pytorch_tabular.config import (
 from pytorch_tabular.utils import (
     OOMException,
     OutOfMemoryHandler,
+    available_models,
     get_logger,
     int_to_human_readable,
     suppress_lightning_logs,
-    available_models,
 )
 
 logger = get_logger("pytorch_tabular")
