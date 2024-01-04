@@ -6,6 +6,7 @@ nav:
           - Getting Started:
                 - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
                 - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
+                - Model Sweep: "tutorials/13-Model Sweep.ipynb"
                 - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
           - Hyperparameter Tuning:
                 - Grid Search and Random Search: "tutorials/10-Hyperparameter Tuning.ipynb"

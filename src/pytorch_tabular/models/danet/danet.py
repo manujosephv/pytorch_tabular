@@ -3,6 +3,8 @@
 # For license information, see LICENSE.TXT
 """DANet Model."""
 
+import warnings
+
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
@@ -109,6 +111,15 @@ class DANetModel(BaseModel):
         return self._head
 
     def _build_network(self):
+        if self.hparams.virtual_batch_size > self.hparams.batch_size:
+            warnings.warn(
+                f"virtual_batch_size({self.hparams.virtual_batch_size}) is greater "
+                f"than batch_size ({self.hparams.batch_size}). Setting virtual_batch_size "
+                f"to {self.hparams.batch_size}. DANet uses Ghost Batch Normalization, "
+                f"which works best when virtual_batch_size is small. Consider setting "
+                "virtual_batch_size to something like 256 or 512."
+            )
+            self.hparams.virtual_batch_size = self.hparams.batch_size
         # Backbone
         self._backbone = DANetBackbone(
             cat_embedding_dims=self.hparams.embedding_dims,

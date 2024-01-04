@@ -55,6 +55,7 @@ from pytorch_tabular.utils import (
     getattr_nested,
     pl_load,
 )
+from pytorch_tabular.utils.nn_utils import count_parameters
 
 try:
     import captum.attr
@@ -109,7 +110,7 @@ class TabularModel:
             model_state_dict_path (Optional[Union[str, Path]], optional):
                 If provided, will load the state dict after initializing the model from config.
 
-            verbose(bool): turns off and on the logging. Defaults to True.
+            verbose (bool): turns off and on the logging. Defaults to True.
         """
         super().__init__()
         self.verbose = verbose
@@ -157,7 +158,7 @@ class TabularModel:
                     logger.info("Experiment Tracking is turned off")
                 self.track_experiment = False
 
-        self.name, self.uid = self._get_run_name_uid()
+        self.run_name, self.uid = self._get_run_name_uid()
         if self.track_experiment:
             self._setup_experiment_tracking()
         else:
@@ -192,6 +193,18 @@ class TabularModel:
     @property
     def is_fitted(self):
         return self._is_fitted
+
+    @property
+    def name(self):
+        if self.has_model:
+            return self.model.__class__.__name__
+        else:
+            return self.config._model_name
+
+    @property
+    def num_params(self):
+        if self.has_model:
+            return count_parameters(self.model)
 
     def _run_validation(self):
         """Validates the Config params and throws errors if something is wrong."""
@@ -255,11 +268,11 @@ class TabularModel:
         """Sets up the Experiment Tracking Framework according to the choices made in the Experimentconfig."""
         if self.config.log_target == "tensorboard":
             self.logger = pl.loggers.TensorBoardLogger(
-                name=self.name, save_dir=self.config.project_name, version=self.uid
+                name=self.run_name, save_dir=self.config.project_name, version=self.uid
             )
         elif self.config.log_target == "wandb":
             self.logger = pl.loggers.WandbLogger(
-                name=f"{self.name}_{self.uid}",
+                name=f"{self.run_name}_{self.uid}",
                 project=self.config.project_name,
                 offline=False,
             )
@@ -285,7 +298,7 @@ class TabularModel:
             )
             callbacks.append(early_stop_callback)
         if self.config.checkpoints:
-            ckpt_name = f"{self.name}-{self.uid}"
+            ckpt_name = f"{self.run_name}-{self.uid}"
             ckpt_name = ckpt_name.replace(" ", "_") + "_{epoch}-{valid_loss:.2f}"
             model_checkpoint = pl.callbacks.ModelCheckpoint(
                 monitor=self.config.checkpoints,
@@ -1505,7 +1518,7 @@ class TabularModel:
         Args:
             dir (str): The path to the directory to save the model
             inference_only (bool): If True, will only save the inference
-            only version of the datamodule
+                only version of the datamodule
         """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")

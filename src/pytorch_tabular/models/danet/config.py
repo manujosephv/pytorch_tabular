@@ -12,7 +12,8 @@ from pytorch_tabular.config import ModelConfig
 class DANetConfig(ModelConfig):
     """DANet configuration
     Args:
-        n_layers (int): Number of Blocks in the DANet. Defaults to 16
+        n_layers (int): Number of Blocks in the DANet. 8, 20, 32 are configurations
+            the paper evaluated. Defaults to 8
 
         abstlay_dim_1 (int): The dimension for the intermediate output in the
                 first ABSTLAY layer in a Block. Defaults to 32
@@ -70,8 +71,8 @@ class DANetConfig(ModelConfig):
     """
 
     n_layers: int = field(
-        default=16,
-        metadata={"help": "Number of Blocks in the DANet. Each block has 2 Abstlay Blocks each. Defaults to 16"},
+        default=8,
+        metadata={"help": "Number of Blocks in the DANet. Each block has 2 Abstlay Blocks each. Defaults to 8"},
     )
 
     abstlay_dim_1: int = field(
@@ -104,6 +105,13 @@ class DANetConfig(ModelConfig):
             " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
         },
     )
+    virtual_batch_size: Optional[int] = field(
+        default=256,
+        metadata={
+            "help": "If not None, all BatchNorms will be converted to GhostBatchNorm's "
+            " with this virtual batch size. Defaults to None"
+        },
+    )
 
     _module_src: str = field(default="models.danet")
     _model_name: str = field(default="DANetModel")
@@ -111,9 +119,6 @@ class DANetConfig(ModelConfig):
     _config_name: str = field(default="DANetConfig")
 
     def __post_init__(self):
-        assert self.virtual_batch_size is not None, "virtual_batch_size cannot be None for DANet "
-        " since it uses GhostBatchNorm in the architecture. Please set it to a value less than or "
-        "equal to the batch_size, preferably something small ike 256 or 512"
         if self.abstlay_dim_2 is None:
             self.abstlay_dim_2 = self.abstlay_dim_1 * 2
         return super().__post_init__()
