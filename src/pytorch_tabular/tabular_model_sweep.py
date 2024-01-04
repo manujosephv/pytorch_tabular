@@ -154,7 +154,7 @@ def model_sweep(
 
         trainer_config (Union[TrainerConfig, str]): TrainerConfig object or path to the yaml file.
 
-        models (Union[str, List[Union[ModelConfig, str]]], optional): The list of models to compare. This can be one of
+        model_list (Union[str, List[Union[ModelConfig, str]]], optional): The list of models to compare. This can be one of
                 the presets defined in ``pytorch_tabular.tabular_model_sweep.MODEL_SWEEP_PRESETS`` or a list of ``ModelConfig`` objects.
                 Defaults to "lite".
 

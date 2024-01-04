@@ -110,7 +110,7 @@ class TabularModel:
             model_state_dict_path (Optional[Union[str, Path]], optional):
                 If provided, will load the state dict after initializing the model from config.
 
-            verbose(bool): turns off and on the logging. Defaults to True.
+            verbose (bool): turns off and on the logging. Defaults to True.
         """
         super().__init__()
         self.verbose = verbose
@@ -1518,7 +1518,7 @@ class TabularModel:
         Args:
             dir (str): The path to the directory to save the model
             inference_only (bool): If True, will only save the inference
-            only version of the datamodule
+                only version of the datamodule
         """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")
