@@ -14,15 +14,21 @@ from .nn_utils import (
     _initialize_layers,
     _linear_dropout_bn,
     _make_ix_like,
+    count_parameters,
     reset_all_weights,
     to_one_hot,
 )
 from .python_utils import (
+    available_models,
+    available_ssl_models,
     check_numpy,
+    enable_lightning_logs,
     generate_doc_dataclass,
     getattr_nested,
     ifnone,
+    int_to_human_readable,
     pl_load,
+    suppress_lightning_logs,
 )
 
 __all__ = [
@@ -46,4 +52,10 @@ __all__ = [
     "make_mixed_dataset",
     "print_metrics",
     "load_covertype_dataset",
+    "count_parameters",
+    "int_to_human_readable",
+    "suppress_lightning_logs",
+    "enable_lightning_logs",
+    "available_models",
+    "available_ssl_models",
 ]

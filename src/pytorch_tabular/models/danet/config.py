@@ -12,7 +12,8 @@ from pytorch_tabular.config import ModelConfig
 class DANetConfig(ModelConfig):
     """DANet configuration
     Args:
-        n_layers (int): Number of Blocks in the DANet. Defaults to 16
+        n_layers (int): Number of Blocks in the DANet. 8, 20, 32 are configurations
+            the paper evaluated. Defaults to 8
 
         abstlay_dim_1 (int): The dimension for the intermediate output in the
                 first ABSTLAY layer in a Block. Defaults to 32
@@ -70,8 +71,8 @@ class DANetConfig(ModelConfig):
     """
 
     n_layers: int = field(
-        default=16,
-        metadata={"help": "Number of Blocks in the DANet. Each block has 2 Abstlay Blocks each. Defaults to 16"},
+        default=8,
+        metadata={"help": "Number of Blocks in the DANet. Each block has 2 Abstlay Blocks each. Defaults to 8"},
     )
 
     abstlay_dim_1: int = field(

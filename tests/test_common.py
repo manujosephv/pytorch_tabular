@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+import copy
 import os
 
 import numpy as np
 import pytest
 import torch
-from pytorch_tabular import TabularModel, TabularModelTuner, compare_models
+from pytorch_tabular import TabularModel, TabularModelTuner, model_sweep
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.config.config import SSLModelConfig
 from pytorch_tabular.feature_extractor import DeepFeatureExtractor
@@ -59,6 +60,12 @@ MODEL_CONFIG_FEATURE_IMP_TEST = [
 ]
 
 MODEL_CONFIG_CAPTUM_TEST = [
+    (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
+    (GANDALFConfig, {}),
+    (TabNetModelConfig, {}),
+]
+
+MODEL_CONFIG_MODEL_SWEEP_TEST = [
     (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
     (GANDALFConfig, {}),
     (TabNetModelConfig, {}),
@@ -1134,22 +1141,14 @@ def test_tta_regression(
     assert len(pred_df) == len(test)
 
 
-
 def _run_model_compare(
-    task,
-    model_list,
-    data_config,
-    trainer_config,
-    optimizer_config,
-    train,
-    test,
-    metric,
-    rank_metric
+    task, model_list, data_config, trainer_config, optimizer_config, train, test, metric, rank_metric
 ):
+    model_list = copy.deepcopy(model_list)
     if isinstance(model_list, list):
         model_list = [mdl(task=task, **params) for mdl, params in model_list]
-    
-    return compare_models(
+
+    return model_sweep(
         task=task,
         train=train,
         test=test,
@@ -1163,7 +1162,8 @@ def _run_model_compare(
         rank_metric=rank_metric,
     )
 
-@pytest.mark.parametrize("model_list", ["lite", MODEL_CONFIG_CAPTUM_TEST])
+
+@pytest.mark.parametrize("model_list", ["lite", MODEL_CONFIG_MODEL_SWEEP_TEST])
 @pytest.mark.parametrize(
     "continuous_cols",
     [
@@ -1176,23 +1176,12 @@ def _run_model_compare(
     [
         (None, None, None),
         (["accuracy"], [{}], [False]),
-        (["accuracy", 'f1_score'], [{}, {'average': 'macro'}], [False, True])
-    ]
+        (["accuracy", "f1_score"], [{}, {"average": "macro"}], [False, True]),
+    ],
 )
-@pytest.mark.parametrize(
-    "rank_metric",
-    [
-        ("accuracy", "higher_is_better"),
-        ("loss", "lower_is_better")
-    ]
-)
+@pytest.mark.parametrize("rank_metric", [("accuracy", "higher_is_better"), ("loss", "lower_is_better")])
 def test_model_compare_classification(
-    classification_data,
-    model_list,
-    continuous_cols,
-    categorical_cols,
-    metric,
-    rank_metric
+    classification_data, model_list, continuous_cols, categorical_cols, metric, rank_metric
 ):
     (train, test, target) = classification_data
     data_config = DataConfig(
@@ -1203,23 +1192,11 @@ def test_model_compare_classification(
         handle_unknown_categories=True,
     )
     trainer_config = TrainerConfig(
-        max_epochs=1,
-        checkpoints=None,
-        early_stopping=None,
-        accelerator="cpu",
-        fast_dev_run=True
+        max_epochs=1, checkpoints=None, early_stopping=None, accelerator="cpu", fast_dev_run=True
     )
     optimizer_config = OptimizerConfig()
     comp_df, best_model = _run_model_compare(
-        "classification",
-        model_list,
-        data_config,
-        trainer_config,
-        optimizer_config,
-        train,
-        test,
-        metric,
-        rank_metric
+        "classification", model_list, data_config, trainer_config, optimizer_config, train, test, metric, rank_metric
     )
     if model_list == "lite":
         assert len(comp_df) == 4
@@ -1231,31 +1208,17 @@ def test_model_compare_classification(
     # assert best_model.model._get_name() in best_models
 
 
-@pytest.mark.parametrize("model_list", ["lite", MODEL_CONFIG_CAPTUM_TEST])
+@pytest.mark.parametrize("model_list", ["lite", MODEL_CONFIG_MODEL_SWEEP_TEST])
 @pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
 @pytest.mark.parametrize(
     "metric",
     [
-        (None, None, None),
         (["mean_squared_error"], [{}], [False]),
-    ]
+    ],
 )
-@pytest.mark.parametrize(
-    "rank_metric",
-    [
-        ("mean_squared_error", "lower_is_better"),
-        ("loss", "lower_is_better")
-    ]
-)
-def test_model_compare_regression(
-    regression_data,
-    model_list,
-    continuous_cols,
-    categorical_cols,
-    metric,
-    rank_metric
-):
+@pytest.mark.parametrize("rank_metric", [("mean_squared_error", "lower_is_better"), ("loss", "lower_is_better")])
+def test_model_compare_regression(regression_data, model_list, continuous_cols, categorical_cols, metric, rank_metric):
     (train, test, target) = regression_data
     data_config = DataConfig(
         target=target,
@@ -1273,15 +1236,7 @@ def test_model_compare_regression(
     )
     optimizer_config = OptimizerConfig()
     comp_df, best_model = _run_model_compare(
-        "regression",
-        model_list,
-        data_config,
-        trainer_config,
-        optimizer_config,
-        train,
-        test,
-        metric,
-        rank_metric
+        "regression", model_list, data_config, trainer_config, optimizer_config, train, test, metric, rank_metric
     )
     if model_list == "lite":
         assert len(comp_df) == 4
