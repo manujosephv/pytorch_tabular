@@ -51,11 +51,12 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import (
     OOMException,
     OutOfMemoryHandler,
+    count_parameters,
     get_logger,
     getattr_nested,
     pl_load,
+    suppress_lightning_logs,
 )
-from pytorch_tabular.utils.nn_utils import count_parameters
 
 try:
     import captum.attr
@@ -79,6 +80,7 @@ class TabularModel:
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
         verbose: bool = True,
+        suppress_lightning_logger: bool = False,
     ) -> None:
         """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
 
@@ -111,8 +113,13 @@ class TabularModel:
                 If provided, will load the state dict after initializing the model from config.
 
             verbose (bool): turns off and on the logging. Defaults to True.
+
+            suppress_lightning_logger (bool): If True, will suppress the default logging from PyTorch Lightning.
+                Defaults to False.
         """
         super().__init__()
+        if suppress_lightning_logger:
+            suppress_lightning_logs()
         self.verbose = verbose
         self.exp_manager = ExperimentRunManager()
         if config is None:
