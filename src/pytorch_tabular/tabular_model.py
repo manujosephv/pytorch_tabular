@@ -80,7 +80,7 @@ class TabularModel:
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
         verbose: bool = True,
-        suppress_lightning_logger: bool = True,
+        suppress_lightning_logger: bool = False,
     ) -> None:
         """The core model which orchestrates everything from initializing the datamodule, the model, trainer, etc.
 
@@ -115,7 +115,7 @@ class TabularModel:
             verbose (bool): turns off and on the logging. Defaults to True.
 
             suppress_lightning_logger (bool): If True, will suppress the default logging from PyTorch Lightning.
-                Defaults to True.
+                Defaults to False.
         """
         super().__init__()
         if suppress_lightning_logger:
