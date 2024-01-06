@@ -22,7 +22,7 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.tabular_model import TabularModel
-from pytorch_tabular.utils import OOMException, OutOfMemoryHandler, get_logger
+from pytorch_tabular.utils import OOMException, OutOfMemoryHandler, get_logger, suppress_lightning_logs
 
 logger = get_logger(__name__)
 
@@ -45,6 +45,7 @@ class TabularModelTuner:
         trainer_config: Optional[Union[TrainerConfig, str]] = None,
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
+        suppress_lightning_logger: bool = True,
         **kwargs,
     ):
         """Tabular Model Tuner helps you tune the hyperparameters of a TabularModel.
@@ -53,21 +54,30 @@ class TabularModelTuner:
             data_config (Optional[Union[DataConfig, str]], optional): The DataConfig for the TabularModel.
                 If str is passed, will initialize the DataConfig using the yaml file in that path.
                 Defaults to None.
+            
             model_config (Optional[Union[ModelConfig, str]], optional): The ModelConfig for the TabularModel.
                 If str is passed, will initialize the ModelConfig using the yaml file in that path.
                 Defaults to None.
+            
             optimizer_config (Optional[Union[OptimizerConfig, str]], optional): The OptimizerConfig for the
                 TabularModel. If str is passed, will initialize the OptimizerConfig using the yaml file in
                 that path. Defaults to None.
+            
             trainer_config (Optional[Union[TrainerConfig, str]], optional): The TrainerConfig for the TabularModel.
                 If str is passed, will initialize the TrainerConfig using the yaml file in that path.
                 Defaults to None.
+            
             model_callable (Optional[Callable], optional): A callable that returns a PyTorch Tabular Model.
                 If provided, will ignore the model_config and use this callable to initialize the model.
                 Defaults to None.
+            
             model_state_dict_path (Optional[Union[str, Path]], optional): Path to the state dict of the model.
+            
                 If provided, will ignore the model_config and use this state dict to initialize the model.
                 Defaults to None.
+            
+            suppress_lightning_logger (bool, optional): Whether to suppress the lightning logger. Defaults to True.
+
             **kwargs: Additional keyword arguments to be passed to the TabularModel init.
         """
         if trainer_config.profiler is not None:
@@ -84,6 +94,7 @@ class TabularModelTuner:
         self.model_config = model_config
         self.optimizer_config = optimizer_config
         self.trainer_config = trainer_config
+        self.suppress_lightning_logger = suppress_lightning_logger
         self.tabular_model_init_kwargs = {
             "model_callable": model_callable,
             "model_state_dict_path": model_state_dict_path,
@@ -208,6 +219,8 @@ class TabularModelTuner:
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
         assert metric is not None, "metric must be specified"
         assert isinstance(search_space, dict) and len(search_space) > 0, "search_space must be a non-empty dict"
+        if self.suppress_lightning_logger:
+            suppress_lightning_logs()
         if cv is not None and validation is not None:
             warnings.warn(
                 "Both validation and cv are provided. Ignoring validation and using cv. Use "
