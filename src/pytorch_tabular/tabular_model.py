@@ -51,11 +51,11 @@ from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import (
     OOMException,
     OutOfMemoryHandler,
+    count_parameters,
     get_logger,
     getattr_nested,
     pl_load,
-    count_parameters,
-    suppress_lightning_logs
+    suppress_lightning_logs,
 )
 
 try:
