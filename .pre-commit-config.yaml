@@ -40,7 +40,7 @@ repos:
             args: [--in-place, --wrap-summaries=120, --wrap-descriptions=120]
 
     - repo: https://github.com/psf/black
-      rev: 23.11.0
+      rev: 23.12.1
       hooks:
           - id: black
             name: Black code
@@ -64,7 +64,7 @@ repos:
           - id: yesqa
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.1.6
+      rev: v0.1.11
       hooks:
           - id: ruff
             args: ["--fix"]
