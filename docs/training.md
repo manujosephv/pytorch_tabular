@@ -1,6 +1,6 @@
 Training a Deep Learning model can get arbritarily complex. PyTorch Tabular, by inheriting PyTorch Lightning, offloads the whole workload onto the underlying PyTorch Lightning Framework. It has been made to make training your models easy as a breeze and at the same time give you the flexibility to make the training process your own.
 
-The trainer in PyTorch Tabular, although haven't inherited all the features of the Pytorch Lightning trainer, have adopted quite a bit.
+The trainer in PyTorch Tabular have inherited all the features of the Pytorch Lightning trainer, either directly or indirectly. 
 
 ## Basic Usage
 

@@ -1,13 +1,18 @@
 site_name: PyTorch Tabular
 nav:
     - Getting Started:
-          - "PyTorch Tabular": index.md
+          - Introduction: "index.md"
+          - Installation: "gs_installation.md"
+          - Usage: "gs_usage.md"
+          - Citing the project: "gs_cite.md"
     - Tutorials:
-          - Getting Started:
-                - Basic Usage: "tutorials/01-Basic_Usage.ipynb"
-                - Advanced Usage: "tutorials/02-Advanced_Usage.ipynb"
-                - Model Sweep: "tutorials/13-Model Sweep.ipynb"
-                - Experiment Tracking: "tutorials/05-Experiment_Tracking.ipynb"
+          - Approaching any Tabular Problem using PyTorch Tabular: "tutorials/01-Approaching Any Tabular Problem with PyTorch Tabular.ipynb"
+          - Exploring Advanced Features with PyTorch Tabular: "tutorials/02-Exploring Advanced Features with PyTorch Tabular.ipynb"
+          - Using Model Sweep as an initial Model Selection Tool: "tutorials/13-Using Model Sweep as an initial Model Selection Tool.ipynb"
+    - "How-to Guides":
+          - Experiment Tracking:
+                - Weights and Biases: "tutorials/05-Experiment_Tracking_using_WandB.ipynb"
+                - Tensorboard: "tutorials/05.1-Experiment_Tracking_using_Tensorboard.ipynb"
           - Hyperparameter Tuning:
                 - Grid Search and Random Search: "tutorials/10-Hyperparameter Tuning.ipynb"
           - Cross Validation and Other Modelling Tricks:
@@ -17,27 +22,28 @@ nav:
           - Explainability / Interpretability:
                 - SHAP, Deep LIFT and so on through Captum Integration: "tutorials/14-Explainability.ipynb"
           - Custom PyTorch Models:
-                - Implementing New Architectures: "tutorials/04-Implementing New Architectures.ipynb"
+                - Implementing New Supervised Architectures: "tutorials/04-Implementing New Architectures.ipynb"
           - Other Features:
-                - Neural Embeddings in Scikit-Learn Workflows: "tutorials/03-Neural Embedding in Scikit-Learn Workflows.ipynb"
-                - Self-Supervised Learning - Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
+                - Using Neural Categorical Embeddings in Scikit-Learn Workflows: "tutorials/03-Neural Embedding in Scikit-Learn Workflows.ipynb"
+                - Self-Supervised Learning using Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
                 - Probabilistic Regression using Mixture Density Networks: "tutorials/07-Probabilistic Regression with MDN.ipynb"
-          - Other Tutorials:
+          - Others:
                 - Imbalanced classification: "tutorials/06-Imbalanced Classification.ipynb"
-
-    - Configuration:
-          - Data: data.md
-          - Supervised Models: models.md
-          - Self-Supervised Models: ssl_models.md
-          - Training: training.md
-          - Optimizer and Learning Rate Scheduler: optimizer.md
-          - Experiment Tracking: experiment_tracking.md
-    - Tabular Model:
-          - TabularModel: tabular_model.md
-    - Explainability/Interpretablity:
-          - Explainability/Interpretablity: explainability.md
-    - Other Features:
-          - "Other Features": other_features.md
+    - Concepts:
+          - Configuration:
+                - Data: data.md
+                - Training: training.md
+                - Optimizer and Learning Rate Scheduler: optimizer.md
+                - Experiment Tracking: experiment_tracking.md
+          - Models:
+                - Supervised Models: models.md
+                - Self-Supervised Models: ssl_models.md
+          - Tabular Model:
+                - TabularModel: tabular_model.md
+          - Explainability/Interpretablity:
+                - Explainability/Interpretablity: explainability.md
+          - Other Features:
+                - "Other Features": other_features.md
     # - FAQ: faq.md
     # - API:
     - API:
@@ -63,9 +69,16 @@ theme:
         - navigation.top
         - content.code.copy
     palette:
+      #   # Palette toggle for automatic mode
+      #   - media: "(prefers-color-scheme)"
+      #     toggle:
+      #     icon: material/brightness-auto
+      #     name: Switch to light mode
+
         # Palette toggle for light mode
         - media: "(prefers-color-scheme: light)"
           scheme: default
+          primary: deep purple
           toggle:
               icon: material/brightness-7
               name: Switch to dark mode
@@ -73,19 +86,23 @@ theme:
         # Palette toggle for dark mode
         - media: "(prefers-color-scheme: dark)"
           scheme: slate
+          primary: yellow
           toggle:
               icon: material/brightness-4
               name: Switch to light mode
         # primary: deep purple
     logo: imgs/pytorch_tabular_logo_small.svg
+    font:
+        text: Lato
 markdown_extensions:
     - admonition
-    # - codehilite
     - pymdownx.highlight:
           anchor_linenums: true
     - pymdownx.inlinehilite
     - pymdownx.snippets
     - pymdownx.superfences
+    - toc:
+          permalink: true
     # - pymdownx.inlinehilite
 plugins:
     - search
@@ -109,4 +126,6 @@ extra:
           link: https://deep-and-shallow.com/
         - icon: fontawesome/brands/medium
           link: https://medium.com/@manujosephv
+    version:
+        provider: mike
 copyright: Copyright &copy; 2020 Manu Joseph

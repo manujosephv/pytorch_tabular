@@ -101,7 +101,7 @@ Now let's look at a few of the different models available in PyTorch Tabular and
 ['AutoIntConfig', 'CategoryEmbeddingModelConfig', 'DANetConfig', 'FTTransformerConfig', 'GANDALFConfig', 'GatedAdditiveTreeEnsembleConfig', 'MDNConfig', 'NodeConfig', 'TabNetModelConfig', 'TabTransformerConfig']
 ```
 
-### Category Embedding Model
+### Category Embedding Model (Multi Layer Perceptron)
 
 This is the most basic model in the library. The architecture is pretty simple - a Feed Forward Network with the Categorical Features passed through an learnable embedding layer. You can use it by choosing `CategoryEmbeddingModelConfig`. The model is a good starting point for any tabular dataset. It is also a good baseline to compare against other models.
 
@@ -116,13 +116,38 @@ All the parameters have intelligent default values. Let's look at few of them:
 **For a complete list of parameters refer to the API Docs**    
 [pytorch_tabular.models.CategoryEmbeddingModelConfig][]
 
-### Gated Additive Tree Ensemble (GATE)
+### Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)
 
-[Gated Additive Tree Ensemble](https://arxiv.org/pdf/2207.08548.pdf) is a a novel high-performance, parameter and computationally efficient deep learning architecture for tabular data, Gated Additive Tree Ensemble(GATE). GATE uses a gating mechanism, inspired from GRU, as a feature representation learning unit with an in-built feature selection mechanism. The authors combine it with an ensemble of differentiable, non-linear decision trees, re-weighted with simple self-attention to predict our desired output. The authors also demonstrate that GATE is a competitive alternative to SOTA approaches like GBDTs, NODE, FT Transformers, etc. by experiments on several public datasets (both classification and regression). You can use it by choosing `GatedAdditiveTreeEnsembleConfig`.
+[Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)](https://arxiv.org/abs/2207.08548) is a novel high-performance, interpretable, and parameter \& computationally efficient deep learning architecture for tabular data. GANDALF relies on a new tabular processing unit with a gating mechanism and in-built feature selection called Gated Feature Learning Unit (GFLU) as a feature representation learning unit. The paper demonstrates that GANDALF outperforms or stays at-par with SOTA approaches like XGBoost, SAINT, FT-Transformers, etc. by experiments on multiple established public benchmarks. You can use it by choosing `GANDALFConfig`.
 
 The GRU inspired representation learning layer is called a Gated Feature Learning Unit (GFLU)(from the paper)
 
-![GFLU](imgs/gflu.png)
+![GFLU](imgs/gflu_v2.png)
+
+The learned representation learned through multi-stage GFLUs is then projected onto the output space using a simple linear layer.
+
+All the parameters have beet set to recommended values from the paper. Let's look at them:
+
+- `gflu_stages`: int: Number of layers in the feature abstraction layer. Defaults to 6
+
+- `gflu_dropout`: float: Dropout rate for the feature abstraction layer. Defaults to 0.0
+
+- `gflu_feature_init_sparsity`: float: Only valid for t-softmax. The percentage of features to be selected in each GFLU stage. This is just initialized and during learning it may change. Defaults to 0.3
+
+- `learnable_sparsity`: bool: Only valid for t-softmax. If True, the sparsity parameters will be learned. If False, the sparsity parameters will be fixed to the initial values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`. Defaults to True
+
+!!! note
+
+    GANDALF can be considered as a more light and more performant Gated Additive Tree Ensemble (GATE). For most purposes, GANDALF is a better choice than GATE.
+
+
+**For a complete list of parameters refer to the API Docs**    
+[pytorch_tabular.models.GANDALFConfig][]
+
+
+### Gated Additive Tree Ensemble (GATE)
+
+[Gated Additive Tree Ensemble](https://arxiv.org/abs/2207.08548v3) is a a novel high-performance, parameter and computationally efficient deep learning architecture for tabular data, Gated Additive Tree Ensemble(GATE). GATE uses a gating mechanism, inspired from GRU, as a feature representation learning unit with an in-built feature selection mechanism. The authors combine it with an ensemble of differentiable, non-linear decision trees, re-weighted with simple self-attention to predict our desired output. The authors also demonstrate that GATE is a competitive alternative to SOTA approaches like GBDTs, NODE, FT Transformers, etc. by experiments on several public datasets (both classification and regression). You can use it by choosing `GatedAdditiveTreeEnsembleConfig`.
 
 The GFLU is then combined with an ensemble of Non-Linear Decision Trees to form a Gated Additive Tree Ensemble (GATE)
 
@@ -207,24 +232,6 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 **For a complete list of parameters refer to the API Docs**    
 [pytorch_tabular.models.AutoIntConfig][]
-
-### Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)
-
-[Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)](https://arxiv.org/abs/2207.08548) is pared-down version of GATE which is more efficient and performing than GATE. GANDALF makes GFLUs the main learning unit, also introducing some speed-ups in the process. You can use it by choosing `GANDALFConfig`.
-
-All the parameters have beet set to recommended values from the paper. Let's look at them:
-
-- `gflu_stages`: int: Number of layers in the feature abstraction layer. Defaults to 6
-
-- `gflu_dropout`: float: Dropout rate for the feature abstraction layer. Defaults to 0.0
-
-- `gflu_feature_init_sparsity`: float: Only valid for t-softmax. The percentage of features to be selected in each GFLU stage. This is just initialized and during learning it may change. Defaults to 0.3
-
-- `learnable_sparsity`: bool: Only valid for t-softmax. If True, the sparsity parameters will be learned. If False, the sparsity parameters will be fixed to the initial values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`. Defaults to True
-
-
-**For a complete list of parameters refer to the API Docs**    
-[pytorch_tabular.models.GANDALFConfig][]
 
 ### DANETs: Deep Abstract Networks for Tabular Data Classification and Regression
 
