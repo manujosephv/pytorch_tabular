@@ -89,7 +89,7 @@ class TabularModelTuner:
             warnings.warn("fast_dev_run is turned on. Tuning results won't be accurate.")
         if trainer_config.progress_bar != "none":
             # If config and tuner have progress bar enabled, it will result in a bug within the library (rich.progress)
-            trainer_config.progress_bar = None
+            trainer_config.progress_bar = "none"
             warnings.warn("Turning off progress bar. Set progress_bar='none' in TrainerConfig to disable this warning.")
         trainer_config.trainer_kwargs.update({"enable_model_summary": False})
         self.data_config = data_config
