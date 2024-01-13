@@ -9,7 +9,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class GatedAdditiveTreeEnsembleConfig(ModelConfig):
-    """Gated Additive Tree Ensemble configuration
+    """Gated Additive Tree Ensemble configuration.
 
     Args:
         gflu_stages (int): Number of layers in the feature abstraction layer. Defaults to 6

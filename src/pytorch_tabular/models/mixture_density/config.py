@@ -12,7 +12,7 @@ INCOMPATIBLE_BACKBONES = ["NodeConfig", "TabNetModelConfig", "MDNConfig"]
 
 @dataclass
 class MDNConfig(ModelConfig):
-    """MDN configuration
+    """MDN configuration.
 
     Args:
         backbone_config_class (str): The config class for defining the Backbone. The config class should be

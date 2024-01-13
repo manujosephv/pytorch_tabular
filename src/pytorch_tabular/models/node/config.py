@@ -7,7 +7,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class NodeConfig(ModelConfig):
-    """Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data configuration
+    """Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data configuration.
 
     Args:
         num_layers (int): Number of Oblivious Decision Tree Layers in the Dense Architecture

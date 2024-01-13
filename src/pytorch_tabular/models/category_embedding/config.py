@@ -9,7 +9,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class CategoryEmbeddingModelConfig(ModelConfig):
-    """CategoryEmbeddingModel configuration
+    """CategoryEmbeddingModel configuration.
 
     Args:
         layers (str): DEPRECATED: Hyphen-separated number of layers and units in the classification head. E.g. 32-64-32.
