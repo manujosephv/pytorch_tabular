@@ -13,6 +13,7 @@ INCOMPATIBLE_BACKBONES = ["NodeConfig", "TabNetModelConfig", "MDNConfig"]
 @dataclass
 class MDNConfig(ModelConfig):
     """MDN configuration
+
     Args:
         backbone_config_class (str): The config class for defining the Backbone. The config class should be
                 a valid module path from `models`. e.g. `FTTransformerConfig`
@@ -22,7 +23,7 @@ class MDNConfig(ModelConfig):
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
-                tasks.. Choices are: [`regression`,`classification`,`backbone`].
+                tasks. Choices are: [`regression`,`classification`,`backbone`].
 
         head (str):
 
@@ -32,14 +33,14 @@ class MDNConfig(ModelConfig):
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 

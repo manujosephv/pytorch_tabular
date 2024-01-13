@@ -11,6 +11,7 @@ from pytorch_tabular.config import ModelConfig
 @dataclass
 class DANetConfig(ModelConfig):
     """DANet configuration
+
     Args:
         n_layers (int): Number of Blocks in the DANet. 8, 20, 32 are configurations
             the paper evaluated. Defaults to 8
@@ -27,7 +28,7 @@ class DANetConfig(ModelConfig):
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
-                tasks.. Choices are: [`regression`,`classification`,`backbone`].
+                tasks. Choices are: [`regression`,`classification`,`backbone`].
 
         head (Optional[str]): The head to be used for the model. Should be one of the heads defined in
                 `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
@@ -40,14 +41,14 @@ class DANetConfig(ModelConfig):
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 
@@ -85,7 +86,7 @@ class DANetConfig(ModelConfig):
     abstlay_dim_2: Optional[int] = field(
         default=None,
         metadata={
-            "help": "The dimension for the intermediate output in the second ABSTLAY layer in a Block. "
+            "help": "The dimension for the intermediate output in the second ABSTLAY layer in a Block."
             "If None, it will be twice abstlay_dim_1. Defaults to None"
         },
     )

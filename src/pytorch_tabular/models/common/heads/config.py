@@ -11,13 +11,12 @@ class LinearHeadConfig:
 
     Args:
         layers (str): Hyphen-separated number of layers and units in the classification/regression head.
-                eg. 32-64-32. Default is just a mapping from intput dimension to output dimension
+                E.g. 32-64-32. Default is just a mapping from intput dimension to output dimension
 
-        activation (str): The activation type in the classification head. The default activaion in PyTorch
-                like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-
-                weighted-sum-nonlinearity
+        activation (str): The activation type in the classification head. The default activation in PyTorch
+                like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
 
-        dropout (float): probability of an classification element to be zeroed.
+        dropout (float): probability of a classification element to be zeroed.
 
         use_batch_norm (bool): Flag to include a BatchNorm layer after each Linear Layer+DropOut
 
@@ -35,7 +34,7 @@ class LinearHeadConfig:
     activation: str = field(
         default="ReLU",
         metadata={
-            "help": "The activation type in the classification head. The default activaion in PyTorch"
+            "help": "The activation type in the classification head. The default activation in PyTorch"
             " like ReLU, TanH, LeakyReLU, etc."
             " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
         },

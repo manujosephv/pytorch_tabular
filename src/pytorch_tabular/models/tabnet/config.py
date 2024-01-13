@@ -10,15 +10,16 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class TabNetModelConfig(ModelConfig):
-    """Model configuration
+    """TabNet: Attentive Interpretable Tabular Learning configuration
+
     Args:
         n_d (int): Dimension of the prediction  layer (usually between 4 and 64)
 
         n_a (int): Dimension of the attention  layer (usually between 4 and 64)
 
-        n_steps (int): Number of sucessive steps in the newtork (usually betwenn 3 and 10)
+        n_steps (int): Number of successive steps in the network (usually between 3 and 10)
 
-        gamma (float): Float above 1, scaling factor for attention updates (usually betwenn 1.0 to 2.0)
+        gamma (float): Float above 1, scaling factor for attention updates (usually between 1.0 to 2.0)
 
         n_independent (int): Number of independent GLU layer in each GLU block (default 2)
 
@@ -29,10 +30,9 @@ class TabNetModelConfig(ModelConfig):
         mask_type (str): Either 'sparsemax' or 'entmax' : this is the masking function to use. Choices are:
                 [`sparsemax`,`entmax`].
 
-
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
-                tasks.. Choices are: [`regression`,`classification`,`backbone`].
+                tasks. Choices are: [`regression`,`classification`,`backbone`].
 
         head (Optional[str]): The head to be used for the model. Should be one of the heads defined in
                 `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
@@ -45,14 +45,14 @@ class TabNetModelConfig(ModelConfig):
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 
@@ -85,11 +85,11 @@ class TabNetModelConfig(ModelConfig):
     )
     n_steps: int = field(
         default=3,
-        metadata={"help": ("Number of sucessive steps in the newtork (usually betwenn 3 and 10)")},
+        metadata={"help": ("Number of successive steps in the network (usually between 3 and 10)")},
     )
     gamma: float = field(
         default=1.3,
-        metadata={"help": ("Float above 1, scaling factor for attention updates (usually betwenn" " 1.0 to 2.0)")},
+        metadata={"help": ("Float above 1, scaling factor for attention updates (usually between" " 1.0 to 2.0)")},
     )
     n_independent: int = field(
         default=2,

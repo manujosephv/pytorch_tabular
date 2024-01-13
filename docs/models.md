@@ -27,7 +27,7 @@ While there are separate config classes for each model, all of them share a few 
 
 - `learning_rate`: float: The learning rate of the model. Defaults to 1e-3.
 
-- `loss`: Optional\[str\]: The loss function to be applied. By Default it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
+- `loss`: Optional\[str\]: The loss function to be applied. By Default, it is MSELoss for regression and CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss or L1Loss for regression and CrossEntropyLoss for classification
 
 - `metrics`: Optional\[List\[str\]\]: The list of metrics you need to track during training. The metrics should be one of the functional metrics implemented in `torchmetrics`. By default, it is `accuracy` if classification and `mean_squared_error` for regression
 
@@ -55,13 +55,13 @@ That's it, Thats the most basic necessity. All the rest is intelligently inferre
 
 Adam Optimizer and the `learning_rate` of 1e-3 is a default that is set in PyTorch Tabular. It's a rule of thumb that works in most cases and a good starting point which has worked well empirically. If you want to change the learning rate(which is a pretty important hyperparameter), this is where you should. There is also an automatic way to derive a good learning rate which we will talk about in the TrainerConfig. In that case, Pytorch Tabular will ignore the learning rate set through this parameter
 
-Another key component of the model is the `loss`. Pytorch Tabular can use any loss function from standard PyTorch([`torch.nn`](https://pytorch.org/docs/stable/nn.html#loss-functions)) through this config. By default it is set to `MSELoss` for regression and `CrossEntropyLoss` for classification, which works well for those use cases and are the most popular loss functions used. If you want to use something else specficaly, like `L1Loss`, you just need to mention it in the `loss` parameter
+Another key component of the model is the `loss`. Pytorch Tabular can use any loss function from standard PyTorch([`torch.nn`](https://pytorch.org/docs/stable/nn.html#loss-functions)) through this config. By default, it is set to `MSELoss` for regression and `CrossEntropyLoss` for classification, which works well for those use cases and are the most popular loss functions used. If you want to use something else specficaly, like `L1Loss`, you just need to mention it in the `loss` parameter
 
 ```python
 loss = "L1Loss
 ```
 
-PyTorch Tabular also accepts custom loss functions(which are drop in replacements for the standard loss functions) through the `fit` method in the `TabularModel`.
+PyTorch Tabular also accepts custom loss functions (which are drop in replacements for the standard loss functions) through the `fit` method in the `TabularModel`.
 
 !!! warning
 
@@ -113,7 +113,7 @@ All the parameters have intelligent default values. Let's look at few of them:
 - `use_batch_norm`: bool: Flag to include a BatchNorm layer after each Linear Layer+DropOut. Defaults to `False`
 - `dropout`: float: The probability of the element to be zeroed. This applies to all the linear layers. Defaults to `0.0`
 
-**For a complete list of parameters refer to the API Docs**    
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.CategoryEmbeddingModelConfig][]
 
 ### Gated Additive Tree Ensemble (GATE)
@@ -140,14 +140,14 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 - `share_head_weights`: bool: If True, we will share the weights between the heads. Defaults to True
 
-**For a complete list of parameters refer to the API Docs**    
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.GatedAdditiveTreeEnsembleConfig][]
 
 ### Neural Oblivious Decision Ensembles (NODE)
 
-[Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data](https://arxiv.org/abs/1909.06312) is a model presented in ICLR 2020 and according to the authors have beaten well-tuned Gradient Boosting models on many datasets. It uses a Neural equivalent of Oblivious Trees(the kind of trees Catboost uses) as the basic building blocks of the architecture. You can use it by choosing `NodeConfig`.
+[Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data](https://arxiv.org/abs/1909.06312) is a model presented in ICLR 2020 and according to the authors have beaten well-tuned Gradient Boosting models on many datasets. It uses a Neural equivalent of Oblivious Trees (the kind of trees Catboost uses) as the basic building blocks of the architecture. You can use it by choosing `NodeConfig`.
 
-The basic block, or a "layer" looks something like below(from the paper)
+The basic block, or a "layer" looks something like below (from the paper)
 
 ![NODE Architecture](imgs/node_arch.png)
 
@@ -160,24 +160,24 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 - `num_layers`: int: Number of Oblivious Decision Tree Layers in the Dense Architecture. Defaults to `1`
 - `num_trees`: int: Number of Oblivious Decision Trees in each layer. Defaults to `2048`
 - `depth`: int: The depth of the individual Oblivious Decision Trees. Parameters increase exponentially with the increase in depth. Defaults to `6`
-- `choice_function`: str: Generates a sparse probability distribution to be used as feature weights(aka, soft feature selection). Choices are: `entmax15` `sparsemax`. Defaults to `entmax15`
-- `bin_function`: str: Generates a sparse probability distribution to be used as tree leaf weights. Choices are: `entmax15` `sparsemax`. Defaults to `entmax15`
+- `choice_function`: str: Generates a sparse probability distribution to be used as feature weights (aka, soft feature selection). Choices are: `entmax15` `sparsemax`. Defaults to `entmax15`
+- `bin_function`: str: Generates a sparse probability distribution to be used as tree leaf weights. Choices are: `entmoid15` `sparsemoid`. Defaults to `entmoid15`
 - `additional_tree_output_dim`: int: The additional output dimensions which is only used to pass through different layers of the architectures. Only the first output_dim outputs will be used for prediction. Defaults to `3`
 - `input_dropout`: float: Dropout which is applied to the input to the different layers in the Dense Architecture. The probability of the element to be zeroed. Defaults to `0.0`
 
 
-**For a complete list of parameters refer to the API Docs**     
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.NodeConfig][]
 
 !!! note
 
-    NODE model has a lot of parameters and therefore takes up a lot of memory. Smaller batchsizes(like 64 or 128) makes the model manageable in a smaller GPU(~4GB).
+    NODE model has a lot of parameters and therefore takes up a lot of memory. Smaller batchsizes (like 64 or 128) makes the model manageable in a smaller GPU(~4GB).
 
 ### TabNet
 
 - [TabNet: Attentive Interpretable Tabular Learning](https://arxiv.org/abs/1908.07442) is another model coming out of Google Research which uses Sparse Attention in multiple steps of decision making to model the output. You can use it by choosing `TabNetModelConfig`.
 
-The architecture is as shown below(from the paper)
+The architecture is as shown below (from the paper)
 
 ![TabNet Architecture](imgs/tabnet_architecture.png)
 
@@ -185,12 +185,12 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 - `n_d`: int: Dimension of the prediction layer (usually between 4 and 64). Defaults to `8`
 - `n_a`: int: Dimension of the attention layer (usually between 4 and 64). Defaults to `8`
-- `n_steps`: int: Number of sucessive steps in the newtork (usually betwenn 3 and 10). Defaults to `3`
+- `n_steps`: int: Number of successive steps in the network (usually between 3 and 10). Defaults to `3`
 - `n_independent`: int: Number of independent GLU layer in each GLU block. Defaults to `2`
 - `n_shared`: int: Number of independent GLU layer in each GLU block. Defaults to `2`
 - `virtual_batch_size`: int: Batch size for Ghost Batch Normalization. BatchNorm on large batches sometimes does not do very well and therefore Ghost Batch Normalization which does batch normalization in smaller virtual batches is implemented in TabNet. Defaults to `128`
 
-**For a complete list of parameters refer to the API Docs**    
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.TabNetModelConfig][]
 
 ### Automatic Feature Interaction Learning via Self-Attentive Neural Networks(AutoInt)
@@ -203,9 +203,9 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 - `num_heads`: int: The number of heads in the Multi-Headed Attention layer. Defaults to 2
 
-- `num_attn_blocks`: int: The number of layers of stacked Multi-Headed Attention layers. Defaults to 2
+- `num_attn_blocks`: int: The number of layers of stacked Multi-Headed Attention layers. Defaults to 3
 
-**For a complete list of parameters refer to the API Docs**    
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.AutoIntConfig][]
 
 ### Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)
@@ -223,7 +223,7 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 - `learnable_sparsity`: bool: Only valid for t-softmax. If True, the sparsity parameters will be learned. If False, the sparsity parameters will be fixed to the initial values specified in `gflu_feature_init_sparsity` and `tree_feature_init_sparsity`. Defaults to True
 
 
-**For a complete list of parameters refer to the API Docs**    
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.GANDALFConfig][]
 
 ### DANETs: Deep Abstract Networks for Tabular Data Classification and Regression
@@ -232,18 +232,18 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 All the parameters have beet set to recommended values from the paper. Let's look at them:
 
-- `n_layers`: int: Number of Blocks in the DANet. Defaults to 16
+- `n_layers`: int: Number of Blocks in the DANet. Each block has 2 Abstlay Blocks each. Defaults to 8
 
 - `abstlay_dim_1`: int: The dimension for the intermediate output in the first ABSTLAY layer in a Block. Defaults to 32
 
-- `abstlay_dim_2`: int: The dimension for the intermediate output in the second ABSTLAY layer in a Block. Defaults to 64
+- `abstlay_dim_2`: int: The dimension for the intermediate output in the second ABSTLAY layer in a Block. If None, it will be twice abstlay_dim_1. Defaults to None
 
 - `k`: int: The number of feature groups in the ABSTLAY layer. Defaults to 5
 
 - `dropout_rate`: float: Dropout to be applied in the Block. Defaults to 0.1
 
 
-**For a complete list of parameters refer to the API Docs**    
+**For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.DANetConfig][]
 
 ## Implementing New Architectures
@@ -301,7 +301,7 @@ In addition to the model, you will also need to define a config. Configs are pyt
 
 **Key things to note:**
 
-1. All the different parameters in the different configs(like TrainerConfig, OptimizerConfig, etc) are all available in `config` before calling `super()` and in `self.hparams` after.
+1. All the different parameters in the different configs (like TrainerConfig, OptimizerConfig, etc) are all available in `config` before calling `super()` and in `self.hparams` after.
 1. the input batch at the `forward` method is a dictionary with keys `continuous` and `categorical`
 1. In the `\_build_network` method, save every component that you want access in the `forward` to `self`
 

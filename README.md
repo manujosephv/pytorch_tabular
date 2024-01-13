@@ -12,7 +12,7 @@
 
 PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
 
-- Low Resistance Useability
+- Low Resistance Usability
 - Easy Customization
 - Scalable and Easier to Deploy
 
