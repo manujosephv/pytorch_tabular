@@ -153,6 +153,7 @@ class TabularModelTuner:
         cv: Optional[Union[int, Iterable, BaseCrossValidator]] = None,
         cv_agg_func: Optional[Callable] = np.mean,
         cv_kwargs: Optional[Dict] = {},
+        return_best_model: bool = True,
         verbose: bool = False,
         progress_bar: bool = True,
         random_state: Optional[int] = 42,
@@ -199,6 +200,8 @@ class TabularModelTuner:
         cv_kwargs (Optional[Dict], optional): Additional keyword arguments to be passed to the cross validation
             method. Defaults to {}.
 
+        return_best_model (bool, optional): If True, will return the best model. Defaults to True.
+
         verbose (bool, optional): Whether to print the results of each trial. Defaults to False.
 
         progress_bar (bool, optional): Whether to show a progress bar. Defaults to True.
@@ -214,6 +217,8 @@ class TabularModelTuner:
                 trials_df (DataFrame): A dataframe with the results of each trial
                 best_params (Dict): The best parameters found
                 best_score (float): The best score found
+
+            best_model: If return_best_model is True, return best_model otherwise return None.
         """
         assert strategy in self.ALLOWABLE_STRATEGIES, f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
@@ -269,6 +274,8 @@ class TabularModelTuner:
             metric_str = metric.__name__
         del temp_tabular_model
         trials = []
+        best_model = None
+        best_score = 0.0
         for i, params in enumerate(iterator):
             # Copying the configs as a base
             # Make sure all default parameters that you want to be set for all
@@ -333,6 +340,20 @@ class TabularModelTuner:
                     else:
                         result = tabular_model_t.evaluate(validation, verbose=False)
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
+
+                    if best_model is None:
+                        best_model = deepcopy(tabular_model_t)
+                        best_score = params[metric_str]
+                    else:
+                        if mode == "min":
+                            if params[metric_str] < best_score:
+                                best_model = deepcopy(tabular_model_t)
+                                best_score = params[metric_str]
+                        elif mode == "max":
+                            if params[metric_str] > best_score:
+                                best_model = deepcopy(tabular_model_t)
+                                best_score = params[metric_str]
+
             params.update({"trial_id": i})
             trials.append(params)
             if verbose:
@@ -348,4 +369,13 @@ class TabularModelTuner:
         best_params = trials_df.iloc[best_idx].to_dict()
         best_score = best_params.pop(metric_str)
         trials_df.insert(0, "trial_id", trials)
-        return self.OUTPUT(trials_df, best_params, best_score)
+
+        if verbose:
+            logger.info("Model Tuner Finished"
+)
+            logger.info(f"Best Score ({metric_str}): {best_score}")
+
+        if return_best_model:
+            return self.OUTPUT(trials_df, best_params, best_score), best_model
+        else:
+            return self.OUTPUT(trials_df, best_params, best_score), None
