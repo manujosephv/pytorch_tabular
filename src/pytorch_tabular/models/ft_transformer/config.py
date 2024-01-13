@@ -10,7 +10,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class FTTransformerConfig(ModelConfig):
-    """Tab Transformer configuration
+    """Tab Transformer configuration.
 
     Args:
         input_embed_dim (int): The embedding dimension for the input categorical features. Defaults to 32

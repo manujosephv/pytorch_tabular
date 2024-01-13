@@ -10,7 +10,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class DANetConfig(ModelConfig):
-    """DANet configuration
+    """DANet configuration.
 
     Args:
         n_layers (int): Number of Blocks in the DANet. 8, 20, 32 are configurations

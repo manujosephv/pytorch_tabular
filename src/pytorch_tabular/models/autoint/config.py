@@ -10,7 +10,7 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class AutoIntConfig(ModelConfig):
-    """AutomaticFeatureInteraction configuration
+    """AutomaticFeatureInteraction configuration.
 
     Args:
         attn_embed_dim (int): The number of hidden units in the Multi-Headed Attention layers. Defaults to
