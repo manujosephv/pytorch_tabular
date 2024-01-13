@@ -373,8 +373,7 @@ class TabularModelTuner:
         trials_df.insert(0, "trial_id", trials)
 
         if verbose:
-            logger.info("Model Tuner Finished"
-)
+            logger.info("Model Tuner Finished")
             logger.info(f"Best Score ({metric_str}): {best_score}")
 
         if return_best_model:
