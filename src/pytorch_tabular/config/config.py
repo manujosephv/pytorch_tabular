@@ -68,31 +68,31 @@ class DataConfig:
                 introduction_date and with a monthly frequency like "2023-12" should have
                 an entry ('intro_date','M','%Y-%m')
 
-        encode_date_columns (bool): Whether or not to encode the derived variables from date
+        encode_date_columns (bool): Whether to encode the derived variables from date
 
         validation_split (Optional[float]): Percentage of Training rows to keep aside as validation. Used
                 only if Validation Data is not given separately
 
-        continuous_feature_transform (Optional[str]): Whether or not to transform the features before
-                modelling. By default it is turned off.. Choices are: [`None`,`yeo-johnson`,`box-
-                cox`,`quantile_normal`,`quantile_uniform`].
+        continuous_feature_transform (Optional[str]): Whether to transform the features before
+                modelling. By default, it is turned off. Choices are: [`None`,`yeo-johnson`,`box-cox`,
+                `quantile_normal`,`quantile_uniform`].
 
         normalize_continuous_features (bool): Flag to normalize the input features(continuous)
 
         quantile_noise (int): NOT IMPLEMENTED. If specified fits QuantileTransformer on data with added
                 gaussian noise with std = :quantile_noise: * data.std ; this will cause discrete values to be more
-                separable. Please not that this transformation does NOT apply gaussian noise to the resulting
+                separable. Please note that this transformation does NOT apply gaussian noise to the resulting
                 data, the noise is only applied for QuantileTransformer
 
         num_workers (Optional[int]): The number of workers used for data loading. For windows always set to
                 0
 
-        pin_memory (bool): Whether or not to pin memory for data loading.
+        pin_memory (bool): Whether to pin memory for data loading.
 
-        handle_unknown_categories (bool): Whether or not to handle unknown or new values in categorical
+        handle_unknown_categories (bool): Whether to handle unknown or new values in categorical
                 columns as unknown
 
-        handle_missing_values (bool): Whether or not to handle missing values in categorical columns as
+        handle_missing_values (bool): Whether to handle missing values in categorical columns as
                 unknown
     """
 
@@ -146,7 +146,7 @@ class DataConfig:
     )
     normalize_continuous_features: bool = field(
         default=True,
-        metadata={"help": "Flag to normalize the input features(continuous)"},
+        metadata={"help": "Flag to normalize the input features (continuous)"},
     )
     quantile_noise: int = field(
         default=0,
@@ -264,7 +264,7 @@ class TrainerConfig:
                 Choices are: [`cpu`,`gpu`,`tpu`,`ipu`,'mps',`auto`].
 
         devices (Optional[int]): Number of devices to train on (int). -1 uses all available devices. By
-                default uses all available devices (-1)
+                default, uses all available devices (-1)
 
         devices_list (Optional[List[int]]): List of devices to train on (list). If specified, takes
                 precedence over `devices` argument. Defaults to None
@@ -563,7 +563,7 @@ class ExperimentConfig:
                 this defines the folder under which the logs will be saved and for W&B it defines the project name
 
         run_name (Optional[str]): The name of the run; a specific identifier to recognize the run. If left
-                blank, will be assigned a auto-generated name
+                blank, will be assigned an auto-generated name
 
         exp_watch (Optional[str]): The level of logging required.  Can be `gradients`, `parameters`, `all`
                 or `None`. Defaults to None. Choices are: [`gradients`,`parameters`,`all`,`None`].
@@ -695,7 +695,7 @@ class ExperimentRunManager:
         exp_version_manager: str = ".pt_tmp/exp_version_manager.yml",
     ) -> None:
         """The manages the versions of the experiments based on the name. It is a simple dictionary(yaml) based lookup.
-        Primary purpose is to avoid overwriting of saved models while runing the training without changing the
+        Primary purpose is to avoid overwriting of saved models while running the training without changing the
         experiment name.
 
         Args:
@@ -752,7 +752,7 @@ class ModelConfig:
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 

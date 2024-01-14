@@ -7,7 +7,8 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class NodeConfig(ModelConfig):
-    """Model configuration
+    """Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data configuration.
+
     Args:
         num_layers (int): Number of Oblivious Decision Tree Layers in the Dense Architecture
 
@@ -33,7 +34,7 @@ class NodeConfig(ModelConfig):
         initialize_response (str): Initializing the response variable in the Oblivious Decision Trees. By
                 default, it is a standard normal distribution. Choices are: [`normal`,`uniform`].
 
-        initialize_selection_logits (str): Initializing the feature selector. By default is a uniform
+        initialize_selection_logits (str): Initializing the feature selector. By default, is a uniform
                 distribution across the features. Choices are: [`uniform`,`normal`].
 
         threshold_init_beta (float):                  Used in the Data-aware initialization of thresholds
@@ -60,7 +61,7 @@ class NodeConfig(ModelConfig):
 
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
-                tasks.. Choices are: [`regression`,`classification`,`backbone`].
+                tasks. Choices are: [`regression`,`classification`,`backbone`].
 
         head (Optional[str]): The head to be used for the model. Should be one of the heads defined in
                 `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
@@ -73,14 +74,14 @@ class NodeConfig(ModelConfig):
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 
