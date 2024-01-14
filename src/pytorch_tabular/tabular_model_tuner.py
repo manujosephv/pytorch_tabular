@@ -219,8 +219,7 @@ class TabularModelTuner:
                 trials_df (DataFrame): A dataframe with the results of each trial
                 best_params (Dict): The best parameters found
                 best_score (float): The best score found
-
-            best_model: If return_best_model is True, return best_model otherwise return None.
+                best_model (TabularModel or None): If return_best_model is True, return best_model otherwise return None
         """
         assert strategy in self.ALLOWABLE_STRATEGIES, f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
