@@ -232,6 +232,11 @@ def model_sweep(
         verbose (bool, optional): If True, will print the progress. Defaults to True.
 
         suppress_lightning_logger (bool, optional): If True, will suppress the lightning logger. Defaults to True.
+
+        Returns:
+            results: Training results.
+
+            best_model: If return_best_model is True, return best_model otherwise return None.
     """
     _validate_args(
         task=task,
@@ -386,4 +391,4 @@ def model_sweep(
         best_model.datamodule = datamodule
         return results, best_model
     else:
-        return results
+        return results, None
