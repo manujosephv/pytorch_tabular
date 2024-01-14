@@ -158,3 +158,4 @@ tests/.datasets/
 test.py
 lightning_logs/
 docs/tutorials/examples/basic/
+docs/tutorials/pytorch-tabular-covertype/

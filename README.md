@@ -76,13 +76,13 @@ For complete Documentation with tutorials visit [ReadTheDocs](https://pytorch-ta
 - FT Transformer from [Revisiting Deep Learning Models for Tabular Data](https://arxiv.org/abs/2106.11959)
 - [Gated Additive Tree Ensemble](https://arxiv.org/abs/2207.08548v3) is a novel high-performance, parameter and computationally efficient deep learning architecture for tabular data. GATE uses a gating mechanism, inspired from GRU, as a feature representation learning unit with an in-built feature selection mechanism. We combine it with an ensemble of differentiable, non-linear decision trees, re-weighted with simple self-attention to predict our desired output.
 - [Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)](https://arxiv.org/abs/2207.08548) is pared-down version of GATE which is more efficient and performing than GATE. GANDALF makes GFLUs the main learning unit, also introducing some speed-ups in the process. With very minimal hyperparameters to tune, this becomes an easy to use and tune model.
-
 - [DANETs: Deep Abstract Networks for Tabular Data Classification and Regression](https://arxiv.org/pdf/2112.02962v4.pdf) is a novel and flexible neural component for tabular data, called Abstract Layer (AbstLay), which learns to explicitly group correlative input features and generate higher-level features for semantics abstraction.  A special basic block is built using AbstLays, and we construct a family of Deep Abstract Networks (DANets) for tabular data classification and regression by stacking such blocks.
 
 **Semi-Supervised Learning**
 
 - [Denoising AutoEncoder](https://www.kaggle.com/code/faisalalsrheed/denoising-autoencoders-dae-for-tabular-data) is an autoencoder which learns robust feature representation, to compensate any noise in the dataset.
 
+## Implement Custom Models
 To implement new models, see the [How to implement new models tutorial](https://github.com/manujosephv/pytorch_tabular/blob/main/docs/tutorials/04-Implementing%20New%20Architectures.ipynb). It covers basic as well as advanced architectures.
 
 ## Usage
@@ -140,11 +140,10 @@ loaded_model = TabularModel.load_model("examples/basic")
 ## Future Roadmap(Contributions are Welcome)
 
 1. Integrate Optuna Hyperparameter Tuning
-1. Integrate Captum for interpretability
-1. Have a scikit-learn compatible API
+1. Migrate Datamodule to Polars or NVTabular for faster data loading and to handle larger than RAM datasets.
 1. Add GaussRank as Feature Transformation
+1. Have a scikit-learn compatible API
 1. Enable support for multi-label classification
-1. Migrate Datamodule to Polars or Vaex for faster data loading and to handle larger than RAM datasets.
 1. Keep adding more architectures
 
 ## Contributors

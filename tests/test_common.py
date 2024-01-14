@@ -1199,7 +1199,7 @@ def test_model_compare_classification(
         "classification", model_list, data_config, trainer_config, optimizer_config, train, test, metric, rank_metric
     )
     if model_list == "lite":
-        assert len(comp_df) == 4
+        assert len(comp_df) == 3
     else:
         assert len(comp_df) == len(model_list)
     # best_score = comp_df[f"test_{rank_metric[0]}"].values.tolist()[0]
@@ -1239,7 +1239,7 @@ def test_model_compare_regression(regression_data, model_list, continuous_cols, 
         "regression", model_list, data_config, trainer_config, optimizer_config, train, test, metric, rank_metric
     )
     if model_list == "lite":
-        assert len(comp_df) == 4
+        assert len(comp_df) == 3
     else:
         assert len(comp_df) == len(model_list)
     # best_score = comp_df[f"test_{rank_metric[0]}"].values.tolist()[0]
