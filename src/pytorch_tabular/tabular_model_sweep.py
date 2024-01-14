@@ -30,12 +30,47 @@ logger = get_logger("pytorch_tabular")
 MODEL_SWEEP_PRESETS = {
     "lite": (
         ("CategoryEmbeddingModelConfig", {"layers": "256-128-64"}),
-        ("DANetConfig", {"n_layers": 8, "abstlay_dim_1": 8, "k": 5}),
         ("GANDALFConfig", {"gflu_stages": 6}),
         (
             "TabNetModelConfig",
-            {"n_d": 32, "n_a": 32, "n_steps": 3, "gamma": 1.5, "n_independent": 1, "n_shared": 2},
+            {
+                "n_d": 32,
+                "n_a": 32,
+                "n_steps": 3,
+                "gamma": 1.5,
+                "n_independent": 1,
+                "n_shared": 2,
+            },
         ),
+    ),
+    "standard": (
+        ("CategoryEmbeddingModelConfig", {"layers": "256-128-64"}),
+        ("CategoryEmbeddingModelConfig", {"layers": "512-128-64"}),
+        ("GANDALFConfig", {"gflu_stages": 6}),
+        ("GANDALFConfig", {"gflu_stages": 15}),
+        (
+            "TabNetModelConfig",
+            {
+                "n_d": 32,
+                "n_a": 32,
+                "n_steps": 3,
+                "gamma": 1.5,
+                "n_independent": 1,
+                "n_shared": 2,
+            },
+        ),
+        (
+            "TabNetModelConfig",
+            {
+                "n_d": 32,
+                "n_a": 32,
+                "n_steps": 5,
+                "gamma": 1.5,
+                "n_independent": 2,
+                "n_shared": 3,
+            },
+        ),
+        ("FTTransformerConfig", {"num_heads": 4, "num_attn_blocks": 4}),
     ),
     "full": (m for m in available_models() if m not in ["MDNConfig", "NodeConfig"]),
     "high_memory": (m for m in available_models() if m not in ["MDNConfig"]),
@@ -77,8 +112,8 @@ def _validate_args(
             isinstance(m, (str, ModelConfig)) for m in model_list
         ), f"models must be a list of strings or ModelConfigs, but got {model_list}"
         assert all(task == m.task for m in model_list if isinstance(m, ModelConfig)), (
-            "task must be the same as the task in ModelConfig,"
-            f" but got {task} and {[m.task for m in model_list if isinstance(m, ModelConfig)]}"
+            f"task must be the same as the task in ModelConfig, but got {task} and"
+            f" {[m.task for m in model_list if isinstance(m, ModelConfig)]}"
         )
     if metrics is not None:
         assert isinstance(metrics, list), f"metrics must be a list of strings or callables, but got {type(metrics)}"
@@ -238,11 +273,15 @@ def model_sweep(
     if isinstance(model_list, str):
         model_list = copy.deepcopy(MODEL_SWEEP_PRESETS[model_list])
         model_list = [
-            getattr(models, model_config[0])(task=task, **model_config[1], **common_model_args)
-            if isinstance(model_config, Tuple)
-            else getattr(models, model_config)(task=task, **common_model_args)
-            if isinstance(model_config, str)
-            else model_config
+            (
+                getattr(models, model_config[0])(task=task, **model_config[1], **common_model_args)
+                if isinstance(model_config, Tuple)
+                else (
+                    getattr(models, model_config)(task=task, **common_model_args)
+                    if isinstance(model_config, str)
+                    else model_config
+                )
+            )
             for model_config in model_list
         ]
 
@@ -256,86 +295,87 @@ def model_sweep(
             verbose=False,
         )
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        datamodule = _init_tabular_model(model_list[0]).prepare_dataloader(
-            train=train, validation=validation, seed=seed
-        )
-        results = []
-        best_model = None
-        is_lower_better = rank_metric[1] == "lower_is_better"
-        best_score = 1e9 if is_lower_better else -1e9
-        it = track(model_list, description="Sweeping Models") if progress_bar else model_list
-        ctx = Progress() if progress_bar else nullcontext()
-        with ctx as progress:
+    datamodule = _init_tabular_model(model_list[0]).prepare_dataloader(train=train, validation=validation, seed=seed)
+    results = []
+    best_model = None
+    is_lower_better = rank_metric[1] == "lower_is_better"
+    best_score = 1e9 if is_lower_better else -1e9
+    it = track(model_list, description="Sweeping Models") if progress_bar else model_list
+    ctx = Progress() if progress_bar else nullcontext()
+    with ctx as progress:
+        if progress_bar:
+            task_p = progress.add_task("Sweeping Models", total=len(model_list))
+        for model_config in model_list:
+            if isinstance(model_config, str):
+                model_config = getattr(models, model_config)(task=task, **common_model_args)
+            else:
+                for key, val in common_model_args.items():
+                    if hasattr(model_config, key):
+                        setattr(model_config, key, val)
+                    else:
+                        raise ValueError(
+                            f"ModelConfig {model_config.name} does not have an" f" attribute {key} in common_model_args"
+                        )
+            params = model_config.__dict__
+            start_time = time.time()
+            tabular_model = _init_tabular_model(model_config)
+            name = tabular_model.name
+            if verbose:
+                logger.info(f"Training {name}")
+            model = tabular_model.prepare_model(datamodule)
             if progress_bar:
-                task = progress.add_task("Sweeping Models", total=len(model_list))
-            for model_config in model_list:
-                if isinstance(model_config, str):
-                    model_config = getattr(models, model_config)(task=task, **common_model_args)
+                progress.update(task_p, description=f"Training {name}", advance=1)
+            with OutOfMemoryHandler(handle_oom=True) as handler:
+                tabular_model.train(model, datamodule, handle_oom=False)
+            res_dict = {
+                "model": name,
+                "# Params": int_to_human_readable(tabular_model.num_params),
+            }
+            if handler.oom_triggered:
+                if not ignore_oom:
+                    raise OOMException(
+                        "Out of memory error occurred during cross validation. "
+                        "Set ignore_oom=True to ignore this error."
+                    )
                 else:
-                    for key, val in common_model_args.items():
-                        if hasattr(model_config, key):
-                            setattr(model_config, key, val)
-                        else:
-                            raise ValueError(
-                                f"ModelConfig {model_config.name} does not have an"
-                                f" attribute {key} in common_model_args"
-                            )
-                params = model_config.__dict__
-                start_time = time.time()
-                tabular_model = _init_tabular_model(model_config)
-                name = tabular_model.name
-                if verbose:
-                    logger.info(f"Training {name}")
-                model = tabular_model.prepare_model(datamodule)
-                if progress_bar:
-                    progress.update(task, description=f"Training {name}", advance=1)
-                with OutOfMemoryHandler(handle_oom=True) as handler:
-                    tabular_model.train(model, datamodule, handle_oom=False)
-                res_dict = {
-                    "model": name,
-                    "# Params": int_to_human_readable(tabular_model.num_params),
-                }
-                if handler.oom_triggered:
-                    if not ignore_oom:
-                        raise OOMException(
-                            "Out of memory error occurred during cross validation. "
-                            "Set ignore_oom=True to ignore this error."
-                        )
-                    else:
-                        res_dict.update(
-                            {
-                                f"test_{rank_metric[0]}": (np.inf if is_lower_better else -np.inf),
-                                "epochs": "OOM",
-                                "time_taken": "OOM",
-                                "time_taken_per_epoch": "OOM",
-                            }
-                        )
-                        res_dict["model"] = name + " (OOM)"
+                    res_dict.update(
+                        {
+                            f"test_{rank_metric[0]}": (np.inf if is_lower_better else -np.inf),
+                            "epochs": "OOM",
+                            "time_taken": "OOM",
+                            "time_taken_per_epoch": "OOM",
+                        }
+                    )
+                    res_dict["model"] = name + " (OOM)"
+            else:
+                if (
+                    tabular_model.trainer.early_stopping_callback is not None
+                    and tabular_model.trainer.early_stopping_callback.stopped_epoch != 0
+                ):
+                    res_dict["epochs"] = tabular_model.trainer.early_stopping_callback.stopped_epoch
                 else:
-                    res_dict.update(tabular_model.evaluate(test=test, verbose=False)[0])
-                    res_dict["epochs"] = tabular_model.trainer.current_epoch
-                    res_dict["time_taken"] = time.time() - start_time
-                    res_dict["time_taken_per_epoch"] = res_dict["time_taken"] / res_dict["epochs"]
+                    res_dict["epochs"] = tabular_model.trainer.max_epochs
+                res_dict.update(tabular_model.evaluate(test=test, verbose=False)[0])
+                res_dict["time_taken"] = time.time() - start_time
+                res_dict["time_taken_per_epoch"] = res_dict["time_taken"] / res_dict["epochs"]
 
-                if verbose:
-                    logger.info(f"Finished Training {name}")
-                    logger.info("Results:" f" {', '.join([f'{k}: {v}' for k,v in res_dict.items()])}")
-                res_dict["params"] = params
-                results.append(res_dict)
-                if best_model is None:
-                    best_model = copy.deepcopy(tabular_model)
-                    best_score = res_dict[f"test_{rank_metric[0]}"]
+            if verbose:
+                logger.info(f"Finished Training {name}")
+                logger.info("Results:" f" {', '.join([f'{k}: {v}' for k,v in res_dict.items()])}")
+            res_dict["params"] = params
+            results.append(res_dict)
+            if best_model is None:
+                best_model = copy.deepcopy(tabular_model)
+                best_score = res_dict[f"test_{rank_metric[0]}"]
+            else:
+                if is_lower_better:
+                    if res_dict[f"test_{rank_metric[0]}"] < best_score:
+                        best_model = copy.deepcopy(tabular_model)
+                        best_score = res_dict[f"test_{rank_metric[0]}"]
                 else:
-                    if is_lower_better:
-                        if res_dict[f"test_{rank_metric[0]}"] < best_score:
-                            best_model = copy.deepcopy(tabular_model)
-                            best_score = res_dict[f"test_{rank_metric[0]}"]
-                    else:
-                        if res_dict[f"test_{rank_metric[0]}"] > best_score:
-                            best_model = copy.deepcopy(tabular_model)
-                            best_score = res_dict[f"test_{rank_metric[0]}"]
+                    if res_dict[f"test_{rank_metric[0]}"] > best_score:
+                        best_model = copy.deepcopy(tabular_model)
+                        best_score = res_dict[f"test_{rank_metric[0]}"]
     if verbose:
         logger.info("Model Sweep Finished")
         logger.info(f"Best Model: {best_model.name}")
