@@ -272,7 +272,7 @@ class TrainerConfig:
         accumulate_grad_batches (int): Accumulates grads every k batches or as set up in the dict. Trainer
                 also calls optimizer.step() for the last indivisible step number.
 
-        auto_lr_find (bool): Runs a learning rate finder algorithm (see this paper) when calling
+        auto_lr_find (bool): Runs a learning rate finder algorithm when calling
                 trainer.tune(), to find optimal initial learning rate.
 
         auto_select_gpus (bool): If enabled and `devices` is an integer, pick available gpus automatically.
