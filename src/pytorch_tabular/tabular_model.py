@@ -1313,7 +1313,8 @@ class TabularModel:
                 with the dataframe. Defaults to False
             include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
                 Defaults to True
-            progress_bar: chose progress bar for tracking the progress
+            progress_bar: choose progress bar for tracking the progress. "rich" or "tqdm" will set the respective
+                progress bars. If None, no progress bar will be shown.
 
         Returns:
             DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
@@ -1394,7 +1395,8 @@ class TabularModel:
             include_input_features (bool): DEPRECATED: Flag to include the input features in the returned dataframe.
                 Defaults to True
 
-            progress_bar: chose progress bar for tracking the progress
+            progress_bar: choose progress bar for tracking the progress. "rich" or "tqdm" will set the respective
+                progress bars. If None, no progress bar will be shown.
 
             test_time_augmentation (bool): If True, will use test time augmentation to generate predictions.
                 The approach is very similar to what is described [here](https://kozodoi.me/blog/20210908/tta-tabular)
@@ -1458,7 +1460,7 @@ class TabularModel:
                     ret_logits,
                     include_input_features=False,
                     device=device,
-                    progress_bar=progress_bar,
+                    progress_bar=progress_bar or "None",
                 )
                 pred_idx = pred_df.index
                 if self.config.task == "classification":
