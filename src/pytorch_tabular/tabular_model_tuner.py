@@ -35,7 +35,7 @@ class TabularModelTuner:
     """
 
     ALLOWABLE_STRATEGIES = ["grid_search", "random_search"]
-    OUTPUT = namedtuple("OUTPUT", ["trials_df", "best_params", "best_score"])
+    OUTPUT = namedtuple("OUTPUT", ["trials_df", "best_params", "best_score", "best_model"])
 
     def __init__(
         self,
@@ -343,18 +343,20 @@ class TabularModelTuner:
                         result = tabular_model_t.evaluate(validation, verbose=False)
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
 
-                    if best_model is None:
-                        best_model = deepcopy(tabular_model_t)
-                        best_score = params[metric_str]
-                    else:
-                        if mode == "min":
-                            if params[metric_str] < best_score:
-                                best_model = deepcopy(tabular_model_t)
-                                best_score = params[metric_str]
-                        elif mode == "max":
-                            if params[metric_str] > best_score:
-                                best_model = deepcopy(tabular_model_t)
-                                best_score = params[metric_str]
+                    if return_best_model:
+                        tabular_model_t.datamodule = None
+                        if best_model is None:
+                            best_model = deepcopy(tabular_model_t)
+                            best_score = params[metric_str]
+                        else:
+                            if mode == "min":
+                                if params[metric_str] < best_score:
+                                    best_model = deepcopy(tabular_model_t)
+                                    best_score = params[metric_str]
+                            elif mode == "max":
+                                if params[metric_str] > best_score:
+                                    best_model = deepcopy(tabular_model_t)
+                                    best_score = params[metric_str]
 
             params.update({"trial_id": i})
             trials.append(params)
@@ -376,7 +378,8 @@ class TabularModelTuner:
             logger.info("Model Tuner Finished")
             logger.info(f"Best Score ({metric_str}): {best_score}")
 
-        if return_best_model:
-            return self.OUTPUT(trials_df, best_params, best_score), best_model
+        if return_best_model and best_model is not None:
+            best_model.datamodule = datamodule
+            return self.OUTPUT(trials_df, best_params, best_score, best_model)
         else:
-            return self.OUTPUT(trials_df, best_params, best_score), None
+            return self.OUTPUT(trials_df, best_params, best_score, None)

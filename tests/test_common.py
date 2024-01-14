@@ -862,7 +862,7 @@ def test_tuner(
             "trainer_config__batch_size": randint(32, 64),
             "optimizer_config__optimizer": ["RAdam", "AdamW"],
         }
-    result, best_model = tuner.tune(
+    result = tuner.tune(
         train=train,
         validation=test,
         search_space=search_space,
