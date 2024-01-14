@@ -160,54 +160,55 @@ class TabularModelTuner:
         **kwargs,
     ):
         """Tune the hyperparameters of the TabularModel.
+
         Args:
-        train (DataFrame): Training data
+            train (DataFrame): Training data
 
-        validation (DataFrame, optional): Validation data. Defaults to None.
+            validation (DataFrame, optional): Validation data. Defaults to None.
 
-        search_space (Dict): A dictionary of the form {param_name: [values to try]}
-            for grid search or {param_name: distribution} for random search
+            search_space (Dict): A dictionary of the form {param_name: [values to try]}
+                for grid search or {param_name: distribution} for random search
 
-        metric (Union[str, Callable]): The metric to be used for evaluation.
-            If str is provided, will use that metric from the defined ones.
-            If callable is provided, will use that function as the metric.
-            We expect callable to be of the form `metric(y_true, y_pred)`. For classification
-            problems, The `y_pred` is a dataframe with the probabilities for each class
-            (<class>_probability) and a final prediction(prediction). And for Regression, it is a
-            dataframe with a final prediction (<target>_prediction).
-            Defaults to None.
+            metric (Union[str, Callable]): The metric to be used for evaluation.
+                If str is provided, will use that metric from the defined ones.
+                If callable is provided, will use that function as the metric.
+                We expect callable to be of the form `metric(y_true, y_pred)`. For classification
+                problems, The `y_pred` is a dataframe with the probabilities for each class
+                (<class>_probability) and a final prediction(prediction). And for Regression, it is a
+                dataframe with a final prediction (<target>_prediction).
+                Defaults to None.
 
-        mode (str): One of ['max', 'min']. Whether to maximize or minimize the metric.
+            mode (str): One of ['max', 'min']. Whether to maximize or minimize the metric.
 
-        strategy (str): One of ['grid_search', 'random_search']. The strategy to use for tuning.
+            strategy (str): One of ['grid_search', 'random_search']. The strategy to use for tuning.
 
-        n_trials (int, optional): Number of trials to run. Only used for random search.
-            Defaults to None.
+            n_trials (int, optional): Number of trials to run. Only used for random search.
+                Defaults to None.
 
-        cv (Optional[Union[int, Iterable, BaseCrossValidator]]): Determines the cross-validation splitting strategy.
-            Possible inputs for cv are:
+            cv (Optional[Union[int, Iterable, BaseCrossValidator]]): Determines the cross-validation splitting strategy.
+                Possible inputs for cv are:
 
-            - None, to not use any cross validation. We will just use the validation data
-            - integer, to specify the number of folds in a (Stratified)KFold,
-            - An iterable yielding (train, test) splits as arrays of indices.
-            - A scikit-learn CV splitter.
-            Defaults to None.
+                - None, to not use any cross validation. We will just use the validation data
+                - integer, to specify the number of folds in a (Stratified)KFold,
+                - An iterable yielding (train, test) splits as arrays of indices.
+                - A scikit-learn CV splitter.
+                Defaults to None.
 
-        cv_agg_func (Optional[Callable], optional): Function to aggregate the cross validation scores.
-            Defaults to np.mean.
+            cv_agg_func (Optional[Callable], optional): Function to aggregate the cross validation scores.
+                Defaults to np.mean.
 
-        cv_kwargs (Optional[Dict], optional): Additional keyword arguments to be passed to the cross validation
-            method. Defaults to {}.
+            cv_kwargs (Optional[Dict], optional): Additional keyword arguments to be passed to the cross validation
+                method. Defaults to {}.
 
-        verbose (bool, optional): Whether to print the results of each trial. Defaults to False.
+            verbose (bool, optional): Whether to print the results of each trial. Defaults to False.
 
-        progress_bar (bool, optional): Whether to show a progress bar. Defaults to True.
+            progress_bar (bool, optional): Whether to show a progress bar. Defaults to True.
 
-        random_state (Optional[int], optional): Random state to be used for random search. Defaults to 42.
+            random_state (Optional[int], optional): Random state to be used for random search. Defaults to 42.
 
-        ignore_oom (bool, optional): Whether to ignore out of memory errors. Defaults to True.
+            ignore_oom (bool, optional): Whether to ignore out of memory errors. Defaults to True.
 
-        **kwargs: Additional keyword arguments to be passed to the TabularModel fit.
+            **kwargs: Additional keyword arguments to be passed to the TabularModel fit.
 
         Returns:
             OUTPUT: A named tuple with the following attributes:
