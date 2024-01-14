@@ -382,7 +382,7 @@ def model_sweep(
         logger.info("Model Sweep Finished")
         logger.info(f"Best Model: {best_model.name}")
     results = pd.DataFrame(results).sort_values(by=f"test_{rank_metric[0]}", ascending=is_lower_better)
-    if return_best_model:
+    if return_best_model and best_model is not None:
         best_model.datamodule = datamodule
         return results, best_model
     else:
