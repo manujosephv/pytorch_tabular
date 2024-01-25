@@ -28,7 +28,7 @@ from pytorch_tabular.utils import (
 logger = get_logger("pytorch_tabular")
 
 MODEL_SWEEP_PRESETS = {
-    "lite": (
+    "lite": [
         ("CategoryEmbeddingModelConfig", {"layers": "256-128-64"}),
         ("GANDALFConfig", {"gflu_stages": 6}),
         (
@@ -42,8 +42,8 @@ MODEL_SWEEP_PRESETS = {
                 "n_shared": 2,
             },
         ),
-    ),
-    "standard": (
+    ],
+    "standard": [
         ("CategoryEmbeddingModelConfig", {"layers": "256-128-64"}),
         ("CategoryEmbeddingModelConfig", {"layers": "512-128-64"}),
         ("GANDALFConfig", {"gflu_stages": 6}),
@@ -71,9 +71,9 @@ MODEL_SWEEP_PRESETS = {
             },
         ),
         ("FTTransformerConfig", {"num_heads": 4, "num_attn_blocks": 4}),
-    ),
-    "full": (m for m in available_models() if m not in ["MDNConfig", "NodeConfig"]),
-    "high_memory": (m for m in available_models() if m not in ["MDNConfig"]),
+    ],
+    "full": [m for m in available_models() if m not in ["MDNConfig", "NodeConfig"]],
+    "high_memory": [m for m in available_models() if m not in ["MDNConfig"]],
 }
 
 
@@ -364,11 +364,6 @@ def model_sweep(
                 res_dict["time_taken"] = time.time() - start_time
                 res_dict["time_taken_per_epoch"] = res_dict["time_taken"] / res_dict["epochs"]
 
-                if verbose:
-                    logger.info(f"Finished Training {name}")
-                    logger.info("Results:" f" {', '.join([f'{k}: {v}' for k,v in res_dict.items()])}")
-                res_dict["params"] = params
-                results.append(res_dict)
                 if return_best_model:
                     tabular_model.datamodule = None
                     if best_model is None:
@@ -383,6 +378,13 @@ def model_sweep(
                             if res_dict[f"test_{rank_metric[0]}"] > best_score:
                                 best_model = copy.deepcopy(tabular_model)
                                 best_score = res_dict[f"test_{rank_metric[0]}"]
+
+            if verbose:
+                logger.info(f"Finished Training {name}")
+                logger.info("Results:" f" {', '.join([f'{k}: {v}' for k, v in res_dict.items()])}")
+            res_dict["params"] = params
+            results.append(res_dict)
+
     if verbose:
         logger.info("Model Sweep Finished")
         logger.info(f"Best Model: {best_model.name}")
