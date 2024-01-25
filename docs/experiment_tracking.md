@@ -14,7 +14,7 @@ Tensorboard logging is barebones. PyTorch Tabular just logs the losses and metri
 ### Usage Example
 
 ```python
-experiment_config = ExperimentConfig(project_name="MyAwesomeProject", run_name="my_cool_new_model", log_target=")
+experiment_config = ExperimentConfig(project_name="MyAwesomeProject", run_name="my_cool_new_model", log_target="wandb")
 ```
 
 ## Advanced Usage
