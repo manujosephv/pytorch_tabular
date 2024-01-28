@@ -116,7 +116,7 @@ class TransformerEncoderBlock(nn.Module):
                 d_model=input_embed_dim,
                 d_ff=input_embed_dim * ff_hidden_multiplier,
                 dropout=ff_dropout,
-                activation=getattr(nn, ff_activation)()
+                activation=getattr(nn, ff_activation)(),
             )
         self.attn_add_norm = AddNorm(input_embed_dim, add_norm_dropout)
         self.ff_add_norm = AddNorm(input_embed_dim, add_norm_dropout)
