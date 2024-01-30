@@ -60,9 +60,11 @@ class AutoIntBackbone(nn.Module):
         if self.hparams.has_residuals:
             self.V_res_embedding = torch.nn.Linear(
                 _curr_units,
-                self.hparams.attn_embed_dim * self.hparams.num_attn_blocks
-                if self.hparams.attention_pooling
-                else self.hparams.attn_embed_dim,
+                (
+                    self.hparams.attn_embed_dim * self.hparams.num_attn_blocks
+                    if self.hparams.attention_pooling
+                    else self.hparams.attn_embed_dim
+                ),
             )
         self.output_dim = (self.hparams.continuous_dim + self.hparams.categorical_dim) * self.hparams.attn_embed_dim
         if self.hparams.attention_pooling:
