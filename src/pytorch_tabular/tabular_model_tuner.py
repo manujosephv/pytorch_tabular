@@ -111,7 +111,7 @@ class TabularModelTuner:
                 raise ValueError(f"{param} is not a valid parameter for {str(config)}")
         elif isinstance(config, ModelConfig):
             if hasattr(config, param):
-                config.param = value
+                setattr(config, param, value)
             else:
                 raise ValueError(f"{param} is not a valid parameter for {str(config)}")
 
