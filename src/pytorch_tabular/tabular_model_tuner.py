@@ -109,7 +109,7 @@ class TabularModelTuner:
                 config[param] = value
             else:
                 raise ValueError(f"{param} is not a valid parameter for {str(config)}")
-        elif isinstance(config, ModelConfig):
+        elif isinstance(config, (ModelConfig, TrainerConfig, OptimizerConfig)):
             if hasattr(config, param):
                 setattr(config, param, value)
             else:
@@ -254,19 +254,7 @@ class TabularModelTuner:
         if progress_bar:
             iterator = track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
         verbose_tabular_model = self.tabular_model_init_kwargs.pop("verbose", False)
-        temp_tabular_model = TabularModel(
-            data_config=self.data_config,
-            model_config=self.model_config,
-            optimizer_config=self.optimizer_config,
-            trainer_config=self.trainer_config,
-            verbose=verbose_tabular_model,
-            **self.tabular_model_init_kwargs,
-        )
-        prep_dl_kwargs, prep_model_kwargs, train_kwargs = temp_tabular_model._split_kwargs(kwargs)
-        if "seed" not in prep_dl_kwargs:
-            prep_dl_kwargs["seed"] = random_state
-        datamodule = temp_tabular_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
-        validation = validation if validation is not None else datamodule.validation_dataset.data
+
         if isinstance(metric, str):
             # metric = metric_to_pt_metric(metric)
             is_callable_metric = False
@@ -274,7 +262,7 @@ class TabularModelTuner:
         elif callable(metric):
             is_callable_metric = True
             metric_str = metric.__name__
-        del temp_tabular_model
+
         trials = []
         best_model = None
         best_score = 0.0
@@ -298,6 +286,13 @@ class TabularModelTuner:
                 verbose=verbose_tabular_model,
                 **self.tabular_model_init_kwargs,
             )
+
+            prep_dl_kwargs, prep_model_kwargs, train_kwargs = tabular_model_t._split_kwargs(kwargs)
+            if "seed" not in prep_dl_kwargs:
+                prep_dl_kwargs["seed"] = random_state
+            datamodule = tabular_model_t.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
+            validation = validation if validation is not None else datamodule.validation_dataset.data
+
             if cv is not None:
                 cv_verbose = cv_kwargs.pop("verbose", False)
                 cv_kwargs.pop("handle_oom", None)
@@ -317,7 +312,7 @@ class TabularModelTuner:
                             "Set ignore_oom=True to ignore this error."
                         )
                     else:
-                        params.update({metric_str: "OOM"})
+                        params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
                 else:
                     params.update({metric_str: cv_agg_func(cv_scores)})
             else:
@@ -334,7 +329,7 @@ class TabularModelTuner:
                             "Out of memory error occurred during training. " "Set ignore_oom=True to ignore this error."
                         )
                     else:
-                        params.update({metric_str: "OOM"})
+                        params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
                 else:
                     if is_callable_metric:
                         preds = tabular_model_t.predict(validation, include_input_features=False)
@@ -379,7 +374,16 @@ class TabularModelTuner:
             logger.info(f"Best Score ({metric_str}): {best_score}")
 
         if return_best_model and best_model is not None:
+            # Free up memory
+            del tabular_model_t
+
+            # Recreate the datamodule used in the best model
+            prep_dl_kwargs, prep_model_kwargs, train_kwargs = best_model._split_kwargs(kwargs)
+            if "seed" not in prep_dl_kwargs:
+                prep_dl_kwargs["seed"] = random_state
+            datamodule = best_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
             best_model.datamodule = datamodule
+
             return self.OUTPUT(trials_df, best_params, best_score, best_model)
         else:
             return self.OUTPUT(trials_df, best_params, best_score, None)
