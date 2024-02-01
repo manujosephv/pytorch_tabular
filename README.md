@@ -173,17 +173,17 @@ loaded_model = TabularModel.load_model("examples/basic")
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/sorenmacbeth">
-            <img src="https://avatars.githubusercontent.com/u/130043?v=4" width="100;" alt="sorenmacbeth"/>
-            <br />
-            <sub><b>Soren Macbeth</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/ProgramadorArtificial">
             <img src="https://avatars.githubusercontent.com/u/130674366?v=4" width="100;" alt="ProgramadorArtificial"/>
             <br />
             <sub><b>Programador Artificial</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/sorenmacbeth">
+            <img src="https://avatars.githubusercontent.com/u/130043?v=4" width="100;" alt="sorenmacbeth"/>
+            <br />
+            <sub><b>Soren Macbeth</b></sub>
         </a>
     </td>
     <td align="center">
@@ -242,6 +242,13 @@ loaded_model = TabularModel.load_model("examples/basic")
             <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
             <br />
             <sub><b>Sterling G. Baird</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/furyhawk">
+            <img src="https://avatars.githubusercontent.com/u/831682?v=4" width="100;" alt="furyhawk"/>
+            <br />
+            <sub><b>Teck Meng</b></sub>
         </a>
     </td>
     <td align="center">
