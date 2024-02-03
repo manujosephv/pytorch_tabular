@@ -58,7 +58,7 @@ class LinearHeadConfig:
 
 @dataclass
 class MixtureDensityHeadConfig:
-    """MixtureDensityHead configuration
+    """MixtureDensityHead configuration.
 
     Args:
         num_gaussian (int): Number of Gaussian Distributions in the mixture model. Defaults to 1
@@ -98,7 +98,6 @@ class MixtureDensityHeadConfig:
 
         input_dim (int): The input dimensions to the head. This will be automatically filled in while
                 initializing from the `backbone.output_dim`
-
     """
 
     num_gaussian: int = field(

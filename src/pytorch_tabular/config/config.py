@@ -557,7 +557,7 @@ class TrainerConfig:
 
 @dataclass
 class ExperimentConfig:
-    """Experiment configuration. Experiment Tracking with WandB and Tensorboard
+    """Experiment configuration. Experiment Tracking with WandB and Tensorboard.
 
     Args:
         project_name (str): The name of the project under which all runs will be logged. For Tensorboard
@@ -727,7 +727,7 @@ class ExperimentRunManager:
 
 @dataclass
 class ModelConfig:
-    """Base Model configuration
+    """Base Model configuration.
 
     Args:
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
@@ -932,7 +932,7 @@ class ModelConfig:
 
 @dataclass
 class SSLModelConfig:
-    """Base SSLModel Configuration
+    """Base SSLModel Configuration.
 
     Args:
         encoder_config (Optional[ModelConfig]): The config of the encoder to be used for the
