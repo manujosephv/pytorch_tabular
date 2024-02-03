@@ -253,7 +253,7 @@ class TabularModelTuner:
             raise NotImplementedError(f"{strategy} is not implemented yet.")
 
         # Sort by trainer_config to recreate the datamodule when necessary
-        trainer_configs = [key for key in search_space if 'trainer_config' in key]
+        trainer_configs = [key for key in search_space if "trainer_config" in key]
         for key in trainer_configs:
             iterator = sorted(iterator, key=lambda iterator: iterator[key])
 
