@@ -59,6 +59,7 @@ class LinearHeadConfig:
 @dataclass
 class MixtureDensityHeadConfig:
     """MixtureDensityHead configuration
+
     Args:
         num_gaussian (int): Number of Gaussian Distributions in the mixture model. Defaults to 1
 
