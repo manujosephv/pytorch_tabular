@@ -84,7 +84,7 @@ def _validate_args(
     data_config: Union[DataConfig, str],
     optimizer_config: Union[OptimizerConfig, str],
     trainer_config: Union[TrainerConfig, str],
-    model_list: Union[str, List[Union[ModelConfig, str]]] = "fast",
+    model_list: Union[str, List[Union[ModelConfig, str]]] = "lite",
     metrics: Optional[List[Union[str, Callable]]] = None,
     metrics_params: Optional[List[dict]] = None,
     metrics_prob_input: Optional[List[bool]] = None,
