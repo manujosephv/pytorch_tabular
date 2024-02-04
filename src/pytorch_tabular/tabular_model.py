@@ -327,7 +327,8 @@ class TabularModel:
         return callbacks
 
     def _prepare_trainer(self, callbacks: List, max_epochs: int = None, min_epochs: int = None) -> pl.Trainer:
-        """Prepares the Trainer object
+        """Prepares the Trainer object.
+
         Args:
             callbacks (List): A list of callbacks to be used
             max_epochs (int, optional): Maximum number of epochs to train for. Defaults to None.
@@ -876,7 +877,8 @@ class TabularModel:
         target_range: Optional[Tuple[float, float]] = None,
         seed: Optional[int] = 42,
     ):
-        """Creates a new TabularModel model using the pretrained weights and the new task and head
+        """Creates a new TabularModel model using the pretrained weights and the new task and head.
+
         Args:
             task (str): The task to be performed. One of "regression", "classification"
 
@@ -1053,7 +1055,8 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         freeze_backbone: bool = False,
     ) -> pl.Trainer:
-        """Finetunes the model on the provided data
+        """Finetunes the model on the provided data.
+
         Args:
             max_epochs (Optional[int], optional): The maximum number of epochs to train for. Defaults to None.
 
