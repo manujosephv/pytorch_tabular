@@ -39,7 +39,7 @@ jobs:
                   pip list
 
             - name: Restore test's datasets
-              uses: actions/cache/restore@v3
+              uses: actions/cache/restore@v4
               with:
                   path: tests/.datasets
                   key: test-datasets
@@ -48,7 +48,7 @@ jobs:
               run: python -m pytest -v
 
             - name: Save test's datasets
-              uses: actions/cache/save@v3
+              uses: actions/cache/save@v4
               with:
                   path: tests/.datasets
                   key: test-datasets
