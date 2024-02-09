@@ -20,7 +20,7 @@ from pytorch_tabular.models import (
     TabNetModelConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
-from scipy.stats import randint, uniform
+from scipy.stats import uniform
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.model_selection import KFold
 
