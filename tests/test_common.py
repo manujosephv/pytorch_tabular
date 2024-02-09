@@ -852,14 +852,12 @@ def test_tuner(
         search_space = {
             "model_config__layers": ["8-4", "16-8"],
             "model_config.head_config__dropout": [0.1, 0.2],
-            "trainer_config__batch_size": [32],
             "optimizer_config__optimizer": ["RAdam", "AdamW"],
         }
     else:
         search_space = {
             "model_config__layers": ["8-4", "16-8"],
             "model_config.head_config__dropout": uniform(0, 0.5),
-            "trainer_config__batch_size": randint(32, 64),
             "optimizer_config__optimizer": ["RAdam", "AdamW"],
         }
     result = tuner.tune(
