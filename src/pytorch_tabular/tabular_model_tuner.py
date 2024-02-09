@@ -109,7 +109,7 @@ class TabularModelTuner:
                 config[param] = value
             else:
                 raise ValueError(f"{param} is not a valid parameter for {str(config)}")
-        elif isinstance(config, (ModelConfig, TrainerConfig, OptimizerConfig)):
+        elif isinstance(config, (ModelConfig, OptimizerConfig)):
             if hasattr(config, param):
                 setattr(config, param, value)
             else:
@@ -117,7 +117,6 @@ class TabularModelTuner:
 
     def _update_configs(
         self,
-        trainer_config: TrainerConfig,
         optimizer_config: OptimizerConfig,
         model_config: ModelConfig,
         params: Dict,
@@ -127,7 +126,9 @@ class TabularModelTuner:
         for k, v in params.items():
             root, param = k.split("__")
             if root.startswith("trainer_config"):
-                self._check_assign_config(trainer_config, param, v)
+                raise ValueError(
+                    f"The trainer_config is not supported be tuner. Please remove it from tuner parameters!"
+                )
             elif root.startswith("optimizer_config"):
                 self._check_assign_config(optimizer_config, param, v)
             elif root.startswith("model_config.head_config"):
@@ -138,10 +139,10 @@ class TabularModelTuner:
             else:
                 raise ValueError(
                     f"{k} is not in the proper format. Use __ to separate the "
-                    "root and param. for eg. `training_config__batch_size` should be "
-                    "used to update the batch_size parameter in the training_config"
+                    "root and param. for eg. `optimizer_config__optimizer` should be "
+                    "used to update the optimizer parameter in the optimizer_config"
                 )
-        return trainer_config, optimizer_config, model_config
+        return optimizer_config, model_config
 
     def tune(
         self,
@@ -239,7 +240,7 @@ class TabularModelTuner:
             assert all(
                 isinstance(v, list) for v in search_space.values()
             ), "For grid search, all values in search_space must be a list of values to try"
-            iterator = list(ParameterGrid(search_space))
+            iterator = ParameterGrid(search_space)
             if n_trials is not None:
                 warnings.warn(
                     "n_trials is ignored for grid search to do a complete sweep of"
@@ -248,18 +249,28 @@ class TabularModelTuner:
             n_trials = sum(1 for _ in iterator)
         elif strategy == "random_search":
             assert n_trials is not None, "n_trials must be specified for random search"
-            iterator = list(ParameterSampler(search_space, n_iter=n_trials, random_state=random_state))
+            iterator = ParameterSampler(search_space, n_iter=n_trials, random_state=random_state)
         else:
             raise NotImplementedError(f"{strategy} is not implemented yet.")
-
-        # Sort by trainer_config to recreate the datamodule when necessary
-        trainer_configs = [key for key in search_space if "trainer_config" in key]
-        for key in trainer_configs:
-            iterator = sorted(iterator, key=lambda iterator: iterator[key])
 
         if progress_bar:
             iterator = track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
         verbose_tabular_model = self.tabular_model_init_kwargs.pop("verbose", False)
+
+        temp_tabular_model = TabularModel(
+            data_config=self.data_config,
+            model_config=self.model_config,
+            optimizer_config=self.optimizer_config,
+            trainer_config=self.trainer_config,
+            verbose=verbose_tabular_model,
+            **self.tabular_model_init_kwargs,
+        )
+
+        prep_dl_kwargs, prep_model_kwargs, train_kwargs = temp_tabular_model._split_kwargs(kwargs)
+        if "seed" not in prep_dl_kwargs:
+            prep_dl_kwargs["seed"] = random_state
+        datamodule = temp_tabular_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
+        validation = validation if validation is not None else datamodule.validation_dataset.data
 
         if isinstance(metric, str):
             # metric = metric_to_pt_metric(metric)
@@ -268,11 +279,10 @@ class TabularModelTuner:
         elif callable(metric):
             is_callable_metric = True
             metric_str = metric.__name__
+        del temp_tabular_model
 
-        current_trainer_config = None
         trials = []
         best_model = None
-        best_trainer_config = None
         best_score = 0.0
         for i, params in enumerate(iterator):
             # Copying the configs as a base
@@ -282,8 +292,8 @@ class TabularModelTuner:
             optimizer_config_t = deepcopy(self.optimizer_config)
             model_config_t = deepcopy(self.model_config)
 
-            trainer_config_t, optimizer_config_t, model_config_t = self._update_configs(
-                trainer_config_t, optimizer_config_t, model_config_t, params
+            optimizer_config_t, model_config_t = self._update_configs(
+                optimizer_config_t, model_config_t, params
             )
             # Initialize Tabular model using the new config
             tabular_model_t = TabularModel(
@@ -294,15 +304,6 @@ class TabularModelTuner:
                 verbose=verbose_tabular_model,
                 **self.tabular_model_init_kwargs,
             )
-
-            # If trainer config changes, recreate datamodule
-            if current_trainer_config != trainer_config_t:
-                current_trainer_config = deepcopy(trainer_config_t)
-                prep_dl_kwargs, prep_model_kwargs, train_kwargs = tabular_model_t._split_kwargs(kwargs)
-                if "seed" not in prep_dl_kwargs:
-                    prep_dl_kwargs["seed"] = random_state
-                datamodule = tabular_model_t.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
-                validation = validation if validation is not None else datamodule.validation_dataset.data
 
             if cv is not None:
                 cv_verbose = cv_kwargs.pop("verbose", False)
@@ -353,18 +354,15 @@ class TabularModelTuner:
                         tabular_model_t.datamodule = None
                         if best_model is None:
                             best_model = deepcopy(tabular_model_t)
-                            best_trainer_config = deepcopy(trainer_config_t)
                             best_score = params[metric_str]
                         else:
                             if mode == "min":
                                 if params[metric_str] < best_score:
                                     best_model = deepcopy(tabular_model_t)
-                                    best_trainer_config = deepcopy(trainer_config_t)
                                     best_score = params[metric_str]
                             elif mode == "max":
                                 if params[metric_str] > best_score:
                                     best_model = deepcopy(tabular_model_t)
-                                    best_trainer_config = deepcopy(trainer_config_t)
                                     best_score = params[metric_str]
 
             params.update({"trial_id": i})
@@ -388,15 +386,6 @@ class TabularModelTuner:
             logger.info(f"Best Score ({metric_str}): {best_score}")
 
         if return_best_model and best_model is not None:
-            if current_trainer_config != best_trainer_config:
-                # Free up memory
-                del tabular_model_t
-                # Recreate the datamodule used in the best model
-                prep_dl_kwargs, prep_model_kwargs, train_kwargs = best_model._split_kwargs(kwargs)
-                if "seed" not in prep_dl_kwargs:
-                    prep_dl_kwargs["seed"] = random_state
-                datamodule = best_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
-
             best_model.datamodule = datamodule
 
             return self.OUTPUT(trials_df, best_params, best_score, best_model)
