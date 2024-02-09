@@ -127,7 +127,7 @@ class TabularModelTuner:
             root, param = k.split("__")
             if root.startswith("trainer_config"):
                 raise ValueError(
-                    f"The trainer_config is not supported be tuner. Please remove it from tuner parameters!"
+                    "The trainer_config is not supported be tuner. Please remove it from tuner parameters!"
                 )
             elif root.startswith("optimizer_config"):
                 self._check_assign_config(optimizer_config, param, v)
@@ -292,9 +292,7 @@ class TabularModelTuner:
             optimizer_config_t = deepcopy(self.optimizer_config)
             model_config_t = deepcopy(self.model_config)
 
-            optimizer_config_t, model_config_t = self._update_configs(
-                optimizer_config_t, model_config_t, params
-            )
+            optimizer_config_t, model_config_t = self._update_configs(optimizer_config_t, model_config_t, params)
             # Initialize Tabular model using the new config
             tabular_model_t = TabularModel(
                 data_config=self.data_config,
