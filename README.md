@@ -198,7 +198,7 @@ loaded_model = TabularModel.load_model("examples/basic")
         <a href="https://github.com/jxtrbtk">
             <img src="https://avatars.githubusercontent.com/u/40494970?v=4" width="100;" alt="jxtrbtk"/>
             <br />
-            <sub><b>Null</b></sub>
+            <sub><b>jxtrbtk</b></sub>
         </a>
     </td>
     <td align="center">
