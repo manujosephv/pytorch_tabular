@@ -5,7 +5,7 @@
 Once, you have got PyTorch installed and working, just use:
 
 ```bash
- pip install pytorch_tabular[extra]
+ pip install "pytorch_tabular[extra]"
 ```
 
 to install the complete library with extra dependencies:
@@ -17,7 +17,7 @@ to install the complete library with extra dependencies:
 And :
 
 ``` bash
- pip install pytorch_tabular
+ pip install "pytorch_tabular"
 ```
 
 for the bare essentials.
