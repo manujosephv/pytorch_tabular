@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
+from pytorch_tabular.models.common.layers.batch_norm import BatchNorm1d
+
 from ..base_model import BaseModel
 from ..common.layers import AppendCLSToken, Embedding2dLayer, TransformerEncoderBlock
 
@@ -46,7 +48,7 @@ class FTTransformerBackbone(nn.Module):
         if self.hparams.attn_feature_importance:
             self.attention_weights_ = [None] * self.hparams.num_attn_blocks
         if self.hparams.batch_norm_continuous_input:
-            self.normalizing_batch_norm = nn.BatchNorm1d(self.hparams.continuous_dim)
+            self.normalizing_batch_norm = BatchNorm1d(self.hparams.continuous_dim, self.hparams.virtual_batch_size)
 
         self.output_dim = self.hparams.input_embed_dim
 
@@ -61,6 +63,7 @@ class FTTransformerBackbone(nn.Module):
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             embedding_dropout=self.hparams.embedding_dropout,
             initialization=self.hparams.embedding_initialization,
+            virtual_batch_size=self.hparams.virtual_batch_size,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

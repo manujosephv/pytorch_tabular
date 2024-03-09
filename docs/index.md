@@ -1,4 +1,5 @@
-![PyTorch Tabular](imgs/pytorch_tabular_logo.png)
+![PyTorch Tabular](imgs/pytorch_tabular_logo.png#only-light)
+![PyTorch Tabular](imgs/pytorch_tabular_logo_inv.png#only-dark)
 
 [![pypi](https://img.shields.io/pypi/v/pytorch_tabular.svg)](https://pypi.python.org/pypi/pytorch_tabular)
 [![Testing](https://github.com/manujosephv/pytorch_tabular/actions/workflows/testing.yml/badge.svg?event=push)](https://github.com/manujosephv/pytorch_tabular/actions/workflows/testing.yml)
@@ -8,126 +9,25 @@
 [![DOI](https://zenodo.org/badge/321584367.svg)](https://zenodo.org/badge/latestdoi/321584367)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square)](https://github.com/manujosephv/pytorch_tabular/issues)
 
-PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
 
-- **Low Resistance Usability**
-- **Easy Customization**
-- **Scalable and Easier to Deploy**
+**PyTorch Tabular** is a powerful library that aims to simplify and popularize the application of deep learning techniques to tabular data. Tabular deep learning has gained significant importance in the field of machine learning due to its ability to handle structured data, such as data in spreadsheets or databases. However, working with tabular data can be challenging, requiring expertise in both deep learning and data preprocessing. 
 
-It has been built on the shoulders of giants like [**PyTorch**](https://pytorch.org/)(obviously), [**PyTorch Lightning**](https://www.pytorchlightning.ai/), and [pandas](https://pandas.pydata.org/)
+This is where **PyTorch Tabular** comes in. Built on the shoulders of giants like `PyTorch`, `PyTorch Lightning`, and `pandas`, PyTorch Tabular offers a **low resistance usability**, making it accessible to both real-world use cases and research projects. The library's core principles revolve around **easy customization**, allowing users to tailor their models and pipelines to specific requirements. Moreover, PyTorch Tabular provides **scalable and efficient tooling**, making it easier to deploy models in production environments. The underlying goodness of `PyTorch` makes designing deep learning architectures pythonic and intuitive, while `PyTorch Lightning` simplifies the training process. `pandas` is the de-facto standard for working with tabular data, and PyTorch Tabular leverages its strengths to simplify the preprocessing of tabular data. With PyTorch Tabular, data scientists and researchers can focus on the core aspects of their work, while the library takes care of the underlying complexities, enabling efficient and effective tabular deep learning.
 
-## Installation
+The documentation is organized taking inspiration from the Diátaxis system of documentation. 
 
-Although the installation includes PyTorch, the best and recommended way is to first install PyTorch from [here](https://pytorch.org/get-started/locally/), picking up the right CUDA version for your machine. (PyTorch Version >1.3)
+> Diátaxis is a way of thinking about and doing documentation. Diátaxis identifies four distinct needs, and four corresponding forms of documentation - tutorials, how-to guides, technical reference and explanation. It places them in a systematic relationship, and proposes that documentation should itself be organised around the structures of those needs. Diátaxis solves problems related to documentation content (what to write), style (how to write it) and architecture (how to organise it). It is a system for thinking about documentation, and a system for doing documentation. - [Diátaxis](https://diataxis.fr/)
 
-Once, you have got Pytorch installed, just use:
+![Diátaxis System of Documentation](imgs/diataxis.webp)
 
-```bash
- pip install pytorch_tabular[extra]
-```
+Taking cues from the system, the documentation is separated into five sections:
 
-to install the complete library with extra dependencies(Weights&Biases and Plotly).
+- **Getting Started** - A quick introduction on how to install and get started with PyTorch Tabular.
 
-And :
+- **Tutorials** - Short and focused exercises to get you going quickly.
 
-```bash
- pip install pytorch_tabular
-```
+- **How-to Guides** - Step-by-step guides to covering key tasks, real world operations and common problems.
 
-for the bare essentials.
+- **Concepts** - Explanations of some of the larger concepts and intricacies of the library.
 
-The sources for pytorch_tabular can be downloaded from the `Github repo`.
-
-You can either clone the public repository:
-
-```bash
-git clone git://github.com/manujosephv/pytorch_tabular
-```
-
-Once you have a copy of the source, you can install it with:
-
-```bash
-pip install .
-```
-
-or
-
-```bash
-python setup.py install
-```
-
-## Usage
-
-```python
-from pytorch_tabular import TabularModel
-from pytorch_tabular.models import CategoryEmbeddingModelConfig
-from pytorch_tabular.config import (
-    DataConfig,
-    OptimizerConfig,
-    TrainerConfig,
-)
-
-data_config = DataConfig(
-    target=[
-        "target"
-    ],  # target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
-    continuous_cols=num_col_names,
-    categorical_cols=cat_col_names,
-)
-trainer_config = TrainerConfig(
-    auto_lr_find=True,  # Runs the LRFinder to automatically derive a learning rate
-    batch_size=1024,
-    max_epochs=100,
-)
-optimizer_config = OptimizerConfig()
-
-model_config = CategoryEmbeddingModelConfig(
-    task="classification",
-    layers="1024-512-512",  # Number of nodes in each layer
-    activation="LeakyReLU",  # Activation between each layers
-    learning_rate=1e-3,
-)
-
-tabular_model = TabularModel(
-    data_config=data_config,
-    model_config=model_config,
-    optimizer_config=optimizer_config,
-    trainer_config=trainer_config,
-)
-tabular_model.fit(train=train, validation=val)
-result = tabular_model.evaluate(test)
-pred_df = tabular_model.predict(test)
-tabular_model.save_model("examples/basic")
-loaded_model = TabularModel.load_from_checkpoint("examples/basic")
-```
-
-## Citation
-
-If you use PyTorch Tabular for a scientific publication, we would appreciate citations to the published software and the following paper:
-
-- [arxiv Paper](https://arxiv.org/abs/2104.13638)
-
-```
-@misc{joseph2021pytorch,
-      title={PyTorch Tabular: A Framework for Deep Learning with Tabular Data},
-      author={Manu Joseph},
-      year={2021},
-      eprint={2104.13638},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
-```
-
-- Zenodo Software Citation
-
-```
-@article{manujosephv_2021,
-    title={manujosephv/pytorch_tabular: v0.5.0-alpha},
-    DOI={10.5281/zenodo.4732773},
-    abstractNote={<p>First Alpha Release</p>},
-    publisher={Zenodo},
-    author={manujosephv},
-    year={2021},
-    month={May}
-}
-```
+- **API Reference** - The technical details of the library: all classes and functions, along with their parameters and return types.

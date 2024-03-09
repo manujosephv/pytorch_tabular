@@ -2,7 +2,6 @@
 """Tests for `pytorch_tabular` package."""
 
 import pytest
-
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import MDNConfig
@@ -38,45 +37,42 @@ def test_regression(
     num_gaussian,
 ):
     (train, test, target) = regression_data
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target + ["MedInc"] if multi_target else target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {"task": "regression"}
-        mdn_config = {"num_gaussian": num_gaussian}
-        model_config_params["head_config"] = mdn_config
-        model_config_params["backbone_config_class"] = variant
-        model_config_params["backbone_config_params"] = {"task": "backbone"}
+    data_config = DataConfig(
+        target=target + ["MedInc"] if multi_target else target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {"task": "regression"}
+    mdn_config = {"num_gaussian": num_gaussian}
+    model_config_params["head_config"] = mdn_config
+    model_config_params["backbone_config_class"] = variant
+    model_config_params["backbone_config_params"] = {"task": "backbone"}
 
-        model_config = MDNConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=3,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+    model_config = MDNConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train)
 
-        result = tabular_model.evaluate(test)
-        # print(result[0]["valid_loss"])
-        assert "test_mean_squared_error" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    # print(result[0]["valid_loss"])
+    assert "test_mean_squared_error" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 @pytest.mark.parametrize(
@@ -99,36 +95,33 @@ def test_classification(
     num_gaussian,
 ):
     (train, test, target) = classification_data
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {"task": "classification"}
-        mdn_config = {"num_gaussian": num_gaussian}
-        model_config_params["head_config"] = mdn_config
-        model_config_params["backbone_config_class"] = "CategoryEmbeddingMDNConfig"
-        model_config_params["backbone_config_params"] = {"task": "backbone"}
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {"task": "classification"}
+    mdn_config = {"num_gaussian": num_gaussian}
+    model_config_params["head_config"] = mdn_config
+    model_config_params["backbone_config_class"] = "CategoryEmbeddingMDNConfig"
+    model_config_params["backbone_config_params"] = {"task": "backbone"}
 
-        model_config = MDNConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=3,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
+    model_config = MDNConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+    with pytest.raises(AssertionError):
+        tabular_model = TabularModel(
+            data_config=data_config,
+            model_config=model_config,
+            optimizer_config=optimizer_config,
+            trainer_config=trainer_config,
         )
-        optimizer_config = OptimizerConfig()
-        with pytest.raises(AssertionError):
-            tabular_model = TabularModel(
-                data_config=data_config,
-                model_config=model_config,
-                optimizer_config=optimizer_config,
-                trainer_config=trainer_config,
-            )
-            tabular_model.fit(train=train, test=test)
+        tabular_model.fit(train=train)

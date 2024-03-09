@@ -1,5 +1,40 @@
 # History
 
+Certainly! Here's a release update you can use for the history.md file:
+
+---
+## 1.1.0 (2024-01-15)
+
+### New Features and Enhancements
+- **Added DANet Model**: Added a new model, DANet, for tabular data.
+- **Explainability**: Integrated Captum for explainability
+- **Hyperparameter Tuner:** Added Grid and Random Search functionality to search through hyperparameters and return best model.
+- **Model Sweep:** Added an easy "Model Sweep" method with which we can sweep a list of models with given data and quickly assess performance.
+- **Documentation Enhancements:** Improved documentation to make it more user-friendly and informative
+- **Dependency Updates:** Updated various dependencies for improved compatibility and security
+- **Graceful Out-of-Memory Handling:** Added graceful out-of-memory handling for tabular models
+- **GhostBatchNorm:** Added GhostBatchNorm to the library
+
+### Deprecations
+- **Deprecations:** Handled deprecations and updated the library accordingly
+- **Entmax Dependency Removed:** Removed dependency on entmax
+
+### Infrastructure and CI/CD
+- **Continuous Integration:** Improved CI with new actions and labels
+- **Dependency Management:** Updated dependencies and restructured requirements
+
+### API Changes
+- [BREAKING CHANGE] **SSL API Change:** Addressed SSL API change, along with documentation and tutorial updates.
+- **Model Changes:** Added is_fitted and other markers to the tabular model.
+- **Custom Optimizer:** Allow custom optimizer in the model config.
+
+### Contributors
+- Thanks to all the contributors who helped shape this release! ([List of Contributors](Link_to_Contributors))
+
+### Upgrading
+- Ensure to check the updated documentation for any breaking changes or new features.
+- If you are using SSL, please check the updated API and documentation.
+
 ## 1.0.2 (2023-05-31)
 
 ### New Features:

@@ -7,7 +7,8 @@ from pytorch_tabular.config import ModelConfig
 
 @dataclass
 class NodeConfig(ModelConfig):
-    """Model configuration
+    """Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data configuration.
+
     Args:
         num_layers (int): Number of Oblivious Decision Tree Layers in the Dense Architecture
 
@@ -33,7 +34,7 @@ class NodeConfig(ModelConfig):
         initialize_response (str): Initializing the response variable in the Oblivious Decision Trees. By
                 default, it is a standard normal distribution. Choices are: [`normal`,`uniform`].
 
-        initialize_selection_logits (str): Initializing the feature selector. By default is a uniform
+        initialize_selection_logits (str): Initializing the feature selector. By default, is a uniform
                 distribution across the features. Choices are: [`uniform`,`normal`].
 
         threshold_init_beta (float):                  Used in the Data-aware initialization of thresholds
@@ -58,17 +59,9 @@ class NodeConfig(ModelConfig):
                 and sparse-sigmoid cutoff value                 All points will be between (0.5 - 0.5 /
                 threshold_init_cutoff) and (0.5 + 0.5 / threshold_init_cutoff)
 
-        cat_embedding_dropout (float): DEPRECATED: Please use `embedding_dropout` instead. probability of
-                an embedding element to be zeroed.
-
-        embed_categorical (bool): Flag to embed categorical columns using an Embedding Layer. If turned
-                off, the categorical columns are encoded using LeaveOneOutEncoder. This is DEPRECATED and will
-                always be `True` from next release.
-
-
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
-                tasks.. Choices are: [`regression`,`classification`,`backbone`].
+                tasks. Choices are: [`regression`,`classification`,`backbone`].
 
         head (Optional[str]): The head to be used for the model. Should be one of the heads defined in
                 `pytorch_tabular.models.common.heads`. Defaults to  LinearHead. Choices are:
@@ -81,14 +74,14 @@ class NodeConfig(ModelConfig):
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 
@@ -203,21 +196,9 @@ class NodeConfig(ModelConfig):
             """
         },
     )
-    cat_embedding_dropout: float = field(
-        default=0.0,
-        metadata={
-            "help": "DEPRECATED: Please use `embedding_dropout` instead."
-            " probability of an embedding element to be zeroed."
-        },
-    )
 
-    embed_categorical: bool = field(
-        default=False,
-        metadata={
-            "help": "Flag to embed categorical columns using an Embedding Layer."
-            " If turned off, the categorical columns are encoded using LeaveOneOutEncoder."
-            " This is DEPRECATED and will always be `True` from next release."
-        },
+    head: Optional[str] = field(
+        default=None,
     )
 
     _module_src: str = field(default="models.node")
@@ -226,20 +207,16 @@ class NodeConfig(ModelConfig):
     _config_name: str = field(default="NodeConfig")
 
     def __post_init__(self):
-        if not self.embed_categorical:
-            # raise deprecation warning
+        if self.head is not None:
             warnings.warn(
-                "embed_categorical is set to False and will use LeaveOneOutEncoder to encode categorical features."
-                " This is deprecated and will be removed in future versions and categorical columns"
-                " will be embedded by default."
+                "`head` and `head_config` is ignored as NODE has a specific"
+                " head which subsets the tree outputs. Set `head=None`"
+                " to turn off the warning"
             )
-        if self.cat_embedding_dropout > 0:
-            warnings.warn(
-                "`cat_embedding_dropout` is deprecated and will be removed in the next release."
-                " Please use `embedding_dropout` instead"
-            )
-            self.embedding_dropout = self.cat_embedding_dropout
-        super().__post_init__()
+        else:
+            # Setting Head to LinearHead for compatibility
+            self.head = "LinearHead"
+        return super().__post_init__()
 
 
 # if __name__ == "__main__":

@@ -21,11 +21,12 @@ with open("README.md") as readme_file:
 with open("docs/history.md") as history_file:
     history = history_file.read()
 
-thelibFolder = os.path.dirname(os.path.realpath(__file__))
+this_folder = os.path.dirname(os.path.realpath(__file__))
+req_folder = os.path.join(this_folder, "requirements")
 
-requirements = read_requirements(thelibFolder, "requirements.txt")
-requirements_testing = read_requirements(thelibFolder, "requirements_dev.txt")
-requirements_extra = read_requirements(thelibFolder, "requirements_extra.txt")
+requirements = read_requirements(req_folder, "base.txt")
+requirements_testing = read_requirements(req_folder, "dev.txt")
+requirements_extra = read_requirements(req_folder, "extra.txt")
 
 # setup_requirements = ['pytest-runner', ]
 
@@ -34,14 +35,13 @@ test_requirements = requirements_testing
 setup(
     author="Manu Joseph",
     author_email="manujosephv@gmail.com",
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -61,6 +61,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/manujosephv/pytorch_tabular",
-    version="1.0.2",
+    version="1.1.0",
     zip_safe=False,
 )

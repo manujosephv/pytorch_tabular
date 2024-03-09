@@ -2,17 +2,16 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """AutomaticFeatureInteraction Config."""
-import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
-from pytorch_tabular.utils import ifnone
 
 
 @dataclass
 class FTTransformerConfig(ModelConfig):
-    """Tab Transformer configuration
+    """Tab Transformer configuration.
+
     Args:
         input_embed_dim (int): The embedding dimension for the input categorical features. Defaults to 32
 
@@ -29,7 +28,7 @@ class FTTransformerConfig(ModelConfig):
         share_embedding_strategy (Optional[str]): There are two strategies in adding shared embeddings. 1.
                 `add` - A separate embedding for the feature is added to the embedding of the unique values of the
                 feature. 2. `fraction` - A fraction of the input embedding is reserved for the shared embedding of
-                the feature. Defaults to fraction.. Choices are: [`add`,`fraction`].
+                the feature. Defaults to fraction. Choices are: [`add`,`fraction`].
 
         shared_embedding_fraction (float): Fraction of the input_embed_dim to be reserved by the shared
                 embedding. Should be less than one. Defaults to 0.25
@@ -58,20 +57,6 @@ class FTTransformerConfig(ModelConfig):
                 https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity, GEGLU,
                 ReGLU and SwiGLU are also implemented(https://arxiv.org/pdf/2002.05202.pdf). Defaults to GEGLU
 
-        out_ff_layers (Optional[str]): DEPRECATED: Hyphen-separated number of layers and units in the deep
-                MLP. Defaults to 128-64-32
-
-        out_ff_activation (Optional[str]): DEPRECATED: The activation type in the deep MLP. The default
-                activaion in PyTorch like ReLU, TanH, LeakyReLU, etc. https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity.
-                Defaults to ReLU
-
-        out_ff_dropout (Optional[float]): DEPRECATED: probability of an classification element to be zeroed
-                in the deep MLP. Defaults to 0.0
-
-        out_ff_initialization (Optional[str]): DEPRECATED: Initialization scheme for the linear layers.
-                Defaults to `kaiming`. Choices are: [`None`,`kaiming`,`xavier`,`random`].
-
-
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
                 tasks.. Choices are: [`regression`,`classification`,`backbone`].
@@ -87,14 +72,14 @@ class FTTransformerConfig(ModelConfig):
                 list of tuples (cardinality, embedding_dim). If left empty, will infer using the cardinality of
                 the categorical column using the rule min(50, (x + 1) // 2)
 
-        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
+        embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3.
 
-        loss (Optional[str]): The loss function to be applied. By Default it is MSELoss for regression and
+        loss (Optional[str]): The loss function to be applied. By Default, it is MSELoss for regression and
                 CrossEntropyLoss for classification. Unless you are sure what you are doing, leave it at MSELoss
                 or L1Loss for regression and CrossEntropyLoss for classification
 
@@ -208,70 +193,11 @@ class FTTransformerConfig(ModelConfig):
             " Defaults to GEGLU",
         },
     )
-    out_ff_layers: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: Hyphen-separated number of layers and units in the deep MLP. Defaults to 128-64-32"
-        },
-    )
-    out_ff_activation: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: The activation type in the deep MLP. The default activaion in PyTorch"
-            " like ReLU, TanH, LeakyReLU, etc."
-            " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity."
-            " Defaults to ReLU"
-        },
-    )
-    out_ff_dropout: Optional[float] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: probability of an classification element to be zeroed in the deep MLP. Defaults to 0.0"
-        },
-    )
-    out_ff_initialization: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "DEPRECATED: Initialization scheme for the linear layers. Defaults to `kaiming`",
-            "choices": [None, "kaiming", "xavier", "random"],
-        },
-    )
+
     _module_src: str = field(default="models.ft_transformer")
     _model_name: str = field(default="FTTransformerModel")
     _backbone_name: str = field(default="FTTransformerBackbone")
     _config_name: str = field(default="FTTransformerConfig")
-
-    def __post_init__(self):
-        deprecated_args = [
-            "out_ff_layers",
-            "out_ff_activation",
-            "out_ff_dropoout",
-            "out_ff_initialization",
-        ]
-        if self.head_config != {"layers": ""}:  # If the user has passed a head_config
-            warnings.warn(
-                "Ignoring the deprecated arguments, `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`,"
-                " and `out_ff_initialization` as head_config is passed."
-            )
-        else:
-            if any(p is not None for p in deprecated_args):
-                warnings.warn(
-                    "The `out_ff_layers`, `out_ff_activation`, `out_ff_dropoout`, and `out_ff_initialization`"
-                    " arguments are deprecated and will be removed next release."
-                    " Please use head and head_config as an alternative.",
-                    DeprecationWarning,
-                )
-                # TODO: Remove this once we deprecate the old config
-                # Fill the head_config using deprecated parameters
-                self.head_config = {
-                    "layers": ifnone(self.out_ff_layers, ""),
-                    "activation": ifnone(self.out_ff_activation, "ReLU"),
-                    "dropout": ifnone(self.out_ff_dropout, 0.0),
-                    "use_batch_norm": False,
-                    "initialization": ifnone(self.out_ff_initialization, "kaiming"),
-                }
-
-        return super().__post_init__()
 
 
 # if __name__ == "__main__":

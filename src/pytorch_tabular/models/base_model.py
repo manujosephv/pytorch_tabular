@@ -2,19 +2,21 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Base Model."""
+import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
 from omegaconf import DictConfig, OmegaConf
+from pandas import DataFrame
 from torch import Tensor
+from torch.optim import Optimizer
 
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.common.layers import PreEncoded1dLayer
@@ -42,8 +44,8 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     """Merge two configurations.
 
     Args:
-        base_config: The base configuration.
-        custom_config: The custom configuration.
+        config: The base configuration.
+        inferred_config: The custom configuration.
 
     Returns:
         The merged configuration.
@@ -52,6 +54,17 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     inferred_config.embedding_dims = config.get("embedding_dims") or inferred_config.embedding_dims
     merged_config = OmegaConf.merge(OmegaConf.to_container(config), OmegaConf.to_container(inferred_config))
     return merged_config
+
+
+def _create_optimizer(optimizer: Union[str, Callable]) -> Type[Optimizer]:
+    """Instantiate Optimizer."""
+    if callable(optimizer):
+        return optimizer
+    if "." not in optimizer:
+        return getattr(torch.optim, optimizer)
+    py_path, cls_name = optimizer.rsplit(".", 1)
+    module = importlib.import_module(py_path)
+    return getattr(module, cls_name)
 
 
 class BaseModel(pl.LightningModule, metaclass=ABCMeta):
@@ -73,7 +86,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             custom_metrics (Optional[List[Callable]], optional): A list of custom metrics. Defaults to None.
             custom_metrics_prob_inputs (Optional[List[bool]], optional): A list of boolean values indicating whether the
                 metric requires probability inputs. Defaults to None.
-            custom_optimizer (Optional[torch.optim.Optimizer], optional): A custom optimizer. Defaults to None.
+            custom_optimizer (Optional[torch.optim.Optimizer], optional):
+                A custom optimizer as callable or string to be imported. Defaults to None.
             custom_optimizer_params (Dict, optional): A dictionary of custom optimizer parameters. Defaults to {}.
             kwargs (Dict, optional): Additional keyword arguments.
         """
@@ -136,19 +150,21 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         self.do_log_logits = (
             hasattr(self.hparams, "log_logits") and self.hparams.log_logits and self.hparams.log_target == "wandb"
         )
-        if not WANDB_INSTALLED:
+        if self.do_log_logits:
+            self._val_logits = []
+        if not WANDB_INSTALLED and self.do_log_logits:
             self.do_log_logits = False
             warnings.warn(
                 "Wandb is not installed. Please install wandb to log logits. "
                 "You can install wandb using pip install wandb or install PyTorch Tabular"
-                " using pip install pytorch-tabular[all]"
+                " using pip install pytorch-tabular[extra]"
             )
-        if not PLOTLY_INSTALLED:
+        if not PLOTLY_INSTALLED and self.do_log_logits:
             self.do_log_logits = False
             warnings.warn(
                 "Plotly is not installed. Please install plotly to log logits. "
                 "You can install plotly using pip install plotly or install PyTorch Tabular"
-                " using pip install pytorch-tabular[all]"
+                " using pip install pytorch-tabular[extra]"
             )
 
     @abstractmethod
@@ -360,7 +376,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         """
         # if self.head is the Identity function it means that we cannot extract backbone features,
         # because the model cannot be divide in backbone and head (i.e. TabNet)
-        if type(self.head) == nn.Identity:
+        if type(self.head) is nn.Identity:
             return {"logits": y_hat}
         return {"logits": y_hat, "backbone_features": backbone_features}
 
@@ -461,7 +477,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         if self.custom_optimizer is None:
             # Loading from the config
             try:
-                self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+                self._optimizer = _create_optimizer(self.hparams.optimizer)
                 opt = self._optimizer(
                     self.parameters(),
                     lr=self.hparams.learning_rate,
@@ -472,7 +488,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 raise e
         else:
             # Loading from custom fit arguments
-            self._optimizer = self.custom_optimizer
+            self._optimizer = _create_optimizer(self.custom_optimizer)
 
             opt = self._optimizer(
                 self.parameters(),
@@ -521,22 +537,28 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         fig.update_traces(opacity=0.5)
         return fig
 
-    def validation_epoch_end(self, outputs) -> None:
+    def on_validation_batch_end(self, outputs, batch, batch_idx: int) -> None:
         if self.do_log_logits:
-            logits = [output[0] for output in outputs]
-            logits = torch.cat(logits).detach().cpu()
+            self._val_logits.append(outputs[0][0])
+        super().on_validation_batch_end(outputs, batch, batch_idx)
+
+    def on_validation_epoch_end(self) -> None:
+        if self.do_log_logits:
+            logits = torch.cat(self._val_logits).detach().cpu()
+            self._val_logits = []
             fig = self.create_plotly_histogram(logits, "logits")
             wandb.log(
                 {"valid_logits": wandb.Plotly(fig), "global_step": self.global_step},
                 commit=False,
             )
+        super().on_validation_epoch_end()
 
     def reset_weights(self):
         reset_all_weights(self.backbone)
         reset_all_weights(self.head)
         reset_all_weights(self.embedding_layer)
 
-    def feature_importance(self) -> pd.DataFrame:
+    def feature_importance(self) -> DataFrame:
         """Returns a dataframe with feature importance for the model."""
         if hasattr(self.backbone, "feature_importance_"):
             imp = self.backbone.feature_importance_
@@ -560,7 +582,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     # For models like FTTransformer, we dont need to do anything
                     # It takes categorical and continuous as individual 2-D features
                     pass
-            importance_df = pd.DataFrame(
+            importance_df = DataFrame(
                 {
                     "Features": self.hparams.categorical_cols + self.hparams.continuous_cols,
                     "importance": imp,
@@ -629,3 +651,13 @@ class _GenericModel(BaseModel):
         # all components are initialized in the init function
         self._backbone = self.kwargs.get("backbone")
         self._head = self._get_head_from_config()
+
+
+class _CaptumModel(nn.Module):
+    def __init__(self, model: BaseModel):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x: Tensor):
+        x = self.model.compute_backbone(x)
+        return self.model.compute_head(x)["logits"]

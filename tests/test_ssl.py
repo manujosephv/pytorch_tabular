@@ -2,12 +2,11 @@
 """Tests for `pytorch_tabular` package."""
 import pytest
 import torch
-from sklearn.model_selection import train_test_split
-
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
 from pytorch_tabular.ssl_models.dae import DenoisingAutoEncoderConfig
+from sklearn.model_selection import train_test_split
 
 
 def fake_metric(y_hat, y):
@@ -41,6 +40,7 @@ def fake_metric(y_hat, y):
     "custom_args",
     [(None, None, None, None), ([fake_metric], [False], torch.nn.L1Loss(), torch.optim.Adagrad)],
 )
+@pytest.mark.parametrize("include_input_features_inference", [False, True])
 def test_regression(
     regression_data,
     multi_target,
@@ -52,96 +52,99 @@ def test_regression(
     target_range,
     target_transform,
     custom_args,
+    include_input_features_inference,
 ):
     (train, test, target) = regression_data
     (custom_metrics, metrics_prob_input, custom_loss, custom_optimizer) = custom_args
     ssl, finetune = train_test_split(train, random_state=42)
     ssl_train, ssl_val = train_test_split(ssl, random_state=42)
     finetune_train, finetune_val = train_test_split(finetune, random_state=42)
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target + ["MedInc"] if multi_target else target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-            handle_missing_values=False,
-            handle_unknown_categories=False,
-        )
-        encoder_config = CategoryEmbeddingModelConfig(
-            task="backbone",
-            layers="4096-2048-512",  # Number of nodes in each layer
-            activation="LeakyReLU",  # Activation between each layers
-        )
-        decoder_config = CategoryEmbeddingModelConfig(
-            task="backbone",
-            layers="512-2048-4096",  # Number of nodes in each layer
-            activation="LeakyReLU",  # Activation between each layers
-        )
+    data_config = DataConfig(
+        target=target + ["MedInc"] if multi_target else target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+        handle_missing_values=False,
+        handle_unknown_categories=False,
+    )
+    encoder_config = CategoryEmbeddingModelConfig(
+        task="backbone",
+        layers="32-16-8",  # Number of nodes in each layer
+        activation="LeakyReLU",  # Activation between each layers
+    )
+    decoder_config = CategoryEmbeddingModelConfig(
+        task="backbone",
+        layers="8-16-32",  # Number of nodes in each layer
+        activation="LeakyReLU",  # Activation between each layers
+    )
 
-        model_config_params = {
-            "encoder_config": encoder_config,
-            "decoder_config": decoder_config,
-        }
-        model_config = DenoisingAutoEncoderConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=1,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+    model_config_params = {
+        "encoder_config": encoder_config,
+        "decoder_config": decoder_config,
+        "include_input_features_inference": include_input_features_inference,
+    }
+    model_config = DenoisingAutoEncoderConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.pretrain(train=ssl_train, validation=ssl_val)
-        if target_range:
-            _target_range = []
-            for target in data_config.target:
-                _target_range.append(
-                    (
-                        float(train[target].min()),
-                        float(train[target].max()),
-                    )
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.pretrain(train=ssl_train, validation=ssl_val)
+    if target_range:
+        _target_range = []
+        for target in data_config.target:
+            _target_range.append(
+                (
+                    float(train[target].min()),
+                    float(train[target].max()),
                 )
-        else:
-            _target_range = None
-        finetune_model = tabular_model.create_finetune_model(
-            task="regression",
-            head="LinearHead",
-            head_config={
-                "layers": "64-32-16",
-                "activation": "LeakyReLU",
-            },
-            trainer_config=trainer_config,
-            optimizer_config=optimizer_config,
-            target_range=_target_range,
-            loss=custom_loss,
-            metrics=custom_metrics,
-            metrics_params=[{}],
-            metrics_prob_input=metrics_prob_input,
-            optimizer=custom_optimizer,
-        )
-        finetune_model.finetune(
-            train=finetune_train,
-            validation=finetune_val,
-            freeze_backbone=freeze_backbone,
-            target_transform=target_transform,
-        )
-        result = finetune_model.evaluate(test)
-        if custom_metrics is None:
-            assert "test_mean_squared_error" in result[0].keys()
-        else:
-            assert "test_fake_metric" in result[0].keys()
-        pred_df = finetune_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+            )
+    else:
+        _target_range = None
+    finetune_model = tabular_model.create_finetune_model(
+        task="regression",
+        train=finetune_train,
+        validation=finetune_val,
+        target_transform=target_transform,
+        head="LinearHead",
+        head_config={
+            "layers": "16-8",
+            "activation": "LeakyReLU",
+        },
+        trainer_config=trainer_config,
+        optimizer_config=optimizer_config,
+        target_range=_target_range,
+        loss=custom_loss,
+        metrics=custom_metrics,
+        metrics_params=[{}],
+        metrics_prob_input=metrics_prob_input,
+        optimizer=custom_optimizer,
+    )
+    assert torch.equal(
+        tabular_model.model.encoder.linear_layers[0].weight,
+        finetune_model.model._backbone.encoder.linear_layers[0].weight,
+    )
+    finetune_model.finetune(
+        freeze_backbone=freeze_backbone,
+    )
+    result = finetune_model.evaluate(test)
+    if custom_metrics is None:
+        assert "test_mean_squared_error" in result[0].keys()
+    else:
+        assert "test_fake_metric" in result[0].keys()
+    pred_df = finetune_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 @pytest.mark.parametrize(
@@ -166,65 +169,66 @@ def test_classification(
     ssl, finetune = train_test_split(train, random_state=42)
     ssl_train, ssl_val = train_test_split(ssl, random_state=42)
     finetune_train, finetune_val = train_test_split(finetune, random_state=42)
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-            handle_missing_values=False,
-            handle_unknown_categories=False,
-        )
-        encoder_config = CategoryEmbeddingModelConfig(
-            task="backbone",
-            layers="4096-2048-512",  # Number of nodes in each layer
-            activation="LeakyReLU",  # Activation between each layers
-        )
-        decoder_config = CategoryEmbeddingModelConfig(
-            task="backbone",
-            layers="512-2048-4096",  # Number of nodes in each layer
-            activation="LeakyReLU",  # Activation between each layers
-        )
-        model_config_params = {
-            "encoder_config": encoder_config,
-            "decoder_config": decoder_config,
-        }
-        model_config = DenoisingAutoEncoderConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=1,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+        handle_missing_values=False,
+        handle_unknown_categories=False,
+    )
+    encoder_config = CategoryEmbeddingModelConfig(
+        task="backbone",
+        layers="32-16-8",  # Number of nodes in each layer
+        activation="LeakyReLU",  # Activation between each layers
+    )
+    decoder_config = CategoryEmbeddingModelConfig(
+        task="backbone",
+        layers="8-16-32",  # Number of nodes in each layer
+        activation="LeakyReLU",  # Activation between each layers
+    )
+    model_config_params = {
+        "encoder_config": encoder_config,
+        "decoder_config": decoder_config,
+    }
+    model_config = DenoisingAutoEncoderConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.pretrain(train=ssl_train, validation=ssl_val)
-        finetune_model = tabular_model.create_finetune_model(
-            task="classification",
-            head="LinearHead",
-            head_config={
-                "layers": "64-32-16",
-                "activation": "LeakyReLU",
-            },
-            trainer_config=trainer_config,
-            optimizer_config=optimizer_config,
-        )
-        finetune_model.finetune(
-            train=finetune_train,
-            validation=finetune_val,
-            freeze_backbone=freeze_backbone,
-        )
-        result = finetune_model.evaluate(test)
-        assert "test_accuracy" in result[0].keys()
-        pred_df = finetune_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.pretrain(train=ssl_train, validation=ssl_val)
+    finetune_model = tabular_model.create_finetune_model(
+        task="classification",
+        train=finetune_train,
+        validation=finetune_val,
+        head="LinearHead",
+        head_config={
+            "layers": "16-8",
+            "activation": "LeakyReLU",
+        },
+        trainer_config=trainer_config,
+        optimizer_config=optimizer_config,
+    )
+    assert torch.equal(
+        tabular_model.model.encoder.linear_layers[0].weight,
+        finetune_model.model._backbone.encoder.linear_layers[0].weight,
+    )
+    finetune_model.finetune(
+        freeze_backbone=freeze_backbone,
+    )
+    result = finetune_model.evaluate(test)
+    assert "test_accuracy" in result[0].keys()
+    pred_df = finetune_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]

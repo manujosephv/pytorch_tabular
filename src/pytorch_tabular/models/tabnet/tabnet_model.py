@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 from pytorch_tabnet.tab_network import TabNet
+from pytorch_tabnet.utils import create_group_matrix
 
 from ..base_model import BaseModel
 
@@ -19,6 +20,19 @@ class TabNetBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
+        if self.hparams.grouped_features:
+            # converting the grouped_features into a nested list of indices
+            features = self.hparams.categorical_cols + self.hparams.continuous_cols
+            grp_list = [
+                [features.index(col) for col in grp if col in features] for grp in self.hparams.grouped_features
+            ]
+        else:
+            # creating a default grp_list with each feature as a group
+            grp_list = [[i] for i in range(self.hparams.continuous_dim + self.hparams.categorical_dim)]
+        group_matrix = create_group_matrix(
+            grp_list,
+            self.hparams.continuous_dim + self.hparams.categorical_dim,
+        )
         self.tabnet = TabNet(
             input_dim=self.hparams.continuous_dim + self.hparams.categorical_dim,
             output_dim=self.hparams.output_dim,
@@ -35,6 +49,7 @@ class TabNetBackbone(nn.Module):
             virtual_batch_size=self.hparams.virtual_batch_size,
             momentum=0.02,
             mask_type=self.hparams.mask_type,
+            group_attention_matrix=group_matrix,
         )
 
     def unpack_input(self, x: Dict):
@@ -48,6 +63,11 @@ class TabNetBackbone(nn.Module):
     def forward(self, x: Dict):
         # unpacking into a tuple
         x = self.unpack_input(x)
+        # Making two parameters to the right device.
+        self.tabnet.embedder.embedding_group_matrix = self.tabnet.embedder.embedding_group_matrix.to(x.device)
+        self.tabnet.tabnet.encoder.group_attention_matrix = self.tabnet.tabnet.encoder.group_attention_matrix.to(
+            x.device
+        )
         # Returns output and Masked Loss. We only need the output
         x, _ = self.tabnet(x)
         return x
@@ -83,4 +103,4 @@ class TabNetModel(BaseModel):
         self._head = nn.Identity()
 
     def extract_embedding(self):
-        raise ValueError("Extracting Embeddings is not supported by Tabnet. Please use another compatible model")
+        raise ValueError("Extracting Embeddings is not supported by Tabnet. Please use another" " compatible model")

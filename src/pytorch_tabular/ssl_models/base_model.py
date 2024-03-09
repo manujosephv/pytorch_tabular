@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 
+from pytorch_tabular.models.base_model import _create_optimizer
 from pytorch_tabular.utils import get_logger, getattr_nested, reset_all_weights
 
 logger = get_logger(__name__)
@@ -43,6 +44,16 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         custom_optimizer_params: Dict = {},
         **kwargs,
     ):
+        """Base Model for all SSL Models.
+
+        Args:
+            config (DictConfig): Configuration defined by the user
+            mode (str, optional): Mode of the model. Defaults to "pretrain".
+            encoder (Optional[nn.Module], optional): Encoder of the model. Defaults to None.
+            decoder (Optional[nn.Module], optional): Decoder of the model. Defaults to None.
+            custom_optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizer to use. Defaults to None.
+            custom_optimizer_params (Dict, optional): Custom optimizer parameters to use. Defaults to {}.
+        """
         super().__init__()
         assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
         inferred_config = kwargs["inferred_config"]
@@ -164,15 +175,18 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             self.calculate_metrics(output, tag="test")
         return output
 
-    def validation_epoch_end(self, outputs) -> None:
+    def on_validation_epoch_end(self) -> None:
         if hasattr(self.hparams, "log_logits") and self.hparams.log_logits:
-            warnings.warn("Logging Logits is disabled for SSL tasks")
+            warnings.warn(
+                "Logging Logits is disabled for SSL tasks. Set `log_logits` to False" " to turn off this warning"
+            )
+        super().on_validation_epoch_end()
 
     def configure_optimizers(self):
         if self.custom_optimizer is None:
             # Loading from the config
             try:
-                self._optimizer = getattr(torch.optim, self.hparams.optimizer)
+                self._optimizer = _create_optimizer(self.hparams.optimizer)
                 opt = self._optimizer(
                     self.parameters(),
                     lr=self.hparams.learning_rate,

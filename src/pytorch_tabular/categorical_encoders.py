@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
 """Category Encoders."""
+from pandas import DataFrame, Series, unique
 
 try:
     import cPickle as pickle
@@ -10,7 +11,6 @@ except ImportError:
     import pickle
 
 import numpy as np
-import pandas as pd
 from rich.progress import track
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -22,6 +22,19 @@ NAN_CATEGORY = 0
 
 class BaseEncoder:
     def __init__(self, cols, handle_unseen, min_samples, imputed, handle_missing):
+        """Base class for categorical encoders.
+        Args:
+            cols (list): list of columns to encode, or None (then all dataset columns will be encoded at fitting time)
+            handle_unseen (str):
+                'error'  - raise an error if a category unseen at fitting time is found
+                'ignore' - skip unseen categories
+                'impute' - impute new categories to a predefined value, which is same as NAN_CATEGORY
+            min_samples (int): minimum samples to take category as valid
+            imputed (float): value to impute unseen categories
+            handle_missing (str):
+                'error'  - raise an error if missing values are found in columns to encode
+                'impute' - impute missing values to a predefined value, which is same as NAN_CATEGORY
+        """
         self.cols = cols
         self.handle_unseen = handle_unseen
         self.handle_missing = handle_missing
@@ -87,11 +100,21 @@ class BaseEncoder:
             assert X.shape[0] == y.shape[0]
 
     def save_as_object_file(self, path):
+        """Save the encoder as a pickle file.
+
+        Args:
+            path (str): path to save the encoder
+        """
         if not self._mapping:
             raise ValueError("`fit` method must be called before `save_as_object_file`.")
         pickle.dump(self.__dict__, open(path, "wb"))
 
     def load_from_object_file(self, path):
+        """Load the encoder from a pickle file.
+
+        Args:
+            path (str): path to load the encoder
+        """
         for k, v in pickle.load(open(path, "rb")).items():
             setattr(self, k, v)
 
@@ -125,11 +148,7 @@ class OrdinalEncoder(BaseEncoder):
                 not X[self.cols].isnull().any().any()
             ), "`handle_missing` = `error` and missing values found in columns to encode."
         for col in self.cols:
-            map = (
-                pd.Series(pd.unique(X[col].fillna(NAN_CATEGORY)), name=col)
-                .reset_index()
-                .rename(columns={"index": "value"})
-            )
+            map = Series(unique(X[col].fillna(NAN_CATEGORY)), name=col).reset_index().rename(columns={"index": "value"})
             map["value"] += 1
             self._mapping[col] = map.set_index(col)
 
@@ -182,18 +201,18 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         """
         return self
 
-    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def transform(self, X: DataFrame, y=None) -> DataFrame:
         """Transforms the categorical columns specified to the trained neural embedding from the model.
 
         Args:
-            X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
+            X (DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
             y ([type], optional): Only for compatibility. Not used. Defaults to None.
 
         Raises:
             ValueError: [description]
 
         Returns:
-            pd.DataFrame: The encoded dataframe
+            DataFrame: The encoded dataframe
         """
         if not self._mapping:
             raise ValueError(
@@ -217,15 +236,15 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         X_encoded.drop(columns=self.cols, inplace=True)
         return X_encoded
 
-    def fit_transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def fit_transform(self, X: DataFrame, y=None) -> DataFrame:
         """Encode given columns of X based on the learned embedding.
 
         Args:
-            X (pd.DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
+            X (DataFrame): DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
             y ([type], optional): Only for compatibility. Not used. Defaults to None.
 
         Returns:
-            pd.DataFrame: The encoded dataframe
+            DataFrame: The encoded dataframe
         """
         self.fit(X, y)
         return self.transform(X)

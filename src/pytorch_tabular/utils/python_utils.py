@@ -1,6 +1,7 @@
+import math
 import textwrap
 from pathlib import Path
-from typing import Any, Callable, Dict, IO, Optional, Union
+from typing import IO, Any, Callable, Dict, Optional, Union
 
 import numpy as np
 import torch
@@ -46,7 +47,7 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
             type = str(atr.type).replace("<class '", "").replace("'>", "").replace("typing.", "")
             help_str = atr.metadata.get("help", "")
             if "choices" in atr.metadata.keys():
-                help_str += f'. Choices are: [{",".join(["`"+str(ch)+"`" for ch in atr.metadata["choices"]])}].'
+                help_str += ". Choices are:" f" [{','.join(['`'+str(ch)+'`' for ch in atr.metadata['choices']])}]."
             # help_str += f'. Defaults to {atr.default}'
             h_str = textwrap.fill(
                 f"{key} ({type}): {help_str}",
@@ -90,3 +91,50 @@ def check_numpy(x):
     x = np.asarray(x)
     assert isinstance(x, np.ndarray)
     return x
+
+
+def int_to_human_readable(number: int, round_number=True) -> str:
+    millnames = ["", " T", " M", " B", " T"]
+    n = float(number)
+    millidx = max(
+        0,
+        min(
+            len(millnames) - 1,
+            int(math.floor(0 if n == 0 else math.log10(abs(n)) / 3)),
+        ),
+    )
+    if round_number:
+        return f"{int(n / 10 ** (3 * millidx))}{millnames[millidx]}"
+    else:
+        return f"{n / 10 ** (3 * millidx):.2f}{millnames[millidx]}"
+
+
+def suppress_lightning_logs(log_level=None):
+    import logging
+
+    log_level = log_level or logging.ERROR
+    for logger_name in logging.root.manager.loggerDict:
+        if logger_name.startswith("pytorch_lightning") or logger_name.startswith("lightning"):
+            logging.getLogger(logger_name).setLevel(log_level)
+
+
+def enable_lightning_logs(log_level=None):
+    import logging
+
+    log_level = log_level or logging.INFO
+
+    for logger_name in logging.root.manager.loggerDict:
+        if logger_name.startswith("pytorch_lightning") or logger_name.startswith("lightning"):
+            logging.getLogger(logger_name).setLevel(log_level)
+
+
+def available_models():
+    from pytorch_tabular import models
+
+    return [cl for cl in dir(models) if "config" in cl.lower()]
+
+
+def available_ssl_models():
+    from pytorch_tabular import ssl_models
+
+    return [cl for cl in dir(ssl_models) if "config" in cl.lower()]

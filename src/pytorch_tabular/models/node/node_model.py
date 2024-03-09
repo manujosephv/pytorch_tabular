@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
-from pytorch_tabular.models.common.layers import Embedding1dLayer, PreEncoded1dLayer
+from pytorch_tabular.models.common.layers import Embedding1dLayer
 from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel
@@ -28,10 +28,7 @@ class NODEBackbone(nn.Module):
         self._build_network()
 
     def _build_network(self):
-        if self.hparams.embed_categorical:
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.embedded_cat_dim
-        else:
-            self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.categorical_dim
+        self.hparams.node_input_dim = self.hparams.continuous_dim + self.hparams.embedded_cat_dim
         self.dense_block = DenseODSTBlock(
             input_dim=self.hparams.node_input_dim,
             num_trees=self.hparams.num_trees,
@@ -50,23 +47,16 @@ class NODEBackbone(nn.Module):
         self.output_dim = self.hparams.output_dim + self.hparams.additional_tree_output_dim
 
     def _build_embedding_layer(self):
-        if self.hparams.embed_categorical:
-            embedding = Embedding1dLayer(
-                continuous_dim=self.hparams.continuous_dim,
-                categorical_embedding_dims=self.hparams.embedding_dims,
-                embedding_dropout=self.hparams.embedding_dropout,
-                batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-            )
-        else:
-            embedding = PreEncoded1dLayer(
-                continuous_dim=self.hparams.continuous_dim,
-                categorical_dim=self.hparams.categorical_dim,
-                batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
-                embedding_dropout=self.hparams.embedding_dropout,
-            )
+        embedding = Embedding1dLayer(
+            continuous_dim=self.hparams.continuous_dim,
+            categorical_embedding_dims=self.hparams.embedding_dims,
+            embedding_dropout=self.hparams.embedding_dropout,
+            batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
+            virtual_batch_size=self.hparams.virtual_batch_size,
+        )
         return embedding
 
-    def forward(self, x: torch.Tensor):  # TODO factor out target encoding option.
+    def forward(self, x: torch.Tensor):
         x = self.dense_block(x)
         return x
 
@@ -80,7 +70,10 @@ class NODEModel(BaseModel):
 
     def data_aware_initialization(self, datamodule):
         """Performs data-aware initialization for NODE."""
-        logger.info("Data Aware Initialization of NODE using a forward pass with 2000 batch size....")
+        logger.info(
+            "Data Aware Initialization of NODE using a forward pass with "
+            f"{self.hparams.data_aware_init_batch_size} batch size...."
+        )
         # Need a big batch to initialize properly
         alt_loader = datamodule.train_dataloader(batch_size=self.hparams.data_aware_init_batch_size)
         batch = next(iter(alt_loader))

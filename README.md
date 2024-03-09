@@ -2,7 +2,7 @@
 
 [![pypi](https://img.shields.io/pypi/v/pytorch_tabular.svg)](https://pypi.python.org/pypi/pytorch_tabular)
 [![Testing](https://github.com/manujosephv/pytorch_tabular/actions/workflows/testing.yml/badge.svg?event=push)](https://github.com/manujosephv/pytorch_tabular/actions/workflows/testing.yml)
-[![documentation status](https://readthedocs.org/projects/pytorch_tabular/badge/?version=latest)](https://pytorch_tabular.readthedocs.io/en/latest/?badge=latest)
+[![documentation status](https://readthedocs.org/projects/pytorch_tabular/badge/?version=latest)](https://pytorch-tabular.readthedocs.io/en/latest/)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/manujosephv/pytorch_tabular/main.svg)](https://results.pre-commit.ci/latest/github/manujosephv/pytorch_tabular/main)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/manujosephv/pytorch_tabular/blob/main/docs/tutorials/01-Basic_Usage.ipynb)
 
@@ -12,7 +12,7 @@
 
 PyTorch Tabular aims to make Deep Learning with Tabular data easy and accessible to real-world cases and research alike. The core principles behind the design of the library are:
 
-- Low Resistance Useability
+- Low Resistance Usability
 - Easy Customization
 - Scalable and Easier to Deploy
 
@@ -34,7 +34,7 @@ Although the installation includes PyTorch, the best and recommended way is to f
 Once, you have got Pytorch installed, just use:
 
 ```bash
-pip install -U pytorch_tabular[extra]
+pip install -U “pytorch_tabular[extra]”
 ```
 
 to install the complete library with extra dependencies (Weights&Biases & Plotly).
@@ -42,7 +42,7 @@ to install the complete library with extra dependencies (Weights&Biases & Plotly
 And :
 
 ```bash
-pip install -U pytorch_tabular
+pip install -U “pytorch_tabular”
 ```
 
 for the bare essentials.
@@ -74,12 +74,15 @@ For complete Documentation with tutorials visit [ReadTheDocs](https://pytorch-ta
 - [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/abs/1810.11921) is a model which tries to learn interactions between the features in an automated way and create a better representation and then use this representation in downstream task
 - [TabTransformer](https://arxiv.org/abs/2012.06678) is an adaptation of the Transformer model for Tabular Data which creates contextual representations for categorical features.
 - FT Transformer from [Revisiting Deep Learning Models for Tabular Data](https://arxiv.org/abs/2106.11959)
-- [Gated Additive Tree Ensemble](https://arxiv.org/abs/2207.08548) is a novel high-performance, parameter and computationally efficient deep learning architecture for tabular data. GATE uses a gating mechanism, inspired from GRU, as a feature representation learning unit with an in-built feature selection mechanism. We combine it with an ensemble of differentiable, non-linear decision trees, re-weighted with simple self-attention to predict our desired output.
+- [Gated Additive Tree Ensemble](https://arxiv.org/abs/2207.08548v3) is a novel high-performance, parameter and computationally efficient deep learning architecture for tabular data. GATE uses a gating mechanism, inspired from GRU, as a feature representation learning unit with an in-built feature selection mechanism. We combine it with an ensemble of differentiable, non-linear decision trees, re-weighted with simple self-attention to predict our desired output.
+- [Gated Adaptive Network for Deep Automated Learning of Features (GANDALF)](https://arxiv.org/abs/2207.08548) is pared-down version of GATE which is more efficient and performing than GATE. GANDALF makes GFLUs the main learning unit, also introducing some speed-ups in the process. With very minimal hyperparameters to tune, this becomes an easy to use and tune model.
+- [DANETs: Deep Abstract Networks for Tabular Data Classification and Regression](https://arxiv.org/pdf/2112.02962v4.pdf) is a novel and flexible neural component for tabular data, called Abstract Layer (AbstLay), which learns to explicitly group correlative input features and generate higher-level features for semantics abstraction.  A special basic block is built using AbstLays, and we construct a family of Deep Abstract Networks (DANets) for tabular data classification and regression by stacking such blocks.
 
 **Semi-Supervised Learning**
 
 - [Denoising AutoEncoder](https://www.kaggle.com/code/faisalalsrheed/denoising-autoencoders-dae-for-tabular-data) is an autoencoder which learns robust feature representation, to compensate any noise in the dataset.
 
+## Implement Custom Models
 To implement new models, see the [How to implement new models tutorial](https://github.com/manujosephv/pytorch_tabular/blob/main/docs/tutorials/04-Implementing%20New%20Architectures.ipynb). It covers basic as well as advanced architectures.
 
 ## Usage
@@ -125,7 +128,7 @@ tabular_model.fit(train=train, validation=val)
 result = tabular_model.evaluate(test)
 pred_df = tabular_model.predict(test)
 tabular_model.save_model("examples/basic")
-loaded_model = TabularModel.load_from_checkpoint("examples/basic")
+loaded_model = TabularModel.load_model("examples/basic")
 ```
 
 ## Blogs
@@ -137,11 +140,10 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
 ## Future Roadmap(Contributions are Welcome)
 
 1. Integrate Optuna Hyperparameter Tuning
-1. Integrate Captum for interpretability
-1. Have a scikit-learn compatible API
+1. Migrate Datamodule to Polars or NVTabular for faster data loading and to handle larger than RAM datasets.
 1. Add GaussRank as Feature Transformation
+1. Have a scikit-learn compatible API
 1. Enable support for multi-label classification
-1. Migrate Datamodule to Polars or Vaex for faster data loading and to handle larger than RAM datasets.
 1. Keep adding more architectures
 
 ## Contributors
@@ -171,12 +173,27 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/ProgramadorArtificial">
+            <img src="https://avatars.githubusercontent.com/u/130674366?v=4" width="100;" alt="ProgramadorArtificial"/>
+            <br />
+            <sub><b>Programador Artificial</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/sorenmacbeth">
+            <img src="https://avatars.githubusercontent.com/u/130043?v=4" width="100;" alt="sorenmacbeth"/>
+            <br />
+            <sub><b>Soren Macbeth</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/fonnesbeck">
             <img src="https://avatars.githubusercontent.com/u/81476?v=4" width="100;" alt="fonnesbeck"/>
             <br />
             <sub><b>Chris Fonnesbeck</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/jxtrbtk">
             <img src="https://avatars.githubusercontent.com/u/40494970?v=4" width="100;" alt="jxtrbtk"/>
@@ -190,8 +207,7 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
             <br />
             <sub><b>Andreas</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/EeyoreLee">
             <img src="https://avatars.githubusercontent.com/u/49790022?v=4" width="100;" alt="EeyoreLee"/>
@@ -219,12 +235,20 @@ loaded_model = TabularModel.load_from_checkpoint("examples/basic")
             <br />
             <sub><b>Luca Actis Grosso</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/sgbaird">
             <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
             <br />
             <sub><b>Sterling G. Baird</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/furyhawk">
+            <img src="https://avatars.githubusercontent.com/u/831682?v=4" width="100;" alt="furyhawk"/>
+            <br />
+            <sub><b>Teck Meng</b></sub>
         </a>
     </td>
     <td align="center">

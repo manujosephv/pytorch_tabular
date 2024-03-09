@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
 import pytest
-
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import GatedAdditiveTreeEnsembleConfig
@@ -37,54 +36,51 @@ def test_regression(
     target_range,
 ):
     (train, test, target) = regression_data
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target + ["MedInc"] if multi_target else target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {
-            "task": "regression",
-            "gflu_stages": 1,
-            "tree_depth": 1,
-            "num_trees": 2,
-        }
-        if target_range:
-            _target_range = []
-            for target in data_config.target:
-                _target_range.append(
-                    (
-                        float(train[target].min()),
-                        float(train[target].max()),
-                    )
+    data_config = DataConfig(
+        target=target + ["MedInc"] if multi_target else target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {
+        "task": "regression",
+        "gflu_stages": 1,
+        "tree_depth": 1,
+        "num_trees": 2,
+    }
+    if target_range:
+        _target_range = []
+        for target in data_config.target:
+            _target_range.append(
+                (
+                    float(train[target].min()),
+                    float(train[target].max()),
                 )
-            model_config_params["target_range"] = _target_range
-        model_config = GatedAdditiveTreeEnsembleConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=1,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+            )
+        model_config_params["target_range"] = _target_range
+    model_config = GatedAdditiveTreeEnsembleConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train)
 
-        result = tabular_model.evaluate(test)
-        assert "test_mean_squared_error" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    assert "test_mean_squared_error" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 @pytest.mark.parametrize(
@@ -104,44 +100,41 @@ def test_classification(
     normalize_continuous_features,
 ):
     (train, test, target) = classification_data
-    if len(continuous_cols) + len(categorical_cols) == 0:
-        assert True
-    else:
-        data_config = DataConfig(
-            target=target,
-            continuous_cols=continuous_cols,
-            categorical_cols=categorical_cols,
-            continuous_feature_transform=continuous_feature_transform,
-            normalize_continuous_features=normalize_continuous_features,
-        )
-        model_config_params = {
-            "task": "classification",
-            "gflu_stages": 1,
-            "tree_depth": 1,
-            "num_trees": 2,
-        }
-        model_config = GatedAdditiveTreeEnsembleConfig(**model_config_params)
-        trainer_config = TrainerConfig(
-            max_epochs=1,
-            checkpoints=None,
-            early_stopping=None,
-            accelerator="cpu",
-            fast_dev_run=True,
-        )
-        optimizer_config = OptimizerConfig()
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+        continuous_feature_transform=continuous_feature_transform,
+        normalize_continuous_features=normalize_continuous_features,
+    )
+    model_config_params = {
+        "task": "classification",
+        "gflu_stages": 1,
+        "tree_depth": 1,
+        "num_trees": 2,
+    }
+    model_config = GatedAdditiveTreeEnsembleConfig(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
 
-        tabular_model = TabularModel(
-            data_config=data_config,
-            model_config=model_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-        )
-        tabular_model.fit(train=train, test=test)
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(train=train)
 
-        result = tabular_model.evaluate(test)
-        assert "test_accuracy" in result[0].keys()
-        pred_df = tabular_model.predict(test)
-        assert pred_df.shape[0] == test.shape[0]
+    result = tabular_model.evaluate(test)
+    assert "test_accuracy" in result[0].keys()
+    pred_df = tabular_model.predict(test)
+    assert pred_df.shape[0] == test.shape[0]
 
 
 # def test_embedding_transformer(regression_data):
@@ -180,7 +173,7 @@ def test_classification(
 #         optimizer_config=optimizer_config,
 #         trainer_config=trainer_config,
 #     )
-#     tabular_model.fit(train=train, test=test)
+#     tabular_model.fit(train=train)
 
 #     transformer = CategoricalEmbeddingTransformer(tabular_model)
 #     train_transform = transformer.fit_transform(train)

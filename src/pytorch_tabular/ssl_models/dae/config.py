@@ -37,6 +37,8 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
                 embedding space and others will be converted to a one hot representation. If set to 0, will use
                 the embedding strategy for all categorical feature. Default is 4
 
+        include_input_features_inference (bool): If True, will include the input features along with the
+                learned features while fine tuning. Defaults to False
 
         encoder_config (Optional[pytorch_tabular.config.config.ModelConfig]): The config of the encoder to
                 be used for the model. Should be one of the model configs defined in PyTorch Tabular
@@ -52,7 +54,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.1
 
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
-                through a BatchNorm layer. DEPRECATED - Use head and head_config instead
+                through a BatchNorm layer.
 
         learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
@@ -104,6 +106,13 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
             " Any categorical feature with cardinality>max_onehot_cardinality will be embedded"
             " in a learned embedding space and others will be converted to a one hot representation."
             " If set to 0, will use the embedding strategy for all categorical feature. Default is 4"
+        },
+    )
+    include_input_features_inference: bool = field(
+        default=False,
+        metadata={
+            "help": "If True, will include the input features along with the learned features"
+            " while fine tuning. Defaults to False"
         },
     )
 
