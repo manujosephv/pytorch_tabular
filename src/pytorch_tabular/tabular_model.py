@@ -467,7 +467,11 @@ class TabularModel:
                 **model_args,
             )
         except RuntimeError as e:
-            if "Unexpected key(s) in state_dict" in str(e) and "loss.weight" in str(e) and "custom_loss.weight" in str(e):
+            if (
+                "Unexpected key(s) in state_dict" in str(e)
+                and "loss.weight" in str(e)
+                and "custom_loss.weight" in str(e)
+            ):
                 # Custom loss will be loaded after the model is initialized
                 # continuing with strict=False
                 model = model_callable.load_from_checkpoint(
