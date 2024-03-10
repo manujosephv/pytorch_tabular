@@ -459,17 +459,25 @@ class TabularModel:
             model_args["optimizer_params"] = {}  # For compatibility. Not Used
 
         # Initializing with default metrics, losses, and optimizers. Will revert once initialized
-        model = model_callable.load_from_checkpoint(
-            checkpoint_path=os.path.join(dir, "model.ckpt"),
-            map_location=map_location,
-            strict=strict,
-            **model_args,
-        )
-        # Updating config with custom parameters for experiment tracking
-        if custom_params.get("custom_loss") is not None:
-            model.custom_loss = custom_params["custom_loss"]
-        if custom_params.get("custom_metrics") is not None:
-            model.custom_metrics = custom_params["custom_metrics"]
+        try:
+            model = model_callable.load_from_checkpoint(
+                checkpoint_path=os.path.join(dir, "model.ckpt"),
+                map_location=map_location,
+                strict=strict,
+                **model_args,
+            )
+        except RuntimeError as e:
+            if "Unexpected key(s) in state_dict" in str(e) and "loss.weight" in str(e) and "custom_loss.weight" in str(e):
+                # Custom loss will be loaded after the model is initialized
+                # continuing with strict=False
+                model = model_callable.load_from_checkpoint(
+                    checkpoint_path=os.path.join(dir, "model.ckpt"),
+                    map_location=map_location,
+                    strict=False,
+                    **model_args,
+                )
+            else:
+                raise e
         if custom_params.get("custom_optimizer") is not None:
             model.custom_optimizer = custom_params["custom_optimizer"]
         if custom_params.get("custom_optimizer_params") is not None:
