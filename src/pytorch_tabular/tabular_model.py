@@ -1966,7 +1966,9 @@ class TabularModel:
             if datamodule is None:
                 # Initialize datamodule and model in the first fold
                 # uses train data from this fold to fit all transformers
-                datamodule = self.prepare_dataloader(train=train.iloc[train_idx], validation=train.iloc[val_idx], seed=42, **prep_dl_kwargs)
+                datamodule = self.prepare_dataloader(
+                    train=train.iloc[train_idx], validation=train.iloc[val_idx], seed=42, **prep_dl_kwargs
+                )
                 model = self.prepare_model(datamodule, **prep_model_kwargs)
             else:
                 # Preprocess the current fold data using the fitted transformers and save in datamodule
