@@ -492,7 +492,7 @@ class TabularModel:
             model.custom_metrics = custom_params.get("custom_metrics")
             model.hparams.metrics = [m.__name__ for m in custom_params.get("custom_metrics")]
             model.hparams.metrics_params = [{}]
-            model.hparams.metrics_prob_input = custom_params.get("custom_metrics_prob_inputs") 
+            model.hparams.metrics_prob_input = custom_params.get("custom_metrics_prob_inputs")
         model._setup_loss()
         model._setup_metrics()
         tabular_model = cls(config=config, model_callable=model_callable)
