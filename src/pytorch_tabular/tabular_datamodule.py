@@ -290,11 +290,11 @@ class TabularDatamodule(pl.LightningDataModule):
             raise ValueError(f"{config.task} is an unsupported task.")
         if self.train is not None:
             categorical_cardinality = [
-                int(x)+1 for x in list(self.train[config.categorical_cols].fillna('NA').nunique().values)
+                int(x) + 1 for x in list(self.train[config.categorical_cols].fillna("NA").nunique().values)
             ]
         else:
             categorical_cardinality = [
-               int(x) + 1 for x in list(self.train_dataset.data[config.categorical_cols].nunique().values)
+                int(x) + 1 for x in list(self.train_dataset.data[config.categorical_cols].nunique().values)
             ]
         if getattr(config, "embedding_dims", None) is not None:
             embedding_dims = config.embedding_dims
