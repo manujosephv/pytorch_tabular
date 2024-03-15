@@ -257,6 +257,13 @@ loaded_model = TabularModel.load_model("examples/basic")
             <br />
             <sub><b>Yinyu Nie</b></sub>
         </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/HernandoR">
+            <img src="https://avatars.githubusercontent.com/u/45709656?v=4" width="100;" alt="HernandoR"/>
+            <br />
+            <sub><b>Zhen Liu</b></sub>
+        </a>
     </td></tr>
 </table>
 <!-- readme: contributors -end -->
