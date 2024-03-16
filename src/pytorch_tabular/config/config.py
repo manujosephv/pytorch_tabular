@@ -557,7 +557,8 @@ class TrainerConfig:
 
 @dataclass
 class ExperimentConfig:
-    """Experiment configuration. Experiment Tracking with WandB and Tensorboard
+    """Experiment configuration. Experiment Tracking with WandB and Tensorboard.
+
     Args:
         project_name (str): The name of the project under which all runs will be logged. For Tensorboard
                 this defines the folder under which the logs will be saved and for W&B it defines the project name
@@ -632,6 +633,7 @@ class ExperimentConfig:
 @dataclass
 class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
+
     Args:
         optimizer (str): Any of the standard optimizers from
                 [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms) or provide full python path,
@@ -725,7 +727,8 @@ class ExperimentRunManager:
 
 @dataclass
 class ModelConfig:
-    """Base Model configuration
+    """Base Model configuration.
+
     Args:
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
@@ -929,7 +932,8 @@ class ModelConfig:
 
 @dataclass
 class SSLModelConfig:
-    """Base SSLModel Configuration
+    """Base SSLModel Configuration.
+
     Args:
         encoder_config (Optional[ModelConfig]): The config of the encoder to be used for the
                 model. Should be one of the model configs defined in PyTorch Tabular

@@ -27,7 +27,7 @@ repos:
           - id: detect-private-key
 
     - repo: https://github.com/asottile/pyupgrade
-      rev: v3.15.0
+      rev: v3.15.1
       hooks:
           - id: pyupgrade
             args: ["--py38-plus"]
@@ -40,7 +40,7 @@ repos:
             args: [--in-place, --wrap-summaries=120, --wrap-descriptions=120]
 
     - repo: https://github.com/psf/black
-      rev: 24.1.1
+      rev: 24.2.0
       hooks:
           - id: black
             name: Black code
@@ -64,7 +64,7 @@ repos:
           - id: yesqa
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.1.14
+      rev: v0.2.2
       hooks:
           - id: ruff
             args: ["--fix"]
