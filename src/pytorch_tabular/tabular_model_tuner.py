@@ -109,7 +109,7 @@ class TabularModelTuner:
                 config[param] = value
             else:
                 raise ValueError(f"{param} is not a valid parameter for {str(config)}")
-        elif isinstance(config, ModelConfig):
+        elif isinstance(config, (ModelConfig, OptimizerConfig)):
             if hasattr(config, param):
                 setattr(config, param, value)
             else:
@@ -117,7 +117,6 @@ class TabularModelTuner:
 
     def _update_configs(
         self,
-        trainer_config: TrainerConfig,
         optimizer_config: OptimizerConfig,
         model_config: ModelConfig,
         params: Dict,
@@ -127,7 +126,9 @@ class TabularModelTuner:
         for k, v in params.items():
             root, param = k.split("__")
             if root.startswith("trainer_config"):
-                self._check_assign_config(trainer_config, param, v)
+                raise ValueError(
+                    "The trainer_config is not supported be tuner. Please remove it from tuner parameters!"
+                )
             elif root.startswith("optimizer_config"):
                 self._check_assign_config(optimizer_config, param, v)
             elif root.startswith("model_config.head_config"):
@@ -138,10 +139,10 @@ class TabularModelTuner:
             else:
                 raise ValueError(
                     f"{k} is not in the proper format. Use __ to separate the "
-                    "root and param. for eg. `training_config__batch_size` should be "
-                    "used to update the batch_size parameter in the training_config"
+                    "root and param. for eg. `optimizer_config__optimizer` should be "
+                    "used to update the optimizer parameter in the optimizer_config"
                 )
-        return trainer_config, optimizer_config, model_config
+        return optimizer_config, model_config
 
     def tune(
         self,
@@ -251,9 +252,11 @@ class TabularModelTuner:
             iterator = ParameterSampler(search_space, n_iter=n_trials, random_state=random_state)
         else:
             raise NotImplementedError(f"{strategy} is not implemented yet.")
+
         if progress_bar:
             iterator = track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
         verbose_tabular_model = self.tabular_model_init_kwargs.pop("verbose", False)
+
         temp_tabular_model = TabularModel(
             data_config=self.data_config,
             model_config=self.model_config,
@@ -262,11 +265,13 @@ class TabularModelTuner:
             verbose=verbose_tabular_model,
             **self.tabular_model_init_kwargs,
         )
+
         prep_dl_kwargs, prep_model_kwargs, train_kwargs = temp_tabular_model._split_kwargs(kwargs)
         if "seed" not in prep_dl_kwargs:
             prep_dl_kwargs["seed"] = random_state
         datamodule = temp_tabular_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
         validation = validation if validation is not None else datamodule.validation_dataset.data
+
         if isinstance(metric, str):
             # metric = metric_to_pt_metric(metric)
             is_callable_metric = False
@@ -275,6 +280,7 @@ class TabularModelTuner:
             is_callable_metric = True
             metric_str = metric.__name__
         del temp_tabular_model
+
         trials = []
         best_model = None
         best_score = 0.0
@@ -286,9 +292,7 @@ class TabularModelTuner:
             optimizer_config_t = deepcopy(self.optimizer_config)
             model_config_t = deepcopy(self.model_config)
 
-            trainer_config_t, optimizer_config_t, model_config_t = self._update_configs(
-                trainer_config_t, optimizer_config_t, model_config_t, params
-            )
+            optimizer_config_t, model_config_t = self._update_configs(optimizer_config_t, model_config_t, params)
             # Initialize Tabular model using the new config
             tabular_model_t = TabularModel(
                 data_config=self.data_config,
@@ -298,6 +302,7 @@ class TabularModelTuner:
                 verbose=verbose_tabular_model,
                 **self.tabular_model_init_kwargs,
             )
+
             if cv is not None:
                 cv_verbose = cv_kwargs.pop("verbose", False)
                 cv_kwargs.pop("handle_oom", None)
@@ -317,7 +322,7 @@ class TabularModelTuner:
                             "Set ignore_oom=True to ignore this error."
                         )
                     else:
-                        params.update({metric_str: "OOM"})
+                        params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
                 else:
                     params.update({metric_str: cv_agg_func(cv_scores)})
             else:
@@ -334,7 +339,7 @@ class TabularModelTuner:
                             "Out of memory error occurred during training. " "Set ignore_oom=True to ignore this error."
                         )
                     else:
-                        params.update({metric_str: "OOM"})
+                        params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
                 else:
                     if is_callable_metric:
                         preds = tabular_model_t.predict(validation, include_input_features=False)
@@ -380,6 +385,7 @@ class TabularModelTuner:
 
         if return_best_model and best_model is not None:
             best_model.datamodule = datamodule
+
             return self.OUTPUT(trials_df, best_params, best_score, best_model)
         else:
             return self.OUTPUT(trials_df, best_params, best_score, None)
