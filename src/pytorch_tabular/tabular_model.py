@@ -327,7 +327,8 @@ class TabularModel:
         return callbacks
 
     def _prepare_trainer(self, callbacks: List, max_epochs: int = None, min_epochs: int = None) -> pl.Trainer:
-        """Prepares the Trainer object
+        """Prepares the Trainer object.
+
         Args:
             callbacks (List): A list of callbacks to be used
             max_epochs (int, optional): Maximum number of epochs to train for. Defaults to None.
@@ -876,7 +877,8 @@ class TabularModel:
         target_range: Optional[Tuple[float, float]] = None,
         seed: Optional[int] = 42,
     ):
-        """Creates a new TabularModel model using the pretrained weights and the new task and head
+        """Creates a new TabularModel model using the pretrained weights and the new task and head.
+
         Args:
             task (str): The task to be performed. One of "regression", "classification"
 
@@ -1053,7 +1055,8 @@ class TabularModel:
         callbacks: Optional[List[pl.Callback]] = None,
         freeze_backbone: bool = False,
     ) -> pl.Trainer:
-        """Finetunes the model on the provided data
+        """Finetunes the model on the provided data.
+
         Args:
             max_epochs (Optional[int], optional): The maximum number of epochs to train for. Defaults to None.
 
@@ -1956,30 +1959,32 @@ class TabularModel:
         for fold, (train_idx, val_idx) in it:
             if verbose:
                 logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
-            train_fold = train.iloc[train_idx]
-            val_fold = train.iloc[val_idx]
+            # train_fold = train.iloc[train_idx]
+            # val_fold = train.iloc[val_idx]
             if reset_datamodule:
                 datamodule = None
             if datamodule is None:
                 # Initialize datamodule and model in the first fold
                 # uses train data from this fold to fit all transformers
-                datamodule = self.prepare_dataloader(train=train_fold, validation=val_fold, seed=42, **prep_dl_kwargs)
+                datamodule = self.prepare_dataloader(
+                    train=train.iloc[train_idx], validation=train.iloc[val_idx], seed=42, **prep_dl_kwargs
+                )
                 model = self.prepare_model(datamodule, **prep_model_kwargs)
             else:
                 # Preprocess the current fold data using the fitted transformers and save in datamodule
-                datamodule.train, _ = datamodule.preprocess_data(train_fold, stage="inference")
-                datamodule.validation, _ = datamodule.preprocess_data(val_fold, stage="inference")
+                datamodule.train, _ = datamodule.preprocess_data(train.iloc[train_idx], stage="inference")
+                datamodule.validation, _ = datamodule.preprocess_data(train.iloc[val_idx], stage="inference")
 
             # Train the model
             handle_oom = train_kwargs.pop("handle_oom", handle_oom)
             self.train(model, datamodule, handle_oom=handle_oom, **train_kwargs)
             if return_oof or is_callable_metric:
-                preds = self.predict(val_fold, include_input_features=False)
+                preds = self.predict(train.iloc[val_idx], include_input_features=False)
                 oof_preds.append(preds)
             if is_callable_metric:
-                cv_metrics.append(metric(val_fold[self.config.target], preds))
+                cv_metrics.append(metric(train.iloc[val_idx][self.config.target], preds))
             else:
-                result = self.evaluate(val_fold, verbose=False)
+                result = self.evaluate(train.iloc[val_idx], verbose=False)
                 cv_metrics.append(result[0][metric])
             if verbose:
                 logger.info(f"Fold {fold+1}/{cv.get_n_splits()} score: {cv_metrics[-1]}")
