@@ -61,6 +61,7 @@ class MDNConfig(ModelConfig):
                 not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     backbone_config_class: str = field(

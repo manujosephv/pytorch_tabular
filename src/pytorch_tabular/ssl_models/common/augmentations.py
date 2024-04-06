@@ -10,6 +10,7 @@ def mixup(batch: Dict, lam: float = 0.5) -> Dict:
 
     :param batch: Tensor on which apply the mixup augmentation
     :param lam: weight in the linear combination between the original values and the random permutation
+
     """
     result = {}
     for key, value in batch.items():
@@ -25,6 +26,7 @@ def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
     :param batch: Tensor on which apply the cutmix augmentation
     :param lam: probability values have 0 in a binary random mask, so it means probability original values will be
         updated
+
     """
     result = {}
     for key, value in batch.items():
@@ -41,6 +43,7 @@ def _get_random_index(x: torch.Tensor) -> torch.Tensor:
     """Given a tensor it compute random indices between 0 and the number of the first dimension.
 
     :param x: Tensor used to get the number of rows
+
     """
     batch_size = x.size()[0]
     index = torch.randperm(batch_size)

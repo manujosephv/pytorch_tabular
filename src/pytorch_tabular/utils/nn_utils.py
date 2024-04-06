@@ -62,6 +62,7 @@ def reset_all_weights(model: nn.Module) -> None:
         - https://discuss.pytorch.org/t/how-to-re-set-alll-parameters-in-a-network/20819/6
         - https://stackoverflow.com/questions/63627997/reset-parameters-of-a-neural-network-in-pytorch
         - https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+
     """
 
     @torch.no_grad()
@@ -82,6 +83,7 @@ def to_one_hot(y, depth=None):
     Args:
         y: input integer (IntTensor, LongTensor or Variable) of any shape
         depth (int):  the size of the one hot dimension
+
     """
     y_flat = y.to(torch.int64).view(-1, 1)
     depth = depth or int(torch.max(y_flat)) + 1
@@ -115,6 +117,7 @@ class OutOfMemoryHandler:
     Args:
         handle_oom: Whether to handle the error or not. If set to False,
             the exception will be propagated.
+
     """
 
     def __init__(self, handle_oom: bool = True):

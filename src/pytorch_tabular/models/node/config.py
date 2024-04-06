@@ -102,6 +102,7 @@ class NodeConfig(ModelConfig):
                 not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     num_layers: int = field(

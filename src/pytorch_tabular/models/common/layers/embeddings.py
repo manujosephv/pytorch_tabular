@@ -80,8 +80,9 @@ class PreEncoded1dLayer(nn.Module):
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
-            "categorical", torch.empty(0, 0)
+        continuous_data, categorical_data = (
+            x.get("continuous", torch.empty(0, 0)),
+            x.get("categorical", torch.empty(0, 0)),
         )
         assert (
             categorical_data.shape[1] == self.categorical_dim
@@ -136,8 +137,9 @@ class Embedding1dLayer(nn.Module):
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
-            "categorical", torch.empty(0, 0)
+        continuous_data, categorical_data = (
+            x.get("continuous", torch.empty(0, 0)),
+            x.get("categorical", torch.empty(0, 0)),
         )
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers
@@ -267,8 +269,9 @@ class Embedding2dLayer(nn.Module):
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
-            "categorical", torch.empty(0, 0)
+        continuous_data, categorical_data = (
+            x.get("continuous", torch.empty(0, 0)),
+            x.get("categorical", torch.empty(0, 0)),
         )
         assert categorical_data.shape[1] == len(
             self.cat_embedding_layers

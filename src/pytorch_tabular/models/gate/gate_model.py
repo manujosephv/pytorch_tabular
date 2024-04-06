@@ -157,6 +157,7 @@ class CustomHead(nn.Module):
     Args:
         input_dim (int): Input dimension of the head
         hparams (DictConfig): Config of the model
+
     """
 
     def __init__(self, input_dim: int, hparams: DictConfig):

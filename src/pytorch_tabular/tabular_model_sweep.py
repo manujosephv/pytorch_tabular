@@ -148,9 +148,7 @@ def _validate_args(
     assert rank_metric[1] in [
         "lower_is_better",
         "higher_is_better",
-    ], (
-        "rank_metric[1] must be one of ['lower_is_better', 'higher_is_better'], but" f" got {rank_metric[1]}"
-    )
+    ], "rank_metric[1] must be one of ['lower_is_better', 'higher_is_better'], but" f" got {rank_metric[1]}"
 
 
 def model_sweep(
@@ -237,6 +235,7 @@ def model_sweep(
             results: Training results.
 
             best_model: If return_best_model is True, return best_model otherwise return None.
+
     """
     _validate_args(
         task=task,
