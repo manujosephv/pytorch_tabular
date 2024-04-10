@@ -99,13 +99,13 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             else:
                 encoded_cat_dims += embd_dim
         config.encoder_config._backbone_input_dim = encoded_cat_dims + len(config.continuous_cols)
-        assert (
-            config.encoder_config._config_name in self.ALLOWED_MODELS
-        ), "Encoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
+        assert config.encoder_config._config_name in self.ALLOWED_MODELS, (
+            "Encoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
+        )
         if config.decoder_config is not None:
-            assert (
-                config.decoder_config._config_name in self.ALLOWED_MODELS
-            ), "Decoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
+            assert config.decoder_config._config_name in self.ALLOWED_MODELS, (
+                "Decoder must be one of the following: " + ", ".join(self.ALLOWED_MODELS)
+            )
             if "-" in config.encoder_config.layers:
                 config.decoder_config._backbone_input_dim = int(config.encoder_config.layers.split("-")[-1])
             else:

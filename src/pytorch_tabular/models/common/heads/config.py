@@ -6,8 +6,8 @@ from typing import List, Optional
 
 @dataclass
 class LinearHeadConfig:
-    """A model class for Linear Head configuration; serves as a template and documentation. The models take a dictionary
-    as input, but if there are keys which are not present in this model class, it'll throw an exception.
+    """A model class for Linear Head configuration; serves as a template and documentation. The models take a
+    dictionary as input, but if there are keys which are not present in this model class, it'll throw an exception.
 
     Args:
         layers (str): Hyphen-separated number of layers and units in the classification/regression head.
@@ -22,6 +22,7 @@ class LinearHeadConfig:
 
         initialization (str): Initialization scheme for the linear layers. Defaults to `kaiming`. Choices
                 are: [`kaiming`,`xavier`,`random`].
+
     """
 
     layers: str = field(
@@ -98,6 +99,7 @@ class MixtureDensityHeadConfig:
 
         input_dim (int): The input dimensions to the head. This will be automatically filled in while
                 initializing from the `backbone.output_dim`
+
     """
 
     num_gaussian: int = field(

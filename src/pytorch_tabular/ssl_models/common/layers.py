@@ -72,8 +72,9 @@ class MixedEmbedding1dLayer(nn.Module):
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
-        continuous_data, categorical_data = x.get("continuous", torch.empty(0, 0)), x.get(
-            "categorical", torch.empty(0, 0)
+        continuous_data, categorical_data = (
+            x.get("continuous", torch.empty(0, 0)),
+            x.get("categorical", torch.empty(0, 0)),
         )
         assert categorical_data.shape[1] == len(
             self._onehot_feat_idx + self._binary_feat_idx + self._embedding_feat_idx
@@ -93,10 +94,10 @@ class MixedEmbedding1dLayer(nn.Module):
             x_embed = []
             for i in range(self.categorical_dim):
                 if i in self._binary_feat_idx:
-                    x_binary.append(categorical_data[:, i : i + 1])  # noqa: E203
+                    x_binary.append(categorical_data[:, i : i + 1])
                 elif i in self._onehot_feat_idx:
                     x_cat.append(self.one_hot_layers[str(i)](categorical_data[:, i]))
-                    x_cat_orig.append(categorical_data[:, i : i + 1])  # noqa: E203
+                    x_cat_orig.append(categorical_data[:, i : i + 1])
                 else:
                     x_embed.append(self.embedding_layer[str(i)](categorical_data[:, i]))
             # (B, N, E)
