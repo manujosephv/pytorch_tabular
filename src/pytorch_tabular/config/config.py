@@ -195,6 +195,8 @@ class InferredConfig:
 
         output_dim (Optional[int]): The number of output targets
 
+        output_cardinality (Optional[int]): The number of unique values in classification output
+
         categorical_cardinality (Optional[List[int]]): The number of unique values in categorical features
 
         embedding_dims (Optional[List]): The dimensions of the embedding for each categorical column as a
@@ -212,6 +214,10 @@ class InferredConfig:
     output_dim: Optional[int] = field(
         default=None,
         metadata={"help": "The number of output targets"},
+    )
+    output_cardinality: Optional[List[int]] = field(
+        default=None,
+        metadata={"help": "The number of unique values in classification output"},
     )
     categorical_cardinality: Optional[List[int]] = field(
         default=None,

@@ -263,7 +263,22 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     )
         else:
             # TODO loss fails with batch size of 1?
-            computed_loss = self.loss(y_hat.squeeze(), y.squeeze()) + reg_loss
+            computed_loss = reg_loss
+            start_index = 0
+            for i in range(len(self.hparams.output_cardinality)):
+                end_index = start_index + self.hparams.output_cardinality[i]
+                _loss = self.loss(y_hat[:, start_index:end_index], y[:, i])
+                computed_loss += _loss
+                if self.hparams.output_dim > 1:
+                    self.log(
+                        f"{tag}_loss_{i}",
+                        _loss,
+                        on_epoch=True,
+                        on_step=False,
+                        logger=True,
+                        prog_bar=False,
+                    )
+                start_index = end_index    
         self.log(
             f"{tag}_loss",
             computed_loss,
@@ -320,11 +335,26 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             else:
-                y_hat = nn.Softmax(dim=-1)(y_hat.squeeze())
-                if prob_inp:
-                    avg_metric = metric(y_hat, y.squeeze(), **metric_params)
-                else:
-                    avg_metric = metric(torch.argmax(y_hat, dim=-1), y.squeeze(), **metric_params)
+                _metrics = []
+                start_index = 0
+                for i in range(len(self.hparams.output_cardinality)):
+                    end_index = start_index + self.hparams.output_cardinality[i]
+                    y_hat_i = nn.Softmax(dim=-1)(y_hat[:, start_index:end_index].squeeze())
+                    if prob_inp:
+                        _metric = metric(y_hat_i, y[:,i:i+1].squeeze(), **metric_params)
+                    else:
+                        _metric = metric(torch.argmax(y_hat_i, dim=-1), y[:,i:i+1].squeeze(), **metric_params)
+                    if len(self.hparams.output_cardinality) > 1:
+                        self.log(
+                            f"{tag}_{metric_str}_{i}",
+                            _metric,
+                            on_epoch=True,
+                            on_step=False,
+                            logger=True,
+                            prog_bar=False,
+                        )
+                    _metrics.append(_metric)
+                avg_metric = torch.stack(_metrics, dim=0).sum()
             metrics.append(avg_metric)
             self.log(
                 f"{tag}_{metric_str}",
