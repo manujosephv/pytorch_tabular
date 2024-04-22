@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, ListConfig
 from pandas import DataFrame
 from torch import Tensor
 from torch.optim import Optimizer
@@ -121,21 +121,31 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 config.metrics_prob_input = self.custom_metrics_prob_inputs
         # Updating default metrics in config
         elif config.task == "classification":
+            # FIXME need to revise metrics_params already from above if there are custom
+            # For classification, metrics_params becomes a 2D list
+            # config.metrics_params[0] = []
             # Adding metric_params to config for classification task
             for i, mp in enumerate(config.metrics_params):
-                # For classification task, output_dim == number of classses
-                config.metrics_params[i]["task"] = mp.get("task", "multiclass")
-                config.metrics_params[i]["num_classes"] = mp.get("num_classes", inferred_config.output_dim)
-                if config.metrics[i] in (
-                    "accuracy",
-                    "precision",
-                    "recall",
-                    "precision_recall",
-                    "specificity",
-                    "f1_score",
-                    "fbeta_score",
-                ):
-                    config.metrics_params[i]["top_k"] = mp.get("top_k", 1)
+                mp.sub_params_list = []
+                for j, num_classes in enumerate(inferred_config.output_cardinality):
+                    # For classification task, output_dim == number of classses
+                    #config.metrics_params[i].append()
+                    #config.metrics_params[i][j]["task"] = mp.get("task", "multiclass")
+                    #config.metrics_params[i][j]["num_classes"] = mp.get("num_classes", num_classes)
+
+                    config.metrics_params[i].sub_params_list.append(OmegaConf.create({"task": mp.get("task", "multiclass"),
+                                                                    "num_classes": mp.get("num_classes", num_classes)}))
+
+                    if config.metrics[i] in (
+                        "accuracy",
+                        "precision",
+                        "recall",
+                        "precision_recall",
+                        "specificity",
+                        "f1_score",
+                        "fbeta_score",
+                    ):
+                        config.metrics_params[i].sub_params_list[j]["top_k"] = mp.get("top_k", 1)
 
         if self.custom_optimizer is not None:
             config.optimizer = str(self.custom_optimizer.__class__.__name__)
@@ -337,13 +347,13 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             else:
                 _metrics = []
                 start_index = 0
-                for i in range(len(self.hparams.output_cardinality)):
-                    end_index = start_index + self.hparams.output_cardinality[i]
+                for i, cardinality in enumerate(self.hparams.output_cardinality):
+                    end_index = start_index + cardinality
                     y_hat_i = nn.Softmax(dim=-1)(y_hat[:, start_index:end_index].squeeze())
                     if prob_inp:
-                        _metric = metric(y_hat_i, y[:,i:i+1].squeeze(), **metric_params)
+                        _metric = metric(y_hat_i, y[:,i:i+1].squeeze(), **metric_params.sub_params_list[i])
                     else:
-                        _metric = metric(torch.argmax(y_hat_i, dim=-1), y[:,i:i+1].squeeze(), **metric_params)
+                        _metric = metric(torch.argmax(y_hat_i, dim=-1), y[:,i:i+1].squeeze(), **metric_params.sub_params_list[i])
                     if len(self.hparams.output_cardinality) > 1:
                         self.log(
                             f"{tag}_{metric_str}_{i}",
