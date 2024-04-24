@@ -119,17 +119,18 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     config.metrics_params.append(vars(metric))
             if config.task == "classification":
                 config.metrics_prob_input = self.custom_metrics_prob_inputs
+                for i, mp in enumerate(config.metrics_params):
+                    mp.sub_params_list = []
+                    for j, num_classes in enumerate(inferred_config.output_cardinality):
+                        config.metrics_params[i].sub_params_list.append(OmegaConf.create({"task": mp.get("task", "multiclass"),
+                                                                    "num_classes": mp.get("num_classes", num_classes)}))
+                    
         # Updating default metrics in config
         elif config.task == "classification":
-            # FIXME need to revise metrics_params already from above if there are custom
-            # For classification, metrics_params becomes a 2D list
-            # config.metrics_params[0] = []
             # Adding metric_params to config for classification task
             for i, mp in enumerate(config.metrics_params):
                 mp.sub_params_list = []
                 for j, num_classes in enumerate(inferred_config.output_cardinality):
-                    # For classification task, output_dim == number of classses
-                    #config.metrics_params[i].append()
                     #config.metrics_params[i][j]["task"] = mp.get("task", "multiclass")
                     #config.metrics_params[i][j]["num_classes"] = mp.get("num_classes", num_classes)
 
