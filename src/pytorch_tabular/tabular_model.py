@@ -2036,14 +2036,15 @@ class TabularModel:
         elif callable(aggregate):
             bagged_pred = aggregate(pred_prob_l)
         if self.config.task == "classification":
-            classes = self.datamodule.label_encoder.classes_
+            # FIXME need to iterate .label_encoder[x]
+            classes = self.datamodule.label_encoder[0].classes_
             if aggregate == "hard_voting":
                 pred_df = pd.DataFrame(
                     np.concatenate(pred_prob_l, axis=1),
                     columns=[
                         f"{c}_probability_fold_{i}"
                         for i in range(len(pred_prob_l))
-                        for c in self.datamodule.label_encoder.classes_
+                        for c in classes
                     ],
                     index=pred_idx,
                 )
@@ -2052,7 +2053,8 @@ class TabularModel:
                 final_pred = classes[np.argmax(bagged_pred, axis=1)]
                 pred_df = pd.DataFrame(
                     bagged_pred,
-                    columns=[f"{c}_probability" for c in self.datamodule.label_encoder.classes_],
+                    # FIXME
+                    columns=[f"{c}_probability" for c in self.datamodule.label_encoder[0].classes_],
                     index=pred_idx,
                 )
                 pred_df["prediction"] = final_pred
