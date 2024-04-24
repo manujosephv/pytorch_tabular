@@ -750,7 +750,8 @@ def test_cross_validate_regression(
     [
         "accuracy",
         None,
-        lambda y_true, y_pred: accuracy_score(y_true, y_pred["prediction"].values),
+        #lambda y_true, y_pred: accuracy_score(y_true, y_pred["prediction"].values),
+        lambda y_true, y_pred: accuracy_score(y_true, y_pred["target_prediction"].values),
     ],
 )
 @pytest.mark.parametrize("return_oof", [True])

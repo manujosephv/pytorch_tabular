@@ -147,6 +147,7 @@ def test_regression(
     assert pred_df.shape[0] == test.shape[0]
 
 
+@pytest.mark.parametrize("multi_target", [False, True])
 @pytest.mark.parametrize(
     "continuous_cols",
     [
@@ -159,6 +160,7 @@ def test_regression(
 @pytest.mark.parametrize("freeze_backbone", [False])
 def test_classification(
     classification_data,
+    multi_target,
     continuous_cols,
     categorical_cols,
     continuous_feature_transform,
@@ -170,7 +172,7 @@ def test_classification(
     ssl_train, ssl_val = train_test_split(ssl, random_state=42)
     finetune_train, finetune_val = train_test_split(finetune, random_state=42)
     data_config = DataConfig(
-        target=target,
+        target=target + ["feature_53"] if multi_target else target,
         continuous_cols=continuous_cols,
         categorical_cols=categorical_cols,
         continuous_feature_transform=continuous_feature_transform,
