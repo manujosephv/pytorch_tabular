@@ -145,8 +145,7 @@ batch_size = 1024
 lr = 1e-3
 
 data_config = DataConfig(
-    # target should always be a list. Multi-targets are only supported for regression.
-    # Multi-Task Classification is not implemented
+    # target should always be a list.
     target=[target_name],
     continuous_cols=num_col_names,
     categorical_cols=cat_col_names,

@@ -118,6 +118,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     config.metrics.append(metric.__name__)
                     config.metrics_params.append(vars(metric))
             if config.task == "classification":
+                # Create a parameter set for each metric and target pair
                 config.metrics_prob_input = self.custom_metrics_prob_inputs
                 for i, mp in enumerate(config.metrics_params):
                     mp.sub_params_list = []
@@ -129,11 +130,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         elif config.task == "classification":
             # Adding metric_params to config for classification task
             for i, mp in enumerate(config.metrics_params):
+                # Create a parameter set for each metric and target pair
                 mp.sub_params_list = []
                 for j, num_classes in enumerate(inferred_config.output_cardinality):
-                    #config.metrics_params[i][j]["task"] = mp.get("task", "multiclass")
-                    #config.metrics_params[i][j]["num_classes"] = mp.get("num_classes", num_classes)
-
                     config.metrics_params[i].sub_params_list.append(OmegaConf.create({"task": mp.get("task", "multiclass"),
                                                                     "num_classes": mp.get("num_classes", num_classes)}))
 
