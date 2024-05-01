@@ -2041,11 +2041,7 @@ class TabularModel:
             if aggregate == "hard_voting":
                 pred_df = pd.DataFrame(
                     np.concatenate(pred_prob_l, axis=1),
-                    columns=[
-                        f"{c}_probability_fold_{i}"
-                        for i in range(len(pred_prob_l))
-                        for c in classes
-                    ],
+                    columns=[f"{c}_probability_fold_{i}" for i in range(len(pred_prob_l)) for c in classes],
                     index=pred_idx,
                 )
                 pred_df["prediction"] = classes[final_pred]

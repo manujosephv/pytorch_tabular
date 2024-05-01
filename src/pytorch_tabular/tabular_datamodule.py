@@ -282,10 +282,14 @@ class TabularDatamodule(pl.LightningDataModule):
         elif config.task == "classification":
             # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
             if self.train is not None:
-                output_cardinality = self.train[config.target].fillna("NA").nunique().tolist() if config.target else None
+                output_cardinality = (
+                    self.train[config.target].fillna("NA").nunique().tolist() if config.target else None
+                )
                 output_dim = sum(output_cardinality)
             else:
-                output_cardinality = self.train_dataset.data[config.target].fillna("NA").nunique().tolist() if config.target else None 
+                output_cardinality = (
+                    self.train_dataset.data[config.target].fillna("NA").nunique().tolist() if config.target else None
+                )
                 output_dim = sum(output_cardinality)
         elif config.task == "ssl":
             output_cardinality = None
