@@ -26,6 +26,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
 
     Returns:
         The merged configuration.
+
     """
     # using base config values if exist
     inferred_config.embedding_dims = config.get("embedding_dims") or inferred_config.embedding_dims
@@ -53,6 +54,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             decoder (Optional[nn.Module], optional): Decoder of the model. Defaults to None.
             custom_optimizer (Optional[torch.optim.Optimizer], optional): Custom optimizer to use. Defaults to None.
             custom_optimizer_params (Dict, optional): Custom optimizer parameters to use. Defaults to {}.
+
         """
         super().__init__()
         assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"

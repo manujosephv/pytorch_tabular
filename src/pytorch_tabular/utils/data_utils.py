@@ -81,6 +81,7 @@ def make_mixed_dataset(
             for regression and multi-class dataset for classification.
             Defaults to 2 classes for classification and 1 for regression
         kwargs: Additional arguments to pass to the make_classification or make_regression function
+
     """
     assert n_features >= n_categories, "n_features must be greater than or equal to n_categories"
     assert n_informative <= n_features, "n_informative must be less than or equal to n_features"
@@ -170,6 +171,7 @@ def load_covertype_dataset(download_dir=None):
     Args:
         download_dir (str): Directory to download the data to. Defaults to None, which will download
             to ~/.pytorch_tabular/datasets/
+
     """
     if download_dir is None:
         download_dir = os.path.join(os.path.expanduser("~"), ".pytorch_tabular", "datasets")

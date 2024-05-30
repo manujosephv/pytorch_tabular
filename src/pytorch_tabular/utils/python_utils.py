@@ -70,6 +70,7 @@ def pl_load(
     Args:
         path_or_url: Path or URL of the checkpoint.
         map_location: a function, ``torch.device``, string or a dict specifying how to remap storage locations.
+
     """
     if not isinstance(path_or_url, (str, Path)):
         # any sort of BytesIO or similar

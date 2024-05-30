@@ -19,6 +19,7 @@ class AutoIntBackbone(nn.Module):
 
         Args:
             config (DictConfig): config of the model
+
         """
         super().__init__()
         self.hparams = config
