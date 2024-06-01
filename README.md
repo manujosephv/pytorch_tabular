@@ -209,6 +209,13 @@ loaded_model = TabularModel.load_model("examples/basic")
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/charitarthchugh">
+            <img src="https://avatars.githubusercontent.com/u/37895518?v=4" width="100;" alt="charitarthchugh"/>
+            <br />
+            <sub><b>Charitarth Chugh</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/EeyoreLee">
             <img src="https://avatars.githubusercontent.com/u/49790022?v=4" width="100;" alt="EeyoreLee"/>
             <br />
@@ -228,15 +235,15 @@ loaded_model = TabularModel.load_model("examples/basic")
             <br />
             <sub><b>Kushashwa Ravi Shrimali</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/Actis92">
             <img src="https://avatars.githubusercontent.com/u/46601193?v=4" width="100;" alt="Actis92"/>
             <br />
             <sub><b>Luca Actis Grosso</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/sgbaird">
             <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
@@ -256,6 +263,13 @@ loaded_model = TabularModel.load_model("examples/basic")
             <img src="https://avatars.githubusercontent.com/u/25686434?v=4" width="100;" alt="yinyunie"/>
             <br />
             <sub><b>Yinyu Nie</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/HernandoR">
+            <img src="https://avatars.githubusercontent.com/u/45709656?v=4" width="100;" alt="HernandoR"/>
+            <br />
+            <sub><b>Zhen Liu</b></sub>
         </a>
     </td></tr>
 </table>
