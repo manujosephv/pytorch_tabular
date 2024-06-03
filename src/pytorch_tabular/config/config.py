@@ -922,6 +922,10 @@ class ModelConfig:
 
         if self.task != "backbone":
             assert self.head in dir(heads.blocks), f"{self.head} is not a valid head"
+            if hasattr(self, "_config_name") and self._config_name != "MDNConfig":
+                assert self.head != "MixtureDensityHead", "MixtureDensityHead is not supported as a head for regular "
+                "models. Use `MDNConfig` instead. Please see Probabilistic Regression with MDN How-to-Guide in "
+                "documentation for the right usage."
             _head_callable = getattr(heads.blocks, self.head)
             ideal_head_config = _head_callable._config_template
             invalid_keys = set(self.head_config.keys()) - set(ideal_head_config.__dict__.keys())
