@@ -54,6 +54,7 @@ class TabularDataset(Dataset):
             categorical_cols (List[str], optional): A list of names of categorical columns.
                 These columns must be ordinal encoded beforehand. Defaults to None.
             target (List[str], optional): A list of strings with target column name(s). Defaults to None.
+
         """
 
         self.task = task
@@ -175,6 +176,7 @@ class TabularDatamodule(pl.LightningDataModule):
             copy_data (bool): If True, will copy the dataframes before preprocessing. Defaults to True.
 
             verbose (bool): Sets the verbosity of the databodule logging
+
         """
         super().__init__()
         self.train = train.copy() if copy_data else train
@@ -270,6 +272,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             InferredConfig: The updated config object
+
         """
         categorical_dim = len(config.categorical_cols)
         continuous_dim = len(config.continuous_cols)
@@ -290,11 +293,11 @@ class TabularDatamodule(pl.LightningDataModule):
             raise ValueError(f"{config.task} is an unsupported task.")
         if self.train is not None:
             categorical_cardinality = [
-                int(self.train[col].fillna("NA").nunique()) + 1 for col in config.categorical_cols
+                int(x) + 1 for x in list(self.train[config.categorical_cols].fillna("NA").nunique().values)
             ]
         else:
             categorical_cardinality = [
-                int(self.train_dataset.data[col].nunique()) + 1 for col in config.categorical_cols
+                int(x) + 1 for x in list(self.train_dataset.data[config.categorical_cols].nunique().values)
             ]
         if getattr(config, "embedding_dims", None) is not None:
             embedding_dims = config.embedding_dims
@@ -317,6 +320,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             InferredConfig: The updated config object
+
         """
         if self.cache_mode is self.CACHE_MODES.INFERENCE:
             warnings.warn("Cannot update config in inference mode. Returning the cached config")
@@ -413,6 +417,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             Returns the processed dataframe and the added features(list) as a tuple
+
         """
         added_features = None
         if self.config.encode_date_columns:
@@ -492,6 +497,7 @@ class TabularDatamodule(pl.LightningDataModule):
         Args:
             stage (Optional[str], optional):
                 Internal parameter to distinguish between fit and inference. Defaults to None.
+
         """
         if not (stage is None or stage == "fit" or stage == "ssl_finetune"):
             return
@@ -509,11 +515,12 @@ class TabularDatamodule(pl.LightningDataModule):
         self._cache_dataset()
 
     def inference_only_copy(self):
-        """Creates a copy of the datamodule with the train and validation datasets removed. This is useful for inference
-        only scenarios where we don't want to save the train and validation datasets.
+        """Creates a copy of the datamodule with the train and validation datasets removed. This is useful for
+        inference only scenarios where we don't want to save the train and validation datasets.
 
         Returns:
             TabularDatamodule: A copy of the datamodule with the train and validation datasets removed.
+
         """
         if not self._fitted:
             raise RuntimeError("Can create an inference only copy only after model is fitted")
@@ -533,6 +540,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             List of added features
+
         """
 
         features_by_offsets = {
@@ -652,6 +660,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             Dataframe with date field converted to datetime
+
         """
         field_dtype = df[date_field].dtype
         if isinstance(field_dtype, DatetimeTZDtype):
@@ -685,6 +694,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             Dataframe with added columns and list of added columns
+
         """
         field = df[field_name]
         prefix = (re.sub("[Dd]ate$", "", field_name) if prefix is None else prefix) + "_"
@@ -743,6 +753,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             TabularDataset: The train dataset
+
         """
         return self._load_dataset_from_cache("train")
 
@@ -756,6 +767,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             TabularDataset: The validation dataset
+
         """
         return self._load_dataset_from_cache("validation")
 
@@ -771,6 +783,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             DataLoader: Train dataloader
+
         """
         return DataLoader(
             self.train_dataset,
@@ -789,6 +802,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             DataLoader: Validation dataloader
+
         """
         return DataLoader(
             self.validation_dataset,
@@ -820,6 +834,7 @@ class TabularDatamodule(pl.LightningDataModule):
             copy_df (bool, optional): Whether to copy the dataframe before processing or not. Defaults to False.
         Returns:
             DataLoader: The dataloader for the passed in dataframe
+
         """
         if copy_df:
             df = df.copy()
@@ -843,6 +858,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Args:
             path (Union[str, Path]): Path to save the dataloader
+
         """
         if isinstance(path, str):
             path = Path(path)
@@ -857,6 +873,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
         Returns:
             TabularDatamodule (TabularDatamodule): The datamodule loaded from the path
+
         """
         if isinstance(path, str):
             path = Path(path)

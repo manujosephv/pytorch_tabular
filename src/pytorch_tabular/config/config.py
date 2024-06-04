@@ -94,6 +94,7 @@ class DataConfig:
 
         handle_missing_values (bool): Whether to handle missing values in categorical columns as
                 unknown
+
     """
 
     target: Optional[List[str]] = field(
@@ -201,6 +202,7 @@ class InferredConfig:
                 list of tuples (cardinality, embedding_dim).
 
         embedded_cat_dim (int): The number of features or dimensions of the embedded categorical features
+
     """
 
     categorical_dim: int = field(
@@ -341,6 +343,7 @@ class TrainerConfig:
 
         trainer_kwargs (Dict[str, Any]): Additional kwargs to be passed to PyTorch Lightning Trainer. See
                 https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.html#pytorch_lightning.trainer.Trainer
+
     """
 
     batch_size: int = field(default=64, metadata={"help": "Number of samples in each batch of training"})
@@ -557,7 +560,8 @@ class TrainerConfig:
 
 @dataclass
 class ExperimentConfig:
-    """Experiment configuration. Experiment Tracking with WandB and Tensorboard
+    """Experiment configuration. Experiment Tracking with WandB and Tensorboard.
+
     Args:
         project_name (str): The name of the project under which all runs will be logged. For Tensorboard
                 this defines the folder under which the logs will be saved and for W&B it defines the project name
@@ -574,6 +578,7 @@ class ExperimentConfig:
         log_logits (bool): Turn this on to log the logits as a histogram in W&B
 
         exp_log_freq (int): step count between logging of gradients and parameters.
+
     """
 
     project_name: str = field(
@@ -632,6 +637,7 @@ class ExperimentConfig:
 @dataclass
 class OptimizerConfig:
     """Optimizer and Learning Rate Scheduler configuration.
+
     Args:
         optimizer (str): Any of the standard optimizers from
                 [torch.optim](https://pytorch.org/docs/stable/optim.html#algorithms) or provide full python path,
@@ -649,6 +655,7 @@ class OptimizerConfig:
 
         lr_scheduler_monitor_metric (Optional[str]): Used with ReduceLROnPlateau, where the plateau is
                 decided based on this metric
+
     """
 
     optimizer: str = field(
@@ -701,6 +708,7 @@ class ExperimentRunManager:
         Args:
             exp_version_manager (str, optional): The path of the yml file which acts as version control.
                 Defaults to ".pt_tmp/exp_version_manager.yml".
+
         """
         super().__init__()
         self._exp_version_manager = exp_version_manager
@@ -725,7 +733,8 @@ class ExperimentRunManager:
 
 @dataclass
 class ModelConfig:
-    """Base Model configuration
+    """Base Model configuration.
+
     Args:
         task (str): Specify whether the problem is regression or classification. `backbone` is a task which
                 considers the model as a backbone to generate features. Mostly used internally for SSL and related
@@ -773,6 +782,7 @@ class ModelConfig:
                 not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     task: str = field(
@@ -929,7 +939,8 @@ class ModelConfig:
 
 @dataclass
 class SSLModelConfig:
-    """Base SSLModel Configuration
+    """Base SSLModel Configuration.
+
     Args:
         encoder_config (Optional[ModelConfig]): The config of the encoder to be used for the
                 model. Should be one of the model configs defined in PyTorch Tabular
@@ -952,6 +963,7 @@ class SSLModelConfig:
         learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     task: str = field(init=False, default="ssl")

@@ -49,6 +49,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
 
     Returns:
         The merged configuration.
+
     """
     # using base config values if exist
     inferred_config.embedding_dims = config.get("embedding_dims") or inferred_config.embedding_dims
@@ -90,6 +91,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 A custom optimizer as callable or string to be imported. Defaults to None.
             custom_optimizer_params (Dict, optional): A dictionary of custom optimizer parameters. Defaults to {}.
             kwargs (Dict, optional): Additional keyword arguments.
+
         """
         super().__init__()
         assert "inferred_config" in kwargs, "inferred_config not found in initialization arguments"
@@ -231,6 +233,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
         Returns:
             torch.Tensor: The loss value
+
         """
         y_hat = output["logits"]
         reg_terms = [k for k, v in output.items() if "regularization" in k]
@@ -287,6 +290,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
         Returns:
             List[torch.Tensor]: The list of metric values
+
         """
         metrics = []
         for metric, metric_str, prob_inp, metric_params in zip(
@@ -349,13 +353,15 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         return self.embedding_layer(x)
 
     def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor) -> torch.Tensor:
-        """Applies sigmoid scaling to the output of the model if the task is regression and the target range is defined.
+        """Applies sigmoid scaling to the output of the model if the task is regression and the target range is
+        defined.
 
         Args:
             y_hat (torch.Tensor): The output of the model
 
         Returns:
             torch.Tensor: The output of the model with sigmoid scaling applied
+
         """
         if (self.hparams.task == "regression") and (self.hparams.target_range is not None):
             for i in range(self.hparams.output_dim):
@@ -373,6 +379,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
         Returns:
             The packed output of the model
+
         """
         # if self.head is the Identity function it means that we cannot extract backbone features,
         # because the model cannot be divide in backbone and head (i.e. TabNet)
@@ -388,6 +395,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
         Returns:
             The output of the model
+
         """
         y_hat = self.head(backbone_features)
         y_hat = self.apply_output_sigmoid_scaling(y_hat)
@@ -398,6 +406,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
         Args:
             x (Dict): The input of the model with 'continuous' and 'categorical' keys
+
         """
         x = self.embed_input(x)
         x = self.compute_backbone(x)
@@ -413,6 +422,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
         Returns:
             The output of the model
+
         """
         assert self.hparams.task != "ssl", "It's not allowed to use the method predict in case of ssl task"
         ret_value = self.forward(x)
@@ -427,6 +437,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         """Extracts the embedding of the model.
 
         This is used in `CategoricalEmbeddingTransformer`
+
         """
         if self.hparams.categorical_dim > 0:
             if not isinstance(self.embedding_layer, PreEncoded1dLayer):

@@ -100,6 +100,7 @@ class FTTransformerConfig(ModelConfig):
                 not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     input_embed_dim: int = field(

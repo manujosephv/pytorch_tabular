@@ -51,6 +51,7 @@ class BaseEncoder:
         :return: encoded DataFrame of shape (n_samples, n_features), initial categorical columns are dropped, and
             replaced with encoded columns. DataFrame passed in argument is unchanged.
         :rtype: pandas.DataFrame
+
         """
         if not self._mapping:
             raise ValueError("`fit` method must be called before `transform`.")
@@ -80,6 +81,7 @@ class BaseEncoder:
         :return: encoded DataFrame of shape (n_samples, n_features), initial categorical columns are dropped, and
             replaced with encoded columns. DataFrame passed in argument is unchanged.
         :rtype: pandas.DataFrame
+
         """
         self.fit(X, y)
         return self.transform(X)
@@ -104,6 +106,7 @@ class BaseEncoder:
 
         Args:
             path (str): path to save the encoder
+
         """
         if not self._mapping:
             raise ValueError("`fit` method must be called before `save_as_object_file`.")
@@ -114,6 +117,7 @@ class BaseEncoder:
 
         Args:
             path (str): path to load the encoder
+
         """
         for k, v in pickle.load(open(path, "rb")).items():
             setattr(self, k, v)
@@ -131,6 +135,7 @@ class OrdinalEncoder(BaseEncoder):
             'ignore' - skip unseen categories
             'impute' - impute new categories to a predefined value, which is same as NAN_CATEGORY
         :return: None
+
         """
         self._input_check("handle_unseen", handle_unseen, ["error", "ignore", "impute"])
         self._input_check("handle_missing", handle_missing, ["error", "impute"])
@@ -141,6 +146,7 @@ class OrdinalEncoder(BaseEncoder):
 
         :param pandas.DataFrame X: DataFrame of features, shape (n_samples, n_features). Must contain columns to encode.
         :return: None
+
         """
         self._before_fit_check(X, y)
         if self.handle_missing == "error":
@@ -161,6 +167,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         Args:
             tabular_model (TabularModel): The trained TabularModel object
+
         """
         self._categorical_encoder = tabular_model.datamodule.categorical_encoder
         self.cols = tabular_model.model.hparams.categorical_cols
@@ -198,6 +205,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
         """Just for compatibility.
 
         Does not do anything
+
         """
         return self
 
@@ -213,6 +221,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         Returns:
             DataFrame: The encoded dataframe
+
         """
         if not self._mapping:
             raise ValueError(
@@ -245,6 +254,7 @@ class CategoricalEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         Returns:
             DataFrame: The encoded dataframe
+
         """
         self.fit(X, y)
         return self.transform(X)

@@ -71,7 +71,7 @@ class GatedFeatureLearningUnit(nn.Module):
                 feature = self.feature_mask_function(self.feature_masks[d]) * x
             h_in = self.W_in[d](torch.cat([feature, h], dim=-1))
             z = torch.sigmoid(h_in[:, : self.n_features_in])
-            r = torch.sigmoid(h_in[:, self.n_features_in :])  # noqa: E203
+            r = torch.sigmoid(h_in[:, self.n_features_in :])
             h_out = torch.tanh(self.W_out[d](torch.cat([r * h, x], dim=-1)))
             h = self.dropout((1 - z) * h + z * h_out)
         return h

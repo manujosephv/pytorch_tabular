@@ -59,6 +59,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         learning_rate (float): The learning rate of the model. Defaults to 1e-3
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     noise_strategy: str = field(

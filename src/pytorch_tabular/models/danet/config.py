@@ -69,6 +69,7 @@ class DANetConfig(ModelConfig):
                 not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     n_layers: int = field(

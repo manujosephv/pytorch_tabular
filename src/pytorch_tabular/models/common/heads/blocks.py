@@ -114,6 +114,7 @@ class MixtureDensityHead(nn.Module):
         Returns:
             probabilities (BxG): The probability of each point in the probability
                 of the distribution in the corresponding sigma/mu index.
+
         """
         target = target.expand_as(sigma)
         if log:

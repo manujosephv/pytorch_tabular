@@ -92,7 +92,9 @@ data_config = DataConfig(
     normalize_continuous_features=True,
 )
 head_config = LinearHeadConfig(
-    layers="", dropout=0.1, initialization="kaiming"  # No additional layer in head, just a mapping layer to output_dim
+    layers="",
+    dropout=0.1,
+    initialization="kaiming",  # No additional layer in head, just a mapping layer to output_dim
 ).__dict__  # Convert to dict to pass to the model config (OmegaConf doesn't accept objects)
 model_config = CategoryEmbeddingModelConfig(
     task="classification",
