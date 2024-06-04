@@ -125,7 +125,6 @@ class TabularModelTuner:
     ):
         """Update the configs with the new parameters."""
         # update configs with the new parameters
-        batch_size = None
         for k, v in params.items():
             root, param = k.split("__")
             if root.startswith("trainer_config"):
@@ -231,11 +230,6 @@ class TabularModelTuner:
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
         assert metric is not None, "metric must be specified"
         assert isinstance(search_space, dict) and len(search_space) > 0, "search_space must be a non-empty dict"
-        if cv is not None and return_best_model:
-            warnings.warn(
-                "return_best_model is set to True. This will return the best model from the last trial. "
-                "This is not supported for cross validation. Set return_best_model=False to turn off this warning."
-            )
         if self.suppress_lightning_logger:
             suppress_lightning_logs()
         if cv is not None and validation is not None:
@@ -293,7 +287,6 @@ class TabularModelTuner:
         trials = []
         best_model = None
         best_score = 0.0
-        best_batch_size = datamodule.batch_size
         for i, params in enumerate(iterator):
             # Copying the configs as a base
             # Make sure all default parameters that you want to be set for all
@@ -336,8 +329,6 @@ class TabularModelTuner:
                 else:
                     params.update({metric_str: cv_agg_func(cv_scores)})
             else:
-                # Setting the batch_size tp the batch_size parameter in the trainer_config
-                datamodule.batch_size = trainer_config_t.batch_size
                 model = tabular_model_t.prepare_model(
                     datamodule=datamodule,
                     **prep_model_kwargs,
@@ -361,23 +352,20 @@ class TabularModelTuner:
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
 
                     if return_best_model:
-                        # removing the datamodule from the model to save memory
+                        # Removing the datamodule from the model to save memory
                         tabular_model_t.datamodule = None
                         if best_model is None:
                             best_model = deepcopy(tabular_model_t)
                             best_score = params[metric_str]
-                            best_batch_size = datamodule.batch_size
                         else:
                             if mode == "min":
                                 if params[metric_str] < best_score:
                                     best_model = deepcopy(tabular_model_t)
                                     best_score = params[metric_str]
-                                    best_batch_size = datamodule.batch_size
                             elif mode == "max":
                                 if params[metric_str] > best_score:
                                     best_model = deepcopy(tabular_model_t)
                                     best_score = params[metric_str]
-                                    best_batch_size = datamodule.batch_size
 
             params.update({"trial_id": i})
             trials.append(params)
@@ -399,10 +387,7 @@ class TabularModelTuner:
             logger.info("Model Tuner Finished")
             logger.info(f"Best Score ({metric_str}): {best_score}")
 
-        if return_best_model and best_model is not None and cv is None:
-            # Setting the batch_size to the best batch_size
-            datamodule.batch_size = best_batch_size
-            # Setting the datamodule to the best model
+        if return_best_model and best_model is not None:
             best_model.datamodule = datamodule
 
             return self.OUTPUT(trials_df, best_params, best_score, best_model)
