@@ -352,6 +352,7 @@ class TabularModelTuner:
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
 
                     if return_best_model:
+                        # Removing the datamodule from the model to save memory
                         tabular_model_t.datamodule = None
                         if best_model is None:
                             best_model = deepcopy(tabular_model_t)
