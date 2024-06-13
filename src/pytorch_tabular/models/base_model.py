@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, ListConfig
 from pandas import DataFrame
 from torch import Tensor
 from torch.optim import Optimizer
@@ -118,32 +118,24 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     config.metrics.append(metric.__name__)
                     config.metrics_params.append(vars(metric))
             if config.task == "classification":
-                # Create a parameter set for each metric and target pair
                 config.metrics_prob_input = self.custom_metrics_prob_inputs
                 for i, mp in enumerate(config.metrics_params):
                     mp.sub_params_list = []
                     for j, num_classes in enumerate(inferred_config.output_cardinality):
-                        config.metrics_params[i].sub_params_list.append(
-                            OmegaConf.create(
-                                {
-                                    "task": mp.get("task", "multiclass"),
-                                    "num_classes": mp.get("num_classes", num_classes),
-                                }
-                            )
-                        )
-
+                        config.metrics_params[i].sub_params_list.append(OmegaConf.create({"task": mp.get("task", "multiclass"),
+                                                                    "num_classes": mp.get("num_classes", num_classes)}))
+                    
         # Updating default metrics in config
         elif config.task == "classification":
             # Adding metric_params to config for classification task
             for i, mp in enumerate(config.metrics_params):
-                # Create a parameter set for each metric and target pair
                 mp.sub_params_list = []
                 for j, num_classes in enumerate(inferred_config.output_cardinality):
-                    config.metrics_params[i].sub_params_list.append(
-                        OmegaConf.create(
-                            {"task": mp.get("task", "multiclass"), "num_classes": mp.get("num_classes", num_classes)}
-                        )
-                    )
+                    #config.metrics_params[i][j]["task"] = mp.get("task", "multiclass")
+                    #config.metrics_params[i][j]["num_classes"] = mp.get("num_classes", num_classes)
+
+                    config.metrics_params[i].sub_params_list.append(OmegaConf.create({"task": mp.get("task", "multiclass"),
+                                                                    "num_classes": mp.get("num_classes", num_classes)}))
 
                     if config.metrics[i] in (
                         "accuracy",
@@ -297,7 +289,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                         logger=True,
                         prog_bar=False,
                     )
-                start_index = end_index
+                start_index = end_index    
         self.log(
             f"{tag}_loss",
             computed_loss,
@@ -360,11 +352,9 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     end_index = start_index + cardinality
                     y_hat_i = nn.Softmax(dim=-1)(y_hat[:, start_index:end_index].squeeze())
                     if prob_inp:
-                        _metric = metric(y_hat_i, y[:, i : i + 1].squeeze(), **metric_params.sub_params_list[i])
+                        _metric = metric(y_hat_i, y[:,i:i+1].squeeze(), **metric_params.sub_params_list[i])
                     else:
-                        _metric = metric(
-                            torch.argmax(y_hat_i, dim=-1), y[:, i : i + 1].squeeze(), **metric_params.sub_params_list[i]
-                        )
+                        _metric = metric(torch.argmax(y_hat_i, dim=-1), y[:,i:i+1].squeeze(), **metric_params.sub_params_list[i])
                     if len(self.hparams.output_cardinality) > 1:
                         self.log(
                             f"{tag}_{metric_str}_{i}",
@@ -375,6 +365,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                             prog_bar=False,
                         )
                     _metrics.append(_metric)
+                    start_index = end_index
                 avg_metric = torch.stack(_metrics, dim=0).sum()
             metrics.append(avg_metric)
             self.log(
