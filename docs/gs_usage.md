@@ -14,7 +14,7 @@ from pytorch_tabular.config import (
 data_config = DataConfig(
     target=[
         "target"
-    ],  # target should always be a list. Multi-targets are only supported for regression. Multi-Task Classification is not implemented
+    ],  # target should always be a list.
     continuous_cols=num_col_names,
     categorical_cols=cat_col_names,
 )
