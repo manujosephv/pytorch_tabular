@@ -202,10 +202,24 @@ loaded_model = TabularModel.load_model("examples/basic")
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/abhisharsinha">
+            <img src="https://avatars.githubusercontent.com/u/24841841?v=4" width="100;" alt="abhisharsinha"/>
+            <br />
+            <sub><b>Abhishar Sinha</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/ndrsfel">
             <img src="https://avatars.githubusercontent.com/u/21068727?v=4" width="100;" alt="ndrsfel"/>
             <br />
             <sub><b>Andreas</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/charitarthchugh">
+            <img src="https://avatars.githubusercontent.com/u/37895518?v=4" width="100;" alt="charitarthchugh"/>
+            <br />
+            <sub><b>Charitarth Chugh</b></sub>
         </a>
     </td>
     <td align="center">
@@ -221,7 +235,8 @@ loaded_model = TabularModel.load_model("examples/basic")
             <br />
             <sub><b>Null</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/krshrimali">
             <img src="https://avatars.githubusercontent.com/u/19997320?v=4" width="100;" alt="krshrimali"/>
@@ -235,8 +250,7 @@ loaded_model = TabularModel.load_model("examples/basic")
             <br />
             <sub><b>Luca Actis Grosso</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/sgbaird">
             <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
@@ -256,6 +270,13 @@ loaded_model = TabularModel.load_model("examples/basic")
             <img src="https://avatars.githubusercontent.com/u/25686434?v=4" width="100;" alt="yinyunie"/>
             <br />
             <sub><b>Yinyu Nie</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/HernandoR">
+            <img src="https://avatars.githubusercontent.com/u/45709656?v=4" width="100;" alt="HernandoR"/>
+            <br />
+            <sub><b>Liu Zhen</b></sub>
         </a>
     </td></tr>
 </table>
