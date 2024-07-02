@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+
 import copy
 import os
 

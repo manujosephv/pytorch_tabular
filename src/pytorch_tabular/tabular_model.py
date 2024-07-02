@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model."""
+
 import inspect
 import os
 import warnings

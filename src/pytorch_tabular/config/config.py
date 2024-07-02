@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Config."""
+
 import os
 import re
 from dataclasses import MISSING, dataclass, field

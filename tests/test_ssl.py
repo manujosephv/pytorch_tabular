@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+
 import pytest
 import torch
 from pytorch_tabular import TabularModel
