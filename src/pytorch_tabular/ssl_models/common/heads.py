@@ -9,6 +9,7 @@ class MultiTaskHead(nn.Module):
     """Simple Linear transformation to take last hidden representation to reconstruct inputs.
 
     Output is dictionary of variable type to tensor mapping.
+
     """
 
     def __init__(self, in_features, n_binary=0, n_categorical=0, n_numerical=0, cardinality=[]):

@@ -20,6 +20,7 @@ class AddNorm(nn.Module):
     """Applies LayerNorm, Dropout and adds to input.
 
     Standard AddNorm operations in Transformers
+
     """
 
     def __init__(self, input_dim: int, dropout: float):

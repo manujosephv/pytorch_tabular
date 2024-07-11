@@ -21,7 +21,7 @@ class DenseODSTBlock(nn.Sequential):
         input_dropout=0.0,
         flatten_output=False,
         Module=ODST,
-        **kwargs
+        **kwargs,
     ):
         layers = []
         for i in range(num_layers):

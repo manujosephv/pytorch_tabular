@@ -63,6 +63,7 @@ class Add(nn.Module):
 
         Args:
             add_value: The value to add to the input
+
         """
         super().__init__()
         self.add_value = add_value

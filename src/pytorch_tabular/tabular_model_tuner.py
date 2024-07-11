@@ -32,6 +32,7 @@ class TabularModelTuner:
 
     This class is used to tune the hyperparameters of a TabularModel, given the search space,  strategy and metric to
     optimize.
+
     """
 
     ALLOWABLE_STRATEGIES = ["grid_search", "random_search"]
@@ -79,6 +80,7 @@ class TabularModelTuner:
             suppress_lightning_logger (bool, optional): Whether to suppress the lightning logger. Defaults to True.
 
             **kwargs: Additional keyword arguments to be passed to the TabularModel init.
+
         """
         if trainer_config.profiler is not None:
             warnings.warn(
@@ -222,6 +224,7 @@ class TabularModelTuner:
                 best_params (Dict): The best parameters found
                 best_score (float): The best score found
                 best_model (TabularModel or None): If return_best_model is True, return best_model otherwise return None
+
         """
         assert strategy in self.ALLOWABLE_STRATEGIES, f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
@@ -349,6 +352,7 @@ class TabularModelTuner:
                         params.update({k.replace("test_", ""): v for k, v in result[0].items()})
 
                     if return_best_model:
+                        # Removing the datamodule from the model to save memory
                         tabular_model_t.datamodule = None
                         if best_model is None:
                             best_model = deepcopy(tabular_model_t)

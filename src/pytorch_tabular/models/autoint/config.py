@@ -108,6 +108,7 @@ class AutoIntConfig(ModelConfig):
                 not apply any restrictions
 
         seed (int): The seed for reproducibility. Defaults to 42
+
     """
 
     attn_embed_dim: int = field(

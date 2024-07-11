@@ -116,6 +116,7 @@ class TabularModel:
 
             suppress_lightning_logger (bool): If True, will suppress the default logging from PyTorch Lightning.
                 Defaults to False.
+
         """
         super().__init__()
         if suppress_lightning_logger:
@@ -258,6 +259,7 @@ class TabularModel:
 
         Returns:
             tuple[str, int]: Returns the name and version number
+
         """
         if hasattr(self.config, "run_name") and self.config.run_name is not None:
             name = self.config.run_name
@@ -290,6 +292,7 @@ class TabularModel:
 
         Returns:
             List: A list of callbacks
+
         """
         callbacks = [] if callbacks is None else callbacks
         if self.config.early_stopping is not None:
@@ -333,6 +336,7 @@ class TabularModel:
 
         Returns:
             pl.Trainer: A PyTorch Lightning Trainer object
+
         """
         if self.verbose:
             logger.info("Preparing the Trainer")
@@ -392,6 +396,7 @@ class TabularModel:
 
         Returns:
             None
+
         """
         ckpt = pl_load(path, map_location=lambda storage, loc: storage)
         model.load_state_dict(ckpt.get("state_dict") or ckpt)
@@ -410,6 +415,7 @@ class TabularModel:
 
         Returns:
             TabularModel (TabularModel): The saved TabularModel
+
         """
         config = OmegaConf.load(os.path.join(dir, "config.yml"))
         datamodule = joblib.load(os.path.join(dir, "datamodule.sav"))
@@ -536,6 +542,7 @@ class TabularModel:
                 "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
         Returns:
             TabularDatamodule: The prepared datamodule
+
         """
         if self.verbose:
             logger.info("Preparing the DataLoaders")
@@ -586,6 +593,7 @@ class TabularModel:
 
         Returns:
             BaseModel: The prepared model
+
         """
         if self.verbose:
             logger.info(f"Preparing the Model: {self.config._model_name}")
@@ -635,6 +643,7 @@ class TabularModel:
 
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
+
         """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs, min_epochs)
         train_loader, val_loader = (
@@ -757,6 +766,7 @@ class TabularModel:
 
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
+
         """
         assert self.config.task != "ssl", (
             "`fit` is not valid for SSL task. Please use `pretrain` for" " semi-supervised learning"
@@ -839,6 +849,7 @@ class TabularModel:
                 "memory", will cache in memory. If set to a valid path, will cache in that path. Defaults to "memory".
         Returns:
             pl.Trainer: The PyTorch Lightning Trainer instance
+
         """
         assert self.config.task == "ssl", (
             f"`pretrain` is not valid for {self.config.task} task. Please use `fit`" " instead."
@@ -957,6 +968,7 @@ class TabularModel:
             seed (Optional[int], optional): Random seed for reproducibility. Defaults to 42.
         Returns:
             TabularModel (TabularModel): The new TabularModel model for fine-tuning
+
         """
         config = self.config
         optimizer_params = optimizer_params or {}
@@ -1086,6 +1098,7 @@ class TabularModel:
 
         Returns:
             pl.Trainer: The trainer object
+
         """
         assert self._is_finetune_model, (
             "finetune() can only be called on a finetune model created using" " `TabularModel.create_finetune_model()`"
@@ -1143,6 +1156,7 @@ class TabularModel:
 
         Returns:
             The suggested learning rate and the learning rate finder results
+
         """
         self._prepare_for_training(model, datamodule, callbacks, max_epochs=None, min_epochs=None)
         train_loader, _ = datamodule.train_dataloader(), datamodule.val_dataloader()
@@ -1190,6 +1204,7 @@ class TabularModel:
             verbose (bool, optional): If true, will print the results. Defaults to True.
         Returns:
             The final test result dictionary.
+
         """
         assert not (test_loader is None and test is None), (
             "Either `test_loader` or `test` should be provided."
@@ -1342,6 +1357,7 @@ class TabularModel:
         Returns:
             DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
                 If classification, it returns probabilities and final prediction
+
         """
         assert all(q <= 1 and q >= 0 for q in quantiles), "Quantiles should be a decimal between 0 and 1"
         model = self.model  # default
@@ -1363,7 +1379,7 @@ class TabularModel:
 
             progress_bar = partial(tqdm, description="Generating Predictions...")
         else:
-            progress_bar = lambda it: it  # noqa E731
+            progress_bar = lambda it: it  # E731
         point_predictions, quantile_predictions, logits_predictions = self._generate_predictions(
             model,
             inference_dataloader,
@@ -1443,6 +1459,7 @@ class TabularModel:
         Returns:
             DataFrame: Returns a dataframe with predictions and features (if `include_input_features=True`).
                 If classification, it returns probabilities and final prediction
+
         """
         warnings.warn(
             "`include_input_features` will be deprecated in the next release."
@@ -1461,9 +1478,7 @@ class TabularModel:
                     "min",
                     "max",
                     "hard_voting",
-                ], (
-                    "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
-                )
+                ], "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
             if self.config.task == "regression":
                 assert aggregate_tta != "hard_voting", "hard_voting is only available for classification"
 
@@ -1531,6 +1546,7 @@ class TabularModel:
             inference_only (bool): If True, will only save the inference datamodule
                 without data. This cannot be used for further training, but can be
                 used for inference. Defaults to False.
+
         """
         if inference_only:
             dm = self.datamodule.inference_only_copy()
@@ -1551,6 +1567,7 @@ class TabularModel:
             dir (str): The path to the directory to save the model
             inference_only (bool): If True, will only save the inference
                 only version of the datamodule
+
         """
         if os.path.exists(dir) and (os.listdir(dir)):
             logger.warning("Directory is not empty. Overwriting the contents.")
@@ -1579,6 +1596,7 @@ class TabularModel:
 
         Args:
             path (str): The path to the file to save the model
+
         """
         torch.save(self.model.state_dict(), path)
 
@@ -1587,6 +1605,7 @@ class TabularModel:
 
         Args:
             path (str): The path to the file to load the model from
+
         """
         self._load_weights(self.model, path)
 
@@ -1607,6 +1626,7 @@ class TabularModel:
 
         Returns:
             bool: True if the model was saved successfully
+
         """
         if kind == "pytorch":
             torch.save(self.model, str(path))
@@ -1641,6 +1661,7 @@ class TabularModel:
         Args:
             max_depth (int): The maximum depth to traverse the modules and displayed in the summary.
                 Defaults to -1, which means will display all the modules.
+
         """
         if model is not None:
             print(summarize(model, max_depth=max_depth))
@@ -1768,6 +1789,7 @@ class TabularModel:
 
         Returns:
             DataFrame: The dataframe with the feature importance
+
         """
         assert CAPTUM_INSTALLED, "Captum not installed. Please install using `pip install captum` or "
         "install PyTorch Tabular using `pip install pytorch-tabular[extra]`"
@@ -1956,6 +1978,7 @@ class TabularModel:
 
         Returns:
             DataFrame: The dataframe with the cross validation results
+
         """
         cv = self._check_cv(cv)
         prep_dl_kwargs, prep_model_kwargs, train_kwargs = self._split_kwargs(kwargs)
@@ -2126,6 +2149,7 @@ class TabularModel:
 
         Returns:
             DataFrame: The dataframe with the bagged predictions.
+
         """
         if weights is not None:
             assert len(weights) == cv.n_splits, "Number of weights should be equal to the number of folds"

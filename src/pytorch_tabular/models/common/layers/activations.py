@@ -202,6 +202,7 @@ def _entmax_threshold_and_support(X, dim=-1, k=None):
         the threshold value for each vector
     support_size : torch LongTensor, shape like `tau`
         the number of nonzeros in each vector.
+
     """
 
     if k is None or k >= X.shape[dim]:  # do full sort

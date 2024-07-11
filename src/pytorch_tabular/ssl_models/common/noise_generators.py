@@ -12,6 +12,7 @@ class SwapNoiseCorrupter(nn.Module):
     """Apply swap noise on the input data.
 
     Each data point has specified chance be replaced by a random value from the same column.
+
     """
 
     def __init__(self, probas):

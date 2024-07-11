@@ -69,11 +69,11 @@ PyTorch Tabular also accepts custom loss functions (which are drop in replacemen
 
 While the Loss functions drive the gradient based optimization, we keep track of the metrics that we care about during training. By default, PyTorch Tabular tracks Accuracy for classification and Mean Squared Error for regression. You can choose any functional metrics (as a list of strings) from [TorchMetrics](https://torchmetrics.readthedocs.io/en/stable/references/metric.html).
 
-Some metrics need some parameters to work the way we expect it to. For eg. the averaging scheme for a multi-class f1 score. Such parameters can be fed in through `metrics_params`, which is a list of dictionaries holding the parameters for the metrics declared in the same order. In classification metrics, PyTorch Tabular also needs to know whether the metric defined expects the predicted class (like Accuracy) or the predicted probability (like ROCAUC). This can be specified by `metrics_prob_input` which is a list of `True` or `False`, one for each custom metric you define.  Length of `metrics_params`, `metric_prob_input` and `metrics` should be the same.
+Some metrics need some parameters to work the way we expect it to. For eg. the averaging scheme for a multi-class f1 score. Such parameters can be fed in through `metrics_params`, which is a list of dictionaries holding the parameters for the metrics declared in the same order. In classification metrics, PyTorch Tabular also needs to know whether the metric defined expects the predicted class (like Accuracy) or the predicted probability (like ROCAUC). This can be specified by `metrics_prob_input` which is a list of `True` or `False`, one for each custom metric you define.  Length of `metrics_params`, `metrics_prob_input` and `metrics` should be the same.
 
 ```python
 metrics = ["accuracy", "f1_score"]
-metric_prob_input = [False, False]
+metrics_prob_input = [False, False]
 metrics_params = [{}, {num_classes: 2}]
 ```
 
