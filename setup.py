@@ -49,7 +49,7 @@ setup(
     description="A standard framework for using Deep Learning for tabular data",
     install_requires=requirements,
     extras_require={"extra": requirements_extra, "dev": requirements_testing},
-    license="MIT",
+    license="MIT license",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/markdown",
     include_package_data=True,

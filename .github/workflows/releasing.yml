@@ -25,6 +25,7 @@ jobs:
             - name: Create package 📦
               run: |
                   pip install "twine==4.0.2" setuptools wheel
+                  pip install importlib_metadata==7.2.1
                   python setup.py sdist bdist_wheel
                   ls -lh dist/
                   twine check dist/*
