@@ -252,15 +252,11 @@ class TabularModelTuner:
         with Progress() as progress:
             model_config_iterator = range(len(self.model_config))
             if progress_bar:
-                #model_config_iterator = track(model_config_iterator, description=f"[green]Running models config...")
                 model_config_iterator = progress.track(model_config_iterator, description=f"[green]Running models config...")
-                #iterator = track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
 
-            #current_trainer_config = None
             datamodule = None
             trials = []
             best_model = None
-            best_trainer_config = None
             best_score = 0.0
             for idx in model_config_iterator:
                 search_space_temp = {
@@ -290,12 +286,12 @@ class TabularModelTuner:
                     search_space_iterator = sorted(search_space_iterator, key=lambda search_space_iterator: search_space_iterator[key])
 
                 if progress_bar:
-                    search_space_iterator = progress.track(search_space_iterator,
-                                                           description=f"[blue]Training {idx}-{self.model_config[idx].__class__.__name__}...")
-                    # iterator = progress.track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
+                    search_space_iterator = progress.track(
+                        search_space_iterator,
+                        description=f"[blue]Training {idx}-{self.model_config[idx].__class__.__name__}..."
+                    )
 
                 if isinstance(metric, str):
-                    # metric = metric_to_pt_metric(metric)
                     is_callable_metric = False
                     metric_str = metric
                 elif callable(metric):
@@ -323,11 +319,8 @@ class TabularModelTuner:
                         **self.tabular_model_init_kwargs,
                     )
 
-                    # If trainer config changes, recreate datamodule
-                    #if current_trainer_config != trainer_config_t:
                     # Create datamodule
                     if not datamodule:
-                        #current_trainer_config = deepcopy(trainer_config_t)
                         prep_dl_kwargs, prep_model_kwargs, train_kwargs = tabular_model_t._split_kwargs(kwargs)
                         if "seed" not in prep_dl_kwargs:
                             prep_dl_kwargs["seed"] = random_state
