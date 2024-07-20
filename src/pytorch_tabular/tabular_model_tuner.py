@@ -6,7 +6,7 @@ import warnings
 from collections import namedtuple
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Union
+from typing import Callable, Dict, Iterable, Optional, Union, List
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,7 @@ class TabularModelTuner:
         data_config: Optional[Union[DataConfig, str]] = None,
         model_config: Optional[Union[ModelConfig, str]] = None,
         optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
-        trainer_config: Optional[Union[TrainerConfig, list[TrainerConfig]]] = None,
+        trainer_config: Optional[Union[TrainerConfig, List[TrainerConfig]]] = None,
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
         suppress_lightning_logger: bool = True,
@@ -56,7 +56,7 @@ class TabularModelTuner:
                 If str is passed, will initialize the DataConfig using the yaml file in that path.
                 Defaults to None.
 
-            model_config (Optional[Union[ModelConfig, list[TrainerConfig]], optional): The ModelConfig for the
+            model_config (Optional[Union[ModelConfig, List[TrainerConfig]], optional): The ModelConfig for the
                 TabularModel. If str is passed, will initialize the ModelConfig using the yaml file in that path.
                 Defaults to None.
 
@@ -155,7 +155,7 @@ class TabularModelTuner:
     def tune(
         self,
         train: DataFrame,
-        search_space: Union[Dict, list[Dict]],
+        search_space: Union[Dict, List[Dict]],
         metric: Union[str, Callable],
         mode: str,
         strategy: str,
