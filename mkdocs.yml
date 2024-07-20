@@ -15,10 +15,11 @@ nav:
                 - Tensorboard: "tutorials/05.1-Experiment_Tracking_using_Tensorboard.ipynb"
           - Hyperparameter Tuning:
                 - Grid Search and Random Search: "tutorials/10-Hyperparameter Tuning.ipynb"
+                - Search Best Architecture and Hyperparameter: "tutorials/15-Search Best Architecture and Hyperparameter.ipynb"
           - Cross Validation and Other Modelling Tricks:
                 - Cross Validation: "tutorials/09-Cross Validation.ipynb"
                 - Bagged Predictions: "tutorials/12-Bagged Predictions.ipynb"
-                - Test Time Augumentation (Experimental): "tutorials/11-Test Time Augmentation.ipynb"
+                - Test Time Augmentation (Experimental): "tutorials/11-Test Time Augmentation.ipynb"
           - Explainability / Interpretability:
                 - SHAP, Deep LIFT and so on through Captum Integration: "tutorials/14-Explainability.ipynb"
           - Custom PyTorch Models:
