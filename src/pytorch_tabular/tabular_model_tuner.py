@@ -32,6 +32,7 @@ class TabularModelTuner:
 
     This class is used to tune the hyperparameters of a TabularModel, given the search space,  strategy and metric to
     optimize.
+
     """
 
     ALLOWABLE_STRATEGIES = ["grid_search", "random_search"]
@@ -79,6 +80,7 @@ class TabularModelTuner:
             suppress_lightning_logger (bool, optional): Whether to suppress the lightning logger. Defaults to True.
 
             **kwargs: Additional keyword arguments to be passed to the TabularModel init.
+
         """
         if not isinstance(model_config, list):
             model_config = [model_config]
@@ -228,11 +230,14 @@ class TabularModelTuner:
                 best_params (Dict): The best parameters found
                 best_score (float): The best score found
                 best_model (TabularModel or None): If return_best_model is True, return best_model otherwise return None
+
         """
         assert strategy in self.ALLOWABLE_STRATEGIES, f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
         assert metric is not None, "metric must be specified"
-        assert (isinstance(search_space, dict) or (isinstance(search_space, list))) and len(search_space) > 0, "search_space must be a non-empty dict"
+        assert (isinstance(search_space, dict) or (isinstance(search_space, list))) and len(
+            search_space
+        ) > 0, "search_space must be a non-empty dict"
         if self.suppress_lightning_logger:
             suppress_lightning_logs()
         if cv is not None and validation is not None:
@@ -252,7 +257,9 @@ class TabularModelTuner:
         with Progress() as progress:
             model_config_iterator = range(len(self.model_config))
             if progress_bar:
-                model_config_iterator = progress.track(model_config_iterator, description=f"[green]Running models config...")
+                model_config_iterator = progress.track(
+                    model_config_iterator, description="[green]Running models config..."
+                )
 
             datamodule = None
             trials = []
@@ -260,7 +267,8 @@ class TabularModelTuner:
             best_score = 0.0
             for idx in model_config_iterator:
                 search_space_temp = {
-                    **{"model": [f"{idx}-{self.model_config[idx].__class__.__name__}"]}, **search_space[idx]
+                    **{"model": [f"{idx}-{self.model_config[idx].__class__.__name__}"]},
+                    **search_space[idx],
                 }
 
                 if strategy == "grid_search":
@@ -276,19 +284,23 @@ class TabularModelTuner:
                     n_trials = sum(1 for _ in search_space_iterator)
                 elif strategy == "random_search":
                     assert n_trials is not None, "n_trials must be specified for random search"
-                    search_space_iterator = list(ParameterSampler(search_space_temp, n_iter=n_trials, random_state=random_state))
+                    search_space_iterator = list(
+                        ParameterSampler(search_space_temp, n_iter=n_trials, random_state=random_state)
+                    )
                 else:
                     raise NotImplementedError(f"{strategy} is not implemented yet.")
 
                 # Sort by trainer_config to recreate the datamodule when necessary
                 trainer_configs = [key for key in search_space_iterator if "trainer_config" in key]
                 for key in trainer_configs:
-                    search_space_iterator = sorted(search_space_iterator, key=lambda search_space_iterator: search_space_iterator[key])
+                    search_space_iterator = sorted(
+                        search_space_iterator, key=lambda search_space_iterator: search_space_iterator[key]
+                    )
 
                 if progress_bar:
                     search_space_iterator = progress.track(
                         search_space_iterator,
-                        description=f"[blue]Training {idx}-{self.model_config[idx].__class__.__name__}..."
+                        description=f"[blue]Training {idx}-{self.model_config[idx].__class__.__name__}...",
                     )
 
                 if isinstance(metric, str):
@@ -324,7 +336,9 @@ class TabularModelTuner:
                         prep_dl_kwargs, prep_model_kwargs, train_kwargs = tabular_model_t._split_kwargs(kwargs)
                         if "seed" not in prep_dl_kwargs:
                             prep_dl_kwargs["seed"] = random_state
-                        datamodule = tabular_model_t.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
+                        datamodule = tabular_model_t.prepare_dataloader(
+                            train=train, validation=validation, **prep_dl_kwargs
+                        )
                         validation = validation if validation is not None else datamodule.validation_dataset.data
 
                     if cv is not None:
