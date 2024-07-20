@@ -6,7 +6,7 @@ import warnings
 from collections import namedtuple
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Union, List
+from typing import Callable, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 import pandas as pd
