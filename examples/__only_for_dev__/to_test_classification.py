@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # from torch.utils import data
 from pytorch_tabular.config import DataConfig, ExperimentConfig, OptimizerConfig, TrainerConfig
@@ -9,7 +10,6 @@ from pytorch_tabular.tabular_model import TabularModel
 
 # import wget
 from pytorch_tabular.utils import get_class_weighted_cross_entropy
-from sklearn.model_selection import train_test_split
 
 # torch.manual_seed(0)
 # np.random.seed(0)

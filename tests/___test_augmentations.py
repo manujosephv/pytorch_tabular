@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+
 from pytorch_tabular.ssl_models.common.augmentations import _get_random_index, cutmix, mixup
 
 

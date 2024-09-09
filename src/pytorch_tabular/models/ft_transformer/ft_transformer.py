@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Feature Tokenizer Transformer Model."""
+
 from collections import OrderedDict
 
 import torch

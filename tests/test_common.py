@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+
 import copy
 import os
 
 import numpy as np
 import pytest
 import torch
+from scipy.stats import uniform
+from sklearn.metrics import accuracy_score, r2_score
+from sklearn.model_selection import KFold
+
 from pytorch_tabular import TabularModel, TabularModelTuner, model_sweep
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.config.config import SSLModelConfig
@@ -20,9 +25,6 @@ from pytorch_tabular.models import (
     TabNetModelConfig,
 )
 from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
-from scipy.stats import uniform
-from sklearn.metrics import accuracy_score, r2_score
-from sklearn.model_selection import KFold
 
 # import os
 

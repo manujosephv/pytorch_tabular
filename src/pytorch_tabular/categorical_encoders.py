@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 # Modified https://github.com/tcassou/mlencoders/blob/master/mlencoders/base_encoder.py to suit NN encoding
 """Category Encoders."""
+
 from pandas import DataFrame, Series, unique
 
 try:
