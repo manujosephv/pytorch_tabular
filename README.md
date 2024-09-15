@@ -150,114 +150,140 @@ loaded_model = TabularModel.load_model("examples/basic")
 
 <!-- readme: contributors -start -->
 <table>
-<tr>
-    <td align="center">
-        <a href="https://github.com/manujosephv">
-            <img src="https://avatars.githubusercontent.com/u/10508493?v=4" width="100;" alt="manujosephv"/>
-            <br />
-            <sub><b>Manu Joseph</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/Borda">
-            <img src="https://avatars.githubusercontent.com/u/6035284?v=4" width="100;" alt="Borda"/>
-            <br />
-            <sub><b>Jirka Borovec</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/wsad1">
-            <img src="https://avatars.githubusercontent.com/u/13963626?v=4" width="100;" alt="wsad1"/>
-            <br />
-            <sub><b>Jinu Sunil</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/ProgramadorArtificial">
-            <img src="https://avatars.githubusercontent.com/u/130674366?v=4" width="100;" alt="ProgramadorArtificial"/>
-            <br />
-            <sub><b>Programador Artificial</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/sorenmacbeth">
-            <img src="https://avatars.githubusercontent.com/u/130043?v=4" width="100;" alt="sorenmacbeth"/>
-            <br />
-            <sub><b>Soren Macbeth</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/fonnesbeck">
-            <img src="https://avatars.githubusercontent.com/u/81476?v=4" width="100;" alt="fonnesbeck"/>
-            <br />
-            <sub><b>Chris Fonnesbeck</b></sub>
-        </a>
-    </td></tr>
-<tr>
-    <td align="center">
-        <a href="https://github.com/jxtrbtk">
-            <img src="https://avatars.githubusercontent.com/u/40494970?v=4" width="100;" alt="jxtrbtk"/>
-            <br />
-            <sub><b>Null</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/ndrsfel">
-            <img src="https://avatars.githubusercontent.com/u/21068727?v=4" width="100;" alt="ndrsfel"/>
-            <br />
-            <sub><b>Andreas</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/EeyoreLee">
-            <img src="https://avatars.githubusercontent.com/u/49790022?v=4" width="100;" alt="EeyoreLee"/>
-            <br />
-            <sub><b>Earlee</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/JulianRein">
-            <img src="https://avatars.githubusercontent.com/u/35046938?v=4" width="100;" alt="JulianRein"/>
-            <br />
-            <sub><b>Null</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/krshrimali">
-            <img src="https://avatars.githubusercontent.com/u/19997320?v=4" width="100;" alt="krshrimali"/>
-            <br />
-            <sub><b>Kushashwa Ravi Shrimali</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/Actis92">
-            <img src="https://avatars.githubusercontent.com/u/46601193?v=4" width="100;" alt="Actis92"/>
-            <br />
-            <sub><b>Luca Actis Grosso</b></sub>
-        </a>
-    </td></tr>
-<tr>
-    <td align="center">
-        <a href="https://github.com/sgbaird">
-            <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
-            <br />
-            <sub><b>Sterling G. Baird</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/furyhawk">
-            <img src="https://avatars.githubusercontent.com/u/831682?v=4" width="100;" alt="furyhawk"/>
-            <br />
-            <sub><b>Teck Meng</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/yinyunie">
-            <img src="https://avatars.githubusercontent.com/u/25686434?v=4" width="100;" alt="yinyunie"/>
-            <br />
-            <sub><b>Yinyu Nie</b></sub>
-        </a>
-    </td></tr>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/manujosephv">
+                    <img src="https://avatars.githubusercontent.com/u/10508493?v=4" width="100;" alt="manujosephv"/>
+                    <br />
+                    <sub><b>Manu Joseph</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Borda">
+                    <img src="https://avatars.githubusercontent.com/u/6035284?v=4" width="100;" alt="Borda"/>
+                    <br />
+                    <sub><b>Jirka Borovec</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/wsad1">
+                    <img src="https://avatars.githubusercontent.com/u/13963626?v=4" width="100;" alt="wsad1"/>
+                    <br />
+                    <sub><b>Jinu Sunil</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/ProgramadorArtificial">
+                    <img src="https://avatars.githubusercontent.com/u/130674366?v=4" width="100;" alt="ProgramadorArtificial"/>
+                    <br />
+                    <sub><b>Programador Artificial</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/sorenmacbeth">
+                    <img src="https://avatars.githubusercontent.com/u/130043?v=4" width="100;" alt="sorenmacbeth"/>
+                    <br />
+                    <sub><b>Soren Macbeth</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/fonnesbeck">
+                    <img src="https://avatars.githubusercontent.com/u/81476?v=4" width="100;" alt="fonnesbeck"/>
+                    <br />
+                    <sub><b>Chris Fonnesbeck</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/jxtrbtk">
+                    <img src="https://avatars.githubusercontent.com/u/40494970?v=4" width="100;" alt="jxtrbtk"/>
+                    <br />
+                    <sub><b>Null</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/abhisharsinha">
+                    <img src="https://avatars.githubusercontent.com/u/24841841?v=4" width="100;" alt="abhisharsinha"/>
+                    <br />
+                    <sub><b>Abhishar Sinha</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/ndrsfel">
+                    <img src="https://avatars.githubusercontent.com/u/21068727?v=4" width="100;" alt="ndrsfel"/>
+                    <br />
+                    <sub><b>Andreas</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/charitarthchugh">
+                    <img src="https://avatars.githubusercontent.com/u/37895518?v=4" width="100;" alt="charitarthchugh"/>
+                    <br />
+                    <sub><b>Charitarth Chugh</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/EeyoreLee">
+                    <img src="https://avatars.githubusercontent.com/u/49790022?v=4" width="100;" alt="EeyoreLee"/>
+                    <br />
+                    <sub><b>Earlee</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/JulianRein">
+                    <img src="https://avatars.githubusercontent.com/u/35046938?v=4" width="100;" alt="JulianRein"/>
+                    <br />
+                    <sub><b>Null</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/krshrimali">
+                    <img src="https://avatars.githubusercontent.com/u/19997320?v=4" width="100;" alt="krshrimali"/>
+                    <br />
+                    <sub><b>Kushashwa Ravi Shrimali</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Actis92">
+                    <img src="https://avatars.githubusercontent.com/u/46601193?v=4" width="100;" alt="Actis92"/>
+                    <br />
+                    <sub><b>Luca Actis Grosso</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/sgbaird">
+                    <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
+                    <br />
+                    <sub><b>Sterling G. Baird</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/furyhawk">
+                    <img src="https://avatars.githubusercontent.com/u/831682?v=4" width="100;" alt="furyhawk"/>
+                    <br />
+                    <sub><b>Teck Meng</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/yinyunie">
+                    <img src="https://avatars.githubusercontent.com/u/25686434?v=4" width="100;" alt="yinyunie"/>
+                    <br />
+                    <sub><b>Yinyu Nie</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/HernandoR">
+                    <img src="https://avatars.githubusercontent.com/u/45709656?v=4" width="100;" alt="HernandoR"/>
+                    <br />
+                    <sub><b>Liu Zhen</b></sub>
+                </a>
+            </td>
+		</tr>
+	<tbody>
 </table>
 <!-- readme: contributors -end -->
 
