@@ -1,9 +1,10 @@
 import pandas as pd
 import torch
+from sklearn.datasets import fetch_california_housing
+
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.category_embedding.config import CategoryEmbeddingModelConfig
 from pytorch_tabular.tabular_model import TabularModel
-from sklearn.datasets import fetch_california_housing
 
 # from pytorch_tabular.models.mixture_density import (
 # CategoryEmbeddingMDNConfig,

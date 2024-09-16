@@ -5,6 +5,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
+from sklearn.datasets import fetch_california_housing
+
 from pytorch_tabular.config import DataConfig, ModelConfig, OptimizerConfig, TrainerConfig
 
 # from pytorch_tabular.models.deep_gmm import (
@@ -14,7 +16,6 @@ from pytorch_tabular.models.node import NODEBackbone
 
 # from pytorch_tabular.models.node import utils as utils
 from pytorch_tabular.tabular_model import TabularModel
-from sklearn.datasets import fetch_california_housing
 
 
 @dataclass

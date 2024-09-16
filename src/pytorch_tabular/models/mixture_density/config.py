@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Mixture Density Head Config."""
+
 from dataclasses import dataclass, field
 from typing import Dict
 

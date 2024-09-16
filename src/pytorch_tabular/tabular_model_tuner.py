@@ -2,6 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 """Tabular Model."""
+
 import warnings
 from collections import namedtuple
 from copy import deepcopy
