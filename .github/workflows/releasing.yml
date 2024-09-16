@@ -24,7 +24,7 @@ jobs:
 
             - name: Create package 📦
               run: |
-                  pip install "twine==4.0.2" setuptools wheel
+                  pip install "twine==5.1.1" setuptools wheel
                   python setup.py sdist bdist_wheel
                   ls -lh dist/
                   twine check dist/*
@@ -38,7 +38,7 @@ jobs:
 
             - name: Publish distribution 📦 to PyPI
               if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
-              uses: pypa/gh-action-pypi-publish@v1.8.12
+              uses: pypa/gh-action-pypi-publish@v1.10.1
               with:
                   user: __token__
                   password: ${{ secrets.pypi_password }}
