@@ -177,7 +177,13 @@ class ODST(ModuleWithInit):
             self.log_temperatures.data[...] = torch.log(torch.as_tensor(temperatures) + eps)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(in_features={self.feature_selection_logits.shape[0]}, num_trees={self.num_trees}, depth={self.depth}, tree_dim={self.tree_dim}, flatten_output={self.flatten_output})"
+        return (
+            f"{self.__class__.__name__}(in_features={self.feature_selection_logits.shape[0]},"
+            f" num_trees={self.num_trees},"
+            f" depth={self.depth},"
+            f" tree_dim={self.tree_dim},"
+            f" flatten_output={self.flatten_output})"
+        )
 
 
 class NeuralDecisionStump(nn.Module):

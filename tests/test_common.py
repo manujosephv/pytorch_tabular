@@ -410,11 +410,12 @@ def test_save_for_inference(
     )
     sv_dir = tmpdir.mkdir("saved_model")
 
+    model_name = "model.pt" if save_type == "pytorch" else "model.onnx"
     tabular_model.save_model_for_inference(
-        sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx",
+        sv_dir / model_name,
         kind=save_type,
     )
-    assert os.path.exists(sv_dir / "model.pt" if type == "pytorch" else sv_dir / "model.onnx")
+    assert os.path.exists(sv_dir / model_name)
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_EXT_TEST)
