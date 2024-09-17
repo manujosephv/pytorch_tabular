@@ -7,13 +7,13 @@ import warnings
 from collections import namedtuple
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Union
+from typing import Callable, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
-from rich.progress import track
+from rich.progress import Progress
 from sklearn.model_selection import BaseCrossValidator, ParameterGrid, ParameterSampler
 
 from pytorch_tabular.config import (
@@ -44,7 +44,7 @@ class TabularModelTuner:
         data_config: Optional[Union[DataConfig, str]] = None,
         model_config: Optional[Union[ModelConfig, str]] = None,
         optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
-        trainer_config: Optional[Union[TrainerConfig, str]] = None,
+        trainer_config: Optional[Union[TrainerConfig, List[TrainerConfig]]] = None,
         model_callable: Optional[Callable] = None,
         model_state_dict_path: Optional[Union[str, Path]] = None,
         suppress_lightning_logger: bool = True,
@@ -57,8 +57,8 @@ class TabularModelTuner:
                 If str is passed, will initialize the DataConfig using the yaml file in that path.
                 Defaults to None.
 
-            model_config (Optional[Union[ModelConfig, str]], optional): The ModelConfig for the TabularModel.
-                If str is passed, will initialize the ModelConfig using the yaml file in that path.
+            model_config (Optional[Union[ModelConfig, List[TrainerConfig]], optional): The ModelConfig for the
+                TabularModel. If str is passed, will initialize the ModelConfig using the yaml file in that path.
                 Defaults to None.
 
             optimizer_config (Optional[Union[OptimizerConfig, str]], optional): The OptimizerConfig for the
@@ -83,6 +83,9 @@ class TabularModelTuner:
             **kwargs: Additional keyword arguments to be passed to the TabularModel init.
 
         """
+        if not isinstance(model_config, list):
+            model_config = [model_config]
+
         if trainer_config.profiler is not None:
             warnings.warn(
                 "Profiler is not supported in tuner. Set profiler=None in TrainerConfig to disable this warning."
@@ -127,10 +130,13 @@ class TabularModelTuner:
         """Update the configs with the new parameters."""
         # update configs with the new parameters
         for k, v in params.items():
+            if k == "model":
+                continue
+
             root, param = k.split("__")
             if root.startswith("trainer_config"):
                 raise ValueError(
-                    "The trainer_config is not supported be tuner. Please remove it from tuner parameters!"
+                    "The trainer_config is not supported by tuner. Please remove it from tuner parameters!"
                 )
             elif root.startswith("optimizer_config"):
                 self._check_assign_config(optimizer_config, param, v)
@@ -150,7 +156,7 @@ class TabularModelTuner:
     def tune(
         self,
         train: DataFrame,
-        search_space: Dict,
+        search_space: Union[Dict, List[Dict]],
         metric: Union[str, Callable],
         mode: str,
         strategy: str,
@@ -230,7 +236,9 @@ class TabularModelTuner:
         assert strategy in self.ALLOWABLE_STRATEGIES, f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
         assert metric is not None, "metric must be specified"
-        assert isinstance(search_space, dict) and len(search_space) > 0, "search_space must be a non-empty dict"
+        assert (isinstance(search_space, dict) or (isinstance(search_space, list))) and len(
+            search_space
+        ) > 0, "search_space must be a non-empty dict"
         if self.suppress_lightning_logger:
             suppress_lightning_logs()
         if cv is not None and validation is not None:
@@ -240,138 +248,169 @@ class TabularModelTuner:
             )
             validation = None
 
-        if strategy == "grid_search":
-            assert all(
-                isinstance(v, list) for v in search_space.values()
-            ), "For grid search, all values in search_space must be a list of values to try"
-            iterator = ParameterGrid(search_space)
-            if n_trials is not None:
-                warnings.warn(
-                    "n_trials is ignored for grid search to do a complete sweep of"
-                    " the grid. Set n_trials=None to turn off this warning."
-                )
-            n_trials = sum(1 for _ in iterator)
-        elif strategy == "random_search":
-            assert n_trials is not None, "n_trials must be specified for random search"
-            iterator = ParameterSampler(search_space, n_iter=n_trials, random_state=random_state)
-        else:
-            raise NotImplementedError(f"{strategy} is not implemented yet.")
+        if not isinstance(search_space, list):
+            search_space = [search_space]
 
-        if progress_bar:
-            iterator = track(iterator, description=f"[green]{strategy.replace('_',' ').title()}...", total=n_trials)
+        assert len(self.model_config) == len(search_space), "model_config and search_space must have the same length"
+
         verbose_tabular_model = self.tabular_model_init_kwargs.pop("verbose", False)
 
-        temp_tabular_model = TabularModel(
-            data_config=self.data_config,
-            model_config=self.model_config,
-            optimizer_config=self.optimizer_config,
-            trainer_config=self.trainer_config,
-            verbose=verbose_tabular_model,
-            **self.tabular_model_init_kwargs,
-        )
-
-        prep_dl_kwargs, prep_model_kwargs, train_kwargs = temp_tabular_model._split_kwargs(kwargs)
-        if "seed" not in prep_dl_kwargs:
-            prep_dl_kwargs["seed"] = random_state
-        datamodule = temp_tabular_model.prepare_dataloader(train=train, validation=validation, **prep_dl_kwargs)
-        validation = validation if validation is not None else datamodule.validation_dataset.data
-
-        if isinstance(metric, str):
-            # metric = metric_to_pt_metric(metric)
-            is_callable_metric = False
-            metric_str = metric
-        elif callable(metric):
-            is_callable_metric = True
-            metric_str = metric.__name__
-        del temp_tabular_model
-
-        trials = []
-        best_model = None
-        best_score = 0.0
-        for i, params in enumerate(iterator):
-            # Copying the configs as a base
-            # Make sure all default parameters that you want to be set for all
-            # trials are in the original configs
-            trainer_config_t = deepcopy(self.trainer_config)
-            optimizer_config_t = deepcopy(self.optimizer_config)
-            model_config_t = deepcopy(self.model_config)
-
-            optimizer_config_t, model_config_t = self._update_configs(optimizer_config_t, model_config_t, params)
-            # Initialize Tabular model using the new config
-            tabular_model_t = TabularModel(
-                data_config=self.data_config,
-                model_config=model_config_t,
-                optimizer_config=optimizer_config_t,
-                trainer_config=trainer_config_t,
-                verbose=verbose_tabular_model,
-                **self.tabular_model_init_kwargs,
-            )
-
-            if cv is not None:
-                cv_verbose = cv_kwargs.pop("verbose", False)
-                cv_kwargs.pop("handle_oom", None)
-                with OutOfMemoryHandler(handle_oom=True) as handler:
-                    cv_scores, _ = tabular_model_t.cross_validate(
-                        cv=cv,
-                        train=train,
-                        metric=metric,
-                        verbose=cv_verbose,
-                        handle_oom=False,
-                        **cv_kwargs,
-                    )
-                if handler.oom_triggered:
-                    if not ignore_oom:
-                        raise OOMException(
-                            "Out of memory error occurred during cross validation. "
-                            "Set ignore_oom=True to ignore this error."
-                        )
-                    else:
-                        params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
-                else:
-                    params.update({metric_str: cv_agg_func(cv_scores)})
-            else:
-                model = tabular_model_t.prepare_model(
-                    datamodule=datamodule,
-                    **prep_model_kwargs,
+        with Progress() as progress:
+            model_config_iterator = range(len(self.model_config))
+            if progress_bar:
+                model_config_iterator = progress.track(
+                    model_config_iterator, description="[green]Running models config..."
                 )
-                train_kwargs.pop("handle_oom", None)
-                with OutOfMemoryHandler(handle_oom=True) as handler:
-                    tabular_model_t.train(model=model, datamodule=datamodule, handle_oom=False, **train_kwargs)
-                if handler.oom_triggered:
-                    if not ignore_oom:
-                        raise OOMException(
-                            "Out of memory error occurred during training. " "Set ignore_oom=True to ignore this error."
+
+            datamodule = None
+            trials = []
+            best_model = None
+            best_score = 0.0
+            for idx in model_config_iterator:
+                search_space_temp = {
+                    **{"model": [f"{idx}-{self.model_config[idx].__class__.__name__}"]},
+                    **search_space[idx],
+                }
+
+                if strategy == "grid_search":
+                    assert all(
+                        isinstance(v, list) for v in search_space_temp.values()
+                    ), "For grid search, all values in search_space must be a list of values to try"
+                    search_space_iterator = list(ParameterGrid(search_space_temp))
+                    if n_trials is not None:
+                        warnings.warn(
+                            "n_trials is ignored for grid search to do a complete sweep of"
+                            " the grid. Set n_trials=None to turn off this warning."
                         )
-                    else:
-                        params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
+                    n_trials = sum(1 for _ in search_space_iterator)
+                elif strategy == "random_search":
+                    assert n_trials is not None, "n_trials must be specified for random search"
+                    search_space_iterator = list(
+                        ParameterSampler(search_space_temp, n_iter=n_trials, random_state=random_state)
+                    )
                 else:
-                    if is_callable_metric:
-                        preds = tabular_model_t.predict(validation, include_input_features=False)
-                        params.update({metric_str: metric(validation[tabular_model_t.config.target], preds)})
-                    else:
-                        result = tabular_model_t.evaluate(validation, verbose=False)
-                        params.update({k.replace("test_", ""): v for k, v in result[0].items()})
+                    raise NotImplementedError(f"{strategy} is not implemented yet.")
 
-                    if return_best_model:
-                        # Removing the datamodule from the model to save memory
-                        tabular_model_t.datamodule = None
-                        if best_model is None:
-                            best_model = deepcopy(tabular_model_t)
-                            best_score = params[metric_str]
+                # Sort by trainer_config to recreate the datamodule when necessary
+                trainer_configs = [key for key in search_space_iterator if "trainer_config" in key]
+                for key in trainer_configs:
+                    search_space_iterator = sorted(
+                        search_space_iterator, key=lambda search_space_iterator: search_space_iterator[key]
+                    )
+
+                if progress_bar:
+                    search_space_iterator = progress.track(
+                        search_space_iterator,
+                        description=f"[blue]Training {idx}-{self.model_config[idx].__class__.__name__}...",
+                    )
+
+                if isinstance(metric, str):
+                    is_callable_metric = False
+                    metric_str = metric
+                elif callable(metric):
+                    is_callable_metric = True
+                    metric_str = metric.__name__
+
+                for i, params in enumerate(search_space_iterator):
+                    # Copying the configs as a base
+                    # Make sure all default parameters that you want to be set for all
+                    # trials are in the original configs
+                    trainer_config_t = deepcopy(self.trainer_config)
+                    optimizer_config_t = deepcopy(self.optimizer_config)
+                    model_config_t = deepcopy(self.model_config[idx])
+
+                    optimizer_config_t, model_config_t = self._update_configs(
+                        optimizer_config_t, model_config_t, params
+                    )
+                    # Initialize Tabular model using the new config
+                    tabular_model_t = TabularModel(
+                        data_config=self.data_config,
+                        model_config=model_config_t,
+                        optimizer_config=optimizer_config_t,
+                        trainer_config=trainer_config_t,
+                        verbose=verbose_tabular_model,
+                        **self.tabular_model_init_kwargs,
+                    )
+
+                    # Create datamodule
+                    if not datamodule:
+                        prep_dl_kwargs, prep_model_kwargs, train_kwargs = tabular_model_t._split_kwargs(kwargs)
+                        if "seed" not in prep_dl_kwargs:
+                            prep_dl_kwargs["seed"] = random_state
+                        datamodule = tabular_model_t.prepare_dataloader(
+                            train=train, validation=validation, **prep_dl_kwargs
+                        )
+                        validation = validation if validation is not None else datamodule.validation_dataset.data
+
+                    if cv is not None:
+                        cv_verbose = cv_kwargs.pop("verbose", False)
+                        cv_kwargs.pop("handle_oom", None)
+                        with OutOfMemoryHandler(handle_oom=True) as handler:
+                            cv_scores, _ = tabular_model_t.cross_validate(
+                                cv=cv,
+                                train=train,
+                                metric=metric,
+                                verbose=cv_verbose,
+                                handle_oom=False,
+                                **cv_kwargs,
+                            )
+                        if handler.oom_triggered:
+                            if not ignore_oom:
+                                raise OOMException(
+                                    "Out of memory error occurred during cross validation. "
+                                    "Set ignore_oom=True to ignore this error."
+                                )
+                            else:
+                                params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
+                                params.update({"model": f"{params['model']} (OOM)"})
                         else:
-                            if mode == "min":
-                                if params[metric_str] < best_score:
-                                    best_model = deepcopy(tabular_model_t)
-                                    best_score = params[metric_str]
-                            elif mode == "max":
-                                if params[metric_str] > best_score:
-                                    best_model = deepcopy(tabular_model_t)
-                                    best_score = params[metric_str]
+                            params.update({metric_str: cv_agg_func(cv_scores)})
+                    else:
+                        model = tabular_model_t.prepare_model(
+                            datamodule=datamodule,
+                            **prep_model_kwargs,
+                        )
+                        train_kwargs.pop("handle_oom", None)
+                        with OutOfMemoryHandler(handle_oom=True) as handler:
+                            tabular_model_t.train(model=model, datamodule=datamodule, handle_oom=False, **train_kwargs)
+                        if handler.oom_triggered:
+                            if not ignore_oom:
+                                raise OOMException(
+                                    "Out of memory error occurred during training. "
+                                    "Set ignore_oom=True to ignore this error."
+                                )
+                            else:
+                                params.update({metric_str: (np.inf if mode == "min" else -np.inf)})
+                                params.update({"model": f"{params['model']} (OOM)"})
+                        else:
+                            if is_callable_metric:
+                                preds = tabular_model_t.predict(validation, include_input_features=False)
+                                params.update({metric_str: metric(validation[tabular_model_t.config.target], preds)})
+                            else:
+                                result = tabular_model_t.evaluate(validation, verbose=False)
+                                params.update({k.replace("test_", ""): v for k, v in result[0].items()})
 
-            params.update({"trial_id": i})
-            trials.append(params)
-            if verbose:
-                logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric]}")
+                            if return_best_model:
+                                # Removing the datamodule from the model to save memory
+                                tabular_model_t.datamodule = None
+                                if best_model is None:
+                                    best_model = deepcopy(tabular_model_t)
+                                    best_score = params[metric_str]
+                                else:
+                                    if mode == "min":
+                                        if params[metric_str] < best_score:
+                                            best_model = deepcopy(tabular_model_t)
+                                            best_score = params[metric_str]
+                                    elif mode == "max":
+                                        if params[metric_str] > best_score:
+                                            best_model = deepcopy(tabular_model_t)
+                                            best_score = params[metric_str]
+
+                    params.update({"trial_id": i})
+                    trials.append(params)
+                    if verbose:
+                        logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric]}")
+
         trials_df = pd.DataFrame(trials)
         trials = trials_df.pop("trial_id")
         if mode == "max":
@@ -386,7 +425,7 @@ class TabularModelTuner:
 
         if verbose:
             logger.info("Model Tuner Finished")
-            logger.info(f"Best Score ({metric_str}): {best_score}")
+            logger.info(f"Best Model: {best_params['model']} - Best Score ({metric_str}): {best_score}")
 
         if return_best_model and best_model is not None:
             best_model.datamodule = datamodule

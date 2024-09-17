@@ -282,13 +282,21 @@ class TabularDatamodule(pl.LightningDataModule):
         if config.task == "regression":
             # self._output_dim_reg = len(config.target) if config.target else None if self.train is not None:
             output_dim = len(config.target) if config.target else None
+            output_cardinality = None
         elif config.task == "classification":
             # self._output_dim_clf = len(np.unique(self.train_dataset.y)) if config.target else None
             if self.train is not None:
-                output_dim = len(np.unique(self.train[config.target[0]])) if config.target else None
+                output_cardinality = (
+                    self.train[config.target].fillna("NA").nunique().tolist() if config.target else None
+                )
+                output_dim = sum(output_cardinality)
             else:
-                output_dim = len(np.unique(self.train_dataset.y)) if config.target else None
+                output_cardinality = (
+                    self.train_dataset.data[config.target].fillna("NA").nunique().tolist() if config.target else None
+                )
+                output_dim = sum(output_cardinality)
         elif config.task == "ssl":
+            output_cardinality = None
             output_dim = None
         else:
             raise ValueError(f"{config.task} is an unsupported task.")
@@ -308,6 +316,7 @@ class TabularDatamodule(pl.LightningDataModule):
             categorical_dim=categorical_dim,
             continuous_dim=continuous_dim,
             output_dim=output_dim,
+            output_cardinality=output_cardinality,
             categorical_cardinality=categorical_cardinality,
             embedding_dims=embedding_dims,
         )
@@ -381,11 +390,14 @@ class TabularDatamodule(pl.LightningDataModule):
         if self.config.task != "classification":
             return data
         if stage == "fit" or self.label_encoder is None:
-            self.label_encoder = LabelEncoder()
-            data[self.config.target[0]] = self.label_encoder.fit_transform(data[self.config.target[0]])
+            self.label_encoder = [None] * len(self.config.target)
+            for i in range(len(self.config.target)):
+                self.label_encoder[i] = LabelEncoder()
+                data[self.config.target[i]] = self.label_encoder[i].fit_transform(data[self.config.target[i]])
         else:
-            if self.config.target[0] in data.columns:
-                data[self.config.target[0]] = self.label_encoder.transform(data[self.config.target[0]])
+            for i in range(len(self.config.target)):
+                if self.config.target[i] in data.columns:
+                    data[self.config.target[i]] = self.label_encoder[i].transform(data[self.config.target[i]])
         return data
 
     def _target_transform(self, data: DataFrame, stage: str) -> DataFrame:
@@ -818,7 +830,8 @@ class TabularDatamodule(pl.LightningDataModule):
         # TODO Is the target encoding necessary?
         if len(set(self.target) - set(df.columns)) > 0:
             if self.config.task == "classification":
-                df.loc[:, self.target] = np.array([self.label_encoder.classes_[0]] * len(df)).reshape(-1, 1)
+                for i in range(len(self.target)):
+                    df.loc[:, self.target[i]] = np.array([self.label_encoder[i].classes_[0]] * len(df)).reshape(-1, 1)
             else:
                 df.loc[:, self.target] = np.zeros((len(df), len(self.target)))
         df, _ = self.preprocess_data(df, stage="inference")
