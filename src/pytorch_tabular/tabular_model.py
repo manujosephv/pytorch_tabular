@@ -211,9 +211,6 @@ class TabularModel:
 
     def _run_validation(self):
         """Validates the Config params and throws errors if something is wrong."""
-        if self.config.task == "classification":
-            if len(self.config.target) > 1:
-                raise NotImplementedError("Multi-Target Classification is not implemented.")
         if self.config.task == "regression":
             if self.config.target_range is not None:
                 if (
@@ -1291,12 +1288,16 @@ class TabularModel:
                             pred_df[f"{target_col}_q{int(q*100)}"] = quantile_predictions[:, j, i].reshape(-1, 1)
 
         elif self.config.task == "classification":
-            point_predictions = nn.Softmax(dim=-1)(point_predictions).numpy()
-            for i, class_ in enumerate(self.datamodule.label_encoder.classes_):
-                pred_df[f"{class_}_probability"] = point_predictions[:, i]
-            pred_df["prediction"] = self.datamodule.label_encoder.inverse_transform(
-                np.argmax(point_predictions, axis=1)
-            )
+            start_index = 0
+            for i, target_col in enumerate(self.config.target):
+                end_index = start_index + self.datamodule._inferred_config.output_cardinality[i]
+                prob_prediction = nn.Softmax(dim=-1)(point_predictions[:, start_index:end_index]).numpy()
+                start_index = end_index
+                for j, class_ in enumerate(self.datamodule.label_encoder[i].classes_):
+                    pred_df[f"{target_col}_{class_}_probability"] = prob_prediction[:, j]
+                pred_df[f"{target_col}_prediction"] = self.datamodule.label_encoder[i].inverse_transform(
+                    np.argmax(prob_prediction, axis=1)
+                )
             warnings.warn(
                 "Classification prediction column will be renamed to"
                 " `{target_col}_prediction` in the next release to maintain"
@@ -2046,15 +2047,12 @@ class TabularModel:
         elif callable(aggregate):
             bagged_pred = aggregate(pred_prob_l)
         if self.config.task == "classification":
-            classes = self.datamodule.label_encoder.classes_
+            # FIXME need to iterate .label_encoder[x]
+            classes = self.datamodule.label_encoder[0].classes_
             if aggregate == "hard_voting":
                 pred_df = pd.DataFrame(
                     np.concatenate(pred_prob_l, axis=1),
-                    columns=[
-                        f"{c}_probability_fold_{i}"
-                        for i in range(len(pred_prob_l))
-                        for c in self.datamodule.label_encoder.classes_
-                    ],
+                    columns=[f"{c}_probability_fold_{i}" for i in range(len(pred_prob_l)) for c in classes],
                     index=pred_idx,
                 )
                 pred_df["prediction"] = classes[final_pred]
@@ -2062,7 +2060,8 @@ class TabularModel:
                 final_pred = classes[np.argmax(bagged_pred, axis=1)]
                 pred_df = pd.DataFrame(
                     bagged_pred,
-                    columns=[f"{c}_probability" for c in self.datamodule.label_encoder.classes_],
+                    # FIXME
+                    columns=[f"{c}_probability" for c in self.datamodule.label_encoder[0].classes_],
                     index=pred_idx,
                 )
                 pred_df["prediction"] = final_pred
