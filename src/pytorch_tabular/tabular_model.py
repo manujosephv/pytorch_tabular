@@ -22,9 +22,7 @@ from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
-from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
-    GradientAccumulationScheduler,
-)
+from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.tuner.tuning import Tuner
 from pytorch_lightning.utilities.model_summary import summarize
 from rich import print as rich_print
@@ -43,11 +41,7 @@ from pytorch_tabular.config import (
 )
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import BaseModel, _CaptumModel, _GenericModel
-from pytorch_tabular.models.common.layers.embeddings import (
-    Embedding1dLayer,
-    Embedding2dLayer,
-    PreEncoded1dLayer,
-)
+from pytorch_tabular.models.common.layers.embeddings import Embedding1dLayer, Embedding2dLayer, PreEncoded1dLayer
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import (
     OOMException,
@@ -229,13 +223,6 @@ class TabularModel:
                         " two(min,max). The length of the list should be equal to hte"
                         " length of target columns"
                     )
-        if self.config.task == "ssl":
-            assert not self.config.handle_unknown_categories, (
-                "SSL only supports handle_unknown_categories=False. Please set this" " in your DataConfig"
-            )
-            assert not self.config.handle_missing_values, (
-                "SSL only supports handle_missing_values=False. Please set this in" " your DataConfig"
-            )
 
     def _read_parse_config(self, config, cls):
         if isinstance(config, str):
