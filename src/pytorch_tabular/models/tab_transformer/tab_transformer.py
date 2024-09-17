@@ -12,6 +12,7 @@
 # 4. LabML Annotated Deep Learning Papers - The position-wise FF was shamelessly copied from
 # https://github.com/labmlai/annotated_deep_learning_paper_implementations/tree/master/labml_nn/transformers
 """TabTransformer Model."""
+
 from collections import OrderedDict
 from typing import Dict
 

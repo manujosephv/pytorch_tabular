@@ -4,11 +4,12 @@
 import numpy as np
 import pytest
 import torch
+from sklearn.preprocessing import PowerTransformer
+
 from pytorch_tabular import TabularModel
 from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
-from sklearn.preprocessing import PowerTransformer
 
 
 def fake_metric(y_hat, y):

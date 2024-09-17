@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+
 import pytest
+
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import GatedAdditiveTreeEnsembleConfig

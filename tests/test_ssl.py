@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 """Tests for `pytorch_tabular` package."""
+
 import pytest
 import torch
+from sklearn.model_selection import train_test_split
+
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
 from pytorch_tabular.ssl_models.dae import DenoisingAutoEncoderConfig
-from sklearn.model_selection import train_test_split
 
 
 def fake_metric(y_hat, y):

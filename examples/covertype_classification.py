@@ -2,11 +2,12 @@ from pathlib import Path
 
 import pandas as pd
 import wget
+from sklearn.model_selection import train_test_split
+
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import CategoryEmbeddingModelConfig
 from pytorch_tabular.models.common.heads import LinearHeadConfig
 from pytorch_tabular.tabular_model import TabularModel
-from sklearn.model_selection import train_test_split
 
 BASE_DIR = Path.home().joinpath("data")
 datafile = BASE_DIR.joinpath("covtype.data.gz")

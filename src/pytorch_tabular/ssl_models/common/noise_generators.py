@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 # Inspired by implementation https://github.com/ryancheunggit/tabular_dae
 """DenoisingAutoEncoder Model."""
+
 import numpy as np
 import torch
 import torch.nn as nn
