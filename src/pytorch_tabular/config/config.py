@@ -95,7 +95,9 @@ class DataConfig:
 
         handle_missing_values (bool): Whether to handle missing values in categorical columns as
                 unknown
-
+                
+        dataloader_kwargs (Dict[str, Any]): Additional kwargs to be passed to PyTorch DataLoader. See
+                https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
     """
 
     target: Optional[List[str]] = field(
@@ -174,6 +176,11 @@ class DataConfig:
     handle_missing_values: bool = field(
         default=True,
         metadata={"help": "Whether or not to handle missing values in categorical columns as unknown"},
+    )
+    
+    dataloader_kwargs: Dict[str, Any] = field(
+        default_factory=dict,
+        metadata={"help": "Additional kwargs to be passed to PyTorch DataLoader."},
     )
 
     def __post_init__(self):
