@@ -805,7 +805,7 @@ class TabularDatamodule(pl.LightningDataModule):
             num_workers=self.config.num_workers,
             sampler=self.train_sampler,
             pin_memory=self.config.pin_memory,
-            **self.config.dataloader_kwargs
+            **self.config.dataloader_kwargs,
         )
 
     def val_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
@@ -824,7 +824,7 @@ class TabularDatamodule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.num_workers,
             pin_memory=self.config.pin_memory,
-            **self.config.dataloader_kwargs
+            **self.config.dataloader_kwargs,
         )
 
     def _prepare_inference_data(self, df: DataFrame) -> DataFrame:
@@ -867,7 +867,7 @@ class TabularDatamodule(pl.LightningDataModule):
             batch_size or self.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
-            **self.config.dataloader_kwargs
+            **self.config.dataloader_kwargs,
         )
 
     def save_dataloader(self, path: Union[str, Path]) -> None:
