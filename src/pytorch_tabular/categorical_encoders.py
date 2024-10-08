@@ -62,8 +62,8 @@ class BaseEncoder:
                 not X[self.cols].isnull().any().any()
             ), "`handle_missing` = `error` and missing values found in columns to encode."
         X_encoded = X.copy(deep=True)
-        category_cols = X_encoded.select_dtypes(include='category').columns
-        X_encoded[category_cols] = X_encoded[category_cols].astype('object')          
+        category_cols = X_encoded.select_dtypes(include="category").columns
+        X_encoded[category_cols] = X_encoded[category_cols].astype("object")
         for col, mapping in self._mapping.items():
             X_encoded[col] = X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
 
