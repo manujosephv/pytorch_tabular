@@ -61,6 +61,7 @@ class TabularDataset(Dataset):
         self.task = task
         self.n = data.shape[0]
         self.target = target
+        self.index = data.index
         if target:
             self.y = data[target].astype(np.float32).values
             if isinstance(target, str):
@@ -87,11 +88,12 @@ class TabularDataset(Dataset):
             data = pd.DataFrame(
                 np.concatenate([self.categorical_X, self.continuous_X], axis=1),
                 columns=self.categorical_cols + self.continuous_cols,
+                index=self.index,
             )
         elif self.continuous_cols:
-            data = pd.DataFrame(self.continuous_X, columns=self.continuous_cols)
+            data = pd.DataFrame(self.continuous_X, columns=self.continuous_cols, index=self.index)
         elif self.categorical_cols:
-            data = pd.DataFrame(self.categorical_X, columns=self.categorical_cols)
+            data = pd.DataFrame(self.categorical_X, columns=self.categorical_cols, index=self.index)
         else:
             data = pd.DataFrame()
         for i, t in enumerate(self.target):
@@ -474,6 +476,7 @@ class TabularDatamodule(pl.LightningDataModule):
             target=self.target,
         )
         self.train = None
+
         validation_dataset = TabularDataset(
             task=self.config.task,
             data=self.validation,
