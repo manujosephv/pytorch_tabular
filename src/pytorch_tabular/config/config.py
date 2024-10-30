@@ -96,6 +96,8 @@ class DataConfig:
         handle_missing_values (bool): Whether to handle missing values in categorical columns as
                 unknown
 
+        pickle_protocol (int): pickle protocol version passed to `torch.save` for dataset caching to disk
+
         dataloader_kwargs (Dict[str, Any]): Additional kwargs to be passed to PyTorch DataLoader. See
                 https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
 
@@ -177,6 +179,11 @@ class DataConfig:
     handle_missing_values: bool = field(
         default=True,
         metadata={"help": "Whether or not to handle missing values in categorical columns as unknown"},
+    )
+
+    pickle_protocol: int = field(
+        default=2,
+        metadata={"help": "pickle protocol version passed to `torch.save` for dataset caching to disk"},
     )
 
     dataloader_kwargs: Dict[str, Any] = field(

@@ -484,8 +484,10 @@ class TabularDatamodule(pl.LightningDataModule):
         self.validation = None
 
         if self.cache_mode is self.CACHE_MODES.DISK:
-            torch.save(train_dataset, self.cache_dir / "train_dataset")
-            torch.save(validation_dataset, self.cache_dir / "validation_dataset")
+            torch.save(train_dataset, self.cache_dir / "train_dataset", pickle_protocol=self.config.pickle_protocol)
+            torch.save(
+                validation_dataset, self.cache_dir / "validation_dataset", pickle_protocol=self.config.pickle_protocol
+            )
         elif self.cache_mode is self.CACHE_MODES.MEMORY:
             self.train_dataset = train_dataset
             self.validation_dataset = validation_dataset
