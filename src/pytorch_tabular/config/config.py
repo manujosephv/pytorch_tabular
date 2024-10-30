@@ -358,8 +358,8 @@ class TrainerConfig:
 
         progress_bar (str): Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`.
 
-        precision (int): Precision of the model. Can be one of: `32`, `16`, `64`. Defaults to `32`..
-                Choices are: [`32`,`16`,`64`].
+        precision (str): Precision of the model. Defaults to `32`. See
+                https://lightning.ai/docs/pytorch/stable/common/trainer.html#precision
 
         seed (int): Seed for random number generators. Defaults to 42
 
@@ -543,11 +543,10 @@ class TrainerConfig:
         default="rich",
         metadata={"help": "Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`."},
     )
-    precision: int = field(
-        default=32,
+    precision: str = field(
+        default="32",
         metadata={
-            "help": "Precision of the model. Can be one of: `32`, `16`, `64`. Defaults to `32`.",
-            "choices": [32, 16, 64],
+            "help": "Precision of the model. Defaults to `32`.",
         },
     )
     seed: int = field(
