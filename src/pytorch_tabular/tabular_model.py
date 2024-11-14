@@ -31,6 +31,7 @@ from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
 )
 from pytorch_lightning.tuner.tuning import Tuner
 from pytorch_lightning.utilities.model_summary import summarize
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from rich import print as rich_print
 from rich.pretty import pprint
 from sklearn.base import TransformerMixin
@@ -1522,6 +1523,7 @@ class TabularModel:
             )
         return pred_df
 
+    @rank_zero_only
     def load_best_model(self) -> None:
         """Loads the best model after training is done."""
         if self.trainer.checkpoint_callback is not None:
