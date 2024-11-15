@@ -686,6 +686,8 @@ class TabularModel:
                 "/n" + "Original Error: " + oom_handler.oom_msg
             )
         self._is_fitted = True
+        if self.track_experiment and self.config.log_target == "wandb":
+            self.logger.experiment.unwatch(self.model)
         if self.verbose:
             logger.info("Training the model completed")
         if self.config.load_best:
