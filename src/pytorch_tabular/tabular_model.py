@@ -1832,7 +1832,20 @@ class TabularModel:
 
     def __str__(self) -> str:
         """Returns a readable summary of the TabularModel object."""
-        return f"{self.__class__.__name__}(model={self.model.__class__.__name__ if self.has_model else 'None'})"
+        return f"{self.__class__.__name__}(model={self.model.__class__.__name__ if self.has_model else self.config._model_name+'(Not Initialized)'})"
+
+    def __repr__(self) -> str:
+        """Returns an unambiguous representation of the TabularModel object."""
+        config_str = json.dumps(
+            OmegaConf.to_container(self.config, resolve=True), indent=4
+        )
+        ret_str = f"{self.__class__.__name__}(\n"
+        if self.has_model:
+            ret_str += f"  model={self.model.__class__.__name__},\n"
+        else:
+            ret_str += f"  model={self.config._model_name} (Not Initialized),\n"
+        ret_str += f"  config={config_str},\n"
+        return ret_str
 
     def _repr_html_(self):
         """Generate an HTML representation for Jupyter Notebook."""
@@ -1912,10 +1925,18 @@ class TabularModel:
         header_html = f"<div class='header'>{html.escape(self.model.__class__.__name__ if self.has_model else self.config._model_name)}{model_status}</div>"
 
         # Config Section
-        config_html = self._generate_collapsible_section("Model Config", self.config, uid=uid, is_dict=True)
+        config_html = self._generate_collapsible_section(
+            "Model Config", self.config, uid=uid, is_dict=True
+        )
 
         # Summary Section
-        summary_html = "" if not self.has_model else self._generate_collapsible_section("Model Summary", self._generate_model_summary_table(), uid=uid)
+        summary_html = (
+            ""
+            if not self.has_model
+            else self._generate_collapsible_section(
+                "Model Summary", self._generate_model_summary_table(), uid=uid
+            )
+        )
 
         # Combine sections
         return f"""
@@ -1930,7 +1951,9 @@ class TabularModel:
     def _generate_collapsible_section(self, title, content, uid, is_dict=False):
         container_id = title.lower().replace(" ", "_") + uid
         if is_dict:
-            content = self._generate_nested_collapsible_sections(OmegaConf.to_container(content, resolve=True), container_id)
+            content = self._generate_nested_collapsible_sections(
+                OmegaConf.to_container(content, resolve=True), container_id
+            )
         return f"""
         <div>
             <span class="toggle-button" onclick="toggleVisibility('{container_id}')">&#9654;</span>
@@ -1947,7 +1970,9 @@ class TabularModel:
             if isinstance(value, dict):
                 nested_id = f"{parent_id}_{key}".replace(" ", "_")
                 nested_id = nested_id + str(uuid.uuid4())
-                nested_content = self._generate_nested_collapsible_sections(value, nested_id)
+                nested_content = self._generate_nested_collapsible_sections(
+                    value, nested_id
+                )
                 html_content += f"""
                 <div>
                     <span class="toggle-button" onclick="toggleVisibility('{nested_id}')">&#9654;</span>
