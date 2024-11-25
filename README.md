@@ -255,6 +255,13 @@ loaded_model = TabularModel.load_model("examples/basic")
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/snehilchatterjee">
+                    <img src="https://avatars.githubusercontent.com/u/127598707?v=4" width="100;" alt="snehilchatterjee"/>
+                    <br />
+                    <sub><b>Snehil Chatterjee</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/sgbaird">
                     <img src="https://avatars.githubusercontent.com/u/45469701?v=4" width="100;" alt="sgbaird"/>
                     <br />
@@ -275,6 +282,8 @@ loaded_model = TabularModel.load_model("examples/basic")
                     <sub><b>Yinyu Nie</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/YonyBresler">
                     <img src="https://avatars.githubusercontent.com/u/24940683?v=4" width="100;" alt="YonyBresler"/>
@@ -282,8 +291,6 @@ loaded_model = TabularModel.load_model("examples/basic")
                     <sub><b>YonyBresler</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/HernandoR">
                     <img src="https://avatars.githubusercontent.com/u/45709656?v=4" width="100;" alt="HernandoR"/>
