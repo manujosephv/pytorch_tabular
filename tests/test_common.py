@@ -1248,6 +1248,7 @@ def test_model_compare_regression(regression_data, model_list, continuous_cols, 
     # best_models = comp_df.loc[comp_df[f"test_{rank_metric[0]}"] == best_score, "model"].values.tolist()
     # assert best_model.model._get_name() in best_models
 
+
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_TEST)
 @pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
 @pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
@@ -1299,7 +1300,7 @@ def test_str_repr(
         metrics_prob_inputs=None if custom_metrics is None else [False],
         loss=custom_loss,
         optimizer=custom_optimizer,
-        optimizer_params={}
+        optimizer_params={},
     )
     assert model_config_class._model_name in str(tabular_model)
     assert model_config_class._model_name in repr(tabular_model)
