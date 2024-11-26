@@ -80,7 +80,7 @@ For complete Documentation with tutorials visit [ReadTheDocs](https://pytorch-ta
 
 **Semi-Supervised Learning**
 
-- [Denoising AutoEncoder](https://www.kaggle.com/code/faisalalsrheed/denoising-autoencoders-dae-for-tabular-data) is an autoencoder which learns robust feature representation, to compensate any noise in the dataset.
+- [Denoising AutoEncoder](https://www.kaggle.com/code/springmanndaniel/1st-place-turn-your-data-into-daeta) is an autoencoder which learns robust feature representation, to compensate any noise in the dataset.
 
 ## Implement Custom Models
 To implement new models, see the [How to implement new models tutorial](https://github.com/manujosephv/pytorch_tabular/blob/main/docs/tutorials/04-Implementing%20New%20Architectures.ipynb). It covers basic as well as advanced architectures.
