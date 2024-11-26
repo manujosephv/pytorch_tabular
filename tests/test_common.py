@@ -31,7 +31,7 @@ from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
 MODEL_CONFIG_SAVE_TEST = [
     (CategoryEmbeddingModelConfig, {"layers": "10-20"}),
-    (AutoIntConfig, {"num_heads": 1, "num_attn_blocks": 1}),
+    (GANDALFConfig, {}),
     (NodeConfig, {"num_trees": 100, "depth": 2}),
     (TabNetModelConfig, {"n_a": 2, "n_d": 2}),
 ]
@@ -1247,3 +1247,64 @@ def test_model_compare_regression(regression_data, model_list, continuous_cols, 
     # # there may be multiple models with the same score
     # best_models = comp_df.loc[comp_df[f"test_{rank_metric[0]}"] == best_score, "model"].values.tolist()
     # assert best_model.model._get_name() in best_models
+
+
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_TEST)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+@pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
+@pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
+@pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
+def test_str_repr(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    custom_metrics,
+    custom_loss,
+    custom_optimizer,
+):
+    (train, test, target) = regression_data
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+    )
+    model_config_class, model_config_params = model_config_class
+    model_config_params["task"] = "regression"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=3,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    assert "Not Initialized" in str(tabular_model)
+    assert "Not Initialized" in repr(tabular_model)
+    assert "Model Summary" not in tabular_model._repr_html_()
+    assert "Model Config" in tabular_model._repr_html_()
+    assert "config" in tabular_model.__repr__()
+    assert "config" not in str(tabular_model)
+    tabular_model.fit(
+        train=train,
+        metrics=custom_metrics,
+        metrics_prob_inputs=None if custom_metrics is None else [False],
+        loss=custom_loss,
+        optimizer=custom_optimizer,
+        optimizer_params={},
+    )
+    assert model_config_class._model_name in str(tabular_model)
+    assert model_config_class._model_name in repr(tabular_model)
+    assert "Model Summary" in tabular_model._repr_html_()
+    assert "Model Config" in tabular_model._repr_html_()
+    assert "config" in tabular_model.__repr__()
+    assert model_config_class._model_name in tabular_model._repr_html_()
