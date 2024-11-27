@@ -1001,13 +1001,15 @@ class TabularModel:
                     logger.info("Renaming the experiment run for finetuning as" f" {config['run_name'] + '_finetuned'}")
                 config["run_name"] = config["run_name"] + "_finetuned"
 
+        config_override = {"target": target} if target is not None else {}
+        config_override["task"] = task
         datamodule = self.datamodule.copy(
             train=train,
             validation=validation,
             target_transform=target_transform,
             train_sampler=train_sampler,
             seed=seed,
-            config_override={"target": target} if target is not None else {},
+            config_override=config_override,
         )
         model_callable = _GenericModel
         inferred_config = OmegaConf.structured(datamodule._inferred_config)

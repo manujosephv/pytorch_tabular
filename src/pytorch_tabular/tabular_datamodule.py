@@ -526,7 +526,7 @@ class TabularDatamodule(pl.LightningDataModule):
         else:
             self.validation = self.validation.copy()
         # Preprocessing Train, Validation
-        self.train, _ = self.preprocess_data(self.train, stage="fit" if not is_ssl else "inference")
+        self.train, _ = self.preprocess_data(self.train, stage="inference" if is_ssl else "fit")
         self.validation, _ = self.preprocess_data(self.validation, stage="inference")
         self._fitted = True
         self._cache_dataset()
