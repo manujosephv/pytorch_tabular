@@ -3,7 +3,7 @@ bump2version ==1.0.1
 # coverage >=4.5.4
 mkdocs-material ==9.5.*
 ipython[notebook] >8.0, <9.0
-mkdocstrings[python] ==0.26.*
+mkdocstrings[python] ==0.27.*
 mknotebooks ==0.8.*
 pytest >=5.3.2
 pytest-runner >=5.1
