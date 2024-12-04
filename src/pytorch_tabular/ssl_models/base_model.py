@@ -136,11 +136,11 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def calculate_loss(self, output, tag):
+    def calculate_loss(self, output, tag, sync_dist):
         pass
 
     @abstractmethod
-    def calculate_metrics(self, output, tag):
+    def calculate_metrics(self, output, tag, sync_dist):
         pass
 
     @abstractmethod
@@ -167,15 +167,15 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     def validation_step(self, batch, batch_idx):
         with torch.no_grad():
             output = self.forward(batch)
-            self.calculate_loss(output, tag="valid")
-            self.calculate_metrics(output, tag="valid")
+            self.calculate_loss(output, tag="valid", sync_dist=True)
+            self.calculate_metrics(output, tag="valid", sync_dist=True)
         return output
 
     def test_step(self, batch, batch_idx):
         with torch.no_grad():
             output = self.forward(batch)
-            self.calculate_loss(output, tag="test")
-            self.calculate_metrics(output, tag="test")
+            self.calculate_loss(output, tag="test", sync_dist=True)
+            self.calculate_metrics(output, tag="test", sync_dist=True)
         return output
 
     def on_validation_epoch_end(self) -> None:

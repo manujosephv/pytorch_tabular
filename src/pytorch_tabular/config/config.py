@@ -96,6 +96,8 @@ class DataConfig:
         handle_missing_values (bool): Whether to handle missing values in categorical columns as
                 unknown
 
+        pickle_protocol (int): pickle protocol version passed to `torch.save` for dataset caching to disk
+
         dataloader_kwargs (Dict[str, Any]): Additional kwargs to be passed to PyTorch DataLoader. See
                 https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
 
@@ -177,6 +179,11 @@ class DataConfig:
     handle_missing_values: bool = field(
         default=True,
         metadata={"help": "Whether or not to handle missing values in categorical columns as unknown"},
+    )
+
+    pickle_protocol: int = field(
+        default=2,
+        metadata={"help": "pickle protocol version passed to `torch.save` for dataset caching to disk"},
     )
 
     dataloader_kwargs: Dict[str, Any] = field(
@@ -351,8 +358,8 @@ class TrainerConfig:
 
         progress_bar (str): Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`.
 
-        precision (int): Precision of the model. Can be one of: `32`, `16`, `64`. Defaults to `32`..
-                Choices are: [`32`,`16`,`64`].
+        precision (str): Precision of the model. Defaults to `32`. See
+                https://lightning.ai/docs/pytorch/stable/common/trainer.html#precision
 
         seed (int): Seed for random number generators. Defaults to 42
 
@@ -536,11 +543,10 @@ class TrainerConfig:
         default="rich",
         metadata={"help": "Progress bar type. Can be one of: `none`, `simple`, `rich`. Defaults to `rich`."},
     )
-    precision: int = field(
-        default=32,
+    precision: str = field(
+        default="32",
         metadata={
-            "help": "Precision of the model. Can be one of: `32`, `16`, `64`. Defaults to `32`.",
-            "choices": [32, 16, 64],
+            "help": "Precision of the model. Defaults to `32`.",
         },
     )
     seed: int = field(

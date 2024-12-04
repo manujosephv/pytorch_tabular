@@ -244,13 +244,14 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             self.metrics = self.custom_metrics
 
-    def calculate_loss(self, output: Dict, y: torch.Tensor, tag: str) -> torch.Tensor:
+    def calculate_loss(self, output: Dict, y: torch.Tensor, tag: str, sync_dist: bool = False) -> torch.Tensor:
         """Calculates the loss for the model.
 
         Args:
             output (Dict): The output dictionary from the model
             y (torch.Tensor): The target tensor
             tag (str): The tag to use for logging
+            sync_dist (bool): enable distributed sync of logs
 
         Returns:
             torch.Tensor: The loss value
@@ -270,6 +271,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                     on_step=False,
                     logger=True,
                     prog_bar=False,
+                    sync_dist=sync_dist,
                 )
         if self.hparams.task == "regression":
             computed_loss = reg_loss
@@ -284,6 +286,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                         on_step=False,
                         logger=True,
                         prog_bar=False,
+                        sync_dist=sync_dist,
                     )
         else:
             # TODO loss fails with batch size of 1?
@@ -301,6 +304,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                         on_step=False,
                         logger=True,
                         prog_bar=False,
+                        sync_dist=sync_dist,
                     )
                 start_index = end_index
         self.log(
@@ -311,10 +315,13 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             # on_step=False,
             logger=True,
             prog_bar=True,
+            sync_dist=sync_dist,
         )
         return computed_loss
 
-    def calculate_metrics(self, y: torch.Tensor, y_hat: torch.Tensor, tag: str) -> List[torch.Tensor]:
+    def calculate_metrics(
+        self, y: torch.Tensor, y_hat: torch.Tensor, tag: str, sync_dist: bool = False
+    ) -> List[torch.Tensor]:
         """Calculates the metrics for the model.
 
         Args:
@@ -323,6 +330,8 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             y_hat (torch.Tensor): The predicted tensor
 
             tag (str): The tag to use for logging
+
+            sync_dist (bool): enable distributed sync of logs
 
         Returns:
             List[torch.Tensor]: The list of metric values
@@ -356,6 +365,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                             on_step=False,
                             logger=True,
                             prog_bar=False,
+                            sync_dist=sync_dist,
                         )
                     _metrics.append(_metric)
                 avg_metric = torch.stack(_metrics, dim=0).sum()
@@ -379,6 +389,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                             on_step=False,
                             logger=True,
                             prog_bar=False,
+                            sync_dist=sync_dist,
                         )
                     _metrics.append(_metric)
                     start_index = end_index
@@ -391,6 +402,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 on_step=False,
                 logger=True,
                 prog_bar=True,
+                sync_dist=sync_dist,
             )
         return metrics
 
@@ -523,19 +535,19 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             # fetched from the batch
             y = batch["target"] if y is None else y
             y_hat = output["logits"]
-            self.calculate_loss(output, y, tag="valid")
-            self.calculate_metrics(y, y_hat, tag="valid")
+            self.calculate_loss(output, y, tag="valid", sync_dist=True)
+            self.calculate_metrics(y, y_hat, tag="valid", sync_dist=True)
         return y_hat, y
 
     def test_step(self, batch, batch_idx):
         with torch.no_grad():
             output, y = self.forward_pass(batch)
-            # y is not None for SSL task.Rest of the tasks target is
+            # y is not None for SSL task. Rest of the tasks target is
             # fetched from the batch
             y = batch["target"] if y is None else y
             y_hat = output["logits"]
-            self.calculate_loss(output, y, tag="test")
-            self.calculate_metrics(y, y_hat, tag="test")
+            self.calculate_loss(output, y, tag="test", sync_dist=True)
+            self.calculate_metrics(y, y_hat, tag="test", sync_dist=True)
         return y_hat, y
 
     def configure_optimizers(self):

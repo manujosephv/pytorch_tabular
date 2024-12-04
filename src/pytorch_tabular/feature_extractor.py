@@ -79,15 +79,21 @@ class DeepFeatureExtractor(BaseEstimator, TransformerMixin):
                 if k in ret_value.keys():
                     logits_predictions[k].append(ret_value[k].detach().cpu())
 
+        logits_dfs = []
         for k, v in logits_predictions.items():
             v = torch.cat(v, dim=0).numpy()
             if v.ndim == 1:
                 v = v.reshape(-1, 1)
-            for i in range(v.shape[-1]):
-                if v.shape[-1] > 1:
-                    X_encoded[f"{k}_{i}"] = v[:, i]
-                else:
-                    X_encoded[f"{k}"] = v[:, i]
+            if v.shape[-1] > 1:
+                temp_df = pd.DataFrame({f"{k}_{i}": v[:, i] for i in range(v.shape[-1])})
+            else:
+                temp_df = pd.DataFrame({f"{k}": v[:, 0]})
+
+            # Append the temp DataFrame to the list
+            logits_dfs.append(temp_df)
+
+        preds = pd.concat(logits_dfs, axis=1)
+        X_encoded = pd.concat([X_encoded, preds], axis=1)
 
         if self.drop_original:
             X_encoded.drop(columns=orig_features, inplace=True)
