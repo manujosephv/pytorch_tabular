@@ -19,9 +19,9 @@ from .gandalf import GANDALFBackbone, GANDALFConfig, GANDALFModel
 from .gate import GatedAdditiveTreeEnsembleConfig, GatedAdditiveTreeEnsembleModel
 from .mixture_density import MDNConfig, MDNModel
 from .node import NodeConfig, NODEModel
+from .stacking import StackingModel, StackingModelConfig
 from .tab_transformer import TabTransformerConfig, TabTransformerModel
 from .tabnet import TabNetModel, TabNetModelConfig
-from .stacking import StackingModel, StackingModelConfig
 
 __all__ = [
     "CategoryEmbeddingModel",
@@ -60,4 +60,3 @@ __all__ = [
     "danet",
     "stacking",
 ]
-

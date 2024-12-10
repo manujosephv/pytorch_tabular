@@ -1,23 +1,24 @@
-import pytest
 import numpy as np
-from sklearn.preprocessing import PowerTransformer
+import pytest
 import torch
+from sklearn.preprocessing import PowerTransformer
 
 from pytorch_tabular import TabularModel
-from pytorch_tabular.models.stacking import StackingModelConfig
-from pytorch_tabular.models.category_embedding import CategoryEmbeddingModelConfig
-from pytorch_tabular.models.tabnet import TabNetModelConfig
-from pytorch_tabular.models.ft_transformer import FTTransformerConfig
-from pytorch_tabular.models.gate import GatedAdditiveTreeEnsembleConfig
-from pytorch_tabular.models.danet import DANetConfig
-from pytorch_tabular.models.node import NodeConfig
-from pytorch_tabular.models.gandalf import GANDALFConfig
-from pytorch_tabular.models.autoint import AutoIntConfig
-from pytorch_tabular.categorical_encoders import CategoricalEmbeddingTransformer
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
+from pytorch_tabular.models.autoint import AutoIntConfig
+from pytorch_tabular.models.category_embedding import CategoryEmbeddingModelConfig
+from pytorch_tabular.models.danet import DANetConfig
+from pytorch_tabular.models.ft_transformer import FTTransformerConfig
+from pytorch_tabular.models.gandalf import GANDALFConfig
+from pytorch_tabular.models.gate import GatedAdditiveTreeEnsembleConfig
+from pytorch_tabular.models.node import NodeConfig
+from pytorch_tabular.models.stacking import StackingModelConfig
+from pytorch_tabular.models.tabnet import TabNetModelConfig
+
 
 def fake_metric(y_hat, y):
     return (y_hat - y).mean()
+
 
 def get_model_configs(task):
     all_model_configs = [
@@ -223,5 +224,3 @@ def test_classification(
     assert "test_accuracy" in result[0].keys()
     pred_df = tabular_model.predict(test)
     assert pred_df.shape[0] == test.shape[0]
-
-

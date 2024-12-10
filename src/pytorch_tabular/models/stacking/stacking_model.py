@@ -1,36 +1,28 @@
-import torch
-import torch.nn as nn
-from dataclasses import fields
-from omegaconf import DictConfig
-from pytorch_tabular.models import BaseModel
-from pytorch_tabular.models.common.heads import blocks
 import inspect
 
-from pytorch_tabular.config import ModelConfig
-from pytorch_tabular.models.category_embedding import CategoryEmbeddingBackbone, CategoryEmbeddingModelConfig, CategoryEmbeddingModel
-from pytorch_tabular.models.ft_transformer import FTTransformerBackbone, FTTransformerConfig
-from pytorch_tabular.models.node import NODEBackbone, NodeConfig
-from pytorch_tabular.models.tab_transformer import TabTransformerBackbone
+import torch
+import torch.nn as nn
+from omegaconf import DictConfig
+
+from pytorch_tabular.models import BaseModel
+from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.gate import GatedAdditiveTreesBackbone
-from pytorch_tabular.models.tabnet import TabNetBackbone
-from pytorch_tabular.models.danet import DANetBackbone
-from pytorch_tabular.models.gandalf import GANDALFBackbone
-from pytorch_tabular.models.autoint import AutoIntBackbone
+from pytorch_tabular.models.node import NODEBackbone
 
 
 def instatiate_backbone(hparams, backbone_name):
     backbone_class = eval(backbone_name)
     class_args = list(inspect.signature(backbone_class).parameters.keys())
     if "config" in class_args:
-        return backbone_class(
-            config=hparams
-        )
+        return backbone_class(config=hparams)
     else:
-        return backbone_class(**{
-            arg: getattr(hparams, arg)
-            if arg != "block_activation" else getattr(nn, getattr(hparams, arg))()
-            for arg in class_args
-        })
+        return backbone_class(
+            **{
+                arg: getattr(hparams, arg) if arg != "block_activation" else getattr(nn, getattr(hparams, arg))()
+                for arg in class_args
+            }
+        )
+
 
 class StackingBackbone(nn.Module):
     def __init__(self, config: DictConfig):
@@ -42,48 +34,29 @@ class StackingBackbone(nn.Module):
         self._backbones = nn.ModuleList()
         self._heads = nn.ModuleList()
         self._backbone_output_dims = []
-        assert (
-            len(self.hparams.model_configs) > 0
-        ), "Stacking requires more than 0 model"
+        assert len(self.hparams.model_configs) > 0, "Stacking requires more than 0 model"
         for model_i in range(len(self.hparams.model_configs)):
             # move necessary params to each model config
-            self.hparams.model_configs[
-                model_i
-            ].embedded_cat_dim = self.hparams.embedded_cat_dim
-            self.hparams.model_configs[
-                model_i
-            ].continuous_dim = self.hparams.continuous_dim
-            self.hparams.model_configs[
-                model_i
-            ].n_continuous_features = self.hparams.continuous_dim
+            self.hparams.model_configs[model_i].embedded_cat_dim = self.hparams.embedded_cat_dim
+            self.hparams.model_configs[model_i].continuous_dim = self.hparams.continuous_dim
+            self.hparams.model_configs[model_i].n_continuous_features = self.hparams.continuous_dim
 
-            self.hparams.model_configs[
-                model_i
-            ].embedding_dims = self.hparams.embedding_dims
-            self.hparams.model_configs[
-                model_i
-            ].categorical_cardinality = self.hparams.categorical_cardinality
-            self.hparams.model_configs[
-                model_i
-            ].categorical_dim = self.hparams.categorical_dim
-            self.hparams.model_configs[
-                model_i
-            ].cat_embedding_dims = self.hparams.embedding_dims
-            
+            self.hparams.model_configs[model_i].embedding_dims = self.hparams.embedding_dims
+            self.hparams.model_configs[model_i].categorical_cardinality = self.hparams.categorical_cardinality
+            self.hparams.model_configs[model_i].categorical_dim = self.hparams.categorical_dim
+            self.hparams.model_configs[model_i].cat_embedding_dims = self.hparams.embedding_dims
+
             # if output_dim is not set, set it to 128
             if getattr(self.hparams.model_configs[model_i], "output_dim", None) is None:
                 self.hparams.model_configs[model_i].output_dim = 128
 
             # if inferred_config is not set, set it to None.
             if getattr(self.hparams, "inferred_config", None) is not None:
-                self.hparams.model_configs[
-                    model_i
-                ].inferred_config = self.hparams.inferred_config
+                self.hparams.model_configs[model_i].inferred_config = self.hparams.inferred_config
 
             # instantiate backbone
             _backbone = instatiate_backbone(
-                self.hparams.model_configs[model_i],
-                self.hparams.model_configs[model_i]._backbone_name
+                self.hparams.model_configs[model_i], self.hparams.model_configs[model_i]._backbone_name
             )
             # set continuous_dim
             _backbone.continuous_dim = self.hparams.continuous_dim
