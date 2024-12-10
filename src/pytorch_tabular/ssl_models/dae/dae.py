@@ -200,7 +200,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             else:
                 return z.features
 
-    def calculate_loss(self, output, tag):
+    def calculate_loss(self, output, tag, sync_dist=False):
         total_loss = 0
         for type_, out in output.items():
             if type_ == "categorical":
@@ -220,6 +220,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
                 on_step=False,
                 logger=True,
                 prog_bar=False,
+                sync_dist=sync_dist,
             )
             total_loss += loss
         self.log(
@@ -230,10 +231,11 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
             # on_step=False,
             logger=True,
             prog_bar=True,
+            sync_dist=sync_dist,
         )
         return total_loss
 
-    def calculate_metrics(self, output, tag):
+    def calculate_metrics(self, output, tag, sync_dist=False):
         pass
 
     def featurize(self, x: Dict):
