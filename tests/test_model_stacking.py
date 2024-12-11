@@ -43,9 +43,6 @@ def get_model_configs(task):
         lambda task: GANDALFConfig(
             task=task,
         ),
-        lambda task: GatedAdditiveTreeEnsembleConfig(
-            task=task,
-        ),
         lambda task: NodeConfig(
             task=task,
         ),
