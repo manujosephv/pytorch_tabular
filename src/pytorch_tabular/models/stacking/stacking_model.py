@@ -24,6 +24,7 @@ def instantiate_backbone(hparams, backbone_name):
             }
         )
 
+
 class StackingEmbeddingLayer(nn.Module):
     def __init__(self, embedding_layers: nn.ModuleList):
         super().__init__()
@@ -35,6 +36,7 @@ class StackingEmbeddingLayer(nn.Module):
             em_output = embedding_layer(x)
             outputs.append(em_output)
         return outputs
+
 
 class StackingBackbone(nn.Module):
     def __init__(self, config: DictConfig):
