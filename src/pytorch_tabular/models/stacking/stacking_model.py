@@ -11,7 +11,7 @@ from pytorch_tabular.models.gate import GatedAdditiveTreesBackbone
 from pytorch_tabular.models.node import NODEBackbone
 
 
-def instatiate_backbone(hparams, backbone_name):
+def instantiate_backbone(hparams, backbone_name):
     backbone_class = getattr(getattr(models, hparams._module_src.split(".")[-1]), backbone_name)
     class_args = list(inspect.signature(backbone_class).parameters.keys())
     if "config" in class_args:
@@ -67,7 +67,7 @@ class StackingBackbone(nn.Module):
                 self.hparams.model_configs[model_i].inferred_config = self.hparams.inferred_config
 
             # instantiate backbone
-            _backbone = instatiate_backbone(
+            _backbone = instantiate_backbone(
                 self.hparams.model_configs[model_i], self.hparams.model_configs[model_i]._backbone_name
             )
             # set continuous_dim
