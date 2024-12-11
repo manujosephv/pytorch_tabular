@@ -23,6 +23,17 @@ def instatiate_backbone(hparams, backbone_name):
             }
         )
 
+class StackingEmbeddingLayer(nn.Module):
+    def __init__(self, embedding_layers: nn.ModuleList):
+        super().__init__()
+        self.embedding_layers = embedding_layers
+
+    def forward(self, x: dict[str, torch.Tensor]):
+        outputs = []
+        for embedding_layer in self.embedding_layers:
+            em_output = embedding_layer(x)
+            outputs.append(em_output)
+        return outputs
 
 class StackingBackbone(nn.Module):
     def __init__(self, config: DictConfig):
@@ -80,7 +91,7 @@ class StackingBackbone(nn.Module):
                 embedding_layers.append(nn.Identity())
             else:
                 embedding_layers.append(backbone._build_embedding_layer())
-        return embedding_layers
+        return StackingEmbeddingLayer(embedding_layers)
 
     def forward(self, x_list: list[torch.Tensor]):
         outputs = []
@@ -124,12 +135,3 @@ class StackingModel(BaseModel):
     @property
     def head(self):
         return self._head
-
-    def forward(self, x: dict[str, torch.Tensor]):
-        outputs = []
-        for embedding_layer in self._embedding_layer:
-            em_output = embedding_layer(x)
-            outputs.append(em_output)
-        outputs = self._backbone(outputs)
-        x = self._head(outputs)
-        return {"logits": x}
