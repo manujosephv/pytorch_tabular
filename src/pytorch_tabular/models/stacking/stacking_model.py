@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
+import pytorch_tabular.models as models
 from pytorch_tabular.models import BaseModel
 from pytorch_tabular.models.common.heads import blocks
 from pytorch_tabular.models.gate import GatedAdditiveTreesBackbone
@@ -11,7 +12,7 @@ from pytorch_tabular.models.node import NODEBackbone
 
 
 def instatiate_backbone(hparams, backbone_name):
-    backbone_class = eval(backbone_name)
+    backbone_class = getattr(getattr(models, hparams._module_src.split(".")[-1]), backbone_name)
     class_args = list(inspect.signature(backbone_class).parameters.keys())
     if "config" in class_args:
         return backbone_class(config=hparams)
