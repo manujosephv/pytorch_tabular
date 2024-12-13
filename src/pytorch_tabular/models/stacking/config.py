@@ -14,7 +14,7 @@ class StackingModelConfig(ModelConfig):
 
     """
 
-    model_configs: list[ModelConfig] = field(default_factory=list, metadata={"help": "List of model configs to stack"})
+    model_configs: list = field(default_factory=list, metadata={"help": "List of model configs to stack"})
     _module_src: str = field(default="models.stacking")
     _model_name: str = field(default="StackingModel")
     _backbone_name: str = field(default="StackingBackbone")
