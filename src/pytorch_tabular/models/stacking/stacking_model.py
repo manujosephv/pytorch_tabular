@@ -37,6 +37,7 @@ class StackingEmbeddingLayer(nn.Module):
             outputs.append(em_output)
         return outputs
 
+
 class StackingBackbone(nn.Module):
     def __init__(self, config: DictConfig):
         super().__init__()
