@@ -30,13 +30,12 @@ class StackingEmbeddingLayer(nn.Module):
         super().__init__()
         self.embedding_layers = embedding_layers
 
-    def forward(self, x: dict[str, torch.Tensor]):
+    def forward(self, x):
         outputs = []
         for embedding_layer in self.embedding_layers:
             em_output = embedding_layer(x)
             outputs.append(em_output)
         return outputs
-
 
 class StackingBackbone(nn.Module):
     def __init__(self, config: DictConfig):
