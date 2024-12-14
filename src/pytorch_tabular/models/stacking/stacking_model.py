@@ -96,7 +96,7 @@ class StackingBackbone(nn.Module):
                 embedding_layers.append(backbone._build_embedding_layer())
         return StackingEmbeddingLayer(embedding_layers)
 
-    def forward(self, x_list: list[torch.Tensor]):
+    def forward(self, x_list):
         outputs = []
         for i, backbone in enumerate(self._backbones):
             bb_output = backbone(x_list[i])
