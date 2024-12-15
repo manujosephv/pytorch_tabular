@@ -255,7 +255,10 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 
 ## Model Stacking
 
-Model stacking is an ensemble learning technique that combines multiple base models to create a more powerful predictive model. Each base model processes the input features independently, and their outputs are concatenated before making the final prediction. This allows the model to leverage different learning patterns captured by each backbone architecture. You can use it by choosing `StackingModelConfig`.
+Model stacking is an ensemble learning technique that combines multiple base models to create a more powerful predictive model. Each base model processes the input features independently, and their outputs are concatenated before making the final prediction. This allows the model to leverage different learning patterns captured by each backbone architecture. You can use it by choosing `StackingModelConfig`. 
+
+The following diagram shows the concept of model stacking in PyTorch Tabular.
+![Model Stacking](imgs/model_stacking_concept.png)
 
 The following model architectures are supported for stacking:
 - Category Embedding Model
