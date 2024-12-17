@@ -30,6 +30,9 @@
 ::: pytorch_tabular.models.TabTransformerConfig
     options:
             heading_level: 3
+::: pytorch_tabular.models.StackingModelConfig
+    options:
+            heading_level: 3
 ::: pytorch_tabular.config.ModelConfig
     options:
             heading_level: 3
@@ -66,7 +69,9 @@
 ::: pytorch_tabular.models.TabTransformerModel
     options:
             heading_level: 3
-
+::: pytorch_tabular.models.StackingModel
+    options:
+            heading_level: 3
 ## Base Model Class
 ::: pytorch_tabular.models.BaseModel
     options:

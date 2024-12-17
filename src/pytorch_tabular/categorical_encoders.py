@@ -68,7 +68,7 @@ class BaseEncoder:
             X_encoded[col] = X_encoded[col].fillna(NAN_CATEGORY).map(mapping["value"])
 
             if self.handle_unseen == "impute":
-                X_encoded[col].fillna(self._imputed, inplace=True)
+                X_encoded[col] = X_encoded[col].fillna(self._imputed)
             elif self.handle_unseen == "error":
                 if np.unique(X_encoded[col]).shape[0] > mapping.shape[0]:
                     raise ValueError(f"Unseen categories found in `{col}` column.")
