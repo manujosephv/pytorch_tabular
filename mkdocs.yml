@@ -24,6 +24,7 @@ nav:
                 - SHAP, Deep LIFT and so on through Captum Integration: "tutorials/14-Explainability.ipynb"
           - Custom PyTorch Models:
                 - Implementing New Supervised Architectures: "tutorials/04-Implementing New Architectures.ipynb"
+          - Model Stacking: "tutorials/16-Model Stacking.ipynb"
           - Other Features:
                 - Using Neural Categorical Embeddings in Scikit-Learn Workflows: "tutorials/03-Neural Embedding in Scikit-Learn Workflows.ipynb"
                 - Self-Supervised Learning using Denoising Autoencoders: "tutorials/08-Self-Supervised Learning-DAE.ipynb"
