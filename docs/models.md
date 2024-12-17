@@ -253,6 +253,30 @@ All the parameters have beet set to recommended values from the paper. Let's loo
 **For a complete list of parameters refer to the API Docs**
 [pytorch_tabular.models.DANetConfig][]
 
+## Model Stacking
+
+Model stacking is an ensemble learning technique that combines multiple base models to create a more powerful predictive model. Each base model processes the input features independently, and their outputs are concatenated before making the final prediction. This allows the model to leverage different learning patterns captured by each backbone architecture. You can use it by choosing `StackingModelConfig`. 
+
+The following diagram shows the concept of model stacking in PyTorch Tabular.
+![Model Stacking](imgs/model_stacking_concept.png)
+
+The following model architectures are supported for stacking:
+- Category Embedding Model
+- TabNet Model
+- FTTransformer Model
+- Gated Additive Tree Ensemble Model
+- DANet Model
+- AutoInt Model
+- GANDALF Model
+- Node Model
+
+All the parameters have been set to provide flexibility while maintaining ease of use. Let's look at them:
+
+- `model_configs`: List[ModelConfig]: List of configurations for each base model. Each config should be a valid PyTorch Tabular model config (e.g., NodeConfig, GANDALFConfig)
+
+**For a complete list of parameters refer to the API Docs**
+[pytorch_tabular.models.StackingModelConfig][]
+
 ## Implementing New Architectures
 
 PyTorch Tabular is very easy to extend and infinitely customizable. All the models that have been implemented in PyTorch Tabular inherits an Abstract Class `BaseModel` which is in fact a PyTorchLightning Model.

@@ -129,6 +129,7 @@ class TabNetModelConfig(ModelConfig):
     _module_src: str = field(default="models.tabnet")
     _model_name: str = field(default="TabNetModel")
     _config_name: str = field(default="TabNetModelConfig")
+    _backbone_name: str = field(default="TabNetBackbone")
 
 
 # if __name__ == "__main__":
