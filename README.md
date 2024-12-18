@@ -197,6 +197,13 @@ loaded_model = TabularModel.load_model("examples/basic")
 		</tr>
 		<tr>
             <td align="center">
+                <a href="https://github.com/snehilchatterjee">
+                    <img src="https://avatars.githubusercontent.com/u/127598707?v=4" width="100;" alt="snehilchatterjee"/>
+                    <br />
+                    <sub><b>Snehil Chatterjee</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/jxtrbtk">
                     <img src="https://avatars.githubusercontent.com/u/40494970?v=4" width="100;" alt="jxtrbtk"/>
                     <br />
@@ -231,6 +238,8 @@ loaded_model = TabularModel.load_model("examples/basic")
                     <sub><b>Earlee</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/JulianRein">
                     <img src="https://avatars.githubusercontent.com/u/35046938?v=4" width="100;" alt="JulianRein"/>
@@ -238,8 +247,6 @@ loaded_model = TabularModel.load_model("examples/basic")
                     <sub><b>Null</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/krshrimali">
                     <img src="https://avatars.githubusercontent.com/u/19997320?v=4" width="100;" alt="krshrimali"/>
@@ -252,13 +259,6 @@ loaded_model = TabularModel.load_model("examples/basic")
                     <img src="https://avatars.githubusercontent.com/u/46601193?v=4" width="100;" alt="Actis92"/>
                     <br />
                     <sub><b>Luca Actis Grosso</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/snehilchatterjee">
-                    <img src="https://avatars.githubusercontent.com/u/127598707?v=4" width="100;" alt="snehilchatterjee"/>
-                    <br />
-                    <sub><b>Snehil Chatterjee</b></sub>
                 </a>
             </td>
             <td align="center">
