@@ -1,6 +1,13 @@
 name: Testing
 
-on: [push, pull_request]
+on:
+    push:
+        branches: [main]
+    pull_request: {}
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref }}
+    cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
     pytest:
