@@ -26,9 +26,7 @@ from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import RichProgressBar
-from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
-    GradientAccumulationScheduler,
-)
+from pytorch_lightning.callbacks.gradient_accumulation_scheduler import GradientAccumulationScheduler
 from pytorch_lightning.tuner.tuning import Tuner
 from pytorch_lightning.utilities.model_summary import summarize
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
@@ -48,11 +46,7 @@ from pytorch_tabular.config import (
 )
 from pytorch_tabular.config.config import InferredConfig
 from pytorch_tabular.models.base_model import BaseModel, _CaptumModel, _GenericModel
-from pytorch_tabular.models.common.layers.embeddings import (
-    Embedding1dLayer,
-    Embedding2dLayer,
-    PreEncoded1dLayer,
-)
+from pytorch_tabular.models.common.layers.embeddings import Embedding1dLayer, Embedding2dLayer, PreEncoded1dLayer
 from pytorch_tabular.tabular_datamodule import TabularDatamodule
 from pytorch_tabular.utils import (
     OOMException,
@@ -140,7 +134,7 @@ class TabularModel:
             optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
             if model_config.task != "ssl":
                 assert data_config.target is not None, (
-                    "`target` in data_config should not be None for" f" {model_config.task} task"
+                    f"`target` in data_config should not be None for {model_config.task} task"
                 )
             if experiment_config is None:
                 if self.verbose:
@@ -284,9 +278,7 @@ class TabularModel:
                 offline=False,
             )
         else:
-            raise NotImplementedError(
-                f"{self.config.log_target} is not implemented. Try one of [wandb," " tensorboard]"
-            )
+            raise NotImplementedError(f"{self.config.log_target} is not implemented. Try one of [wandb, tensorboard]")
 
     def _prepare_callbacks(self, callbacks=None) -> List:
         """Prepares the necesary callbacks to the Trainer based on the configuration.
@@ -374,11 +366,9 @@ class TabularModel:
             elif isinstance(target_transform, TransformerMixin):
                 pass
             else:
-                raise ValueError(
-                    "`target_transform` should wither be an sklearn Transformer or a" " tuple of callables."
-                )
+                raise ValueError("`target_transform` should wither be an sklearn Transformer or a tuple of callables.")
         if self.config.task == "classification" and target_transform is not None:
-            logger.warning("For classification task, target transform is not used. Ignoring the" " parameter")
+            logger.warning("For classification task, target transform is not used. Ignoring the parameter")
             target_transform = None
         return target_transform
 
@@ -674,6 +664,8 @@ class TabularModel:
             self.model.reset_weights()
             # Parameters in models needs to be initialized again after LR find
             self.model.data_aware_initialization(self.datamodule)
+            # Update the Trainer to use the suggested LR
+            self._prepare_for_training(self.model, self.datamodule, callbacks, max_epochs, min_epochs)
         self.model.train()
         if self.verbose:
             logger.info("Training Started")
@@ -772,12 +764,12 @@ class TabularModel:
 
         """
         assert self.config.task != "ssl", (
-            "`fit` is not valid for SSL task. Please use `pretrain` for" " semi-supervised learning"
+            "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
         )
         if metrics is not None:
-            assert len(metrics) == len(
-                metrics_prob_inputs or []
-            ), "The length of `metrics` and `metrics_prob_inputs` should be equal"
+            assert len(metrics) == len(metrics_prob_inputs or []), (
+                "The length of `metrics` and `metrics_prob_inputs` should be equal"
+            )
         seed = seed or self.config.seed
         if seed:
             seed_everything(seed)
@@ -855,7 +847,7 @@ class TabularModel:
 
         """
         assert self.config.task == "ssl", (
-            f"`pretrain` is not valid for {self.config.task} task. Please use `fit`" " instead."
+            f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
         )
         seed = seed or self.config.seed
         if seed:
@@ -976,9 +968,9 @@ class TabularModel:
         config = self.config
         optimizer_params = optimizer_params or {}
         if target is None:
-            assert (
-                hasattr(config, "target") and config.target is not None
-            ), "`target` cannot be None if it was not set in the initial `DataConfig`"
+            assert hasattr(config, "target") and config.target is not None, (
+                "`target` cannot be None if it was not set in the initial `DataConfig`"
+            )
         else:
             assert isinstance(target, list), "`target` should be a list of strings"
             config.target = target
@@ -1001,7 +993,7 @@ class TabularModel:
             if self.track_experiment:
                 # Renaming the experiment run so that a different log is created for finetuning
                 if self.verbose:
-                    logger.info("Renaming the experiment run for finetuning as" f" {config['run_name'] + '_finetuned'}")
+                    logger.info(f"Renaming the experiment run for finetuning as {config['run_name'] + '_finetuned'}")
                 config["run_name"] = config["run_name"] + "_finetuned"
 
         config_override = {"target": target} if target is not None else {}
@@ -1106,7 +1098,7 @@ class TabularModel:
 
         """
         assert self._is_finetune_model, (
-            "finetune() can only be called on a finetune model created using" " `TabularModel.create_finetune_model()`"
+            "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
         )
         seed_everything(self.config.seed)
         if freeze_backbone:
@@ -1294,7 +1286,7 @@ class TabularModel:
                     )
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
-                            col_ = f"{target_col}_q{int(q*100)}"
+                            col_ = f"{target_col}_q{int(q * 100)}"
                             pred_df[col_] = self.datamodule.target_transforms[i].inverse_transform(
                                 quantile_predictions[:, j, i].reshape(-1, 1)
                             )
@@ -1302,7 +1294,7 @@ class TabularModel:
                     pred_df[f"{target_col}_prediction"] = point_predictions[:, i]
                     if is_probabilistic:
                         for j, q in enumerate(quantiles):
-                            pred_df[f"{target_col}_q{int(q*100)}"] = quantile_predictions[:, j, i].reshape(-1, 1)
+                            pred_df[f"{target_col}_q{int(q * 100)}"] = quantile_predictions[:, j, i].reshape(-1, 1)
 
         elif self.config.task == "classification":
             start_index = 0
@@ -1483,7 +1475,7 @@ class TabularModel:
                     "min",
                     "max",
                     "hard_voting",
-                ], "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
+                ], "aggregate should be one of 'mean', 'median', 'min', 'max', or 'hard_voting'"
             if self.config.task == "regression":
                 assert aggregate_tta != "hard_voting", "hard_voting is only available for classification"
 
@@ -1538,11 +1530,9 @@ class TabularModel:
                 ckpt = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["state_dict"])
             else:
-                logger.warning("No best model available to load. Did you run it more than 1" " epoch?...")
+                logger.warning("No best model available to load. Did you run it more than 1 epoch?...")
         else:
-            logger.warning(
-                "No best model available to load. Checkpoint Callback needs to be" " enabled for this to work"
-            )
+            logger.warning("No best model available to load. Checkpoint Callback needs to be enabled for this to work")
 
     def save_datamodule(self, dir: str, inference_only: bool = False) -> None:
         """Saves the datamodule in the specified directory.
@@ -1707,7 +1697,7 @@ class TabularModel:
             summary_str += "Config\n"
             summary_str += "-" * 100 + "\n"
             summary_str += pformat(self.config.__dict__["_content"], indent=4, width=80, compact=True)
-            summary_str += "\nFull Model Summary once model has been " "initialized or passed in as an argument"
+            summary_str += "\nFull Model Summary once model has been initialized or passed in as an argument"
             return summary_str
 
     def __str__(self) -> str:
@@ -1936,9 +1926,7 @@ class TabularModel:
                 else:
                     baselines = baselines.mean(dim=0, keepdim=True)
             else:
-                raise ValueError(
-                    "Invalid value for `baselines`. Please refer to the documentation" " for more details."
-                )
+                raise ValueError("Invalid value for `baselines`. Please refer to the documentation for more details.")
         return baselines
 
     def _handle_categorical_embeddings_attributions(
@@ -2061,9 +2049,7 @@ class TabularModel:
             hasattr(self.model.hparams, "embedding_dims") and self.model.hparams.embedding_dims is not None
         )
         if (not is_embedding1d) and (not is_embedding2d):
-            raise NotImplementedError(
-                "Attributions are not implemented for models with this type of" " embedding layer"
-            )
+            raise NotImplementedError("Attributions are not implemented for models with this type of embedding layer")
         test_dl = self.datamodule.prepare_inference_dataloader(data)
         self.model.eval()
         # prepare import for Captum
@@ -2095,7 +2081,7 @@ class TabularModel:
             "Something went wrong. The number of features in the attributions"
             f" ({attributions.shape[1]}) does not match the number of features in"
             " the model"
-            f" ({self.model.hparams.continuous_dim+self.model.hparams.categorical_dim})"
+            f" ({self.model.hparams.continuous_dim + self.model.hparams.categorical_dim})"
         )
         return pd.DataFrame(
             attributions.detach().cpu().numpy(),
@@ -2215,7 +2201,7 @@ class TabularModel:
         oof_preds = []
         for fold, (train_idx, val_idx) in it:
             if verbose:
-                logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
+                logger.info(f"Running Fold {fold + 1}/{cv.get_n_splits()}")
             # train_fold = train.iloc[train_idx]
             # val_fold = train.iloc[val_idx]
             if reset_datamodule:
@@ -2247,7 +2233,7 @@ class TabularModel:
                 result = self.evaluate(train.iloc[val_idx], verbose=False)
                 cv_metrics.append(result[0][metric])
             if verbose:
-                logger.info(f"Fold {fold+1}/{cv.get_n_splits()} score: {cv_metrics[-1]}")
+                logger.info(f"Fold {fold + 1}/{cv.get_n_splits()} score: {cv_metrics[-1]}")
             self.model.reset_weights()
         return cv_metrics, oof_preds
 
@@ -2376,7 +2362,7 @@ class TabularModel:
         ], "Bagging is only available for classification and regression"
         if not callable(aggregate):
             assert aggregate in ["mean", "median", "min", "max", "hard_voting"], (
-                "aggregate should be one of 'mean', 'median', 'min', 'max', or" " 'hard_voting'"
+                "aggregate should be one of 'mean', 'median', 'min', 'max', or 'hard_voting'"
             )
         if self.config.task == "regression":
             assert aggregate != "hard_voting", "hard_voting is only available for classification"
@@ -2387,7 +2373,7 @@ class TabularModel:
         model = None
         for fold, (train_idx, val_idx) in enumerate(cv.split(train, y=train[self.config.target], groups=groups)):
             if verbose:
-                logger.info(f"Running Fold {fold+1}/{cv.get_n_splits()}")
+                logger.info(f"Running Fold {fold + 1}/{cv.get_n_splits()}")
             train_fold = train.iloc[train_idx]
             val_fold = train.iloc[val_idx]
             if reset_datamodule:
@@ -2412,7 +2398,7 @@ class TabularModel:
             elif self.config.task == "regression":
                 pred_prob_l.append(fold_preds.values)
             if verbose:
-                logger.info(f"Fold {fold+1}/{cv.get_n_splits()} prediction done")
+                logger.info(f"Fold {fold + 1}/{cv.get_n_splits()} prediction done")
             self.model.reset_weights()
         pred_df = self._combine_predictions(pred_prob_l, pred_idx, aggregate, weights)
         if return_raw_predictions:
