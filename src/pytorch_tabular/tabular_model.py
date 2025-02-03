@@ -133,9 +133,9 @@ class TabularModel:
             trainer_config = self._read_parse_config(trainer_config, TrainerConfig)
             optimizer_config = self._read_parse_config(optimizer_config, OptimizerConfig)
             if model_config.task != "ssl":
-                assert data_config.target is not None, (
-                    f"`target` in data_config should not be None for {model_config.task} task"
-                )
+                assert (
+                    data_config.target is not None
+                ), f"`target` in data_config should not be None for {model_config.task} task"
             if experiment_config is None:
                 if self.verbose:
                     logger.info("Experiment Tracking is turned off")
@@ -763,13 +763,13 @@ class TabularModel:
             pl.Trainer: The PyTorch Lightning Trainer instance
 
         """
-        assert self.config.task != "ssl", (
-            "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
-        )
+        assert (
+            self.config.task != "ssl"
+        ), "`fit` is not valid for SSL task. Please use `pretrain` for semi-supervised learning"
         if metrics is not None:
-            assert len(metrics) == len(metrics_prob_inputs or []), (
-                "The length of `metrics` and `metrics_prob_inputs` should be equal"
-            )
+            assert len(metrics) == len(
+                metrics_prob_inputs or []
+            ), "The length of `metrics` and `metrics_prob_inputs` should be equal"
         seed = seed or self.config.seed
         if seed:
             seed_everything(seed)
@@ -846,9 +846,9 @@ class TabularModel:
             pl.Trainer: The PyTorch Lightning Trainer instance
 
         """
-        assert self.config.task == "ssl", (
-            f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
-        )
+        assert (
+            self.config.task == "ssl"
+        ), f"`pretrain` is not valid for {self.config.task} task. Please use `fit` instead."
         seed = seed or self.config.seed
         if seed:
             seed_everything(seed)
@@ -968,9 +968,9 @@ class TabularModel:
         config = self.config
         optimizer_params = optimizer_params or {}
         if target is None:
-            assert hasattr(config, "target") and config.target is not None, (
-                "`target` cannot be None if it was not set in the initial `DataConfig`"
-            )
+            assert (
+                hasattr(config, "target") and config.target is not None
+            ), "`target` cannot be None if it was not set in the initial `DataConfig`"
         else:
             assert isinstance(target, list), "`target` should be a list of strings"
             config.target = target
@@ -1097,9 +1097,9 @@ class TabularModel:
             pl.Trainer: The trainer object
 
         """
-        assert self._is_finetune_model, (
-            "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
-        )
+        assert (
+            self._is_finetune_model
+        ), "finetune() can only be called on a finetune model created using `TabularModel.create_finetune_model()`"
         seed_everything(self.config.seed)
         if freeze_backbone:
             for param in self.model.backbone.parameters():
@@ -2361,9 +2361,13 @@ class TabularModel:
             "regression",
         ], "Bagging is only available for classification and regression"
         if not callable(aggregate):
-            assert aggregate in ["mean", "median", "min", "max", "hard_voting"], (
-                "aggregate should be one of 'mean', 'median', 'min', 'max', or 'hard_voting'"
-            )
+            assert aggregate in [
+                "mean",
+                "median",
+                "min",
+                "max",
+                "hard_voting",
+            ], "aggregate should be one of 'mean', 'median', 'min', 'max', or 'hard_voting'"
         if self.config.task == "regression":
             assert aggregate != "hard_voting", "hard_voting is only available for classification"
         cv = self._check_cv(cv)
