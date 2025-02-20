@@ -192,9 +192,9 @@ class DataConfig:
     )
 
     def __post_init__(self):
-        assert len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_columns) > 0, (
-            "There should be at-least one feature defined in categorical, continuous, or date columns"
-        )
+        assert (
+            len(self.categorical_cols) + len(self.continuous_cols) + len(self.date_columns) > 0
+        ), "There should be at-least one feature defined in categorical, continuous, or date columns"
         _validate_choices(self)
         if os.name == "nt" and self.num_workers != 0:
             print("Windows does not support num_workers > 0. Setting num_workers to 0")
@@ -255,9 +255,9 @@ class InferredConfig:
 
     def __post_init__(self):
         if self.embedding_dims is not None:
-            assert all((isinstance(t, Iterable) and len(t) == 2) for t in self.embedding_dims), (
-                "embedding_dims must be a list of tuples (cardinality, embedding_dim)"
-            )
+            assert all(
+                (isinstance(t, Iterable) and len(t) == 2) for t in self.embedding_dims
+            ), "embedding_dims must be a list of tuples (cardinality, embedding_dim)"
             self.embedded_cat_dim = sum([t[1] for t in self.embedding_dims])
         else:
             self.embedded_cat_dim = 0
