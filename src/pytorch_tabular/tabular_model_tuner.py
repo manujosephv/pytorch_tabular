@@ -409,7 +409,7 @@ class TabularModelTuner:
                     params.update({"trial_id": i})
                     trials.append(params)
                     if verbose:
-                        logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric]}")
+                        logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric_str]}")
 
         trials_df = pd.DataFrame(trials)
         trials = trials_df.pop("trial_id")
