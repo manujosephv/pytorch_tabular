@@ -181,7 +181,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     def on_validation_epoch_end(self) -> None:
         if hasattr(self.hparams, "log_logits") and self.hparams.log_logits:
             warnings.warn(
-                "Logging Logits is disabled for SSL tasks. Set `log_logits` to False" " to turn off this warning"
+                "Logging Logits is disabled for SSL tasks. Set `log_logits` to False to turn off this warning"
             )
         super().on_validation_epoch_end()
 
@@ -219,8 +219,11 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
                 }
             return {
                 "optimizer": opt,
-                "lr_scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
-                "monitor": self.hparams.lr_scheduler_monitor_metric,
+                "lr_scheduler": {
+                    "scheduler": self._lr_scheduler(opt, **self.hparams.lr_scheduler_params),
+                    "monitor": self.hparams.lr_scheduler_monitor_metric,
+                    "interval": self.hparams.lr_scheduler_interval,
+                },
             }
         else:
             return opt
