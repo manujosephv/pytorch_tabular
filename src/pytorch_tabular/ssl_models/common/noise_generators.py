@@ -18,7 +18,7 @@ class SwapNoiseCorrupter(nn.Module):
 
     def __init__(self, probas):
         super().__init__()
-        self.probas = torch.from_numpy(np.array(probas))
+        self.probas = torch.from_numpy(np.array(probas, dtype=np.float32))
 
     def forward(self, x):
         should_swap = torch.bernoulli(self.probas.to(x.device) * torch.ones(x.shape).to(x.device))
