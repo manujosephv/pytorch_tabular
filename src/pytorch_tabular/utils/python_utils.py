@@ -74,7 +74,7 @@ def pl_load(
     """
     if not isinstance(path_or_url, (str, Path)):
         # any sort of BytesIO or similar
-        return torch.load(path_or_url, map_location=map_location)
+        return torch.load(path_or_url, map_location=map_location, weights_only=False)
     if str(path_or_url).startswith("http"):
         return torch.hub.load_state_dict_from_url(
             str(path_or_url),
@@ -82,7 +82,7 @@ def pl_load(
         )
     fs = get_filesystem(path_or_url)
     with fs.open(path_or_url, "rb") as f:
-        return torch.load(f, map_location=map_location)
+        return torch.load(f, map_location=map_location, weights_only=False)
 
 
 def check_numpy(x):

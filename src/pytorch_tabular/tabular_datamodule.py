@@ -756,7 +756,7 @@ class TabularDatamodule(pl.LightningDataModule):
                 raise AttributeError(f"{tag}_dataset not found in memory. Please provide the data for {tag} dataloader")
         elif self.cache_mode is self.CACHE_MODES.DISK:
             try:
-                dataset = torch.load(self.cache_dir / f"{tag}_dataset")
+                dataset = torch.load(self.cache_dir / f"{tag}_dataset", weights_only=False)
             except FileNotFoundError:
                 raise FileNotFoundError(
                     f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader"
