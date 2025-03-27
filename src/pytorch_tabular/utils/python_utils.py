@@ -77,7 +77,7 @@ def pl_load(
         # get the torch version
         torch_version = torch.__version__
         if torch_version < "2.6":
-            return torch.load(path_or_url, map_location=map_location) # for torch version < 2.6
+            return torch.load(path_or_url, map_location=map_location)  # for torch version < 2.6
         elif torch_version >= "2.6":
             return torch.load(path_or_url, map_location=map_location, weights_only=False)
     if str(path_or_url).startswith("http"):
@@ -88,10 +88,9 @@ def pl_load(
     fs = get_filesystem(path_or_url)
     with fs.open(path_or_url, "rb") as f:
         if torch_version < "2.6":
-            return torch.load(f, map_location=map_location) # for torch version < 2.6
+            return torch.load(f, map_location=map_location)  # for torch version < 2.6
         elif torch_version >= "2.6":
             return torch.load(f, map_location=map_location, weights_only=False)
-        
 
 
 def check_numpy(x):

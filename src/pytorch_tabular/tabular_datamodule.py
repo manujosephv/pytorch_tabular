@@ -761,9 +761,11 @@ class TabularDatamodule(pl.LightningDataModule):
                 # get the torch version
                 torch_version = torch.__version__
                 if torch_version < "2.6":
-                    dataset = torch.load(self.cache_dir / f"{tag}_dataset") # fix for torch version change of torch.load
+                    dataset = torch.load(
+                        self.cache_dir / f"{tag}_dataset"
+                    )  # fix for torch version change of torch.load
                 elif torch_version >= "2.6":
-                    dataset = torch.load(self.cache_dir / f"{tag}_dataset", weights_only=False)            
+                    dataset = torch.load(self.cache_dir / f"{tag}_dataset", weights_only=False)
             except FileNotFoundError:
                 raise FileNotFoundError(
                     f"{tag}_dataset not found in {self.cache_dir}. Please provide the" f" data for {tag} dataloader"
