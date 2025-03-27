@@ -87,6 +87,7 @@ def pl_load(
         )
     fs = get_filesystem(path_or_url)
     with fs.open(path_or_url, "rb") as f:
+        torch_version = torch.__version__
         if torch_version < "2.6":
             return torch.load(f, map_location=map_location)  # for torch version < 2.6
         elif torch_version >= "2.6":
