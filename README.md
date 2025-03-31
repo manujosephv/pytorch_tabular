@@ -298,6 +298,13 @@ loaded_model = TabularModel.load_model("examples/basic")
                     <sub><b>Liu Zhen</b></sub>
                 </a>
             </td>
+            <td align="center">
+                <a href="https://github.com/taimo3810">
+                    <img src="https://avatars.githubusercontent.com/u/132860814?v=4" width="100;" alt="taimo3810"/>
+                    <br />
+                    <sub><b>taimo</b></sub>
+                </a>
+            </td>
 		</tr>
 	<tbody>
 </table>
