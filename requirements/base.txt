@@ -14,4 +14,4 @@ matplotlib >3.1
 ipywidgets
 einops >=0.6.0, <0.8.0
 rich >=11.0.0
-fsspec >=2022.5.0, <2024.4.0
+fsspec >=2022.5.0, <2024.4.0 ; python_version == "3.8"
