@@ -67,7 +67,7 @@ class TabularDataset(Dataset):
             if isinstance(target, str):
                 self.y = self.y.reshape(-1, 1)  # .astype(np.int64)
         else:
-            self.y = np.zeros((self.n, 1))  # .astype(np.int64)
+            self.y = np.zeros((self.n, 1), dtype=np.float32)  # .astype(np.int64)
 
         if task == "classification":
             self.y = self.y.astype(np.int64)
@@ -502,7 +502,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
     def split_train_val(self, train):
         logger.debug(
-            "No validation data provided." f" Using {self.config.validation_split*100}% of train data as validation"
+            f"No validation data provided. Using {self.config.validation_split * 100}% of train data as validation"
         )
         val_idx = train.sample(
             int(self.config.validation_split * len(train)),
@@ -753,9 +753,7 @@ class TabularDatamodule(pl.LightningDataModule):
             try:
                 dataset = getattr(self, f"_{tag}_dataset")
             except AttributeError:
-                raise AttributeError(
-                    f"{tag}_dataset not found in memory. Please provide the data for" f" {tag} dataloader"
-                )
+                raise AttributeError(f"{tag}_dataset not found in memory. Please provide the data for {tag} dataloader")
         elif self.cache_mode is self.CACHE_MODES.DISK:
             try:
                 # get the torch version
@@ -768,10 +766,10 @@ class TabularDatamodule(pl.LightningDataModule):
                     dataset = torch.load(self.cache_dir / f"{tag}_dataset", weights_only=False)
             except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the" f" data for {tag} dataloader"
+                    f"{tag}_dataset not found in {self.cache_dir}. Please provide the data for {tag} dataloader"
                 )
         elif self.cache_mode is self.CACHE_MODES.INFERENCE:
-            raise RuntimeError("Cannot load dataset in inference mode. Use" " `prepare_inference_dataloader` instead")
+            raise RuntimeError("Cannot load dataset in inference mode. Use `prepare_inference_dataloader` instead")
         else:
             raise ValueError(f"{self.cache_mode} is not a valid cache mode")
         return dataset
