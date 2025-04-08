@@ -677,6 +677,9 @@ class OptimizerConfig:
         lr_scheduler_monitor_metric (Optional[str]): Used with ReduceLROnPlateau, where the plateau is
                 decided based on this metric
 
+        lr_scheduler_interval (Optional[str]): Interval at which to step the LR Scheduler, one of "epoch"
+                or "step". Defaults to `epoch`.
+
     """
 
     optimizer: str = field(
@@ -707,6 +710,11 @@ class OptimizerConfig:
     lr_scheduler_monitor_metric: Optional[str] = field(
         default="valid_loss",
         metadata={"help": "Used with ReduceLROnPlateau, where the plateau is decided based on this metric"},
+    )
+
+    lr_scheduler_interval: Optional[str] = field(
+        default="epoch",
+        metadata={"help": "Interval at which to step the LR Scheduler, one of `epoch` or `step`. Defaults to `epoch`."},
     )
 
     @staticmethod
