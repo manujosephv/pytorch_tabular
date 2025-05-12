@@ -84,12 +84,12 @@ class PreEncoded1dLayer(nn.Module):
             x.get("continuous", torch.empty(0, 0)),
             x.get("categorical", torch.empty(0, 0)),
         )
-        assert (
-            categorical_data.shape[1] == self.categorical_dim
-        ), "categorical_data must have same number of columns as categorical embedding layers"
-        assert (
-            continuous_data.shape[1] == self.continuous_dim
-        ), "continuous_data must have same number of columns as continuous dim"
+        assert categorical_data.shape[1] == self.categorical_dim, (
+            "categorical_data must have same number of columns as categorical embedding layers"
+        )
+        assert continuous_data.shape[1] == self.continuous_dim, (
+            "continuous_data must have same number of columns as continuous dim"
+        )
         embed = None
         if continuous_data.shape[1] > 0:
             if self.batch_norm_continuous_input:
@@ -141,12 +141,12 @@ class Embedding1dLayer(nn.Module):
             x.get("continuous", torch.empty(0, 0)),
             x.get("categorical", torch.empty(0, 0)),
         )
-        assert categorical_data.shape[1] == len(
-            self.cat_embedding_layers
-        ), "categorical_data must have same number of columns as categorical embedding layers"
-        assert (
-            continuous_data.shape[1] == self.continuous_dim
-        ), "continuous_data must have same number of columns as continuous dim"
+        assert categorical_data.shape[1] == len(self.cat_embedding_layers), (
+            "categorical_data must have same number of columns as categorical embedding layers"
+        )
+        assert continuous_data.shape[1] == self.continuous_dim, (
+            "continuous_data must have same number of columns as continuous dim"
+        )
         embed = None
         if continuous_data.shape[1] > 0:
             if self.batch_norm_continuous_input:
@@ -273,12 +273,12 @@ class Embedding2dLayer(nn.Module):
             x.get("continuous", torch.empty(0, 0)),
             x.get("categorical", torch.empty(0, 0)),
         )
-        assert categorical_data.shape[1] == len(
-            self.cat_embedding_layers
-        ), "categorical_data must have same number of columns as categorical embedding layers"
-        assert (
-            continuous_data.shape[1] == self.continuous_dim
-        ), "continuous_data must have same number of columns as continuous dim"
+        assert categorical_data.shape[1] == len(self.cat_embedding_layers), (
+            "categorical_data must have same number of columns as categorical embedding layers"
+        )
+        assert continuous_data.shape[1] == self.continuous_dim, (
+            "continuous_data must have same number of columns as continuous dim"
+        )
         embed = None
         if continuous_data.shape[1] > 0:
             cont_idx = torch.arange(self.continuous_dim, device=continuous_data.device).expand(
