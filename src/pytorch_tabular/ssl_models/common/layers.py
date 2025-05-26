@@ -79,9 +79,9 @@ class MixedEmbedding1dLayer(nn.Module):
         assert categorical_data.shape[1] == len(
             self._onehot_feat_idx + self._binary_feat_idx + self._embedding_feat_idx
         ), "categorical_data must have same number of columns as categorical embedding layers"
-        assert (
-            continuous_data.shape[1] == self.continuous_dim
-        ), "continuous_data must have same number of columns as continuous dim"
+        assert continuous_data.shape[1] == self.continuous_dim, (
+            "continuous_data must have same number of columns as continuous dim"
+        )
         # embed = None
         if continuous_data.shape[1] > 0:
             if self.batch_norm_continuous_input:

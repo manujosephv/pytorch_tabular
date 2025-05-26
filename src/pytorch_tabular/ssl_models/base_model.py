@@ -85,9 +85,9 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         self._setup_metrics()
 
     def _setup_encoder_decoder(self, encoder, encoder_config, decoder, decoder_config, inferred_config):
-        assert (encoder is not None) or (
-            encoder_config is not None
-        ), "Either encoder or encoder_config must be provided"
+        assert (encoder is not None) or (encoder_config is not None), (
+            "Either encoder or encoder_config must be provided"
+        )
         # assert (decoder is not None) or (decoder_config is not None),
         # "Either decoder or decoder_config must be provided"
         if encoder is not None:
