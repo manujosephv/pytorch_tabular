@@ -87,9 +87,9 @@ class MDNConfig(ModelConfig):
     _probabilistic: bool = field(default=True)
 
     def __post_init__(self):
-        assert (
-            self.backbone_config_class not in INCOMPATIBLE_BACKBONES
-        ), f"{self.backbone_config_class} is not a supported backbone for MDN head"
+        assert self.backbone_config_class not in INCOMPATIBLE_BACKBONES, (
+            f"{self.backbone_config_class} is not a supported backbone for MDN head"
+        )
         assert self.head == "MixtureDensityHead"
         return super().__post_init__()
 
