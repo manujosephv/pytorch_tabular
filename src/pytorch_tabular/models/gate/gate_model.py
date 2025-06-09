@@ -51,12 +51,12 @@ class GatedAdditiveTreesBackbone(nn.Module):
         embedding_dropout: float = 0.0,
     ):
         super().__init__()
-        assert (
-            binning_activation in self.BINARY_ACTIVATION_MAP.keys()
-        ), f"`binning_activation should be one of {self.BINARY_ACTIVATION_MAP.keys()}"
-        assert (
-            feature_mask_function in self.ACTIVATION_MAP.keys()
-        ), f"`feature_mask_function should be one of {self.ACTIVATION_MAP.keys()}"
+        assert binning_activation in self.BINARY_ACTIVATION_MAP.keys(), (
+            f"`binning_activation should be one of {self.BINARY_ACTIVATION_MAP.keys()}"
+        )
+        assert feature_mask_function in self.ACTIVATION_MAP.keys(), (
+            f"`feature_mask_function should be one of {self.ACTIVATION_MAP.keys()}"
+        )
 
         self.gflu_stages = gflu_stages
         self.num_trees = num_trees

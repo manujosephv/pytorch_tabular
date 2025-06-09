@@ -47,7 +47,7 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
             type = str(atr.type).replace("<class '", "").replace("'>", "").replace("typing.", "")
             help_str = atr.metadata.get("help", "")
             if "choices" in atr.metadata.keys():
-                help_str += ". Choices are:" f" [{','.join(['`'+str(ch)+'`' for ch in atr.metadata['choices']])}]."
+                help_str += f". Choices are: [{','.join(['`' + str(ch) + '`' for ch in atr.metadata['choices']])}]."
             # help_str += f'. Defaults to {atr.default}'
             h_str = textwrap.fill(
                 f"{key} ({type}): {help_str}",

@@ -18,7 +18,7 @@ def _initialize_layers(activation, initialization, layers):
             nonlinearity = "leaky_relu"
         else:
             if initialization == "kaiming":
-                logger.warning("Kaiming initialization is only recommended for ReLU and" " LeakyReLU.")
+                logger.warning("Kaiming initialization is only recommended for ReLU and LeakyReLU.")
                 nonlinearity = "leaky_relu"
             else:
                 nonlinearity = "relu"
@@ -108,7 +108,7 @@ def _initialize_kaiming(x, initialization, d_sqrt_inv):
     elif initialization is None:
         pass
     else:
-        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`," " `None`")
+        raise NotImplementedError("initialization should be either of `kaiming_normal`, `kaiming_uniform`, `None`")
 
 
 class OutOfMemoryHandler:

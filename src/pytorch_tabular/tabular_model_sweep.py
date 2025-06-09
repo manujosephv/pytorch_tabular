@@ -100,55 +100,55 @@ def _validate_args(
     assert isinstance(train, pd.DataFrame), f"train must be a pandas DataFrame, but got {type(train)}"
     assert isinstance(test, pd.DataFrame), f"test must be a pandas DataFrame, but got {type(test)}"
     assert model_list is not None, "models cannot be None"
-    assert isinstance(
-        model_list, (str, list)
-    ), f"models must be a string or list of strings, but got {type(model_list)}"
+    assert isinstance(model_list, (str, list)), (
+        f"models must be a string or list of strings, but got {type(model_list)}"
+    )
     if isinstance(model_list, str):
-        assert (
-            model_list in MODEL_SWEEP_PRESETS.keys()
-        ), f"models must be one of {MODEL_SWEEP_PRESETS.keys()}, but got {model_list}"
+        assert model_list in MODEL_SWEEP_PRESETS.keys(), (
+            f"models must be one of {MODEL_SWEEP_PRESETS.keys()}, but got {model_list}"
+        )
     else:  # isinstance(models, list):
-        assert all(
-            isinstance(m, (str, ModelConfig)) for m in model_list
-        ), f"models must be a list of strings or ModelConfigs, but got {model_list}"
+        assert all(isinstance(m, (str, ModelConfig)) for m in model_list), (
+            f"models must be a list of strings or ModelConfigs, but got {model_list}"
+        )
         assert all(task == m.task for m in model_list if isinstance(m, ModelConfig)), (
             f"task must be the same as the task in ModelConfig, but got {task} and"
             f" {[m.task for m in model_list if isinstance(m, ModelConfig)]}"
         )
     if metrics is not None:
         assert isinstance(metrics, list), f"metrics must be a list of strings or callables, but got {type(metrics)}"
-        assert all(
-            isinstance(m, (str, Callable)) for m in metrics
-        ), f"metrics must be a list of strings or callables, but got {metrics}"
+        assert all(isinstance(m, (str, Callable)) for m in metrics), (
+            f"metrics must be a list of strings or callables, but got {metrics}"
+        )
         assert metrics_params is not None, "metric_params cannot be None when metrics is not None"
         assert metrics_prob_input is not None, "metrics_prob_inputs cannot be None when metrics is not None"
-        assert isinstance(
-            metrics_params, list
-        ), f"metric_params must be a list of dicts, but got {type(metrics_params)}"
+        assert isinstance(metrics_params, list), (
+            f"metric_params must be a list of dicts, but got {type(metrics_params)}"
+        )
         assert isinstance(metrics_prob_input, list), (
-            "metrics_prob_inputs must be a list of bools, but got" f" {type(metrics_prob_input)}"
+            f"metrics_prob_inputs must be a list of bools, but got {type(metrics_prob_input)}"
         )
         assert len(metrics) == len(metrics_params), (
-            "metrics and metric_params must be of the same length, but got" f" {len(metrics)} and {len(metrics_params)}"
+            f"metrics and metric_params must be of the same length, but got {len(metrics)} and {len(metrics_params)}"
         )
         assert len(metrics) == len(metrics_prob_input), (
             "metrics and metrics_prob_inputs must be of the same length, but got"
             f" {len(metrics)} and {len(metrics_prob_input)}"
         )
-        assert all(
-            isinstance(m, dict) for m in metrics_params
-        ), f"metric_params must be a list of dicts, but got {metrics_params}"
+        assert all(isinstance(m, dict) for m in metrics_params), (
+            f"metric_params must be a list of dicts, but got {metrics_params}"
+        )
     if common_model_args is not None:
         # all args should be members of ModelConfig
         assert all(k in ModelConfig.__dataclass_fields__.keys() for k in common_model_args.keys()), (
-            "common_model_args must be a subset of ModelConfig, but got" f" {common_model_args.keys()}"
+            f"common_model_args must be a subset of ModelConfig, but got {common_model_args.keys()}"
         )
     if rank_metric[0] not in ["loss", "accuracy", "mean_squared_error"]:
         assert rank_metric[0] in metrics, f"rank_metric must be one of {metrics}, but got {rank_metric}"
     assert rank_metric[1] in [
         "lower_is_better",
         "higher_is_better",
-    ], "rank_metric[1] must be one of ['lower_is_better', 'higher_is_better'], but" f" got {rank_metric[1]}"
+    ], f"rank_metric[1] must be one of ['lower_is_better', 'higher_is_better'], but got {rank_metric[1]}"
 
 
 def model_sweep(
@@ -318,7 +318,7 @@ def model_sweep(
                         setattr(model_config, key, val)
                     else:
                         raise ValueError(
-                            f"ModelConfig {model_config.name} does not have an" f" attribute {key} in common_model_args"
+                            f"ModelConfig {model_config.name} does not have an attribute {key} in common_model_args"
                         )
             params = model_config.__dict__
             start_time = time.time()
@@ -380,7 +380,7 @@ def model_sweep(
 
             if verbose:
                 logger.info(f"Finished Training {name}")
-                logger.info("Results:" f" {', '.join([f'{k}: {v}' for k, v in res_dict.items()])}")
+                logger.info(f"Results: {', '.join([f'{k}: {v}' for k, v in res_dict.items()])}")
             res_dict["params"] = params
             results.append(res_dict)
 
