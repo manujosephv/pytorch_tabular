@@ -58,9 +58,9 @@ class BaseEncoder:
             raise ValueError("`fit` method must be called before `transform`.")
         assert all(c in X.columns for c in self.cols)
         if self.handle_missing == "error":
-            assert (
-                not X[self.cols].isnull().any().any()
-            ), "`handle_missing` = `error` and missing values found in columns to encode."
+            assert not X[self.cols].isnull().any().any(), (
+                "`handle_missing` = `error` and missing values found in columns to encode."
+            )
         X_encoded = X.copy(deep=True)
         category_cols = X_encoded.select_dtypes(include="category").columns
         X_encoded[category_cols] = X_encoded[category_cols].astype("object")
@@ -153,9 +153,9 @@ class OrdinalEncoder(BaseEncoder):
         """
         self._before_fit_check(X, y)
         if self.handle_missing == "error":
-            assert (
-                not X[self.cols].isnull().any().any()
-            ), "`handle_missing` = `error` and missing values found in columns to encode."
+            assert not X[self.cols].isnull().any().any(), (
+                "`handle_missing` = `error` and missing values found in columns to encode."
+            )
         for col in self.cols:
             map = Series(unique(X[col].fillna(NAN_CATEGORY)), name=col).reset_index().rename(columns={"index": "value"})
             map["value"] += 1

@@ -90,7 +90,7 @@ class TabNetModelConfig(ModelConfig):
     )
     gamma: float = field(
         default=1.3,
-        metadata={"help": ("Float above 1, scaling factor for attention updates (usually between" " 1.0 to 2.0)")},
+        metadata={"help": ("Float above 1, scaling factor for attention updates (usually between 1.0 to 2.0)")},
     )
     n_independent: int = field(
         default=2,

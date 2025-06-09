@@ -236,9 +236,9 @@ class TabularModelTuner:
         assert strategy in self.ALLOWABLE_STRATEGIES, f"tuner must be one of {self.ALLOWABLE_STRATEGIES}"
         assert mode in ["max", "min"], "mode must be one of ['max', 'min']"
         assert metric is not None, "metric must be specified"
-        assert (isinstance(search_space, dict) or (isinstance(search_space, list))) and len(
-            search_space
-        ) > 0, "search_space must be a non-empty dict"
+        assert (isinstance(search_space, dict) or (isinstance(search_space, list))) and len(search_space) > 0, (
+            "search_space must be a non-empty dict"
+        )
         if self.suppress_lightning_logger:
             suppress_lightning_logs()
         if cv is not None and validation is not None:
@@ -273,9 +273,9 @@ class TabularModelTuner:
                 }
 
                 if strategy == "grid_search":
-                    assert all(
-                        isinstance(v, list) for v in search_space_temp.values()
-                    ), "For grid search, all values in search_space must be a list of values to try"
+                    assert all(isinstance(v, list) for v in search_space_temp.values()), (
+                        "For grid search, all values in search_space must be a list of values to try"
+                    )
                     search_space_iterator = list(ParameterGrid(search_space_temp))
                     if n_trials is not None:
                         warnings.warn(
@@ -409,7 +409,7 @@ class TabularModelTuner:
                     params.update({"trial_id": i})
                     trials.append(params)
                     if verbose:
-                        logger.info(f"Trial {i+1}/{n_trials}: {params} | Score: {params[metric_str]}")
+                        logger.info(f"Trial {i + 1}/{n_trials}: {params} | Score: {params[metric_str]}")
 
         trials_df = pd.DataFrame(trials)
         trials = trials_df.pop("trial_id")
