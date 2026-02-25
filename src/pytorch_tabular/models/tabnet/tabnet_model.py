@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """TabNet Model."""
 
+import warnings
 from typing import Dict
 
 import torch
@@ -85,6 +86,18 @@ class TabNetModel(BaseModel):
             "regression",
             "classification",
         ], "TabNet is only implemented for Regression and Classification"
+        
+        # Issue warning about unmaintained dependency
+        warnings.warn(
+            "The pytorch-tabnet dependency is no longer actively maintained (last update: July 2023). "
+            "While TabNet continues to work, it may have compatibility issues with newer versions "
+            "of PyTorch or other dependencies. Consider using alternative models like FTTransformer, "
+            "GANDALF, or TabTransformer for new projects. "
+            "See: https://github.com/pytorch-tabular/pytorch_tabular/issues/611",
+            FutureWarning,
+            stacklevel=2
+        )
+        
         super().__init__(config, **kwargs)
         _check_soft_dependencies("pytorch-tabnet", obj=self)
 
