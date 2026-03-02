@@ -80,6 +80,11 @@ notebooks = [
     "matplotlib>3.1",
 ]
 
+# Multi-backend support for larger-than-memory datasets
+polars = [
+    "polars>=0.20.0,<2.0.0",
+]
+
 # Core Dep set in Nov 2024
 dependencies_2024 = [
     "torch==2.5.0",
