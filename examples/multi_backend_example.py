@@ -7,7 +7,7 @@ for better performance and support for larger-than-memory datasets.
 Requirements:
     pip install pytorch_tabular[polars]
 
-Author: PyTorch Tabular Contributors
+Author: arnavk23
 Date: 2026
 """
 
