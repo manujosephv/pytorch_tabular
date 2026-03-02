@@ -18,20 +18,20 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 import joblib
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 import torchmetrics
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from pandas import DataFrame
-from pytorch_lightning import seed_everything
-from pytorch_lightning.callbacks import RichProgressBar
-from pytorch_lightning.callbacks.gradient_accumulation_scheduler import (
+from lightning.pytorch import seed_everything
+from lightning.pytorch.callbacks import RichProgressBar
+from lightning.pytorch.callbacks.gradient_accumulation_scheduler import (
     GradientAccumulationScheduler,
 )
-from pytorch_lightning.tuner.tuning import Tuner
-from pytorch_lightning.utilities.model_summary import summarize
-from pytorch_lightning.utilities.rank_zero import rank_zero_only
+from lightning.pytorch.tuner.tuning import Tuner
+from lightning.pytorch.utilities.model_summary import summarize
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import BaseCrossValidator, KFold, StratifiedKFold
 from torch import nn

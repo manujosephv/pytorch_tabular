@@ -1,4 +1,4 @@
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 from torch import Tensor
 
 from pytorch_tabular.models.common import PositionWiseFeedForward
