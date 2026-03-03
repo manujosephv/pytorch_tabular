@@ -7,9 +7,9 @@ import numpy as np
 import torch
 
 try:  # for 1.8
-    from pytorch_lightning.utilities.cloud_io import get_filesystem
+    from lightning.pytorch.utilities.cloud_io import get_filesystem
 except ImportError:  # for 1.9
-    from pytorch_lightning.core.saving import get_filesystem
+    from lightning.pytorch.core.saving import get_filesystem
 
 import pytorch_tabular as root_module
 

@@ -12,7 +12,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Union
 import joblib
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 from omegaconf import DictConfig
 from pandas import DataFrame, DatetimeTZDtype, to_datetime

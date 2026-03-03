@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional, Union
 from pathlib import Path
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
@@ -162,7 +162,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     ):
         from skbase.utils.dependencies import _check_soft_dependencies
 
-        if not _check_soft_dependencies("pytorch_lightning<2.6", severity="none"):
+        if not _check_soft_dependencies("lightning<2.6", severity="none"):
             if "weights_only" not in kwargs:
                 kwargs["weights_only"] = False
         else:
