@@ -162,7 +162,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
     ):
         from skbase.utils.dependencies import _check_soft_dependencies
 
-            if not _check_soft_dependencies("lightning<2.6", severity="none"):
+        if not _check_soft_dependencies("lightning<2.6", severity="none"):
             if "weights_only" not in kwargs:
                 kwargs["weights_only"] = False
         else:
