@@ -1,8 +1,8 @@
 import copy
 import time
 import warnings
+from collections.abc import Callable
 from contextlib import nullcontext
-from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -98,17 +98,17 @@ def _validate_args(
     task: str,
     train: pd.DataFrame,
     test: pd.DataFrame,
-    data_config: Union[DataConfig, str],
-    optimizer_config: Union[OptimizerConfig, str],
-    trainer_config: Union[TrainerConfig, str],
-    model_list: Union[str, List[Union[ModelConfig, str]]] = "lite",
-    metrics: Optional[List[Union[str, Callable]]] = None,
-    metrics_params: Optional[List[dict]] = None,
-    metrics_prob_input: Optional[List[bool]] = None,
-    validation: Optional[pd.DataFrame] = None,
-    experiment_config: Optional[Union[ExperimentConfig, str]] = None,
-    common_model_args: Optional[dict] = {},
-    rank_metric: Optional[str] = "loss",
+    data_config: DataConfig | str,
+    optimizer_config: OptimizerConfig | str,
+    trainer_config: TrainerConfig | str,
+    model_list: str | list[ModelConfig | str] = "lite",
+    metrics: list[str | Callable] | None = None,
+    metrics_params: list[dict] | None = None,
+    metrics_prob_input: list[bool] | None = None,
+    validation: pd.DataFrame | None = None,
+    experiment_config: ExperimentConfig | str | None = None,
+    common_model_args: dict | None = {},
+    rank_metric: str | None = "loss",
 ):
     assert task in [
         "classification",
@@ -172,17 +172,17 @@ def model_sweep(
     task: str,
     train: pd.DataFrame,
     test: pd.DataFrame,
-    data_config: Union[DataConfig, str],
-    optimizer_config: Union[OptimizerConfig, str],
-    trainer_config: Union[TrainerConfig, str],
-    model_list: Union[str, List[Union[ModelConfig, str]]] = "lite",
-    metrics: Optional[List[Union[str, Callable]]] = None,
-    metrics_params: Optional[List[dict]] = None,
-    metrics_prob_input: Optional[List[bool]] = None,
-    validation: Optional[pd.DataFrame] = None,
-    experiment_config: Optional[Union[ExperimentConfig, str]] = None,
-    common_model_args: Optional[dict] = {},
-    rank_metric: Optional[Tuple[str, str]] = ("loss", "lower_is_better"),
+    data_config: DataConfig | str,
+    optimizer_config: OptimizerConfig | str,
+    trainer_config: TrainerConfig | str,
+    model_list: str | list[ModelConfig | str] = "lite",
+    metrics: list[str | Callable] | None = None,
+    metrics_params: list[dict] | None = None,
+    metrics_prob_input: list[bool] | None = None,
+    validation: pd.DataFrame | None = None,
+    experiment_config: ExperimentConfig | str | None = None,
+    common_model_args: dict | None = {},
+    rank_metric: tuple[str, str] | None = ("loss", "lower_is_better"),
     return_best_model: bool = True,
     seed: int = 42,
     ignore_oom: bool = True,
@@ -296,7 +296,7 @@ def model_sweep(
         model_list = [
             (
                 getattr(models, model_config[0])(task=task, **model_config[1], **common_model_args)
-                if isinstance(model_config, Tuple)
+                if isinstance(model_config, tuple)
                 else (
                     getattr(models, model_config)(task=task, **common_model_args)
                     if isinstance(model_config, str)

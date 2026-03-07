@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 """Mixture Density Models."""
 
-from typing import Dict, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -86,7 +85,7 @@ class MDNModel(BaseModel):
         self._head = self._get_head_from_config()
 
     # Redefining forward because TabTransformer flow is slightly different
-    def forward(self, x: Dict):
+    def forward(self, x: dict):
         if isinstance(self.backbone, TabTransformerBackbone):
             if self.hparams.categorical_dim > 0:
                 x_cat = self.embed_input({"categorical": x["categorical"]})
@@ -98,7 +97,7 @@ class MDNModel(BaseModel):
 
         # Redefining compute_backbone because TabTransformer flow flow is slightly different
 
-    def compute_backbone(self, x: Union[Dict, torch.Tensor]):
+    def compute_backbone(self, x: dict | torch.Tensor):
         # Returns output
         if isinstance(self.backbone, TabTransformerBackbone):
             x = self.backbone(x["categorical"], x["continuous"])
@@ -110,11 +109,11 @@ class MDNModel(BaseModel):
         pi, sigma, mu = self.head(x)
         return {"pi": pi, "sigma": sigma, "mu": mu, "backbone_features": x}
 
-    def predict(self, x: Dict):
+    def predict(self, x: dict):
         ret_value = self.forward(x)
         return self.head.generate_point_predictions(ret_value["pi"], ret_value["sigma"], ret_value["mu"])
 
-    def sample(self, x: Dict, n_samples: Optional[int] = None, ret_model_output=False):
+    def sample(self, x: dict, n_samples: int | None = None, ret_model_output=False):
         ret_value = self.forward(x)
         samples = self.head.generate_samples(ret_value["pi"], ret_value["sigma"], ret_value["mu"], n_samples)
         if ret_model_output:

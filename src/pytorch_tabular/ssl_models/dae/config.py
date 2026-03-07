@@ -4,7 +4,6 @@
 """DenoisingAutoEncoder Config."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from pytorch_tabular.config import SSLModelConfig
 
@@ -74,7 +73,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
         },
     )
     # Union not supported by omegaconf. Currently Union[float, Dict[str, float]]
-    noise_probabilities: Dict[str, float] = field(
+    noise_probabilities: dict[str, float] = field(
         default_factory=lambda: {},
         metadata={
             "help": "Dict of individual probabilities to corrupt the input features with swap/zero noise."
@@ -89,7 +88,7 @@ class DenoisingAutoEncoderConfig(SSLModelConfig):
             " For features for which noise_probabilities does not define a probability. Default is 0.8"
         },
     )
-    loss_type_weights: Optional[List[float]] = field(
+    loss_type_weights: list[float] | None = field(
         default=None,
         metadata={
             "help": "Weights to be used for the loss function in the order [binary, categorical, numerical]."

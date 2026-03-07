@@ -4,7 +4,6 @@
 """AutomaticFeatureInteraction Config."""
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
 
@@ -85,7 +84,7 @@ class DANetConfig(ModelConfig):
         },
     )
 
-    abstlay_dim_2: Optional[int] = field(
+    abstlay_dim_2: int | None = field(
         default=None,
         metadata={
             "help": "The dimension for the intermediate output in the second ABSTLAY layer in a Block."
@@ -108,7 +107,7 @@ class DANetConfig(ModelConfig):
             " https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
         },
     )
-    virtual_batch_size: Optional[int] = field(
+    virtual_batch_size: int | None = field(
         default=256,
         metadata={
             "help": "If not None, all BatchNorms will be converted to GhostBatchNorm's "

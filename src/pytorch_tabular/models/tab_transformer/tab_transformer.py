@@ -14,7 +14,6 @@
 """TabTransformer Model."""
 
 from collections import OrderedDict
-from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -116,7 +115,7 @@ class TabTransformerModel(BaseModel):
         self._head = self._get_head_from_config()
 
     # Redefining forward because this model flow is slightly different
-    def forward(self, x: Dict):
+    def forward(self, x: dict):
         if self.hparams.categorical_dim > 0:
             x_cat = self.embed_input({"categorical": x["categorical"]})
         else:
@@ -125,7 +124,7 @@ class TabTransformerModel(BaseModel):
         return self.compute_head(x)
 
     # Redefining compute_backbone because this model flow is slightly different
-    def compute_backbone(self, x: Dict):
+    def compute_backbone(self, x: dict):
         # Returns output
         x = self.backbone(x["categorical"], x["continuous"])
         return x

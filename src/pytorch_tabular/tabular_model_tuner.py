@@ -5,9 +5,9 @@
 
 import warnings
 from collections import namedtuple
+from collections.abc import Callable, Iterable
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,12 @@ from pytorch_tabular.config import (
     TrainerConfig,
 )
 from pytorch_tabular.tabular_model import TabularModel
-from pytorch_tabular.utils import OOMException, OutOfMemoryHandler, get_logger, suppress_lightning_logs
+from pytorch_tabular.utils import (
+    OOMException,
+    OutOfMemoryHandler,
+    get_logger,
+    suppress_lightning_logs,
+)
 
 logger = get_logger(__name__)
 
@@ -41,12 +46,12 @@ class TabularModelTuner:
 
     def __init__(
         self,
-        data_config: Optional[Union[DataConfig, str]] = None,
-        model_config: Optional[Union[ModelConfig, str]] = None,
-        optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
-        trainer_config: Optional[Union[TrainerConfig, List[TrainerConfig]]] = None,
-        model_callable: Optional[Callable] = None,
-        model_state_dict_path: Optional[Union[str, Path]] = None,
+        data_config: DataConfig | str | None = None,
+        model_config: ModelConfig | str | None = None,
+        optimizer_config: OptimizerConfig | str | None = None,
+        trainer_config: TrainerConfig | list[TrainerConfig] | None = None,
+        model_callable: Callable | None = None,
+        model_state_dict_path: str | Path | None = None,
         suppress_lightning_logger: bool = True,
         **kwargs,
     ):
@@ -125,7 +130,7 @@ class TabularModelTuner:
         self,
         optimizer_config: OptimizerConfig,
         model_config: ModelConfig,
-        params: Dict,
+        params: dict,
     ):
         """Update the configs with the new parameters."""
         # update configs with the new parameters
@@ -156,19 +161,19 @@ class TabularModelTuner:
     def tune(
         self,
         train: DataFrame,
-        search_space: Union[Dict, List[Dict]],
-        metric: Union[str, Callable],
+        search_space: dict | list[dict],
+        metric: str | Callable,
         mode: str,
         strategy: str,
-        validation: Optional[DataFrame] = None,
-        n_trials: Optional[int] = None,
-        cv: Optional[Union[int, Iterable, BaseCrossValidator]] = None,
-        cv_agg_func: Optional[Callable] = np.mean,
-        cv_kwargs: Optional[Dict] = {},
+        validation: DataFrame | None = None,
+        n_trials: int | None = None,
+        cv: int | Iterable | BaseCrossValidator | None = None,
+        cv_agg_func: Callable | None = np.mean,
+        cv_kwargs: dict | None = {},
         return_best_model: bool = True,
         verbose: bool = False,
         progress_bar: bool = True,
-        random_state: Optional[int] = 42,
+        random_state: int | None = 42,
         ignore_oom: bool = True,
         **kwargs,
     ):

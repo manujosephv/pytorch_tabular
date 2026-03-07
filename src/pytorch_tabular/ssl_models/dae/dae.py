@@ -5,7 +5,6 @@
 """DenoisingAutoEncoder Model."""
 
 from collections import namedtuple
-from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -60,11 +59,11 @@ class DenoisingAutoEncoderFeaturizer(nn.Module):
         self._swap_probabilities = swap_probabilities
         self.swap_noise = SwapNoiseCorrupter(swap_probabilities)
 
-    def _concatenate_features(self, x: Dict):
+    def _concatenate_features(self, x: dict):
         x = torch.cat([x[key] for key in self.pick_keys if x[key] is not None], 1)
         return x
 
-    def forward(self, x: Dict, perturb: bool = True, return_input: bool = False):
+    def forward(self, x: dict, perturb: bool = True, return_input: bool = False):
         # (B, N, E)
         x = self._concatenate_features(x)
         mask = None
@@ -160,7 +159,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
     def _setup_metrics(self):
         return None
 
-    def forward(self, x: Dict):
+    def forward(self, x: dict):
         if self.mode == "pretrain":
             x = self.embedding_layer(x)
             # (B, N, E)
@@ -238,7 +237,7 @@ class DenoisingAutoEncoderModel(SSLBaseModel):
     def calculate_metrics(self, output, tag, sync_dist=False):
         pass
 
-    def featurize(self, x: Dict):
+    def featurize(self, x: dict):
         x = self.embedding_layer(x)
         return self.featurizer(x, perturb=False).features
 

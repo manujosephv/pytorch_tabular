@@ -1,5 +1,5 @@
 # W605
-from typing import Callable, Union
+from collections.abc import Callable
 
 import torch
 from torch import nn
@@ -58,7 +58,7 @@ class ModuleWithInit(nn.Module):
 class Add(nn.Module):
     """A module that adds a constant/parameter value to the input."""
 
-    def __init__(self, add_value: Union[float, torch.Tensor]):
+    def __init__(self, add_value: float | torch.Tensor):
         """Initialize the module.
 
         Args:

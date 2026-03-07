@@ -5,9 +5,9 @@
 
 import re
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
@@ -41,9 +41,9 @@ class TabularDataset(Dataset):
         self,
         data: DataFrame,
         task: str,
-        continuous_cols: List[str] = None,
-        categorical_cols: List[str] = None,
-        target: List[str] = None,
+        continuous_cols: list[str] = None,
+        categorical_cols: list[str] = None,
+        target: list[str] = None,
     ):
         """Dataset to Load Tabular Data.
 
@@ -143,9 +143,9 @@ class TabularDatamodule(pl.LightningDataModule):
         train: DataFrame,
         config: DictConfig,
         validation: DataFrame = None,
-        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        seed: Optional[int] = 42,
+        target_transform: TransformerMixin | tuple | None = None,
+        train_sampler: torch.utils.data.Sampler | None = None,
+        seed: int | None = 42,
         cache_data: str = "memory",
         copy_data: bool = True,
         verbose: bool = True,
@@ -246,7 +246,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def target_transforms(self, value):
         self._target_transforms = value
 
-    def _setup_cache(self, cache_data: Union[str, bool]) -> None:
+    def _setup_cache(self, cache_data: str | bool) -> None:
         cache_data = cache_data.lower()
         if cache_data == self.CACHE_MODES.MEMORY.value:
             self.cache_mode = self.CACHE_MODES.MEMORY
@@ -258,7 +258,7 @@ class TabularDatamodule(pl.LightningDataModule):
             logger.warning(f"{cache_data} is not a valid path. Caching in memory")
             self.cache_mode = self.CACHE_MODES.MEMORY
 
-    def _set_target_transform(self, target_transform: Union[TransformerMixin, Tuple]) -> None:
+    def _set_target_transform(self, target_transform: TransformerMixin | tuple) -> None:
         if target_transform is not None:
             if isinstance(target_transform, Iterable):
                 target_transform = FunctionTransformer(func=target_transform[0], inverse_func=target_transform[1])
@@ -425,7 +425,7 @@ class TabularDatamodule(pl.LightningDataModule):
                     data[col] = _target_transform.transform(data[col].values.reshape(-1, 1))
         return data
 
-    def preprocess_data(self, data: DataFrame, stage: str = "inference") -> Tuple[DataFrame, list]:
+    def preprocess_data(self, data: DataFrame, stage: str = "inference") -> tuple[DataFrame, list]:
         """The preprocessing, like Categorical Encoding, Normalization, etc. which any dataframe should undergo before
         feeding into the dataloder.
 
@@ -512,7 +512,7 @@ class TabularDatamodule(pl.LightningDataModule):
         train = train[~train.index.isin(val_idx)]
         return train, validation
 
-    def setup(self, stage: Optional[str] = None) -> None:
+    def setup(self, stage: str | None = None) -> None:
         """Data Operations you want to perform on all GPUs, like train-test split, transformations, etc. This is called
         before accessing the dataloaders.
 
@@ -554,7 +554,7 @@ class TabularDatamodule(pl.LightningDataModule):
 
     # adapted from gluonts
     @classmethod
-    def time_features_from_frequency_str(cls, freq_str: str) -> List[str]:
+    def time_features_from_frequency_str(cls, freq_str: str) -> list[str]:
         """Returns a list of time features that will be appropriate for the given frequency string.
 
         Args:
@@ -700,7 +700,7 @@ class TabularDatamodule(pl.LightningDataModule):
         frequency: str,
         prefix: str = None,
         drop: bool = True,
-    ) -> Tuple[DataFrame, List[str]]:
+    ) -> tuple[DataFrame, list[str]]:
         """Helper function that adds columns relevant to a date in the column `field_name` of `df`.
 
         Args:
@@ -802,7 +802,7 @@ class TabularDatamodule(pl.LightningDataModule):
     def validation_dataset(self, value):
         self._validation_dataset = value
 
-    def train_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+    def train_dataloader(self, batch_size: int | None = None) -> DataLoader:
         """Function that loads the train set.
 
         Args:
@@ -822,7 +822,7 @@ class TabularDatamodule(pl.LightningDataModule):
             **self.config.dataloader_kwargs,
         )
 
-    def val_dataloader(self, batch_size: Optional[int] = None) -> DataLoader:
+    def val_dataloader(self, batch_size: int | None = None) -> DataLoader:
         """Function that loads the validation set.
 
         Args:
@@ -854,7 +854,7 @@ class TabularDatamodule(pl.LightningDataModule):
         return df
 
     def prepare_inference_dataloader(
-        self, df: DataFrame, batch_size: Optional[int] = None, copy_df: bool = True
+        self, df: DataFrame, batch_size: int | None = None, copy_df: bool = True
     ) -> DataLoader:
         """Function that prepares and loads the new data.
 
@@ -884,7 +884,7 @@ class TabularDatamodule(pl.LightningDataModule):
             **self.config.dataloader_kwargs,
         )
 
-    def save_dataloader(self, path: Union[str, Path]) -> None:
+    def save_dataloader(self, path: str | Path) -> None:
         """Saves the dataloader to a path.
 
         Args:
@@ -896,7 +896,7 @@ class TabularDatamodule(pl.LightningDataModule):
         joblib.dump(self, path)
 
     @classmethod
-    def load_datamodule(cls, path: Union[str, Path]):
+    def load_datamodule(cls, path: str | Path):
         """Loads a datamodule from a path.
 
         Args:
@@ -917,14 +917,14 @@ class TabularDatamodule(pl.LightningDataModule):
         self,
         train: DataFrame,
         validation: DataFrame = None,
-        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        seed: Optional[int] = None,
+        target_transform: TransformerMixin | tuple | None = None,
+        train_sampler: torch.utils.data.Sampler | None = None,
+        seed: int | None = None,
         cache_data: str = None,
         copy_data: bool = None,
         verbose: bool = None,
         call_setup: bool = True,
-        config_override: Optional[Dict] = {},
+        config_override: dict | None = {},
     ):
         if config_override is not None:
             for k, v in config_override.items():

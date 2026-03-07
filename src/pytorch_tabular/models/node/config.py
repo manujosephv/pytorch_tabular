@@ -1,6 +1,5 @@
 import warnings
 from dataclasses import dataclass, field
-from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
 
@@ -139,7 +138,7 @@ class NodeConfig(ModelConfig):
             "choices": ["entmoid15", "sparsemoid"],
         },
     )
-    max_features: Optional[int] = field(
+    max_features: int | None = field(
         default=None,
         metadata={
             "help": "If not None, sets a max limit on the number of features to be carried forward"
@@ -198,7 +197,7 @@ class NodeConfig(ModelConfig):
         },
     )
 
-    head: Optional[str] = field(
+    head: str | None = field(
         default=None,
     )
 

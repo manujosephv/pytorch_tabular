@@ -2,7 +2,7 @@
 # Author: Manu Joseph <manujoseph@gmail.com>
 # For license information, see LICENSE.TXT
 import random
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 import torch.nn as nn

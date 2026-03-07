@@ -10,10 +10,10 @@ import os
 import uuid
 import warnings
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from functools import partial
 from pathlib import Path
 from pprint import pformat, pprint
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
@@ -75,14 +75,14 @@ logger = get_logger(__name__)
 class TabularModel:
     def __init__(
         self,
-        config: Optional[DictConfig] = None,
-        data_config: Optional[Union[DataConfig, str]] = None,
-        model_config: Optional[Union[ModelConfig, str]] = None,
-        optimizer_config: Optional[Union[OptimizerConfig, str]] = None,
-        trainer_config: Optional[Union[TrainerConfig, str]] = None,
-        experiment_config: Optional[Union[ExperimentConfig, str]] = None,
-        model_callable: Optional[Callable] = None,
-        model_state_dict_path: Optional[Union[str, Path]] = None,
+        config: DictConfig | None = None,
+        data_config: DataConfig | str | None = None,
+        model_config: ModelConfig | str | None = None,
+        optimizer_config: OptimizerConfig | str | None = None,
+        trainer_config: TrainerConfig | str | None = None,
+        experiment_config: ExperimentConfig | str | None = None,
+        model_callable: Callable | None = None,
+        model_state_dict_path: str | Path | None = None,
         verbose: bool = True,
         suppress_lightning_logger: bool = False,
     ) -> None:
@@ -251,7 +251,7 @@ class TabularModel:
         config = OmegaConf.structured(config)
         return config
 
-    def _get_run_name_uid(self) -> Tuple[str, int]:
+    def _get_run_name_uid(self) -> tuple[str, int]:
         """Gets the name of the experiment and increments version by 1.
 
         Returns:
@@ -286,7 +286,7 @@ class TabularModel:
                 f"{self.config.log_target} is not implemented. Try one of [wandb," " tensorboard]"
             )
 
-    def _prepare_callbacks(self, callbacks=None) -> List:
+    def _prepare_callbacks(self, callbacks=None) -> list:
         """Prepares the necesary callbacks to the Trainer based on the configuration.
 
         Returns:
@@ -325,7 +325,7 @@ class TabularModel:
             logger.debug(f"Callbacks used: {callbacks}")
         return callbacks
 
-    def _prepare_trainer(self, callbacks: List, max_epochs: int = None, min_epochs: int = None) -> pl.Trainer:
+    def _prepare_trainer(self, callbacks: list, max_epochs: int = None, min_epochs: int = None) -> pl.Trainer:
         """Prepares the Trainer object.
 
         Args:
@@ -387,7 +387,7 @@ class TabularModel:
         self.datamodule = datamodule
 
     @classmethod
-    def _load_weights(cls, model, path: Union[str, Path]) -> None:
+    def _load_weights(cls, model, path: str | Path) -> None:
         """Loads the model weights in the specified directory.
 
         Args:
@@ -510,10 +510,10 @@ class TabularModel:
     def prepare_dataloader(
         self,
         train: DataFrame,
-        validation: Optional[DataFrame] = None,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
-        seed: Optional[int] = 42,
+        validation: DataFrame | None = None,
+        train_sampler: torch.utils.data.Sampler | None = None,
+        target_transform: TransformerMixin | tuple | None = None,
+        seed: int | None = 42,
         cache_data: str = "memory",
     ) -> TabularDatamodule:
         """Prepares the dataloaders for training and validation.
@@ -564,11 +564,11 @@ class TabularModel:
     def prepare_model(
         self,
         datamodule: TabularDatamodule,
-        loss: Optional[torch.nn.Module] = None,
-        metrics: Optional[List[Callable]] = None,
-        metrics_prob_inputs: Optional[List[bool]] = None,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = None,
+        loss: torch.nn.Module | None = None,
+        metrics: list[Callable] | None = None,
+        metrics_prob_inputs: list[bool] | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        optimizer_params: dict = None,
     ) -> BaseModel:
         """Prepares the model for training.
 
@@ -619,7 +619,7 @@ class TabularModel:
         self,
         model: pl.LightningModule,
         datamodule: TabularDatamodule,
-        callbacks: Optional[List[pl.Callback]] = None,
+        callbacks: list[pl.Callback] | None = None,
         max_epochs: int = None,
         min_epochs: int = None,
         handle_oom: bool = True,
@@ -694,20 +694,20 @@ class TabularModel:
 
     def fit(
         self,
-        train: Optional[DataFrame],
-        validation: Optional[DataFrame] = None,
-        loss: Optional[torch.nn.Module] = None,
-        metrics: Optional[List[Callable]] = None,
-        metrics_prob_inputs: Optional[List[bool]] = None,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = None,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
-        max_epochs: Optional[int] = None,
-        min_epochs: Optional[int] = None,
-        seed: Optional[int] = 42,
-        callbacks: Optional[List[pl.Callback]] = None,
-        datamodule: Optional[TabularDatamodule] = None,
+        train: DataFrame | None,
+        validation: DataFrame | None = None,
+        loss: torch.nn.Module | None = None,
+        metrics: list[Callable] | None = None,
+        metrics_prob_inputs: list[bool] | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        optimizer_params: dict = None,
+        train_sampler: torch.utils.data.Sampler | None = None,
+        target_transform: TransformerMixin | tuple | None = None,
+        max_epochs: int | None = None,
+        min_epochs: int | None = None,
+        seed: int | None = 42,
+        callbacks: list[pl.Callback] | None = None,
+        datamodule: TabularDatamodule | None = None,
         cache_data: str = "memory",
         handle_oom: bool = True,
     ) -> pl.Trainer:
@@ -808,16 +808,16 @@ class TabularModel:
 
     def pretrain(
         self,
-        train: Optional[DataFrame],
-        validation: Optional[DataFrame] = None,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = None,
+        train: DataFrame | None,
+        validation: DataFrame | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        optimizer_params: dict = None,
         # train_sampler: Optional[torch.utils.data.Sampler] = None,
-        max_epochs: Optional[int] = None,
-        min_epochs: Optional[int] = None,
-        seed: Optional[int] = 42,
-        callbacks: Optional[List[pl.Callback]] = None,
-        datamodule: Optional[TabularDatamodule] = None,
+        max_epochs: int | None = None,
+        min_epochs: int | None = None,
+        seed: int | None = 42,
+        callbacks: list[pl.Callback] | None = None,
+        datamodule: TabularDatamodule | None = None,
         cache_data: str = "memory",
     ) -> pl.Trainer:
         """The pretrained method which takes in the data and triggers the training.
@@ -886,24 +886,24 @@ class TabularModel:
         self,
         task: str,
         head: str,
-        head_config: Dict,
+        head_config: dict,
         train: DataFrame,
-        validation: Optional[DataFrame] = None,
-        train_sampler: Optional[torch.utils.data.Sampler] = None,
-        target_transform: Optional[Union[TransformerMixin, Tuple]] = None,
-        target: Optional[str] = None,
-        optimizer_config: Optional[OptimizerConfig] = None,
-        trainer_config: Optional[TrainerConfig] = None,
-        experiment_config: Optional[ExperimentConfig] = None,
-        loss: Optional[torch.nn.Module] = None,
-        metrics: Optional[List[Union[Callable, str]]] = None,
-        metrics_prob_input: Optional[List[bool]] = None,
-        metrics_params: Optional[Dict] = None,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        optimizer_params: Dict = None,
-        learning_rate: Optional[float] = None,
-        target_range: Optional[Tuple[float, float]] = None,
-        seed: Optional[int] = 42,
+        validation: DataFrame | None = None,
+        train_sampler: torch.utils.data.Sampler | None = None,
+        target_transform: TransformerMixin | tuple | None = None,
+        target: str | None = None,
+        optimizer_config: OptimizerConfig | None = None,
+        trainer_config: TrainerConfig | None = None,
+        experiment_config: ExperimentConfig | None = None,
+        loss: torch.nn.Module | None = None,
+        metrics: list[Callable | str] | None = None,
+        metrics_prob_input: list[bool] | None = None,
+        metrics_params: dict | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        optimizer_params: dict = None,
+        learning_rate: float | None = None,
+        target_range: tuple[float, float] | None = None,
+        seed: int | None = 42,
     ):
         """Creates a new TabularModel model using the pretrained weights and the new task and head.
 
@@ -1081,9 +1081,9 @@ class TabularModel:
 
     def finetune(
         self,
-        max_epochs: Optional[int] = None,
-        min_epochs: Optional[int] = None,
-        callbacks: Optional[List[pl.Callback]] = None,
+        max_epochs: int | None = None,
+        min_epochs: int | None = None,
+        callbacks: list[pl.Callback] | None = None,
         freeze_backbone: bool = False,
     ) -> pl.Trainer:
         """Finetunes the model on the provided data.
@@ -1126,10 +1126,10 @@ class TabularModel:
         max_lr: float = 1,
         num_training: int = 100,
         mode: str = "exponential",
-        early_stop_threshold: Optional[float] = 4.0,
+        early_stop_threshold: float | None = 4.0,
         plot: bool = True,
-        callbacks: Optional[List] = None,
-    ) -> Tuple[float, DataFrame]:
+        callbacks: list | None = None,
+    ) -> tuple[float, DataFrame]:
         """Enables the user to do a range test of good initial learning rates, to reduce the amount of guesswork in
         picking a good starting learning rate.
 
@@ -1186,11 +1186,11 @@ class TabularModel:
 
     def evaluate(
         self,
-        test: Optional[DataFrame] = None,
-        test_loader: Optional[torch.utils.data.DataLoader] = None,
-        ckpt_path: Optional[Union[str, Path]] = None,
+        test: DataFrame | None = None,
+        test_loader: torch.utils.data.DataLoader | None = None,
+        ckpt_path: str | Path | None = None,
         verbose: bool = True,
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Evaluates the dataframe using the loss and metrics already set in config.
 
         Args:
@@ -1334,12 +1334,12 @@ class TabularModel:
     def _predict(
         self,
         test: DataFrame,
-        quantiles: Optional[List] = [0.25, 0.5, 0.75],
-        n_samples: Optional[int] = 100,
+        quantiles: list | None = [0.25, 0.5, 0.75],
+        n_samples: int | None = 100,
         ret_logits=False,
         include_input_features: bool = False,
-        device: Optional[torch.device] = None,
-        progress_bar: Optional[str] = None,
+        device: torch.device | None = None,
+        progress_bar: str | None = None,
     ) -> DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe.
 
@@ -1407,17 +1407,17 @@ class TabularModel:
     def predict(
         self,
         test: DataFrame,
-        quantiles: Optional[List] = [0.25, 0.5, 0.75],
-        n_samples: Optional[int] = 100,
+        quantiles: list | None = [0.25, 0.5, 0.75],
+        n_samples: int | None = 100,
         ret_logits=False,
         include_input_features: bool = False,
-        device: Optional[torch.device] = None,
-        progress_bar: Optional[str] = None,
-        test_time_augmentation: Optional[bool] = False,
-        num_tta: Optional[float] = 5,
-        alpha_tta: Optional[float] = 0.1,
-        aggregate_tta: Optional[str] = "mean",
-        tta_seed: Optional[int] = 42,
+        device: torch.device | None = None,
+        progress_bar: str | None = None,
+        test_time_augmentation: bool | None = False,
+        num_tta: float | None = 5,
+        alpha_tta: float | None = 0.1,
+        aggregate_tta: str | None = "mean",
+        tta_seed: int | None = 42,
     ) -> DataFrame:
         """Uses the trained model to predict on new data and return as a dataframe.
 
@@ -1595,7 +1595,7 @@ class TabularModel:
         if self.custom_model:
             joblib.dump(self.model_callable, os.path.join(dir, "custom_model_callable.sav"))
 
-    def save_weights(self, path: Union[str, Path]) -> None:
+    def save_weights(self, path: str | Path) -> None:
         """Saves the model weights in the specified directory.
 
         Args:
@@ -1604,7 +1604,7 @@ class TabularModel:
         """
         torch.save(self.model.state_dict(), path)
 
-    def load_weights(self, path: Union[str, Path]) -> None:
+    def load_weights(self, path: str | Path) -> None:
         """Loads the model weights in the specified directory.
 
         Args:
@@ -1616,9 +1616,9 @@ class TabularModel:
     # TODO Need to test ONNX export
     def save_model_for_inference(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         kind: str = "pytorch",
-        onnx_export_params: Dict = {"opset_version": 12},
+        onnx_export_params: dict = {"opset_version": 12},
     ) -> bool:
         """Saves the model for inference.
 
@@ -1897,7 +1897,7 @@ class TabularModel:
         """Returns the feature importance of the model as a pandas DataFrame."""
         return self.model.feature_importance()
 
-    def _prepare_input_for_captum(self, test_dl: torch.utils.data.DataLoader) -> Dict:
+    def _prepare_input_for_captum(self, test_dl: torch.utils.data.DataLoader) -> dict:
         tensor_inp = []
         tensor_tgt = []
         for x in test_dl:
@@ -1909,7 +1909,7 @@ class TabularModel:
 
     def _prepare_baselines_captum(
         self,
-        baselines: Union[float, torch.tensor, str],
+        baselines: float | torch.tensor | str,
         test_dl: torch.utils.data.DataLoader,
         do_baselines: bool,
         is_full_baselines: bool,
@@ -1970,8 +1970,8 @@ class TabularModel:
         self,
         data: DataFrame,
         method: str = "GradientShap",
-        method_args: Optional[Dict] = {},
-        baselines: Union[float, torch.tensor, str] = None,
+        method_args: dict | None = {},
+        baselines: float | torch.tensor | str = None,
         **kwargs,
     ) -> DataFrame:
         """Returns the feature attributions/explanations of the model as a pandas DataFrame. The shape of the returned
@@ -2134,11 +2134,11 @@ class TabularModel:
 
     def cross_validate(
         self,
-        cv: Optional[Union[int, Iterable, BaseCrossValidator]],
+        cv: int | Iterable | BaseCrossValidator | None,
         train: DataFrame,
-        metric: Optional[Union[str, Callable]] = None,
+        metric: str | Callable | None = None,
         return_oof: bool = False,
-        groups: Optional[Union[str, np.ndarray]] = None,
+        groups: str | np.ndarray | None = None,
         verbose: bool = True,
         reset_datamodule: bool = True,
         handle_oom: bool = True,
@@ -2251,10 +2251,10 @@ class TabularModel:
 
     def _combine_predictions(
         self,
-        pred_prob_l: List[DataFrame],
-        pred_idx: Union[pd.Index, List],
-        aggregate: Union[str, Callable],
-        weights: Optional[List[float]] = None,
+        pred_prob_l: list[DataFrame],
+        pred_idx: pd.Index | list,
+        aggregate: str | Callable,
+        weights: list[float] | None = None,
     ):
         if aggregate == "mean":
             bagged_pred = np.average(pred_prob_l, axis=0, weights=weights)
@@ -2300,15 +2300,15 @@ class TabularModel:
 
     def bagging_predict(
         self,
-        cv: Optional[Union[int, Iterable, BaseCrossValidator]],
+        cv: int | Iterable | BaseCrossValidator | None,
         train: DataFrame,
         test: DataFrame,
-        groups: Optional[Union[str, np.ndarray]] = None,
+        groups: str | np.ndarray | None = None,
         verbose: bool = True,
         reset_datamodule: bool = True,
         return_raw_predictions: bool = False,
-        aggregate: Union[str, Callable] = "mean",
-        weights: Optional[List[float]] = None,
+        aggregate: str | Callable = "mean",
+        weights: list[float] | None = None,
         handle_oom: bool = True,
         **kwargs,
     ):

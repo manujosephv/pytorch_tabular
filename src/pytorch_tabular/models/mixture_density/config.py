@@ -4,7 +4,6 @@
 """Mixture Density Head Config."""
 
 from dataclasses import dataclass, field
-from typing import Dict
 
 from pytorch_tabular.config.config import ModelConfig
 
@@ -72,12 +71,12 @@ class MDNConfig(ModelConfig):
             " The config class should be a valid module path from `models`. e.g. `FTTransformerConfig`"
         },
     )
-    backbone_config_params: Dict = field(
+    backbone_config_params: dict = field(
         default=None,
         metadata={"help": "The dict of config parameters for defining the Backbone."},
     )
     head: str = field(init=False, default="MixtureDensityHead")
-    head_config: Dict = field(
+    head_config: dict = field(
         default=None,
         metadata={"help": "The config for defining the Mixed Density Network Head"},
     )

@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 # from typing import Any, Dict, Iterable, List, Optional
 
@@ -114,7 +113,7 @@ class MixtureDensityHeadConfig:
             "help": "Whether to have a bias term in the sigma layer. Defaults to False",
         },
     )
-    mu_bias_init: Optional[List] = field(
+    mu_bias_init: list | None = field(
         default=None,
         metadata={
             "help": "To initialize the bias parameter of the mu layer to predefined cluster centers."
@@ -123,7 +122,7 @@ class MixtureDensityHeadConfig:
         },
     )
 
-    weight_regularization: Optional[int] = field(
+    weight_regularization: int | None = field(
         default=2,
         metadata={
             "help": "Whether to apply L1 or L2 Norm to the MDN layers. Defaults to L2",
@@ -131,25 +130,25 @@ class MixtureDensityHeadConfig:
         },
     )
 
-    lambda_sigma: Optional[float] = field(
+    lambda_sigma: float | None = field(
         default=0.1,
         metadata={
             "help": "The regularization constant for weight regularization of sigma layer. Defaults to 0.1",
         },
     )
-    lambda_pi: Optional[float] = field(
+    lambda_pi: float | None = field(
         default=0.1,
         metadata={
             "help": "The regularization constant for weight regularization of pi layer. Defaults to 0.1",
         },
     )
-    lambda_mu: Optional[float] = field(
+    lambda_mu: float | None = field(
         default=0,
         metadata={
             "help": "The regularization constant for weight regularization of mu layer. Defaults to 0",
         },
     )
-    softmax_temperature: Optional[float] = field(
+    softmax_temperature: float | None = field(
         default=1,
         metadata={
             "help": "The temperature to be used in the gumbel softmax of the mixing coefficients."

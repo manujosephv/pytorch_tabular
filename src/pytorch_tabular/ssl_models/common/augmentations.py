@@ -1,10 +1,9 @@
-from typing import Dict
 
 import numpy as np
 import torch
 
 
-def mixup(batch: Dict, lam: float = 0.5) -> Dict:
+def mixup(batch: dict, lam: float = 0.5) -> dict:
     """It apply mixup augmentation, making a weighted average between a tensor and some random element of the tensor
     taking random rows.
 
@@ -20,7 +19,7 @@ def mixup(batch: Dict, lam: float = 0.5) -> Dict:
     return result
 
 
-def cutmix(batch: Dict, lam: float = 0.1) -> Dict:
+def cutmix(batch: dict, lam: float = 0.1) -> dict:
     """Define how apply cutmix to a tensor.
 
     :param batch: Tensor on which apply the cutmix augmentation

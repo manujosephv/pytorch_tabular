@@ -4,7 +4,6 @@
 """Tabnet Model Config."""
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from pytorch_tabular.config import ModelConfig
 
@@ -111,7 +110,7 @@ class TabNetModelConfig(ModelConfig):
             "choices": ["sparsemax", "entmax"],
         },
     )
-    grouped_features: Optional[List[List[str]]] = field(
+    grouped_features: list[list[str]] | None = field(
         default=None,
         metadata={
             "help": (

@@ -1,7 +1,8 @@
 import math
 import textwrap
+from collections.abc import Callable
 from pathlib import Path
-from typing import IO, Any, Callable, Dict, Optional, Union
+from typing import IO, Any
 
 import numpy as np
 import torch
@@ -15,9 +16,9 @@ import pytorch_tabular as root_module
 
 from .logger import get_logger
 
-_PATH = Union[str, Path]
-_DEVICE = Union[torch.device, str, int]
-_MAP_LOCATION_TYPE = Optional[Union[_DEVICE, Callable[[_DEVICE], _DEVICE], Dict[_DEVICE, _DEVICE]]]
+_PATH = str | Path
+_DEVICE = torch.device | str | int
+_MAP_LOCATION_TYPE = _DEVICE | Callable[[_DEVICE], _DEVICE] | dict[_DEVICE, _DEVICE] | None
 
 
 logger = get_logger(__name__)
@@ -62,7 +63,7 @@ def generate_doc_dataclass(dataclass, desc=None, width=100):
 
 # Copied over pytorch_lightning.utilities.cloud_io.load as it was deprecated
 def pl_load(
-    path_or_url: Union[IO, _PATH],
+    path_or_url: IO | _PATH,
     map_location: _MAP_LOCATION_TYPE = None,
 ) -> Any:
     """Loads a checkpoint.

@@ -1,7 +1,7 @@
 # W605
 import math
 from functools import partial
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import torch
 from torch import nn
@@ -59,10 +59,10 @@ class PreEncoded1dLayer(nn.Module):
     def __init__(
         self,
         continuous_dim: int,
-        categorical_dim: Tuple[int, int],
+        categorical_dim: tuple[int, int],
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
-        virtual_batch_size: Optional[int] = None,
+        virtual_batch_size: int | None = None,
     ):
         super().__init__()
         self.continuous_dim = continuous_dim
@@ -77,7 +77,7 @@ class PreEncoded1dLayer(nn.Module):
         if batch_norm_continuous_input:
             self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
 
-    def forward(self, x: Dict[str, Any]) -> torch.Tensor:
+    def forward(self, x: dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
         continuous_data, categorical_data = (
@@ -114,10 +114,10 @@ class Embedding1dLayer(nn.Module):
     def __init__(
         self,
         continuous_dim: int,
-        categorical_embedding_dims: Tuple[int, int],
+        categorical_embedding_dims: tuple[int, int],
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
-        virtual_batch_size: Optional[int] = None,
+        virtual_batch_size: int | None = None,
     ):
         super().__init__()
         self.continuous_dim = continuous_dim
@@ -134,7 +134,7 @@ class Embedding1dLayer(nn.Module):
         if batch_norm_continuous_input:
             self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
 
-    def forward(self, x: Dict[str, Any]) -> torch.Tensor:
+    def forward(self, x: dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
         continuous_data, categorical_data = (
@@ -178,15 +178,15 @@ class Embedding2dLayer(nn.Module):
     def __init__(
         self,
         continuous_dim: int,
-        categorical_cardinality: List[int],
+        categorical_cardinality: list[int],
         embedding_dim: int,
-        shared_embedding_strategy: Optional[str] = None,
+        shared_embedding_strategy: str | None = None,
         frac_shared_embed: float = 0.25,
         embedding_bias: bool = False,
         batch_norm_continuous_input: bool = False,
-        virtual_batch_size: Optional[int] = None,
+        virtual_batch_size: int | None = None,
         embedding_dropout: float = 0.0,
-        initialization: Optional[str] = None,
+        initialization: str | None = None,
     ):
         """
         Args:
@@ -266,7 +266,7 @@ class Embedding2dLayer(nn.Module):
         else:
             self.embd_dropout = None
 
-    def forward(self, x: Dict[str, Any]) -> torch.Tensor:
+    def forward(self, x: dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
         continuous_data, categorical_data = (
