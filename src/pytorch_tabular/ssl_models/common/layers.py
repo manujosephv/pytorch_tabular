@@ -1,6 +1,6 @@
 # W605
 from collections import OrderedDict
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import torch
 from torch import nn
@@ -15,7 +15,7 @@ class MixedEmbedding1dLayer(nn.Module):
     def __init__(
         self,
         continuous_dim: int,
-        categorical_embedding_dims: Tuple[int, int],
+        categorical_embedding_dims: tuple[int, int],
         max_onehot_cardinality: int = 4,
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
@@ -69,7 +69,7 @@ class MixedEmbedding1dLayer(nn.Module):
             ]
         )
 
-    def forward(self, x: Dict[str, Any]) -> torch.Tensor:
+    def forward(self, x: dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
         continuous_data, categorical_data = (

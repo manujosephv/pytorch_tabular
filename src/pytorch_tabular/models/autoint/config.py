@@ -4,7 +4,6 @@
 """AutomaticFeatureInteraction Config."""
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
 
@@ -138,7 +137,7 @@ class AutoIntConfig(ModelConfig):
         default=16,
         metadata={"help": "The dimensions of the embedding for continuous and categorical columns. Defaults to 16"},
     )
-    embedding_initialization: Optional[str] = field(
+    embedding_initialization: str | None = field(
         default="kaiming_uniform",
         metadata={
             "help": "Initialization scheme for the embedding layers. Defaults to `kaiming`",
@@ -158,7 +157,7 @@ class AutoIntConfig(ModelConfig):
             " For more details refer to Appendix A of the TabTransformer paper. Defaults to False"
         },
     )
-    share_embedding_strategy: Optional[str] = field(
+    share_embedding_strategy: str | None = field(
         default="fraction",
         metadata={
             "help": "There are two strategies in adding shared embeddings."

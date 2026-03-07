@@ -1,6 +1,5 @@
 # W605
 import math
-from typing import Optional
 
 import torch
 from einops import rearrange
@@ -83,7 +82,7 @@ class TransformerEncoderBlock(nn.Module):
         keep_attn: bool = True,
         ff_dropout: float = 0.1,
         add_norm_dropout: float = 0.1,
-        transformer_head_dim: Optional[int] = None,
+        transformer_head_dim: int | None = None,
     ):
         """
         Args:

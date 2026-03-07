@@ -5,7 +5,6 @@
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Optional, Union
 from pathlib import Path
 
 import pytorch_lightning as pl
@@ -41,10 +40,10 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         self,
         config: DictConfig,
         mode: str = "pretrain",
-        encoder: Optional[nn.Module] = None,
-        decoder: Optional[nn.Module] = None,
-        custom_optimizer: Optional[torch.optim.Optimizer] = None,
-        custom_optimizer_params: Dict = {},
+        encoder: nn.Module | None = None,
+        decoder: nn.Module | None = None,
+        custom_optimizer: torch.optim.Optimizer | None = None,
+        custom_optimizer_params: dict = {},
         **kwargs,
     ):
         """Base Model for all SSL Models.
@@ -145,17 +144,17 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def forward(self, x: Dict):
+    def forward(self, x: dict):
         pass
 
     @abstractmethod
-    def featurize(self, x: Dict):
+    def featurize(self, x: dict):
         pass
 
     @classmethod
     def load_from_checkpoint(
         cls,
-        checkpoint_path: Union[str, Path],
+        checkpoint_path: str | Path,
         map_location=None,
         strict=True,
         **kwargs,
@@ -174,7 +173,7 @@ class SSLBaseModel(pl.LightningModule, metaclass=ABCMeta):
             **kwargs,
         )
 
-    def predict(self, x: Dict, ret_model_output: bool = True):  # ret_model_output only for compatibility
+    def predict(self, x: dict, ret_model_output: bool = True):  # ret_model_output only for compatibility
         assert ret_model_output, "ret_model_output must be True in case of SSL predict"
         return self.featurize(x)
 

@@ -4,7 +4,6 @@
 """AutomaticFeatureInteraction Config."""
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from pytorch_tabular.config import ModelConfig
 
@@ -105,7 +104,7 @@ class TabTransformerConfig(ModelConfig):
         default=32,
         metadata={"help": "The embedding dimension for the input categorical features. Defaults to 32"},
     )
-    embedding_initialization: Optional[str] = field(
+    embedding_initialization: str | None = field(
         default="kaiming_uniform",
         metadata={
             "help": "Initialization scheme for the embedding layers. Defaults to `kaiming`",
@@ -125,7 +124,7 @@ class TabTransformerConfig(ModelConfig):
             " to Appendix A of the TabTransformer paper. Defaults to False"
         },
     )
-    share_embedding_strategy: Optional[str] = field(
+    share_embedding_strategy: str | None = field(
         default="fraction",
         metadata={
             "help": "There are two strategies in adding shared embeddings."
@@ -151,7 +150,7 @@ class TabTransformerConfig(ModelConfig):
         default=6,
         metadata={"help": "The number of layers of stacked Multi-Headed Attention layers. Defaults to 6"},
     )
-    transformer_head_dim: Optional[int] = field(
+    transformer_head_dim: int | None = field(
         default=None,
         metadata={
             "help": "The number of hidden units in the Multi-Headed Attention layers."

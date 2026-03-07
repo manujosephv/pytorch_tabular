@@ -6,9 +6,10 @@
 import importlib
 import warnings
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytorch_lightning as pl
@@ -59,7 +60,7 @@ def safe_merge_config(config: DictConfig, inferred_config: DictConfig) -> DictCo
     return merged_config
 
 
-def _create_optimizer(optimizer: Union[str, Callable]) -> Type[Optimizer]:
+def _create_optimizer(optimizer: str | Callable) -> type[Optimizer]:
     """Instantiate Optimizer."""
     if callable(optimizer):
         return optimizer
@@ -74,11 +75,11 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     def __init__(
         self,
         config: DictConfig,
-        custom_loss: Optional[torch.nn.Module] = None,
-        custom_metrics: Optional[List[Callable]] = None,
-        custom_metrics_prob_inputs: Optional[List[bool]] = None,
-        custom_optimizer: Optional[torch.optim.Optimizer] = None,
-        custom_optimizer_params: Dict = {},
+        custom_loss: torch.nn.Module | None = None,
+        custom_metrics: list[Callable] | None = None,
+        custom_metrics_prob_inputs: list[bool] | None = None,
+        custom_optimizer: torch.optim.Optimizer | None = None,
+        custom_optimizer_params: dict = {},
         **kwargs,
     ):
         """Base Model for PyTorch Tabular.
@@ -210,7 +211,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
     @classmethod
     def load_from_checkpoint(
         cls,
-        checkpoint_path: Union[str, Path],
+        checkpoint_path: str | Path,
         map_location=None,
         strict=True,
         **kwargs,
@@ -267,7 +268,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         else:
             self.metrics = self.custom_metrics
 
-    def calculate_loss(self, output: Dict, y: torch.Tensor, tag: str, sync_dist: bool = False) -> torch.Tensor:
+    def calculate_loss(self, output: dict, y: torch.Tensor, tag: str, sync_dist: bool = False) -> torch.Tensor:
         """Calculates the loss for the model.
 
         Args:
@@ -344,7 +345,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
 
     def calculate_metrics(
         self, y: torch.Tensor, y_hat: torch.Tensor, tag: str, sync_dist: bool = False
-    ) -> List[torch.Tensor]:
+    ) -> list[torch.Tensor]:
         """Calculates the metrics for the model.
 
         Args:
@@ -433,12 +434,12 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         """Performs data-aware initialization of the model when defined."""
         pass
 
-    def compute_backbone(self, x: Dict) -> torch.Tensor:
+    def compute_backbone(self, x: dict) -> torch.Tensor:
         # Returns output
         x = self.backbone(x)
         return x
 
-    def embed_input(self, x: Dict) -> torch.Tensor:
+    def embed_input(self, x: dict) -> torch.Tensor:
         return self.embedding_layer(x)
 
     def apply_output_sigmoid_scaling(self, y_hat: torch.Tensor) -> torch.Tensor:
@@ -458,7 +459,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
                 y_hat[:, i] = y_min + nn.Sigmoid()(y_hat[:, i]) * (y_max - y_min)
         return y_hat
 
-    def pack_output(self, y_hat: torch.Tensor, backbone_features: torch.tensor) -> Dict[str, Any]:
+    def pack_output(self, y_hat: torch.Tensor, backbone_features: torch.tensor) -> dict[str, Any]:
         """Packs the output of the model.
 
         Args:
@@ -476,7 +477,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
             return {"logits": y_hat}
         return {"logits": y_hat, "backbone_features": backbone_features}
 
-    def compute_head(self, backbone_features: Tensor) -> Dict[str, Any]:
+    def compute_head(self, backbone_features: Tensor) -> dict[str, Any]:
         """Computes the head of the model.
 
         Args:
@@ -490,7 +491,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         y_hat = self.apply_output_sigmoid_scaling(y_hat)
         return self.pack_output(y_hat, backbone_features)
 
-    def forward(self, x: Dict) -> Dict[str, Any]:
+    def forward(self, x: dict) -> dict[str, Any]:
         """The forward pass of the model.
 
         Args:
@@ -501,7 +502,7 @@ class BaseModel(pl.LightningModule, metaclass=ABCMeta):
         x = self.compute_backbone(x)
         return self.compute_head(x)
 
-    def predict(self, x: Dict, ret_model_output: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict]]:
+    def predict(self, x: dict, ret_model_output: bool = False) -> torch.Tensor | tuple[torch.Tensor, dict]:
         """Predicts the output of the model.
 
         Args:
@@ -701,13 +702,13 @@ class _GenericModel(BaseModel):
         self,
         backbone: nn.Module,
         head: str,
-        head_config: Dict,
+        head_config: dict,
         config: DictConfig,
-        custom_loss: Optional[torch.nn.Module] = None,
-        custom_metrics: Optional[List[Callable]] = None,
-        custom_metrics_prob_inputs: Optional[List[bool]] = None,
-        custom_optimizer: Optional[torch.optim.Optimizer] = None,
-        custom_optimizer_params: Dict = {},
+        custom_loss: torch.nn.Module | None = None,
+        custom_metrics: list[Callable] | None = None,
+        custom_metrics_prob_inputs: list[bool] | None = None,
+        custom_optimizer: torch.optim.Optimizer | None = None,
+        custom_optimizer_params: dict = {},
         **kwargs,
     ):
         assert hasattr(config, "loss") or custom_loss is not None, "Loss function not defined in the config"

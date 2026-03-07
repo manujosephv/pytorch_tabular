@@ -6,8 +6,19 @@ import torch.nn as nn
 from omegaconf import DictConfig
 
 from pytorch_tabular.models.common.heads import blocks
-from pytorch_tabular.models.common.layers import Add, Embedding1dLayer, GatedFeatureLearningUnit, NeuralDecisionTree
-from pytorch_tabular.models.common.layers.activations import entmax15, entmoid15, sparsemax, sparsemoid, t_softmax
+from pytorch_tabular.models.common.layers import (
+    Add,
+    Embedding1dLayer,
+    GatedFeatureLearningUnit,
+    NeuralDecisionTree,
+)
+from pytorch_tabular.models.common.layers.activations import (
+    entmax15,
+    entmoid15,
+    sparsemax,
+    sparsemoid,
+    t_softmax,
+)
 from pytorch_tabular.utils import get_logger
 
 from ..base_model import BaseModel

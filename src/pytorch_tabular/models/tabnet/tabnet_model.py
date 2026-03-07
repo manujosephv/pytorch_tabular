@@ -3,7 +3,6 @@
 # For license information, see LICENSE.TXT
 """TabNet Model."""
 
-from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -11,7 +10,6 @@ from omegaconf import DictConfig
 from skbase.utils.dependencies import _check_soft_dependencies, _safe_import
 
 from ..base_model import BaseModel
-
 
 create_group_matrix = _safe_import(
     "pytorch_tabnet.utils.create_group_matrix", pkg_name="pytorch-tabnet"
@@ -58,7 +56,7 @@ class TabNetBackbone(nn.Module):
             group_attention_matrix=group_matrix,
         )
 
-    def unpack_input(self, x: Dict):
+    def unpack_input(self, x: dict):
         # unpacking into a tuple
         x = x["categorical"], x["continuous"]
         # eliminating None in case there is no categorical or continuous columns
@@ -66,7 +64,7 @@ class TabNetBackbone(nn.Module):
         x = torch.cat(tuple(x), dim=1)
         return x
 
-    def forward(self, x: Dict):
+    def forward(self, x: dict):
         # unpacking into a tuple
         x = self.unpack_input(x)
         # Making two parameters to the right device.
