@@ -82,7 +82,7 @@ notebooks = [
 
 # Core Dep set in Nov 2024
 dependencies_2024 = [
-    "torch==2.5.0",
+    "torch==2.11.0",
     "numpy==2.2.0",
     "pandas==2.2.3",
     "scikit-learn==1.6.0",
