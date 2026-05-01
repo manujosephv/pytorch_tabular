@@ -3,6 +3,7 @@
 # For license information, see LICENSE.TXT
 """TabNet Model."""
 
+import warnings
 from typing import Dict
 
 import torch
@@ -87,6 +88,13 @@ class TabNetModel(BaseModel):
         ], "TabNet is only implemented for Regression and Classification"
         super().__init__(config, **kwargs)
         _check_soft_dependencies("pytorch-tabnet", obj=self)
+        warnings.warn(
+            "pytorch-tabnet has lapsed maintenance in 2023. It is recommended to use "
+            "other models like GANDALF or FT-Transformer. See the migration guide "
+            "for more details: https://pytorch-tabular.readthedocs.io/en/latest/migration_guides/tabnet_migration/",
+            FutureWarning,
+            stacklevel=2,
+        )
 
     @property
     def backbone(self):
