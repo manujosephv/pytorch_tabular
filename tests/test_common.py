@@ -32,6 +32,8 @@ from pytorch_tabular.ssl_models import DenoisingAutoEncoderConfig
 
 # todo: move the logic to skip soft dependency dependent estimators to tags etc
 TABNET_AVAILABLE = _check_soft_dependencies("pytorch-tabnet", severity="none")
+ONNX_AVAILABLE = _check_soft_dependencies(["onnx", "onnxruntime"], severity="none")
+
 
 
 MODEL_CONFIG_SAVE_TEST = [
@@ -53,6 +55,8 @@ MODEL_CONFIG_SAVE_ONNX_TEST = [
             "num_attn_blocks": 1,
         },
     ),
+    (GANDALFConfig, {}),
+    (FTTransformerConfig, {"num_heads": 1, "num_attn_blocks": 1}),
 ]
 MODEL_CONFIG_FEATURE_EXT_TEST = [
     CategoryEmbeddingModelConfig,
@@ -380,7 +384,7 @@ def test_save_load_statedict(
 @pytest.mark.parametrize("custom_metrics", [None, [fake_metric]])
 @pytest.mark.parametrize("custom_loss", [None, torch.nn.L1Loss()])
 @pytest.mark.parametrize("custom_optimizer", [None, torch.optim.Adagrad, "SGD", "torch_optimizer.AdaBound"])
-@pytest.mark.parametrize("save_type", ["pytorch"])  # "onnx"
+@pytest.mark.parametrize("save_type", ["pytorch"])
 def test_save_for_inference(
     regression_data,
     model_config_class,
@@ -432,6 +436,82 @@ def test_save_for_inference(
         kind=save_type,
     )
     assert os.path.exists(sv_dir / model_name)
+
+
+@pytest.mark.skipif(not ONNX_AVAILABLE, reason="ONNX or ONNXRuntime not installed")
+@pytest.mark.parametrize("model_config_class", MODEL_CONFIG_SAVE_ONNX_TEST)
+@pytest.mark.parametrize("continuous_cols", [list(DATASET_CONTINUOUS_COLUMNS)])
+@pytest.mark.parametrize("categorical_cols", [["HouseAgeBin"]])
+def test_save_for_inference_onnx(
+    regression_data,
+    model_config_class,
+    continuous_cols,
+    categorical_cols,
+    tmpdir,
+):
+    (train, test, target) = regression_data
+    data_config = DataConfig(
+        target=target,
+        continuous_cols=continuous_cols,
+        categorical_cols=categorical_cols,
+    )
+    model_config_class, model_config_params = model_config_class
+    model_config_params["task"] = "regression"
+    model_config = model_config_class(**model_config_params)
+    trainer_config = TrainerConfig(
+        max_epochs=1,
+        checkpoints=None,
+        early_stopping=None,
+        accelerator="cpu",
+        fast_dev_run=True,
+    )
+    optimizer_config = OptimizerConfig()
+
+    tabular_model = TabularModel(
+        data_config=data_config,
+        model_config=model_config,
+        optimizer_config=optimizer_config,
+        trainer_config=trainer_config,
+    )
+    tabular_model.fit(
+        train=train,
+    )
+    sv_dir = tmpdir.mkdir("saved_model")
+    model_name = "model.onnx"
+    
+    # Test Export
+    tabular_model.save_model_for_inference(
+        sv_dir / model_name,
+        kind="onnx",
+    )
+    assert os.path.exists(sv_dir / model_name)
+    
+    # Test Validation
+    import onnxruntime as ort
+
+    # Get PyTorch Prediction (Point predictions)
+    test_data = test.head(5)
+    pt_preds = tabular_model.predict(test_data)
+    target_col = tabular_model.config.target[0]
+    pt_vals = pt_preds[f"{target_col}_prediction"].values.reshape(-1, 1)
+
+    # Get ONNX Prediction
+    ort_sess = ort.InferenceSession(str(sv_dir / model_name))
+    inference_dataloader = tabular_model.datamodule.prepare_inference_dataloader(test_data)
+    batch = next(iter(inference_dataloader))
+    
+    ort_inputs = {}
+    if len(tabular_model.config.categorical_cols) > 0:
+        ort_inputs["categorical"] = batch["categorical"].numpy().astype(np.int64)
+    if len(tabular_model.config.continuous_cols) > 0:
+        ort_inputs["continuous"] = batch["continuous"].numpy().astype(np.float32)
+    ort_outs = ort_sess.run(None, ort_inputs)
+    ort_vals = ort_outs[0]
+
+
+    # Compare results
+    np.testing.assert_allclose(pt_vals, ort_vals, rtol=1e-3, atol=1e-3)
+    assert ort_vals.shape == (5, 1)
 
 
 @pytest.mark.parametrize("model_config_class", MODEL_CONFIG_FEATURE_EXT_TEST)
