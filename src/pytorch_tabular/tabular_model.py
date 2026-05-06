@@ -1613,7 +1613,6 @@ class TabularModel:
         """
         self._load_weights(self.model, path)
 
-    # TODO Need to test ONNX export
     def save_model_for_inference(
         self,
         path: Union[str, Path],
@@ -1636,26 +1635,53 @@ class TabularModel:
             torch.save(self.model, str(path))
             return True
         elif kind == "onnx":
+            try:
+                import onnx
+            except ImportError:
+                raise ImportError("onnx is not installed. Please install onnx using `pip install onnx`.")
             # Export the model
-            onnx_export_params["input_names"] = ["categorical", "continuous"]
+            input_names = []
+            x = {}
+            dynamic_axes = {}
+            if len(self.config.categorical_cols) > 0:
+                input_names.append("categorical")
+                x["categorical"] = torch.zeros(
+                    self.config.batch_size,
+                    len(self.config.categorical_cols),
+                    dtype=torch.long,
+                )
+                dynamic_axes["categorical"] = {0: "batch_size"}
+            if len(self.config.continuous_cols) > 0:
+                input_names.append("continuous")
+                x["continuous"] = torch.randn(
+                    self.config.batch_size,
+                    len(self.config.continuous_cols),
+                    requires_grad=True,
+                )
+                dynamic_axes["continuous"] = {0: "batch_size"}
+
+            onnx_export_params["input_names"] = onnx_export_params.get("input_names", input_names)
             onnx_export_params["output_names"] = onnx_export_params.get("output_names", ["output"])
-            onnx_export_params["dynamic_axes"] = {
-                onnx_export_params["input_names"][0]: {0: "batch_size"},
-                onnx_export_params["output_names"][0]: {0: "batch_size"},
-            }
-            cat = torch.zeros(
-                self.config.batch_size,
-                len(self.config.categorical_cols),
-                dtype=torch.int,
-            )
-            cont = torch.randn(
-                self.config.batch_size,
-                len(self.config.continuous_cols),
-                requires_grad=True,
-            )
-            x = {"continuous": cont, "categorical": cat}
-            torch.onnx.export(self.model, x, str(path), **onnx_export_params)
+
+            # Merging with user provided dynamic_axes if any
+            if "dynamic_axes" not in onnx_export_params:
+                onnx_export_params["dynamic_axes"] = dynamic_axes
+                for out in onnx_export_params["output_names"]:
+                    onnx_export_params["dynamic_axes"][out] = {0: "batch_size"}
+
+            # Set model to eval mode
+            curr_mode = self.model.training
+            self.model.eval()
+            try:
+                torch.onnx.export(self.model, x, str(path), **onnx_export_params)
+            finally:
+                self.model.train(curr_mode)
+
+            # Check model
+            onnx_model = onnx.load(str(path))
+            onnx.checker.check_model(onnx_model)
             return True
+
         else:
             raise ValueError("`kind` must be either pytorch or onnx")
 
