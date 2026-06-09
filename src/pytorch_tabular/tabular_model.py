@@ -1613,7 +1613,6 @@ class TabularModel:
         """
         self._load_weights(self.model, path)
 
-    # TODO Need to test ONNX export
     def save_model_for_inference(
         self,
         path: Union[str, Path],
