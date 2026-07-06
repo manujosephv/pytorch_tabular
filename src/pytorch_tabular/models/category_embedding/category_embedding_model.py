@@ -49,6 +49,7 @@ class CategoryEmbeddingBackbone(nn.Module):
             embedding_dropout=self.hparams.embedding_dropout,
             batch_norm_continuous_input=self.hparams.batch_norm_continuous_input,
             virtual_batch_size=self.hparams.virtual_batch_size,
+            embedding_backend=getattr(self.hparams, "embedding_backend", "native"),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

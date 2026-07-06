@@ -782,6 +782,12 @@ class ModelConfig:
 
         embedding_dropout (float): Dropout to be applied to the Categorical Embedding. Defaults to 0.0
 
+        embedding_backend (str): Backend to use for categorical embeddings. ``'native'`` (default) uses one
+                ``nn.Embedding`` per column. ``'torchembed'`` delegates to
+                ``torchembed.categorical.MultiCategoricalEmbedding``, which fuses all columns into a single
+                module with auto-sized dimensions. Requires ``pip install torchembed``.
+                Choices are: [``'native'``, ``'torchembed'``].
+
         batch_norm_continuous_input (bool): If True, we will normalize the continuous layer by passing it
                 through a BatchNorm layer.
 
@@ -850,6 +856,16 @@ class ModelConfig:
     embedding_dropout: float = field(
         default=0.0,
         metadata={"help": "Dropout to be applied to the Categorical Embedding. Defaults to 0.0"},
+    )
+    embedding_backend: str = field(
+        default="native",
+        metadata={
+            "help": "Backend to use for categorical embeddings. 'native' (default) uses one nn.Embedding "
+            "per column. 'torchembed' delegates to torchembed.categorical.MultiCategoricalEmbedding, "
+            "which fuses all columns into a single module with auto-sized dimensions "
+            "(requires pip install torchembed).",
+            "choices": ["native", "torchembed"],
+        },
     )
     batch_norm_continuous_input: bool = field(
         default=True,

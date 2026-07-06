@@ -109,7 +109,17 @@ class PreEncoded1dLayer(nn.Module):
 
 
 class Embedding1dLayer(nn.Module):
-    """Enables different values in a categorical features to have different embeddings."""
+    """Enables different values in a categorical features to have different embeddings.
+
+    Supports two backends:
+
+    - ``"native"`` (default): uses one ``nn.Embedding`` per categorical column, exactly
+      as pytorch-tabular has always done.
+    - ``"torchembed"``: delegates to
+      ``torchembed.categorical.MultiCategoricalEmbedding``, which fuses all
+      per-column embeddings into a single module with auto-sized dimensions.
+      Requires the optional ``torchembed`` package (``pip install torchembed``).
+    """
 
     def __init__(
         self,
@@ -118,14 +128,35 @@ class Embedding1dLayer(nn.Module):
         embedding_dropout: float = 0.0,
         batch_norm_continuous_input: bool = False,
         virtual_batch_size: Optional[int] = None,
+        embedding_backend: str = "native",
     ):
         super().__init__()
         self.continuous_dim = continuous_dim
         self.categorical_embedding_dims = categorical_embedding_dims
         self.batch_norm_continuous_input = batch_norm_continuous_input
+        self.embedding_backend = embedding_backend
 
-        # Embedding layers
-        self.cat_embedding_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in categorical_embedding_dims])
+        if embedding_backend == "torchembed":
+            try:
+                from torchembed.categorical import MultiCategoricalEmbedding
+            except ImportError as exc:
+                raise ImportError(
+                    "The 'torchembed' package is required when embedding_backend='torchembed'. "
+                    "Install it with: pip install torchembed"
+                ) from exc
+            cardinalities = [card for card, _ in categorical_embedding_dims]
+            self._torchembed_emb = MultiCategoricalEmbedding(cardinalities=cardinalities)
+            self._cat_output_dim: int = self._torchembed_emb.output_dim
+        elif embedding_backend == "native":
+            # Native per-column embedding layers (original behaviour)
+            self.cat_embedding_layers = nn.ModuleList([nn.Embedding(x, y) for x, y in categorical_embedding_dims])
+            self._cat_output_dim = sum(dim for _, dim in categorical_embedding_dims)
+        else:
+            raise ValueError(
+                f"Unknown embedding_backend '{embedding_backend}'. "
+                "Supported values are: 'native', 'torchembed'."
+            )
+
         if embedding_dropout > 0:
             self.embd_dropout = nn.Dropout(embedding_dropout)
         else:
@@ -134,6 +165,11 @@ class Embedding1dLayer(nn.Module):
         if batch_norm_continuous_input:
             self.normalizing_batch_norm = BatchNorm1d(continuous_dim, virtual_batch_size)
 
+    @property
+    def output_dim(self) -> int:
+        """Total output dimension of the categorical embeddings produced by this layer."""
+        return self._cat_output_dim
+
     def forward(self, x: Dict[str, Any]) -> torch.Tensor:
         assert "continuous" in x or "categorical" in x, "x must contain either continuous and categorical features"
         # (B, N)
@@ -141,9 +177,14 @@ class Embedding1dLayer(nn.Module):
             x.get("continuous", torch.empty(0, 0)),
             x.get("categorical", torch.empty(0, 0)),
         )
-        assert categorical_data.shape[1] == len(
-            self.cat_embedding_layers
-        ), "categorical_data must have same number of columns as categorical embedding layers"
+        if self.embedding_backend == "torchembed":
+            assert categorical_data.shape[1] == len(
+                self.categorical_embedding_dims
+            ), "categorical_data must have same number of columns as categorical embedding dims"
+        else:
+            assert categorical_data.shape[1] == len(
+                self.cat_embedding_layers
+            ), "categorical_data must have same number of columns as categorical embedding layers"
         assert (
             continuous_data.shape[1] == self.continuous_dim
         ), "continuous_data must have same number of columns as continuous dim"
@@ -155,13 +196,17 @@ class Embedding1dLayer(nn.Module):
                 embed = continuous_data
             # (B, N, C)
         if categorical_data.shape[1] > 0:
-            categorical_embed = torch.cat(
-                [
-                    embedding_layer(categorical_data[:, i])
-                    for i, embedding_layer in enumerate(self.cat_embedding_layers)
-                ],
-                dim=1,
-            )
+            if self.embedding_backend == "torchembed":
+                # torchembed returns (batch, output_dim) directly
+                categorical_embed = self._torchembed_emb(categorical_data)
+            else:
+                categorical_embed = torch.cat(
+                    [
+                        embedding_layer(categorical_data[:, i])
+                        for i, embedding_layer in enumerate(self.cat_embedding_layers)
+                    ],
+                    dim=1,
+                )
             # (B, N, C + C)
             if embed is None:
                 embed = categorical_embed
