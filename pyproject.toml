@@ -75,6 +75,10 @@ extra = [
     "pytorch-tabnet<4.2",
 ]
 
+torchembed = [
+    "torchembed>=0.3.1",
+]
+
 notebooks = [
     "ipywidgets",
     "matplotlib>3.1",
